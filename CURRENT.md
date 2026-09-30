@@ -4,12 +4,12 @@
 
 | 字段 | 当前值 |
 |---|---|
-| state_id | WB-20260930-104 |
+| state_id | WB-20260930-105 |
 | 更新时间 | 2026-09-30，Asia/Shanghai |
 | 更新者 | Claude |
-| 当前写入者 | **Claude（认领104：合入云端 D3 使用次数滚动、D2 焚决+随手记，随后合入 D1 两区导航）** |
-| 当前任务 | **切片 1.1 已合入 main（ce1f1f4，本机 428/428、浏览器 30/30）；第二批云端任务进行中**：D1 切片1.2、D2 切片1.3+1.4、D3 使用次数滚动（均由 `claude --cloud` 发起，消耗云端额度）。前序 **路线 v3 生效（99）**：产品定义 v1.2 与路线 v3 已由用户确认，ROADMAP §2 已替换；R87-B1～B5 返修（96）待 Codex 复核。前序 **问题共识基线 v2.2 已确认（94）**：一个入口分为工作区和生活区；优先级为 R87 → 界面小调整 → 项目空间与协同 → 知识仓库 → 资产分发与 Agent → 生活区，见 [基线v2.2](docs/product/2026-09-30-问题共识基线-v2.2.md)，与旧 PRD/ROADMAP 冲突时以 v2.2 为准。前序 **云端接入（92，已交接）**：应用独立 Git + 私有仓库 `abdoulaziznafiou03-creator/personal-ai-workbench`（main `0d596f4`）；云端首测浏览器被网络拦截、npm test 有 Linux/root 差异，见 [CLOUD-SESSIONS.md](CLOUD-SESSIONS.md)。前序 **认领87复核：A通过；B有5组重要返修事项，T2为TUNE**（工作流裁字、传送异常收尾、减动画、数字屏两分支、C机身键）；项目协同协议沿用已收录v1.0；2.1暂缓 |
-| 唯一下一步 | Codex 读回96，独立复核 R87 返修（177文件清单 `8378ab36…a016`，新增 tests/r87-fix-browser.mjs，含T2视觉）；并行：用户在云端环境替换启动脚本 |
+| 当前写入者 | 无；Claude 完成认领104，输出105并释放 |
+| 当前任务 | **第一阶段 1.1–1.4 已合入 main（99f87d4）**：两区导航、计次置顶、⌘K、焚决、随手记富文本、使用次数滚动；本机 npm test 435/435、浏览器 34/34。用户纠正：焚决是资产仓库里的一种资产类型，迁入工作由云端 E1 进行。第二阶段 2.1+2.2 由云端 E2 提前开发（合入须等 1.E）。 |
+| 唯一下一步 | 等云端 E1（`session_01QNUuyrZ1FurQjGh4ZWmFYK` → `cloud/2026-09-30-scrolls-in-assets`）回来，本机复核合入，之后请用户做第一阶段整体验收 1.E；E2（`session_0149Mn9CDJCBTRk2F6rpAVov` → `…-phase2-projects`）等 1.E 通过后合入。R87 返修（96）仍待 Codex 复核 |
 | 最新交接 | [Claude 认领98](docs/agents/handoffs/2026-09-30-claude-98.md)；[Claude 认领95：R87返修+产品候选](docs/agents/handoffs/2026-09-30-claude-95.md)；[Claude 问题共识基线 v2.2](docs/agents/handoffs/2026-09-30-claude-product-v2.2.md)；[Claude 云端接入](docs/agents/handoffs/2026-09-30-claude-cloud.md)；[Codex认领87独立复核](docs/agents/handoffs/2026-09-30-codex-review-87.md)；[Claude 认领 87](docs/agents/handoffs/2026-09-30-claude-87.md)；[Codex认领83复核与模板收录](docs/agents/handoffs/2026-09-30-codex-review-83.md)；此前 [Claude 认领 83](docs/agents/handoffs/2026-09-30-claude-83.md)；[Codex 认领77复核：A残留/B延期](docs/agents/handoffs/2026-09-30-codex-review-77.md)；此前 [Claude 认领 77：D-R2/D-R3 + UI v13.1](docs/agents/handoffs/2026-09-30-claude-77.md)；[Codex 2.3 返修独立复核](docs/agents/handoffs/2026-09-30-codex-review-2.3-fix.md)；此前 [Claude 2.3 返修](docs/agents/handoffs/2026-09-29-claude-2.3-fix.md)；[Codex 2.3 复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；[Codex 2.3 与模板独立复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；此前  [Claude 2.3 规则模板](docs/agents/handoffs/2026-09-29-claude-2.3-rules.md)；[Claude 1.E 验收记录](docs/agents/handoffs/2026-09-29-claude-1.E-acceptance.md)；[Codex D-UI1 修复独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-d-ui1.md)； [Claude D-UI1 修复](docs/agents/handoffs/2026-09-29-claude-ui-d-ui1.md)；[Codex UI v12.1 独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-v12.1.md)； [Claude UI v12.1](docs/agents/handoffs/2026-09-29-claude-ui-v12.1.md)；[Claude UI v12](docs/agents/handoffs/2026-09-29-claude-ui-v12.md)；[Claude 宽屏空白修复](docs/agents/handoffs/2026-09-29-claude-ui-widescreen.md)；[Claude 1.4 独立复核](docs/agents/handoffs/2026-09-29-claude-review-1.4.md)；[Claude 产品定义 v1.1 与路线 v2](docs/agents/handoffs/2026-09-29-claude-product-v1.1.md)；[Codex 1.4来源维护收口](docs/agents/handoffs/2026-09-29-codex-1.4-maintenance.md)；[Codex D-S3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-ds3.md)；[Claude 1.3 D-S3 修复](docs/agents/handoffs/2026-09-29-claude-1.3-ds3.md)；[Codex 1.3 修复差异复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-fix.md)；被复核 [Claude 1.3 复核项修复](docs/agents/handoffs/2026-09-29-claude-1.3-fix.md)；[Codex 1.3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-search.md)；被复核 [Claude 1.3 搜索增强](docs/agents/handoffs/2026-09-29-claude-1.3-search.md)；前序 [Claude 1.1 修复复核](docs/agents/handoffs/2026-09-29-claude-review-1.1-fix.md)；被复核 [Codex 1.1 复核修复](docs/agents/handoffs/2026-09-29-codex-1.1-fix.md)；输入 [Claude 1.1 复核](docs/agents/handoffs/2026-09-29-claude-review-1.1.md) |
 | 完整项目说明 | [Claude 项目交接](PROJECT-HANDOFF-CLAUDE-2026-09-28.md)（历史快照；与当前状态冲突时以本文件、ROADMAP 及当前切片契约为准） |
 | Codex 已读状态 | **WB-20260930-88**（176文件、11前像匹配，认领89）；此前 **WB-20260930-84**（172文件、13前像及A阶段指纹匹配，认领85）；此前 **WB-20260930-80**（172文件与9前像匹配，认领81）；此前 **WB-20260930-76**（本轮认领75后输出并回读；代码 D-R2/D-R3 未闭合、模板通过；166文件未变）；此前 **WB-20260929-74**（166文件指纹和10个前像匹配，认领75）；此前  **WB-20260929-70**（165 文件及 17 前像一致；用户确认主库新哈希为已知操作）；此前  **WB-20260929-62**（160文件匹配、2个前像一致，认领63，复核输出64）；此前 **WB-20260929-58**（160 文件指纹及三轮前像全部匹配，认领59，复核输出60）；此前 WB-20260929-45（157文件指纹匹配，认领46/扩围47，交接WB-20260929-48）；此前 WB-20260929-43（157文件指纹及3个代码前像一致，完成复核输出WB-20260929-45）；此前 WB-20260929-39（新157文件指纹及5个前像全部匹配；完成输出WB-20260929-41）；前轮复核输出 WB-20260929-37 |
@@ -393,3 +393,9 @@ v0.17 来源维护工程验收已完成，Claude已于53独立复核通过，第
 
 - 输入103。用户用量上限重置后要求继续。D2（`cloud/2026-09-30-slice-1.3-1.4`）、D3（`…-usage-odometer`）已交回；D1（`…-slice-1.2`）因用量上限中断，已发继续消息。
 - 本轮：依次合入 D3、D2（再合 D1），解决冲突，本机构建与完整回归，推送 main。拟改范围即三个分支的改动文件及冲突处；不读 data 内容，不重启 5178。
+- **完成（输出 WB-20260930-105）**：
+  - 合入 D3 `94d37ff`、D2 `50580af`、D1 `99f87d4`。D1 与 D2 在 App.jsx、pages.js 冲突，已手工解决；页面编号按导航顺序重排。
+  - 按用户纠正，焚决独立入口改为 navHidden + partOf: assets，首页资产行注明“含焚决 N 卷”；scrolls-browser 与 digital-world-ui 各有一处断言随需求调整，没有删除覆盖。
+  - 基线 D22、产品定义 v1.2、路线 v3 已同步纠正。
+  - 本机最终：npm test 435/435，浏览器脚本 34/34，visual problems=[]。
+  - 用 `claude --cloud` 派出 E1、E2。写入者释放。
