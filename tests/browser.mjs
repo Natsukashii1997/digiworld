@@ -80,12 +80,12 @@ try {
   await page.getByRole("button", { name: "编辑资产", exact: true }).click();
   await page.getByLabel("提示词全文").fill("这是第二版。");
   await page.getByRole("button", { name: "保存新版本", exact: true }).click();
-  await page.getByRole("button", { name: "版本记录 2", exact: true }).click();
+  await page.getByRole("button", { name: "历史 2", exact: true }).click();
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
   await page
     .getByRole("button", { name: "确认恢复为新版本", exact: true })
     .click();
-  await page.getByRole("button", { name: "版本记录 3", exact: true }).waitFor();
+  await page.getByRole("button", { name: "历史 3", exact: true }).waitFor();
   await page.getByRole("button", { name: "内容预览", exact: true }).click();
   assert.equal(
     await page.locator(".content-preview").innerText(),

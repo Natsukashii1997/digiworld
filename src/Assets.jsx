@@ -792,7 +792,8 @@ export function AssetDetail({
             ["content", "内容预览"],
             ["files", "文件"],
             ["copies", "目标副本"],
-            ["history", "版本记录"],
+            // 产品定义 v1.2 §2.2：单个资产的版本在“历史”标签查看，复用 AssetHistory。
+            ["history", "历史"],
           ]
             .filter(
               ([id]) =>

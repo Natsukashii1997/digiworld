@@ -14,10 +14,13 @@ import {
   Stethoscope,
   Handshake,
   CalendarDays,
+  Newspaper,
+  GraduationCap,
+  Gem,
   Plus,
 } from "lucide-react";
 import { current } from "./store.js";
-import { page, LAYERS } from "./pages.js";
+import { page, LAYERS, ZONES } from "./pages.js";
 import { Maturity, TypeIcon, typeLabel } from "./components.jsx";
 import { pendingItems, rulePendingReady } from "./pending.js";
 import { PendingList } from "./PlannedPage.jsx";
@@ -45,6 +48,9 @@ export const ICONS = {
   night: Moon,
   knowledge: BookOpen,
   notes: PenLine,
+  aihot: Newspaper,
+  learning: GraduationCap,
+  silver: Gem,
   settings: Settings2,
 };
 
@@ -65,6 +71,9 @@ function facts(state) {
     night: "计划草稿 · 未启用",
     knowledge: `${(c.knowledgeSources || []).length} 个知识源 · ${(state.knowledgeTasks || []).length} 个任务`,
     notes: `${state.notes.length} 条本机草稿`,
+    aihot: "尚未开发",
+    learning: "尚未开发",
+    silver: "尚未开发",
     settings: state.model?.provider ? `意向：${state.model.provider}` : "模型未连接",
   };
 }
@@ -255,6 +264,92 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
               <span>查看日历规划</span>
               <ArrowUpRight size={15} />
             </button>
+          </div>
+        </section>
+        <section className="home-section side">
+          <div className="section-title">
+            <span className="section-index">B</span>
+            <h2>{page("inbox").label} · {pending.length}</h2>
+            <p>来自本机数据的线索</p>
+          </div>
+          <div className="today-pending">
+            {!rulePendingReady(ruleInstalls) && !ruleInstalls?.error && (
+              <p className="recent-empty" role="status">
+                规则装入记录还在读取，读完前不能确定待处理是否完整。
+              </p>
+            )}
+            {pending.length ? (
+              <PendingList items={pending} navigate={navigate} select={select} limit={5} />
+            ) : (
+              rulePendingReady(ruleInstalls) && (
+                <p className="recent-empty">
+                  已接入的来源里没有待处理事项。体检、夜间结果等来源尚未接入。
+                </p>
+              )
+            )}
+            <button className="plan-link" onClick={() => navigate("inbox")}>
+              <span>查看全部待处理</span>
+              <ArrowUpRight size={15} />
+            </button>
+          </div>
+        </section>
+      </div>
+
+      {/* 结构：两区能力地图（工作区 / 生活区，产品定义 v1.2 §2）+ 最近迭代 */}
+      <div className="home-row">
+        <section className="home-section structure-map">
+          <div className="section-title">
+            <span className="section-index">C</span>
+            <h2>能力地图</h2>
+            <p>工作区：资产被目标使用，运行层让它跑起来，结果回到知识与资产。生活区：自己的日子。</p>
+          </div>
+          {ZONES.filter((zone) => LAYERS.some((l) => l.zone === zone.id)).map((zone) => (
+            <div key={zone.id} className={`map-zone map-zone-${zone.id}`}>
+              <h3 className="map-zone-title">
+                {zone.label}
+                <small aria-hidden="true">{zone.en}</small>
+              </h3>
+              <div className="layer-grid">
+                {LAYERS.filter((l) => l.zone === zone.id).map((layer) => (
+                  <div key={layer.id} className="layer-card">
+                    <div className="layer-head">
+                      <small>{layer.en}</small>
+                      <strong>{layer.id}</strong>
+                      <span>{layer.question}</span>
+                    </div>
+                    {layer.pages.map((id) => {
+                      const p = page(id);
+                      const Icon = ICONS[id];
+                      return (
+                        <button key={id} className="manage-row" onClick={() => navigate(id)}>
+                          <Icon size={15} strokeWidth={1.7} />
+                          <span>
+                            <strong>{p.label}</strong>
+                            <small>{f[id]}</small>
+                          </span>
+                          <Maturity level={p.maturity} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="system-rows">
+            {["settings", "history"].map((id) => {
+              const Icon = ICONS[id];
+              return (
+                <button key={id} className="manage-row system-row" onClick={() => navigate(id)}>
+                  <Icon size={15} strokeWidth={1.7} />
+                  <span>
+                    <strong>{page(id).label}</strong>
+                    <small>系统 · {f[id]}</small>
+                  </span>
+                  <Maturity level={page(id).maturity} />
+                </button>
+              );
+            })}
           </div>
         </section>
         <section className="home-section side">

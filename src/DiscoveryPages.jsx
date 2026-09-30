@@ -16,6 +16,7 @@ import {
   PageHeading,
   Dialog,
   Scanning,
+  Maturity,
 } from "./components.jsx";
 import { scan, request } from "./api.js";
 import { Relay } from "./WorkspacePages.jsx";
@@ -24,6 +25,8 @@ import { ProjectLocations } from "./ProjectLocations.jsx";
 import { ProjectRules } from "./RuleInstall.jsx";
 import { AgentInventory } from "./AgentInventory.jsx";
 import { SkillSourceImport } from "./SkillSources.jsx";
+import { PlanDetails } from "./PlannedPage.jsx";
+import { page } from "./pages.js";
 
 const time = (value) =>
   value
@@ -373,7 +376,7 @@ export function Projects({ state, adoptState, notify, ruleInstalls, refreshRuleI
   );
 }
 
-export function Agents({ state, adoptState, notify, onSelect }) {
+export function Agents({ state, adoptState, notify, onSelect, navigate = () => {} }) {
   const { busy, error, run } = useDiscovery(
     "agents",
     state,
@@ -474,6 +477,21 @@ export function Agents({ state, adoptState, notify, onSelect }) {
         </Empty>
       )}
       <LegacyRecords records={state.agents} />
+      {/* 产品定义 v1.2 §2.2：能力体检并入智能体群；旧地址 #health 定位到这里。仍是规划，不执行任何检查。 */}
+      <section
+        id="agent-health"
+        className="agent-health"
+        aria-labelledby="agent-health-title"
+        tabIndex={-1}
+      >
+        <div className="section-title">
+          <span className="section-index">体</span>
+          <h2 id="agent-health-title">{page("health").label}</h2>
+          <Maturity level={page("health").maturity} />
+          <p>{page("health").lead}</p>
+        </div>
+        <PlanDetails id="health" navigate={navigate} />
+      </section>
       {selectedAgent && !importRoot && (
         <AgentInventory
           key={selectedAgent.id}

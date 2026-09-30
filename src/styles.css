@@ -1060,6 +1060,35 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   letter-spacing: 0.2em;
   color: var(--muted);
 }
+/* 切片 1.2：侧栏四段（今日 / 工作区 / 生活区 / 系统）。区名比分组标题更醒目，工作区与生活区之间有分隔线。 */
+.nav-zone {
+  display: grid;
+  gap: 1px;
+}
+.nav-zone-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 14px 10px 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+}
+.nav-zone-title small {
+  font: 500 9.5px var(--mono);
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+.nav-zone-system .nav-zone-title {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.nav-divider {
+  height: 1px;
+  margin: 12px 10px 0;
+  background: var(--line-2);
+}
 .nav-item {
   position: relative;
   display: flex;
@@ -5213,6 +5242,10 @@ input[type="file"]::file-selector-button {
   .sidebar.mobile-open {
     transform: none;
   }
+  /* 抽屉导航是触屏入口，条目保证 44px 点击区域。 */
+  .sidebar .nav-item {
+    min-height: 44px;
+  }
   .sidebar-scrim {
     display: block;
     position: fixed;
@@ -5565,6 +5598,41 @@ input[type="file"]::file-selector-button {
 }
 .layer-card .manage-row:first-of-type {
   border-top: 1px solid var(--line);
+}
+/* 切片 1.2：能力地图按工作区 / 生活区分两段，系统两项并排。 */
+.map-zone {
+  display: grid;
+  gap: 10px;
+}
+.map-zone-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+.map-zone-title small {
+  font: 500 10.5px var(--mono);
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+.map-zone-life {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.system-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.agent-health {
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+  scroll-margin-top: 80px;
+}
+.agent-health .section-title .maturity {
+  align-self: center;
 }
 .system-row {
   padding: 12px 16px;

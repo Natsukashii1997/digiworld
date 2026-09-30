@@ -1,0 +1,116 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
++ []
+- [
+-   [
+-     '今日',
+-     [
+-       [
+-         '',
+-         [
+-           '世界总览'
+-         ]
+-       ]
+-     ]
+-   ],
+-   [
+-     '工作区',
+-     [
+-       [
+-         '资产',
+-         [
+-           '资产仓库',
+-           '逆向工程'
+-         ]
+-       ],
+-       [
+-         '目标',
+-         [
+-           '智能体群',
+-           '项目空间'
+-         ]
+-       ],
+-       [
+-         '运行',
+-         [
+-           '协同',
+-           '夜巡'
+-         ]
+-       ],
+-       [
+-         '知识',
+-         [
+-           '知识仓库'
+-         ]
+-       ]
+-     ]
+-   ],
+-   [
+-     '生活区',
+-     [
+-       [
+-         '',
+-         [
+-           '日历',
+-           '随手记',
+-           'AI HOT',
+-           '学习成长',
+-           '银饰计划'
+-         ]
+-       ]
+-     ]
+-   ],
+-   [
+-     '系统',
+-     [
+-       [
+-         '',
+-         [
+-           '模型设置',
+-           '版本归档'
+-         ]
+-       ]
+-     ]
+-   ]
+- ]
+
+    at file:///home/user/personal-ai-workbench/tests/nav-zones-browser.mjs:88:10
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at process.processImmediate (node:internal/timers:541:9) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [],
+  expected: [
+    [
+      '今日',
+      [ [ '', [ '世界总览' ] ] ]
+    ],
+    [
+      '工作区',
+      [
+        [ '资产', [ '资产仓库', '逆向工程' ] ],
+        [ '目标', [ '智能体群', '项目空间' ] ],
+        [ '运行', [ '协同', '夜巡' ] ],
+        [ '知识', [ '知识仓库' ] ]
+      ]
+    ],
+    [
+      '生活区',
+      [ [ '', [ '日历', '随手记', 'AI HOT', '学习成长', '银饰计划' ] ] ]
+    ],
+    [
+      '系统',
+      [ [ '', [ '模型设置', '版本归档' ] ] ]
+    ]
+  ],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+exit=1

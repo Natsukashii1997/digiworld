@@ -64,7 +64,7 @@ try {
         .getByRole("button", { name: `查看 ${title}`, exact: true })
         .click();
       await page
-        .getByRole("button", { name: "版本记录 2", exact: true })
+        .getByRole("button", { name: "历史 2", exact: true })
         .click();
       const changes = page.locator(".history-file-changes");
       await changes.waitFor();

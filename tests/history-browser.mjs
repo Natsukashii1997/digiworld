@@ -86,7 +86,7 @@ try {
   await page.getByLabel("提示词全文").fill("共同背景\n新的判断\n保持来源");
   await page.getByLabel("一句话说明").fill("新版说明");
   await page.getByRole("button", { name: "保存新版本", exact: true }).click();
-  await page.getByRole("button", { name: "版本记录 2", exact: true }).click();
+  await page.getByRole("button", { name: "历史 2", exact: true }).click();
   for (const label of ["查看版本", "比较到"]) {
     const bounds = await page.getByLabel(label, { exact: true }).boundingBox();
     assert.ok(bounds.height >= 44, `${label} should have a 44px control`);
@@ -106,14 +106,14 @@ try {
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
   await page.getByRole("button", { name: "取消恢复", exact: true }).click();
   assert.equal(
-    await page.getByRole("button", { name: "版本记录 2", exact: true }).count(),
+    await page.getByRole("button", { name: "历史 2", exact: true }).count(),
     1,
   );
   await page.getByRole("button", { name: "恢复此版本", exact: true }).click();
   await page
     .getByRole("button", { name: "确认恢复为新版本", exact: true })
     .click();
-  await page.getByRole("button", { name: "版本记录 3", exact: true }).waitFor();
+  await page.getByRole("button", { name: "历史 3", exact: true }).waitFor();
   await page.getByRole("button", { name: "内容预览", exact: true }).click();
   assert.equal(
     await page.locator(".content-preview").innerText(),
@@ -123,7 +123,7 @@ try {
   await page
     .getByRole("button", { name: "查看 历史验收", exact: true })
     .click();
-  await page.getByRole("button", { name: "版本记录 3", exact: true }).click();
+  await page.getByRole("button", { name: "历史 3", exact: true }).click();
   await page
     .getByLabel("查看版本", { exact: true })
     .selectOption({ label: "v2.0" });
@@ -131,7 +131,7 @@ try {
   await page
     .getByRole("button", { name: "确认恢复为新版本", exact: true })
     .click();
-  await page.getByRole("button", { name: "版本记录 4", exact: true }).waitFor();
+  await page.getByRole("button", { name: "历史 4", exact: true }).waitFor();
   console.log("PASS 历史正文与差异→取消→恢复→刷新→恢复回来");
   await page
     .getByLabel("查看版本", { exact: true })
@@ -176,7 +176,7 @@ try {
   await page
     .getByRole("button", { name: "确认恢复为新版本", exact: true })
     .click();
-  await page.getByRole("button", { name: "版本记录 5", exact: true }).waitFor();
+  await page.getByRole("button", { name: "历史 5", exact: true }).waitFor();
   const stored = await getState();
   await putState({
     ...stored,
@@ -207,7 +207,7 @@ try {
   await page
     .getByRole("button", { name: "查看 文件历史验收", exact: true })
     .click();
-  await page.getByRole("button", { name: "版本记录 2", exact: true }).click();
+  await page.getByRole("button", { name: "历史 2", exact: true }).click();
   assert.match(
     await page.locator(".history-file-changes").innerText(),
     /new.txt/,

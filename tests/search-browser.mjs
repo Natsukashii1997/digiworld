@@ -139,9 +139,9 @@ try {
   assert.equal(await scope.locator(".search-empty").count(), 0);
   assert.match(await scope.innerText(), /知识库正文、历史版本和二进制文件不在此搜索/);
   assert.doesNotMatch(await scope.innerText(), /已归档/);
-  await scope.getByRole("button", { name: "去知识中枢查询" }).click();
+  await scope.getByRole("button", { name: "去知识仓库查询" }).click();
   await page.waitForFunction(() => location.hash === "#knowledge");
-  console.log("PASS 无结果提示与搜索范围说明分开，可去知识中枢");
+  console.log("PASS 无结果提示与搜索范围说明分开，可去知识仓库");
 
   // 资产库：正文搜索、标签筛选组合、清除筛选、已归档提示。
   await page.goto(app.url + "/#assets");

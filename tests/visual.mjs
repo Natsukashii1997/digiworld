@@ -28,6 +28,9 @@ const routes = [
   "health",
   "collab",
   "calendar",
+  "aihot",
+  "learning",
+  "silver",
 ];
 const app = await fixture();
 const browser = await chromium.launch();

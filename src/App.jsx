@@ -39,7 +39,7 @@ import {
   References,
   Settings,
 } from "./WorkspacePages.jsx";
-import { PAGES, GROUPS } from "./pages.js";
+import { PAGES, ZONES, resolveRoute } from "./pages.js";
 import {
   Pixel,
   PixelText,
@@ -51,14 +51,16 @@ import {
 } from "./pixel.jsx";
 
 const ICONS = { home: Sun, ...PAGE_ICONS };
-function initialRoute() {
-  const r = location.hash.slice(1);
-  return PAGES.some((x) => x.id === r) ? r : "home";
+// 并入其他页面的旧地址（如 #health）改写为实际页面地址，并记下要定位的页内分区。
+function initialTarget() {
+  const target = resolveRoute(location.hash.slice(1));
+  if (target.anchor) history.replaceState(null, "", `#${target.route}`);
+  return target;
 }
 export default function App() {
   const [state, setState] = useState(null),
     [error, setError] = useState(""),
-    [route, setRoute] = useState(initialRoute),
+    [target, setTarget] = useState(initialTarget),
     [filter, setFilter] = useState("all"),
     [selected, setSelected] = useState(null),
     [editing, setEditing] = useState(null),
@@ -72,6 +74,7 @@ export default function App() {
     [veil, setVeil] = useState(true),
     [season, setSeasonLabel] = useState("春 · 花开"),
     [ruleInstalls, setRuleInstalls] = useState({ items: [], error: "", loaded: false });
+  const { route, anchor } = target;
   const [saveError, setSaveError] = useState("");
   const partnerScreen = useRef();
   const setSeason = useCallback((s) => setSeasonLabel(s.label), []);
@@ -103,6 +106,22 @@ export default function App() {
     }
   }, []);
   const ready = !!state;
+  // 跳到页内分区（如能力体检）：等页面渲染出分区后滚动到位并移交焦点，然后清除锚点。
+  useEffect(() => {
+    if (!ready || !anchor) return;
+    let frame,
+      tries = 0;
+    const seek = () => {
+      const el = document.getElementById(anchor);
+      if (el) {
+        el.scrollIntoView({ block: "start" });
+        el.focus({ preventScroll: true });
+        setTarget((prev) => (prev.anchor === anchor ? { ...prev, anchor: null } : prev));
+      } else if (tries++ < 60) frame = requestAnimationFrame(seek);
+    };
+    frame = requestAnimationFrame(seek);
+    return () => cancelAnimationFrame(frame);
+  }, [ready, route, anchor]);
   useEffect(() => {
     if (ready) refreshRuleInstalls();
   }, [ready, refreshRuleInstalls]);
@@ -122,7 +141,9 @@ export default function App() {
       }
     };
     const hash = () => {
-      setRoute(initialRoute());
+      const next = initialTarget();
+      // 站内跳转到页内分区时，随后触发的 hashchange 不带锚点，不能把待定位的分区冲掉。
+      setTarget((prev) => (next.route === prev.route && !next.anchor ? prev : next));
       setMenu(false);
     };
     window.addEventListener("keydown", key);
@@ -163,8 +184,9 @@ export default function App() {
     }
   }
   function navigate(id) {
-    setRoute(id);
-    location.hash = id;
+    const next = resolveRoute(id);
+    setTarget(next);
+    location.hash = next.route;
     setMenu(false);
     setSelected(null);
     window.scrollTo({ top: 0 });
@@ -239,41 +261,57 @@ export default function App() {
           </span>
         </button>
         <nav aria-label="主导航" className="nav">
-          {GROUPS.map((group) => (
-            <div className="nav-group" key={group}>
-              {group !== "今日" && <div className="nav-heading">{group}</div>}
-              {PAGES.filter((p) => p.group === group && !p.navHidden).map(({ id, label, maturity }) => {
-                const Icon = ICONS[id];
-                const count =
-                  id === "assets"
-                    ? state.assets.filter((a) => !a.archived).length
-                    : id === "notes" && state.notes.length
-                      ? state.notes.length
-                      : null;
-                return (
-                  <button
-                    key={id}
-                    className={`nav-item ${route === id ? "active" : ""}`}
-                    aria-current={route === id ? "page" : undefined}
-                    onClick={() => {
-                      if (id === "assets") setFilter("all");
-                      navigate(id);
-                    }}
-                  >
-                    <Icon size={17} strokeWidth={1.7} />
-                    <span>{label}</span>
-                    {count !== null ? (
-                      <small className="nav-count">
-                        <Odometer value={count} />
-                      </small>
-                    ) : ["draft", "planned"].includes(maturity) ? (
-                      <small className={`nav-flag ${maturity}`}>
-                        {maturity === "planned" ? "规划" : "草稿"}
-                      </small>
-                    ) : null}
-                  </button>
-                );
-              })}
+          {ZONES.map((zone) => (
+            <div
+              className={`nav-zone nav-zone-${zone.id}`}
+              role="group"
+              aria-label={zone.label}
+              key={zone.id}
+            >
+              {zone.id === "life" && <div className="nav-divider" role="separator" />}
+              {zone.id !== "today" && (
+                <div className="nav-zone-title" aria-hidden="true">
+                  {zone.label}
+                  {zone.en && <small>{zone.en}</small>}
+                </div>
+              )}
+              {zone.groups.map((group) => (
+                <div className="nav-group" key={group}>
+                  {zone.groups.length > 1 && <div className="nav-heading">{group}</div>}
+                  {PAGES.filter((p) => p.group === group && !p.navHidden).map(({ id, label, maturity }) => {
+                    const Icon = ICONS[id];
+                    const count =
+                      id === "assets"
+                        ? state.assets.filter((a) => !a.archived).length
+                        : id === "notes" && state.notes.length
+                          ? state.notes.length
+                          : null;
+                    return (
+                      <button
+                        key={id}
+                        className={`nav-item ${route === id ? "active" : ""}`}
+                        aria-current={route === id ? "page" : undefined}
+                        onClick={() => {
+                          if (id === "assets") setFilter("all");
+                          navigate(id);
+                        }}
+                      >
+                        <Icon size={17} strokeWidth={1.7} />
+                        <span>{label}</span>
+                        {count !== null ? (
+                          <small className="nav-count">
+                            <Odometer value={count} />
+                          </small>
+                        ) : ["draft", "planned"].includes(maturity) ? (
+                          <small className={`nav-flag ${maturity}`}>
+                            {maturity === "planned" ? "规划" : "草稿"}
+                          </small>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           ))}
         </nav>
@@ -386,6 +424,7 @@ export default function App() {
           {route === "agents" && (
             <Agents
               {...common}
+              navigate={navigate}
               onSelect={(id) => {
                 navigate("assets");
                 setSelected(id);
@@ -404,7 +443,7 @@ export default function App() {
           {route === "inbox" && (
             <Inbox {...common} navigate={navigate} select={setSelected} />
           )}
-          {["health", "collab", "calendar"].includes(route) && (
+          {["collab", "calendar", "aihot", "learning", "silver"].includes(route) && (
             <PlannedPage id={route} navigate={navigate} />
           )}
         </main>
@@ -734,7 +773,7 @@ function SearchPalette({ state, onClose, navigate, select }) {
             搜索资产当前版本（含正文与文本文件）、随手记、参考和项目。知识库正文、历史版本和二进制文件不在此搜索。
           </span>
           <button type="button" onClick={() => navigate("knowledge")}>
-            去知识中枢查询
+            去知识仓库查询
           </button>
         </div>
       </div>
