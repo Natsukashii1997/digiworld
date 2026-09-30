@@ -79,7 +79,9 @@ export default function App() {
     [versionBump, setVersionBump] = useState(null),
     [veil, setVeil] = useState(true),
     [season, setSeasonLabel] = useState("春 · 花开"),
-    [ruleInstalls, setRuleInstalls] = useState({ items: [], error: "", loaded: false });
+    [ruleInstalls, setRuleInstalls] = useState({ items: [], error: "", loaded: false }),
+    // 智能体群内容清单的最近一次只读结果（按 Agent），体检问题由此汇总进待处理；不写主库。
+    [agentContents, setAgentContents] = useState({});
   // 在推进项目的只读状态与体检（路线 v3 切片 2.1/2.2）。不在主库里，由服务端现读项目文件与 Git。
   const [projectStatus, setProjectStatus] = useState({
     items: [],
@@ -251,6 +253,7 @@ export default function App() {
     refreshRuleInstalls,
     projectStatus,
     refreshProjectStatus,
+    agentContents,
   };
   const asset = state?.assets.find((a) => a.id === selected);
   // 卷被删除（进回收区）后抽屉自动关闭。
@@ -281,7 +284,7 @@ export default function App() {
       </div>
     );
   const partner = partnerOf(state);
-  const pending = pendingItems(state, ruleInstalls, projectStatus);
+  const pending = pendingItems(state, ruleInstalls, projectStatus, agentContents);
   const currentPage = PAGES.find((p) => p.id === route);
   return (
     <div className="app-shell">
@@ -485,6 +488,7 @@ export default function App() {
           {route === "agents" && (
             <Agents
               {...common}
+              setAgentContents={setAgentContents}
               navigate={navigate}
               onSelect={(id) => {
                 navigate("assets");

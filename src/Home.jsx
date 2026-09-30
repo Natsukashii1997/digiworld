@@ -124,7 +124,7 @@ function DayRuler({ night }) {
   );
 }
 
-export function Home({ state, navigate, select, openCreate, ruleInstalls, projectStatus }) {
+export function Home({ state, navigate, select, openCreate, ruleInstalls, projectStatus, agentContents }) {
   const partner = partnerOf(state);
   const stageScreen = useRef();
   // UI v13.2：暴龙机 A 键在数码蛋与待处理条数之间切换，B 键开关背光，C 键戳一下
@@ -133,7 +133,7 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls, projec
   const live = state.assets.filter((a) => !a.archived);
   const [zoneSummary] = useZoneSummary();
   const f = facts(state, zoneSummary.latest);
-  const pending = pendingItems(state, ruleInstalls, projectStatus);
+  const pending = pendingItems(state, ruleInstalls, projectStatus, agentContents);
   // 显示数字时跟随待处理条数（加载完成、读取失败等来源变化都会更新）
   useEffect(() => {
     if (dvView === "number") stageScreen.current?.showNumber(pending.length);

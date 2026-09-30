@@ -11,10 +11,13 @@ export function rulePendingReady(ruleInstalls) {
 // { items, error }。读取失败单列一条，不当作“没有可升级”。
 // projectStatus 来自项目空间的只读状态与体检（路线 v3 切片 2.1/2.2），由 App 读取后传入：
 // { items, error, loaded }。只汇总和跳转，不执行任何动作；读取失败单列一条。
+// agentHealth 来自智能体群的内容清单体检（只在本次打开页面后明确读取过的 Agent 才有），
+// { [agentId]: { name, health: { brokenLinks, drift, unreadable } } }。未体检不下结论。
 export function pendingItems(
   state,
   ruleInstalls = { items: [], error: "" },
   projectStatus = { items: [], error: "" },
+  agentHealth = {},
 ) {
   ruleInstalls ||= { items: [], error: "" };
   const items = [];
@@ -121,5 +124,22 @@ export function pendingItems(
       detail: "设置管理目标后，才能查看目录、关联 Skill 和受控修改配置。",
       to: "agents",
     });
+  for (const [agentId, entry] of Object.entries(agentHealth || {})) {
+    const h = entry?.health;
+    if (!h) continue;
+    const parts = [
+      h.brokenLinks && `${h.brokenLinks} 条失效链接`,
+      h.drift && `${h.drift} 个副本与仓库版本不一致`,
+      h.unreadable && `${h.unreadable} 项无法读取`,
+    ].filter(Boolean);
+    if (parts.length)
+      items.push({
+        id: `agent-health-${agentId}`,
+        kind: "智能体",
+        title: `${entry.name}：${parts.join("、")}`,
+        detail: "体检只读；清理、重建或同步需要你在本机单独授权后执行。",
+        to: "agents",
+      });
+  }
   return items;
 }

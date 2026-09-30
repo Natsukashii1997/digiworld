@@ -26,6 +26,7 @@ import { ProjectLocations } from "./ProjectLocations.jsx";
 import { ProjectRules } from "./RuleInstall.jsx";
 import { ActiveProjects, ActiveToggle } from "./ProjectStatus.jsx";
 import { AgentInventory } from "./AgentInventory.jsx";
+import { AgentContents } from "./AgentContents.jsx";
 import { SkillSourceImport } from "./SkillSources.jsx";
 import { PlanDetails } from "./PlannedPage.jsx";
 import { page } from "./pages.js";
@@ -400,7 +401,16 @@ export function Projects({
   );
 }
 
-export function Agents({ state, save, adoptState, notify, onSelect, navigate = () => {} }) {
+export function Agents({
+  state,
+  save,
+  adoptState,
+  notify,
+  onSelect,
+  navigate = () => {},
+  agentContents = {},
+  setAgentContents = () => {},
+}) {
   const { busy, error, run } = useDiscovery(
     "agents",
     state,
@@ -409,6 +419,7 @@ export function Agents({ state, save, adoptState, notify, onSelect, navigate = (
   );
   const [filter, setFilter] = useState("detected"),
     [selected, setSelected] = useState(null),
+    // 收录本机 Skill 的限定范围：{ roots, search }。来自目录发现或内容清单的“存入资产仓库”。
     [importRoot, setImportRoot] = useState(null),
     [relay, setRelay] = useState(false);
   const agents = state.connections?.agents || [];
@@ -501,6 +512,16 @@ export function Agents({ state, save, adoptState, notify, onSelect, navigate = (
         </Empty>
       )}
       <LegacyRecords records={state.agents} />
+      <AgentContents
+        agents={agents}
+        results={agentContents}
+        onResult={(id, value) =>
+          setAgentContents((previous) => ({ ...previous, [id]: value }))
+        }
+        onStore={(scope) =>
+          setImportRoot({ roots: scope.roots, search: scope.name })
+        }
+      />
       {/* 路线 v3 4.3（提前开发）：主力与附属 Agent 的角色卡与派活推荐。 */}
       <AgentRoles state={state} save={save} notify={notify} />
       {/* 产品定义 v1.2 §2.2：能力体检并入智能体群；旧地址 #health 定位到这里。仍是规划，不执行任何检查。 */}
@@ -527,7 +548,7 @@ export function Agents({ state, save, adoptState, notify, onSelect, navigate = (
           labels={labels}
           notify={notify}
           onClose={() => setSelected(null)}
-          onInspectSkills={setImportRoot}
+          onInspectSkills={(path) => setImportRoot({ roots: [path], search: "" })}
           onSelect={(id) => {
             setSelected(null);
             onSelect(id);
@@ -539,7 +560,8 @@ export function Agents({ state, save, adoptState, notify, onSelect, navigate = (
           state={state}
           adoptState={adoptState}
           notify={notify}
-          initialRoots={[importRoot]}
+          initialRoots={importRoot.roots}
+          initialSearch={importRoot.search}
           onClose={() => setImportRoot(null)}
           onSelect={(id) => {
             setSelected(null);

@@ -13,6 +13,7 @@ import { createCollabBoard } from "./collab-board.mjs";
 import { inspectProjectLocation } from "./project-scan.mjs";
 import { createSkillSources } from "./skill-sources.mjs";
 import { inspectAgentInventory } from "./agent-inventory.mjs";
+import { createAgentContents, readAgentContents } from "./agent-contents.mjs";
 import { inspectAgentPrograms } from "./agent-programs.mjs";
 import { createAgentTargets } from "./agent-targets.mjs";
 import { createSkillCopies } from "./skill-copies.mjs";
@@ -103,6 +104,7 @@ export async function startServer({
     detectAgents,
     defaultRoots,
     inspectAgentInventory,
+    readAgentContents,
     inspectAgentPrograms,
     inspectProjectLocation,
     repoVisibility: ghVisibility,
@@ -118,6 +120,7 @@ export async function startServer({
   const silver = await createSilverImages(directory, {
     cutout: adapters.silverCutout,
   });
+  const agentContents = createAgentContents(repository, adapters);
   const agentTargets = createAgentTargets(repository, adapters, clock);
   const skillCopies = createSkillCopies(repository, adapters, clock);
   const agentConfig = createAgentConfig(repository, adapters, { clock });
@@ -437,6 +440,15 @@ export async function startServer({
             await adapters.inspectAgentInventory(data.agentId),
           );
         }
+        if (
+          url.pathname === "/api/agent-contents" &&
+          request.method === "POST"
+        )
+          return send(
+            response,
+            200,
+            await agentContents.inspect(await body(request)),
+          );
         if (url.pathname === "/api/skill-sources" && request.method === "GET")
           return send(response, 200, skillSources.defaults());
         const skillAction = url.pathname.match(
