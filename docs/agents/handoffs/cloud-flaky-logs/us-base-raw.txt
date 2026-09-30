@@ -1,0 +1,630 @@
+===== run-1.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-2.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-3.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-4.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-5.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-6.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-7.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-8.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-9.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-10.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-11.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-12.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-13.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-14.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-15.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-16.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-17.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-18.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-19.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-20.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-21.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-22.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-23.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-24.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-25.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-26.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-27.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-28.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-29.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+===== run-30.txt
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
