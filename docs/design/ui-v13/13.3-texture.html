@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>质感统一 v13.3 预览</title>
+<style>
+  :root {
+    --bg: #070b16; --panel: #0f1729; --panel-2: #131d33; --line: rgba(140,178,255,.11); --text: #e9eeff; --text-2: #b8c2de; --muted: #8b98b8;
+    --lcd: #a6e36e; --lcd-screen: #aebc93; --lcd-screen-2: #97a67c; --lcd-ink: #1c2616; --cyan: #4de3ff; --orange: #ff8a24; --violet: #a891ff;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    /* 动效令牌 */
+    --t-instant: 80ms; --t-fast: 160ms; --t-mid: 240ms; --t-slow: 400ms;
+    --ease: cubic-bezier(.2,.8,.2,1); --spring: cubic-bezier(.34,1.56,.64,1);
+    /* 三层材质 */
+    --m-panel: linear-gradient(180deg, #141f37 0%, #0f1729 38%, #0d1426 100%);
+    --m-panel-edge: inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 0 1px rgba(140,178,255,.06), 0 10px 30px -18px rgba(0,0,0,.9);
+    --m-screen: radial-gradient(circle at 50% 0%, rgba(77,227,255,.07), transparent 60%), #0a1222;
+    --m-screen-edge: inset 0 0 0 1px rgba(140,178,255,.08), inset 0 10px 30px rgba(0,0,0,.45);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 -apple-system, "PingFang SC", sans-serif; padding: 28px 16px 80px; }
+  main { max-width: 1080px; margin: 0 auto; display: grid; gap: 44px; }
+  h1 { font-size: 22px; margin: 0; } h2 { font-size: 17px; margin: 0 0 4px; } p { color: var(--muted); margin: 0; }
+  .row { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; margin-top: 18px; }
+  .hint { font-size: 12px; color: var(--muted); }
+  canvas.px { image-rendering: pixelated; display: block; }
+
+  /* ---------- 1. 侧栏：像素图标 + 游戏菜单式选中箭头 ---------- */
+  .side { width: 232px; padding: 14px 10px; border-radius: 16px; background: linear-gradient(180deg, #0c1426, #0a1121); box-shadow: inset 0 0 0 1px var(--line); }
+  .group { font: 600 10px var(--mono); letter-spacing: .14em; color: var(--muted); padding: 12px 12px 4px; }
+  .nav { position: relative; display: flex; align-items: center; gap: 11px; width: 100%; min-height: 40px; padding: 0 10px 0 22px; border: 0; border-radius: 10px; background: none; color: var(--text-2); font: 14px inherit; font-family: inherit; cursor: pointer; text-align: left; transition: background var(--t-fast) var(--ease), color var(--t-fast); }
+  .nav .ico { flex: none; color: #7f8db0; transition: color var(--t-fast), filter var(--t-fast), transform var(--t-instant) steps(1); }
+  .nav:hover { background: rgba(255,255,255,.035); color: var(--text); }
+  .nav:hover .ico { color: var(--text); transform: translateY(-2px); }
+  .nav.active { color: var(--text); background: linear-gradient(90deg, rgba(255,138,36,.16), rgba(255,138,36,.02) 70%); }
+  .nav.active .ico { color: var(--orange); filter: drop-shadow(0 0 4px rgba(255,138,36,.75)); }
+  /* 选中项左侧一个像素箭头，像数码暴龙机的菜单光标，按 2 拍闪烁 */
+  .nav .cursor { position: absolute; left: 7px; top: 50%; margin-top: -5px; opacity: 0; color: var(--orange); }
+  .nav.active .cursor { opacity: 1; animation: cursor 1s steps(1) infinite; }
+  @keyframes cursor { 50% { opacity: .25; } }
+  /* 彩色图标（亚古兽）：平时降饱和、调暗，轮廓仍清楚；悬停恢复一半；选中时全彩 + 发光，像“醒来” */
+  .nav .ico.color { filter: grayscale(.85) brightness(.7); transition: filter var(--t-fast) var(--ease), transform var(--t-instant) steps(1); }
+  .nav:hover .ico.color { filter: grayscale(.3) brightness(.9); }
+  .nav.active .ico.color { filter: drop-shadow(0 0 4px rgba(242,214,75,.65)); }
+  .nav .ico { width: auto; }
+  .nav .ico:not(.color) { margin: 0 3px; }
+  .nav .count { margin-left: auto; font: 600 11px var(--mono); padding: 0 7px; border-radius: 6px; background: rgba(255,255,255,.06); color: var(--text-2); }
+  .nav .lock { margin-left: auto; color: #56627f; }
+  .nav.locked { color: #6c7894; }
+  .nav.locked .ico { color: #4b5673; }
+  .nav:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+
+  /* ---------- 2. 未解锁区域 ---------- */
+  .map { width: 520px; max-width: 100%; padding: 18px; border-radius: 16px; background: var(--m-panel); box-shadow: var(--m-panel-edge); }
+  .map small { font: 600 10px var(--mono); letter-spacing: .16em; color: var(--cyan); }
+  .map h3 { margin: 2px 0 12px; font-size: 18px; }
+  .zone { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 10px; border-top: 1px solid rgba(140,178,255,.07); border-radius: 10px; }
+  .zone .name { display: grid; flex: 1; } .zone .name b { font-weight: 600; } .zone .name span { font-size: 12px; color: var(--muted); }
+  .zone .state { margin-left: auto; font: 600 11px var(--mono); color: var(--lcd); display: inline-flex; align-items: center; gap: 6px; }
+  .zone .state i { width: 6px; height: 6px; background: var(--lcd); box-shadow: 0 0 6px var(--lcd); }
+  /* 未解锁：点阵迷雾盖住，像素锁；悬停时迷雾散开一点，露出“将来会做什么” */
+  .zone.locked { overflow: hidden; }
+  .zone.locked .name, .zone.locked .ico { opacity: .45; filter: grayscale(1); transition: opacity var(--t-mid) var(--ease); }
+  .zone.locked::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: 10px;
+    background-image: radial-gradient(rgba(140,178,255,.14) 1px, transparent 1.3px); background-size: 5px 5px; transition: opacity var(--t-mid) var(--ease); }
+  .zone.locked .state { color: #7f8db0; }
+  .zone .name { position: relative; min-width: 0; }
+  .zone .name .sub, .zone .name .reveal { transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease); }
+  .zone .name .reveal { position: absolute; left: 0; right: 0; bottom: 0; color: var(--text-2); opacity: 0; transform: translateY(6px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .zone.locked:hover::after, .zone.locked:focus-visible::after { opacity: .35; }
+  .zone.locked:hover .name, .zone.locked:focus-visible .name { opacity: 1; filter: none; }
+  .zone.locked:hover .name .sub, .zone.locked:focus-visible .name .sub { opacity: 0; transform: translateY(-6px); }
+  .zone.locked:hover .name .reveal, .zone.locked:focus-visible .name .reveal { opacity: 1; transform: none; }
+  .zone:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  .zone.locked:hover .lock-ico, .zone.locked:focus-visible .lock-ico { animation: shake .4s steps(4); }
+  @keyframes shake { 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+  .route { font: 600 10px var(--mono); letter-spacing: .08em; color: #7f8db0; border: 1px dashed rgba(140,178,255,.25); padding: 1px 6px; border-radius: 5px; }
+
+  /* 规划页顶部：大锁 + 解锁进度 */
+  .planned { width: 520px; max-width: 100%; padding: 22px; border-radius: 16px; background: var(--m-screen); box-shadow: var(--m-screen-edge); display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+  .planned h3 { margin: 0; font-size: 20px; } .planned p { margin-top: 4px; }
+  .unlock { margin-top: 12px; display: flex; gap: 4px; }
+  .unlock i { width: 22px; height: 8px; background: rgba(140,178,255,.12); }
+  .unlock i.on { background: var(--lcd); box-shadow: 0 0 6px rgba(166,227,110,.6); }
+  .unlock-label { margin-top: 6px; font: 600 11px var(--mono); color: var(--muted); letter-spacing: .06em; }
+
+  /* ---------- 3. 三层材质 ---------- */
+  .mat { width: 240px; height: 150px; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; }
+  .mat b { font-size: 14px; } .mat span { font-size: 12px; color: var(--muted); }
+  .mat.panel { background: var(--m-panel); box-shadow: var(--m-panel-edge); }
+  .mat.screen { background: var(--m-screen); box-shadow: var(--m-screen-edge); position: relative; overflow: hidden; }
+  .mat.screen::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(77,227,255,.035) 0 1px, transparent 1px 4px); }
+  .mat.lcd { background: radial-gradient(circle at 50% 35%, var(--lcd-screen), var(--lcd-screen-2)); box-shadow: 0 0 0 3px #1b2540, inset 0 2px 6px rgba(0,0,0,.3); color: var(--lcd-ink); position: relative; }
+  .mat.lcd::before { content: ""; position: absolute; inset: 0; border-radius: 14px; background-image: radial-gradient(rgba(28,38,22,.16) .8px, transparent 1px); background-size: 4px 4px; }
+  .mat.lcd span { color: #3d4a2c; }
+  .mat.old { background: #0f1729; border: 1px solid rgba(140,178,255,.16); }
+  .rules { display: grid; gap: 6px; margin-top: 14px; color: var(--muted); font-size: 13px; } .rules b { color: var(--text); }
+
+  /* ---------- 4. 动效令牌 ---------- */
+  table { border-collapse: collapse; margin-top: 14px; width: 100%; max-width: 760px; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); } th { color: var(--muted); font-weight: 500; }
+  td code { font-family: var(--mono); color: var(--cyan); }
+  .demo { width: 120px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.06); position: relative; overflow: hidden; }
+  .demo i { position: absolute; left: 0; top: 0; bottom: 0; width: 20px; border-radius: 5px; background: var(--orange); }
+  table:hover .demo i { transform: translateX(100px); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>质感统一 v13.3 预览</h1>
+    <p>把前两批的品质铺到所有页面：统一的像素图标、把“规划中”变成“未解锁”、三层材质、一套动效令牌。</p>
+  </header>
+
+  <section>
+    <h2>1. 侧栏：像素图标 + 菜单光标</h2>
+    <p>13 个导航图标重画为 9×9 像素、按 2 倍整数放大，和伙伴屏守同一套像素规矩。选中项左边有一个闪烁的像素箭头，像数码暴龙机的菜单光标；图标发橙光。鼠标移上去图标轻跳一格。尚未开放的页面换成小锁，不再挂“规划”标签。</p>
+    <div class="row">
+      <nav class="side" id="side" aria-label="侧栏示意"></nav>
+      <div class="hint" style="max-width:300px">点任意一项可以切换选中状态；键盘 Tab 也能走到每一项。</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. “规划中”变成“未解锁区域”</h2>
+    <p>能力地图里没做的模块盖上一层点阵迷雾和像素锁，标出它在路线里的位置。鼠标移上去，锁抖一下、迷雾变淡，露出一句“将来会做什么”。规划页顶部换成大锁和解锁进度条，把“没做完”变成“有期待”。</p>
+    <div class="row">
+      <div class="map">
+        <small>RUNTIME</small><h3>运行</h3>
+        <div id="zones"></div>
+      </div>
+      <div class="planned">
+        <canvas class="px" id="big-lock"></canvas>
+        <div>
+          <h3>能力体检 · 未解锁</h3>
+          <p>检查各 Agent 的 Skill 链接、挂载与副本是否一致。</p>
+          <div class="unlock"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+          <div class="unlock-label">第二阶段 · 3 / 5 个切片完成 · 解锁于 2.2</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. 三层材质</h2>
+    <p>现在的卡片几乎都是“深蓝底 + 细边框”，层次靠线条。改成三种有明确用途的材质，层次靠光：</p>
+    <div class="row">
+      <div class="mat old"><b>现在的卡片</b><span>深蓝底 + 1px 边框，所有卡片一样</span></div>
+      <div class="mat panel"><b>面板（哑光）</b><span>放列表、表单、说明。顶部一道极细高光，底部软阴影，不用边框线</span></div>
+      <div class="mat screen"><b>数据屏</b><span>放资产封面、预览、差异。深色 + 细扫描线 + 顶部冷光</span></div>
+      <div class="mat lcd"><b>液晶</b><span>只给“伙伴”相关：伙伴屏、数码暴龙机、TRANSFER OK、液晶提示条</span></div>
+    </div>
+    <div class="rules">
+      <div><b>规则一</b>　一块区域只用一种材质；材质嵌套最多两层（面板里放数据屏）。</div>
+      <div><b>规则二</b>　液晶材质是稀缺的，只属于伙伴和“成功回应”，不拿来当普通卡片。</div>
+      <div><b>规则三</b>　发光只给当前焦点：选中导航、主按钮、正在发生的回应，同一视野里不超过两处。</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 动效令牌</h2>
+    <p>所有动效只从这 4 档时长、3 种曲线里选，保证全站节奏一致。鼠标移到表格上看各档速度。</p>
+    <table>
+      <tr><th>档位</th><th>时长</th><th>用在哪里</th><th>示意</th></tr>
+      <tr><td>即时</td><td><code>80ms</code></td><td>按键下沉、图标跳一格</td><td><div class="demo"><i style="transition: transform var(--t-instant) var(--ease)"></i></div></td></tr>
+      <tr><td>快</td><td><code>160ms</code></td><td>悬停、切换、选中</td><td><div class="demo"><i style="transition: transform var(--t-fast) var(--ease)"></i></div></td></tr>
+      <tr><td>中</td><td><code>240ms</code></td><td>抽屉、面板、迷雾散开</td><td><div class="demo"><i style="transition: transform var(--t-mid) var(--ease)"></i></div></td></tr>
+      <tr><td>慢</td><td><code>400ms</code></td><td>页面进入、强调回应</td><td><div class="demo"><i style="transition: transform var(--t-slow) var(--spring)"></i></div></td></tr>
+    </table>
+    <div class="rules">
+      <div><b>曲线</b>　标准 <code style="color:var(--cyan)">(.2,.8,.2,1)</code> 用于一般过渡；回弹 <code style="color:var(--cyan)">(.34,1.56,.64,1)</code> 只用于“有回应”的时刻；像素内容一律用 <code style="color:var(--cyan)">steps()</code>，不做平滑插值。</div>
+      <div><b>背景循环</b>　同一视野里只保留一个一直在动的东西（伙伴屏）；其余装饰动画在停留 10 秒后暂停。</div>
+      <div><b>列表入场</b>　依次入场，每项错开 20ms，最多错开 8 项。</div>
+      <div><b>减少动态效果</b>　全部动画停止，只保留颜色和透明度的瞬时变化。</div>
+    </div>
+  </section>
+</main>
+<script>
+// 9×9 像素图标
+const ICONS = {
+  home: ["....X....",".X..X..X.","..XXXXX..","..X...X..","XXX.X.XXX","..X...X..","..XXXXX..",".X..X..X.","....X...."],
+  assets: ["...XXX...","..X...X..",".X..X..X.",".X.XXX.X.","X.......X","X.XX..X.X","X.XX....X",".X.....X.","..XXXXX.."],
+  references: ["XX.....XX","X.......X",".........","...XXX...","...X.X...","...XXX...",".........","X.......X","XX.....XX"],
+  history: [".XX...XX.",".XX...XX.","..X....X.","..X...X..","..X..X...","..XXX....","..X......",".XX......",".XX......"],
+  // 智能体群：亚古兽的像素头（彩色，16×12，按 1.5 倍放大 = Retina 上每格 3 个物理像素）
+  agents: { scale: 1.5, palette: { K: "#0b0e18", D: "#f2d64b", B: "#dd7b35", A: "#2fae5f", E: "#ffffff" }, rows: [
+    "...KKKKK..KKK...","..KDDDDDKKDDDK..",".KBDDKKKKDDDDK..",".KBDKAAEAKDDDDK.","KBDDKAKKAKDDDDDK","KBDDKAAAAKDDDDDK",
+    "KBDDDKKKKDDDDKDK","KBDDDDDDDDDDDDDK","KBBDDKKKKKKKKKKK",".KBDDKEKEKEKEK..","..KBBDDDDDDDDK..","...KKKKKKKKKK...",
+  ] },
+  projects: [".........","XXX......","X..X.....","X..XXXXXX","XXXXXXXXX","X.......X","X.......X","X.......X","XXXXXXXXX"],
+  health: [".........",".XX...XX.","X..X.X..X","X...X...X","X.......X",".X.....X.","..X...X..","...X.X...","....X...."],
+  collab: [".........","......X..","XXXXXXXX.","......X..",".........","..X......",".XXXXXXXX","..X......","........."],
+  calendar: [".X.....X.","XXXXXXXXX","X.......X","XXXXXXXXX","X.X.X.X.X","X.......X","X.X.X.X.X","X.......X","XXXXXXXXX"],
+  night: ["...XXX...","..XX.....",".XX....X.",".XX......",".XX......",".XXX.....","..XXXX.XX","...XXXXX.","........."],
+  knowledge: [".........",".XXX.XXX.","X...X...X","X.X.X.X.X","X...X...X","X.X.X.X.X","X...X...X","XXXXXXXXX","....X...."],
+  notes: [".......XX","......X.X",".....X.X.","....X.X..","...X.X...","..X.X....",".XXX.....",".XX......","X........"],
+  settings: [".X.X.X.X.","XXXXXXXXX",".X.....X.","XX.XXX.XX",".X.X.X.X.","XX.XXX.XX",".X.....X.","XXXXXXXXX",".X.X.X.X."],
+};
+const LOCK = ["..XXX..",".X...X.",".X...X.","XXXXXXX","XXX.XXX","XXX.XXX","XXXXXXX"];
+const CURSOR = ["X...","XX..","XXX.","XX..","X..."];
+function px(icon, scale, cls = "px") {
+  const rows = Array.isArray(icon) ? icon : icon.rows, palette = Array.isArray(icon) ? null : icon.palette;
+  if (!Array.isArray(icon)) scale = icon.scale;
+  const c = document.createElement("canvas"), r = devicePixelRatio || 1, h = rows.length, w = rows[0].length;
+  c.className = cls; if (palette) c.classList.add("color"); c.width = w * scale * r; c.height = h * scale * r; c.style.width = `${w * scale}px`; c.style.height = `${h * scale}px`;
+  const ctx = c.getContext("2d"); ctx.scale(scale * r, scale * r);
+  const paint = () => {
+    ctx.clearRect(0, 0, w, h); ctx.fillStyle = getComputedStyle(c).color;
+    rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch === ".") return;
+      if (palette) ctx.fillStyle = palette[ch];
+      if (palette || ch === "X") ctx.fillRect(x, y, 1, 1);
+    }));
+  };
+  requestAnimationFrame(paint); c._paint = paint; return c;
+}
+const NAV = [
+  ["", [["home", "世界总览"]]],
+  ["资产", [["assets", "资产仓库", "6"], ["references", "逆向参考"], ["history", "版本归档"]]],
+  ["目标", [["agents", "智能体群"], ["projects", "项目空间"], ["health", "能力体检", null, true]]],
+  ["运行", [["collab", "协同", null, true], ["calendar", "日历", null, true], ["night", "夜巡", null, true]]],
+  ["知识", [["knowledge", "知识中枢"], ["notes", "随手速记"]]],
+  ["系统", [["settings", "模型设置"]]],
+];
+const side = document.getElementById("side");
+const all = [];
+NAV.forEach(([group, items]) => {
+  if (group) { const g = document.createElement("div"); g.className = "group"; g.textContent = group; side.append(g); }
+  items.forEach(([id, name, count, locked]) => {
+    const b = document.createElement("button"); b.className = `nav${locked ? " locked" : ""}${id === "assets" ? " active" : ""}`;
+    const cur = px(CURSOR, 2, "px cursor"); const ico = px(ICONS[id], 2, "px ico");
+    const label = document.createElement("span"); label.textContent = name;
+    b.append(cur, ico, label);
+    if (count) { const c = document.createElement("span"); c.className = "count"; c.textContent = count; b.append(c); }
+    if (locked) { const l = px(LOCK, 2, "px lock"); b.append(l); b.setAttribute("aria-label", `${name}（未解锁）`); }
+    b.onclick = () => { all.forEach((x) => x.classList.remove("active")); b.classList.add("active"); repaint(); if (id === "agents") ico.animate([{ transform: "translateY(0)" }, { transform: "translateY(-3px)" }, { transform: "translateY(0)" }, { transform: "translateY(-1px)" }, { transform: "translateY(0)" }], { duration: 400, easing: "steps(4)" }); };
+    side.append(b); all.push(b);
+  });
+});
+const repaint = () => requestAnimationFrame(() => document.querySelectorAll("canvas.px").forEach((c) => c._paint?.()));
+side.addEventListener("mouseover", repaint); side.addEventListener("mouseout", repaint);
+
+const zones = [
+  ["collab", "协同", "接力、执行 + 监工", "路线 2.4", "工作台显示每个项目的写入者和最新交接，一键复制交接口令", true],
+  ["calendar", "日历", "你的时间规划本", "路线 3.2", "以 macOS 日历为源，在时间轴上直接拖出规划块", true],
+  ["night", "夜巡", "夜间窗口与晨间接管", "路线 3.3", "Hermes 定时执行能力体检和知识整理，早上结果进待处理", true],
+  ["projects", "项目空间", "3 个项目", null, null, false],
+];
+const zoneEl = document.getElementById("zones");
+zones.forEach(([id, name, sub, route, reveal, locked]) => {
+  const z = document.createElement("div"); z.className = `zone${locked ? " locked" : ""}`; z.tabIndex = 0;
+  const ico = px(ICONS[id], 2, "px ico"); ico.style.color = locked ? "#7f8db0" : "#b8c2de";
+  const n = document.createElement("div"); n.className = "name"; n.innerHTML = `<b>${name}</b><span class="sub">${sub}</span>${reveal ? `<span class="reveal">${reveal}</span>` : ""}`;
+  const st = document.createElement("div"); st.className = "state";
+  if (locked) { const l = px(LOCK, 2, "px lock-ico"); l.style.color = "#7f8db0"; st.append(l); const r = document.createElement("span"); r.className = "route"; r.textContent = route; st.append(r); }
+  else { st.innerHTML = "<i></i>可用"; }
+  z.append(ico, n, st);
+  zoneEl.append(z);
+});
+const big = px(["....XXXX....","...X....X...","..X......X..","..X......X..","..X......X..","XXXXXXXXXXXX","XXXXXXXXXXXX","XXXXX..XXXXX","XXXXX..XXXXX","XXXXXX.XXXXX","XXXXXXXXXXXX","XXXXXXXXXXXX"], 6, "px");
+big.style.color = "#6f7ea3"; document.getElementById("big-lock").replaceWith(big);
+repaint();
+</script>
+</body>
+</html>

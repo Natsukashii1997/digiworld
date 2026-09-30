@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>操作手感 v13.2 预览</title>
+<style>
+  :root {
+    --bg: #070b16; --panel: #0f1729; --panel-2: #131d33; --line: rgba(140,178,255,.11); --text: #e9eeff; --muted: #8b98b8;
+    --lcd: #a6e36e; --lcd-screen: #aebc93; --lcd-screen-2: #97a67c; --lcd-ink: #1c2616; --cyan: #4de3ff; --orange: #ff8a24; --orange-ink: #1f0f00;
+    --ease: cubic-bezier(.2,.8,.2,1); --spring: cubic-bezier(.34,1.56,.64,1);
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 -apple-system, "PingFang SC", sans-serif; padding: 28px 16px 80px; }
+  main { max-width: 1000px; margin: 0 auto; display: grid; gap: 40px; }
+  h1 { font-size: 22px; margin: 0; } h2 { font-size: 17px; margin: 0 0 4px; } p { color: var(--muted); margin: 0; }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .hint { font-size: 12px; color: var(--muted); }
+
+  /* ---------- 1. 实体按键：底边厚度 + 按下沉 2px + 松开回弹 ---------- */
+  .key { position: relative; min-height: 44px; padding: 0 18px; border: 0; border-radius: 11px; font: 600 14px/44px inherit; font-family: inherit; cursor: pointer;
+    color: var(--orange-ink); background: linear-gradient(180deg, #ffb066, #ff8a24 60%, #f07a14);
+    box-shadow: 0 3px 0 #b8560a, 0 8px 22px -8px rgba(255,138,36,.8), inset 0 1px 0 rgba(255,255,255,.45);
+    transform: translateY(0); transition: transform .08s var(--ease), box-shadow .08s var(--ease), filter .2s; }
+  .key:hover { filter: brightness(1.06); }
+  .key:active, .key.pressed { transform: translateY(3px); box-shadow: 0 0 0 #b8560a, 0 4px 12px -6px rgba(255,138,36,.8), inset 0 1px 0 rgba(255,255,255,.3); }
+  .key.ghost { color: var(--text); background: linear-gradient(180deg, #1a2641, #131d33); box-shadow: 0 3px 0 #0a1020, inset 0 1px 0 rgba(255,255,255,.08), 0 0 0 1px var(--line); }
+  .key.ghost:active { box-shadow: 0 0 0 #0a1020, inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px var(--line); }
+  .key:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+  /* ---------- 2. 复制传送：按钮里跑一条数据光带，完成后变成液晶“TRANSFER OK” ---------- */
+  .transfer { position: relative; overflow: hidden; width: 260px; }
+  .transfer .label { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 8px; }
+  .transfer::before { content: ""; position: absolute; inset: 0; z-index: 1; transform: translateX(-101%);
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.55) 0 4px, transparent 4px 8px); mix-blend-mode: soft-light; }
+  .transfer.sending::before { animation: band .5s steps(10) forwards; }
+  @keyframes band { to { transform: translateX(0); } }
+  /* 完成态：按钮整块变成液晶屏，点阵对勾 + 点阵字“TRANSFER OK”逐字打出 + 闪烁光标，四周迸出数据火花 */
+  .transfer.done { background: radial-gradient(circle at 50% 30%, #d6e8b4, #aebc93); box-shadow: 0 3px 0 #6f7d58, 0 0 0 2px #1b2540, 0 0 18px rgba(166,227,110,.55), inset 0 1px 0 rgba(255,255,255,.5); }
+  .transfer .lcd-text { display: none; position: relative; z-index: 2; image-rendering: pixelated; vertical-align: middle; }
+  .transfer.done .label { display: none; }
+  .transfer.done .lcd-text { display: inline-block; }
+  .spark { position: fixed; left: 0; top: 0; z-index: 60; width: 4px; height: 4px; pointer-events: none; background: #fff; box-shadow: 0 0 6px #fff; }
+  .spark.c { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); } .spark.o { background: var(--orange); box-shadow: 0 0 6px var(--orange); } .spark.g { background: var(--lcd); box-shadow: 0 0 6px var(--lcd); }
+  .bit { position: fixed; left: 0; top: 0; z-index: 50; width: 6px; height: 6px; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); pointer-events: none; }
+  .bit.o { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+  .mini-partner { width: 120px; height: 52px; border-radius: 10px; background: radial-gradient(circle at 50% 35%, #ecd6a4, #d1ad6c);
+    box-shadow: 0 0 0 3px #1b2540, 0 0 0 4px rgba(140,178,255,.2), inset 0 2px 6px rgba(0,0,0,.35); display: grid; place-items: center; font: 600 11px var(--mono); color: #5a4420; }
+  .mini-partner.hit { animation: hit .5s var(--spring); }
+  @keyframes hit { 30% { transform: scale(1.06); box-shadow: 0 0 0 3px #1b2540, 0 0 0 4px var(--cyan), 0 0 22px rgba(77,227,255,.6); } }
+
+  /* ---------- 3. 新版本：卡片扫描一遍 + 版本号像里程表翻到下一格（不到 1 秒） ---------- */
+  .asset { position: relative; width: 300px; overflow: hidden; }
+  .asset .cover { height: 120px; border-radius: 12px; background: radial-gradient(circle at 50% 55%, rgba(77,227,255,.12), transparent 62%), #0a1222; box-shadow: inset 0 0 0 1px rgba(140,178,255,.08); position: relative; overflow: hidden; }
+  .asset .cover::after { content: ""; position: absolute; left: 0; right: 0; height: 26px; top: -30px; background: linear-gradient(180deg, transparent, rgba(77,227,255,.35), transparent); }
+  .asset.scan .cover::after { animation: scanline .7s var(--ease); }
+  @keyframes scanline { to { top: 120px; } }
+  .asset h3 { margin: 12px 0 4px; font-size: 16px; }
+  .ver { position: absolute; top: 10px; right: 12px; z-index: 2; display: inline-flex; font: 600 12px var(--mono); color: var(--cyan); background: rgba(7,11,22,.7); padding: 2px 8px; border-radius: 6px; }
+  .ver.glow { animation: ver-glow 1s var(--ease); }
+  @keyframes ver-glow { 20% { box-shadow: 0 0 0 1px var(--cyan), 0 0 16px rgba(77,227,255,.6); } }
+  .odo { display: inline-block; height: 1.25em; overflow: hidden; vertical-align: bottom; }
+  .odo > span { display: block; transition: transform .6s var(--spring); }
+  .odo > span > i { display: block; font-style: normal; height: 1.25em; line-height: 1.25em; text-align: center; }
+  .tag-new { position: absolute; bottom: 10px; left: 12px; z-index: 2; font: 700 10px var(--mono); letter-spacing: .14em; color: var(--orange-ink); background: var(--orange); padding: 2px 6px; border-radius: 4px; opacity: 0; transform: translateY(6px); }
+  .asset.scan .tag-new { animation: tag 1.6s var(--ease) forwards; }
+  @keyframes tag { 15%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px); } }
+
+  /* ---------- 4. 数字滚动 ---------- */
+  .counter { display: inline-flex; font: 700 34px var(--mono); color: var(--text); gap: 1px; }
+  .counter .odo { height: 1.2em; } .counter .odo > span > i { height: 1.2em; line-height: 1.2em; width: .62em; }
+  .nav-item { display: flex; align-items: center; justify-content: space-between; width: 200px; padding: 10px 12px; border-radius: 10px; background: var(--panel-2); }
+  .nav-count { display: inline-flex; font: 600 12px var(--mono); color: var(--text); background: rgba(255,255,255,.06); padding: 1px 8px; border-radius: 6px; }
+  .nav-count.bump { animation: bump .45s var(--spring); }
+  @keyframes bump { 40% { transform: scale(1.25); background: rgba(255,138,36,.35); } }
+
+  /* ---------- 5. 液晶提示条（替代普通 toast） ---------- */
+  .toast { display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px 8px 10px; border-radius: 10px; background: linear-gradient(180deg, #c3d6a3, #aebc93); color: var(--lcd-ink);
+    box-shadow: 0 0 0 3px #1b2540, 0 12px 30px -10px rgba(0,0,0,.6); font: 600 12px var(--mono); letter-spacing: .06em; }
+  .toast canvas { image-rendering: pixelated; }
+  .toast.show { animation: toast 2.4s var(--ease) both; }
+  @keyframes toast { 0% { opacity: 0; transform: translateY(10px) scale(.96); } 10%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
+
+  /* ---------- 6. 数码暴龙机：按键可按 ---------- */
+  .dv { position: relative; width: 260px; height: 260px; }
+  .dv-ring { position: absolute; inset: 20px; border-radius: 34%; border: 3px solid rgba(77,227,255,.7); box-shadow: 0 0 24px rgba(77,227,255,.3), inset 0 0 20px rgba(77,227,255,.15); background: radial-gradient(circle, #0e1a2e 60%, #0a1222); }
+  .dv-screen { position: absolute; left: 50%; top: 50%; width: 118px; height: 118px; margin: -59px 0 0 -59px; border-radius: 16px; display: grid; place-items: center;
+    background: radial-gradient(circle at 50% 40%, var(--lcd-screen), var(--lcd-screen-2)); box-shadow: 0 0 0 5px #0b0e18, 0 0 0 7px rgba(166,227,110,.5); transition: background .25s, box-shadow .25s; }
+  .dv-screen.lit { background: radial-gradient(circle at 50% 40%, #d9fbe9, #8fe3c4); box-shadow: 0 0 0 5px #0b0e18, 0 0 0 7px rgba(77,227,255,.8), 0 0 40px rgba(77,227,255,.55); }
+  .dv-screen canvas { image-rendering: pixelated; }
+  .dv-btn { position: absolute; width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(77,227,255,.8); background: radial-gradient(circle at 40% 35%, #3a8fd8, #1a4f86);
+    box-shadow: 0 3px 0 #0d2c4d, 0 0 12px rgba(77,227,255,.4); cursor: pointer; transition: transform .08s, box-shadow .08s; }
+  .dv-btn:active { transform: translateY(3px); box-shadow: 0 0 0 #0d2c4d, 0 0 18px rgba(77,227,255,.7); }
+  .dv-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+  .dv-btn.a { right: 4px; top: 88px; } .dv-btn.b { right: 4px; top: 138px; } .dv-btn.c { left: 4px; top: 113px; }
+  .dv-btn::after { content: attr(data-k); position: absolute; left: 50%; top: 100%; transform: translate(-50%, 4px); font: 600 10px var(--mono); color: var(--muted); }
+  .dv-label { position: absolute; right: 12px; bottom: 9px; font: 600 11px -apple-system, "PingFang SC", sans-serif; color: #1c2616; opacity: 0; letter-spacing: .04em; transition: opacity .15s; }
+  .dv-screen.digits .dv-label { opacity: .85; }
+  .legend { display: grid; gap: 4px; font-size: 13px; color: var(--muted); } .legend b { color: var(--text); font-family: var(--mono); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>操作手感 v13.2 预览</h1>
+    <p>每个动效都对应一件真实发生的事：复制成功、保存新版本、数字变化、按下按键。所有效果都能直接点着试。</p>
+  </header>
+
+  <section>
+    <h2>1. 实体按键</h2>
+    <p>按钮有一道底边厚度；按下时整体沉 3px、底边消失，松开回弹。主按钮和次按钮同一套手感。</p>
+    <div class="row"><button class="key">+ 新建资产</button><button class="key ghost">上下文接力</button><span class="hint">按住别松手能看到下沉</span></div>
+  </section>
+
+  <section>
+    <h2>2. 复制 = 传送</h2>
+    <p>点复制：按钮里跑一条数据光带（0.5 秒）→ 按钮整块变成发光的液晶屏，四周迸出一圈数据火花；点阵对勾先弹出，“TRANSFER OK”用点阵字逐字打出，末尾光标闪烁 → 同时几颗数据像素飞进左下角伙伴屏，屏幕闪一下接住。约 1.8 秒后按钮恢复。</p>
+    <div class="row">
+      <button class="key transfer" id="copy"><span class="label">⧉ 复制本机安装口令</span><canvas class="lcd-text" id="lcd-text"></canvas></button>
+      <div><div class="mini-partner" id="partner">伙伴屏</div><p class="hint" style="margin-top:6px">（示意位置）</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. 保存新版本（轻量）</h2>
+    <p>不再弹全屏动画：卡片上扫过一道光，版本号像里程表一样翻到下一格，角上冒出 NEW 标签后淡出，全程约 1 秒。全屏“进化”动画只留给阶段真正升级的时刻。</p>
+    <div class="row">
+      <div class="card asset" id="asset"><div class="cover"><span class="ver" id="ver">v<span class="odo" id="ver-odo"></span>.0</span><span class="tag-new">NEW VERSION</span></div><h3>项目协同协议</h3><p>多个 Agent 轮流工作时的认领与交接规则</p></div>
+      <button class="key ghost" id="save">保存新版本</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 数字会滚动</h2>
+    <p>使用次数、资产数、待处理数、REV 变化时，数字像里程表一样滚到新值；侧栏计数徽标轻弹一下。</p>
+    <div class="row">
+      <div class="card"><span class="hint">真实使用</span><div class="counter" id="uses"></div></div>
+      <div class="nav-item"><span>资产仓库</span><span class="nav-count" id="nav-count"></span></div>
+      <button class="key ghost" id="inc">+1</button><button class="key ghost" id="inc9">+9</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. 液晶提示条</h2>
+    <p>成功类提示换成一小块液晶屏：左边一个点阵小图标，文字用等宽字体。错误提示保持现在的红色样式，不做花哨处理。</p>
+    <div class="row"><button class="key ghost" id="toast-btn">显示提示</button><div class="toast" id="toast" style="opacity:0"><canvas id="toast-icon" width="10" height="10" style="width:20px;height:20px"></canvas><span>已保存到本机 · REV 43</span></div></div>
+  </section>
+
+  <section>
+    <h2>6. 首页数码暴龙机：按键真的能按</h2>
+    <p>机身三个按键都能点，也能用键盘操作。</p>
+    <div class="row">
+      <div class="dv">
+        <div class="dv-ring"></div>
+        <div class="dv-screen" id="dv-screen"><canvas id="dv-canvas"></canvas><span class="dv-label">待处理</span></div>
+        <button class="dv-btn a" data-k="A" aria-label="切换显示：数码蛋 / 待处理条数" id="btn-a"></button>
+        <button class="dv-btn b" data-k="B" aria-label="开关背光" id="btn-b"></button>
+        <button class="dv-btn c" data-k="C" aria-label="戳一下数码蛋" id="btn-c"></button>
+      </div>
+      <div class="legend">
+        <div><b>A</b> 切换显示：数码蛋 ↔ 待处理条数（大号数码管数字，右下角小字“待处理”）</div>
+        <div><b>B</b> 背光：屏幕亮成青绿色，再按一下关闭</div>
+        <div><b>C</b> 戳一下蛋：跳高 → 转一圈 → 扭一扭 → 连弹两下，轮流出现；直接点屏幕里的蛋也可以</div>
+      </div>
+    </div>
+  </section>
+</main>
+<script type="module">
+import { createPartnerLcd } from "./partner-lcd.js";
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---- 里程表数字 ----
+function odometer(el, value, { pad = 1 } = {}) {
+  const text = String(value).padStart(pad, "0");
+  while (el.children.length < text.length) {
+    const col = document.createElement("span"); col.className = "odo";
+    const reel = document.createElement("span");
+    for (let d = 0; d <= 9; d++) { const i = document.createElement("i"); i.textContent = d; reel.append(i); }
+    col.append(reel); el.prepend(col);
+  }
+  while (el.children.length > text.length) el.firstChild.remove();
+  [...text].forEach((ch, k) => { el.children[k].firstChild.style.transform = `translateY(${-Number(ch) * 10}%)`; });
+}
+odometer(document.getElementById("ver-odo"), 1);
+let uses = 27, count = 6;
+const usesEl = document.getElementById("uses"), countEl = document.getElementById("nav-count");
+odometer(usesEl, uses); odometer(countEl, count);
+function bump(n) {
+  uses += n; count += n > 1 ? 1 : 0; odometer(usesEl, uses); odometer(countEl, count);
+  countEl.classList.remove("bump"); void countEl.offsetWidth; countEl.classList.add("bump");
+}
+document.getElementById("inc").onclick = () => bump(1);
+document.getElementById("inc9").onclick = () => bump(9);
+
+// ---- 复制传送 ----
+const copyBtn = document.getElementById("copy"), label = copyBtn.querySelector(".label");
+copyBtn.onclick = async () => {
+  if (copyBtn.classList.contains("sending") || copyBtn.classList.contains("done")) return;
+  copyBtn.classList.add("sending");
+  await new Promise((r) => setTimeout(r, reduced ? 0 : 520));
+  copyBtn.classList.remove("sending"); copyBtn.classList.add("done");
+  typeTransfer();
+  burst(copyBtn.getBoundingClientRect());
+  const from = copyBtn.getBoundingClientRect(), to = document.getElementById("partner").getBoundingClientRect();
+  const flights = [];
+  for (let i = 0; i < 6; i++) {
+    const bit = document.createElement("i"); bit.className = `bit${i % 2 ? " o" : ""}`; document.body.append(bit);
+    const x0 = from.left + from.width / 2 + (i - 3) * 8, y0 = from.top + 10, x1 = to.left + to.width / 2, y1 = to.top + 8;
+    const mx = (x0 + x1) / 2 + (i - 3) * 12, my = Math.min(y0, y1) - 70 - i * 6;
+    const a = bit.animate([
+      { transform: `translate(${x0}px,${y0}px)` },
+      { transform: `translate(${mx}px,${my}px) scale(1.3)`, offset: .45 },
+      { transform: `translate(${x1}px,${y1}px) scale(.6)` },
+    ], { duration: reduced ? 1 : 600 + i * 40, delay: i * 35, easing: "cubic-bezier(.3,.1,.3,1)" });
+    flights.push(a.finished.then(() => bit.remove()));
+  }
+  await Promise.all(flights);
+  const p = document.getElementById("partner"); p.classList.remove("hit"); void p.offsetWidth; p.classList.add("hit");
+  setTimeout(() => { copyBtn.classList.remove("done"); clearInterval(typing); }, 1200);
+};
+
+// ---- 点阵字：5×7 字形，只收用到的字母 ----
+const FONT = {
+  T: ["11111","00100","00100","00100","00100","00100","00100"],
+  R: ["11110","10001","10001","11110","10100","10010","10001"],
+  A: ["01110","10001","10001","11111","10001","10001","10001"],
+  N: ["10001","11001","10101","10011","10001","10001","10001"],
+  S: ["01111","10000","10000","01110","00001","00001","11110"],
+  F: ["11111","10000","10000","11110","10000","10000","10000"],
+  E: ["11111","10000","10000","11110","10000","10000","11111"],
+  O: ["01110","10001","10001","10001","10001","10001","01110"],
+  K: ["10001","10010","10100","11000","10100","10010","10001"],
+  " ": ["00000","00000","00000","00000","00000","00000","00000"],
+};
+const CHECK = ["0000001","0000011","1000110","1101100","0111000","0010000"];
+let typing;
+function typeTransfer() {
+  const canvas = document.getElementById("lcd-text"), text = "TRANSFER OK", px = 2;
+  const w = 7 + 3 + text.length * 6 + 4, h = 9;
+  const ratio = devicePixelRatio || 1;
+  canvas.width = w * px * ratio; canvas.height = h * px * ratio;
+  canvas.style.width = `${w * px}px`; canvas.style.height = `${h * px}px`;
+  const ctx = canvas.getContext("2d"); ctx.setTransform(ratio * px, 0, 0, ratio * px, 0, 0);
+  let shown = 0, frame = 0;
+  const draw = () => {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "rgba(28,38,22,.08)";
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) ctx.fillRect(x, y, .8, .8);
+    ctx.fillStyle = "#1c2616";
+    const pop = Math.min(1, frame / 3);
+    CHECK.forEach((row, y) => [...row].forEach((c, x) => c === "1" && pop >= 1 && ctx.fillRect(x, y + 1.5, .8, .8)));
+    [...text.slice(0, shown)].forEach((ch, i) => FONT[ch].forEach((row, y) => [...row].forEach((c, x) => c === "1" && ctx.fillRect(10 + i * 6 + x, y + 1, .8, .8))));
+    if (shown >= text.length && Math.floor(frame / 4) % 2 === 0) ctx.fillRect(10 + text.length * 6, 1, 2.6, 6.8);
+    frame++;
+    if (frame > 2 && shown < text.length) shown++;
+  };
+  clearInterval(typing); draw();
+  typing = setInterval(draw, reduced ? 1000 : 45);
+  if (reduced) { shown = text.length; frame = 4; draw(); }
+}
+function burst(rect) {
+  if (reduced) return;
+  const colors = ["c", "o", "g", "", "c", "o", "g", "", "c", "o"];
+  colors.forEach((c, i) => {
+    const s = document.createElement("i"); s.className = `spark ${c}`; document.body.append(s);
+    const a = (i / colors.length) * Math.PI * 2, cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    const x0 = cx + Math.cos(a) * rect.width * .42, y0 = cy + Math.sin(a) * rect.height * .42;
+    const x1 = cx + Math.cos(a) * (rect.width * .5 + 26), y1 = cy + Math.sin(a) * (rect.height * .5 + 22);
+    s.animate([{ transform: `translate(${x0}px,${y0}px) scale(1)`, opacity: 1 }, { transform: `translate(${x1}px,${y1}px) scale(.4)`, opacity: 0 }],
+      { duration: 420 + (i % 3) * 80, easing: "steps(6)" }).finished.then(() => s.remove());
+  });
+}
+
+// ---- 保存新版本 ----
+let version = 1;
+document.getElementById("save").onclick = () => {
+  const card = document.getElementById("asset"), ver = document.getElementById("ver");
+  version++; odometer(document.getElementById("ver-odo"), version);
+  card.classList.remove("scan"); ver.classList.remove("glow"); void card.offsetWidth; card.classList.add("scan"); ver.classList.add("glow");
+};
+
+// ---- 液晶提示条 ----
+const icon = document.getElementById("toast-icon").getContext("2d");
+["..........", ".........X", "........XX", ".......XX.", "X.....XX..", "XX...XX...", ".XX.XX....", "..XXX.....", "...X......", ".........."]
+  .forEach((row, y) => [...row].forEach((c, x) => { if (c === "X") { icon.fillStyle = "#1c2616"; icon.fillRect(x, y, 1, 1); } }));
+document.getElementById("toast-btn").onclick = () => { const t = document.getElementById("toast"); t.style.opacity = ""; t.classList.remove("show"); void t.offsetWidth; t.classList.add("show"); };
+
+// ---- 数码暴龙机 ----
+const dvCanvas = document.getElementById("dv-canvas");
+dvCanvas.style.width = "100px"; dvCanvas.style.height = "100px";
+let egg = createPartnerLcd(dvCanvas, { mode: "stage", cols: 20, rows: 20, reduced });
+const SEG = { 0: "abcdef", 1: "bc", 2: "abged", 3: "abgcd", 4: "fgbc", 5: "afgcd", 6: "afgedc", 7: "abc", 8: "abcdefg", 9: "abfgcd" };
+let view = 0, lit = false;
+function drawDigits(value, caption) {
+  const ctx = dvCanvas.getContext("2d"), dot = 5, ratio = devicePixelRatio || 1;
+  dvCanvas.width = 20 * dot * ratio; dvCanvas.height = 20 * dot * ratio; ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, 100, 100);
+  for (let y = 0; y < 20; y++) for (let x = 0; x < 20; x++) { ctx.fillStyle = "rgba(28,38,22,.06)"; ctx.fillRect(x * dot, y * dot, dot - 1, dot - 1); }
+  const on = (x, y) => { ctx.fillStyle = "rgba(28,38,22,.92)"; ctx.fillRect(x * dot, y * dot, dot - 1, dot - 1); };
+  // 粗体数码管：每段两点宽，数字 7×13 点；一位数居中
+  const text = String(Math.min(99, value));
+  const starts = text.length === 1 ? [6] : [2, 11];
+  const oy0 = 2;
+  [...text].forEach((ch, k) => {
+    const ox = starts[k], oy = oy0, segs = SEG[ch] || "";
+    const H = (y) => { for (let x = 1; x <= 5; x++) { on(ox + x, oy + y); on(ox + x, oy + y + 1); } };
+    const V = (x, y0) => { for (let y = y0; y < y0 + 4; y++) { on(ox + x, oy + y); on(ox + x + 1, oy + y); } };
+    if (segs.includes("a")) H(0); if (segs.includes("g")) H(6); if (segs.includes("d")) H(12);
+    if (segs.includes("f")) V(0, 2); if (segs.includes("b")) V(5, 2); if (segs.includes("e")) V(0, 8); if (segs.includes("c")) V(5, 8);
+  });
+}
+const screenEl = document.getElementById("dv-screen");
+function setView(next) {
+  view = next % 2;
+  egg.destroy();
+  screenEl.classList.toggle("digits", view === 1);
+  if (view === 0) { egg = createPartnerLcd(dvCanvas, { mode: "stage", cols: 20, rows: 20, reduced }); return; }
+  drawDigits(3);
+}
+document.getElementById("btn-a").onclick = () => setView(view + 1);
+document.getElementById("btn-b").onclick = () => { lit = !lit; document.getElementById("dv-screen").classList.toggle("lit", lit); };
+const poke = () => { if (view !== 0) setView(0); egg.poke(); };
+document.getElementById("btn-c").onclick = poke;
+dvCanvas.addEventListener("click", poke);
+</script>
+</body>
+</html>

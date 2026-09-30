@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>伙伴屏尺寸与对称蛋</title>
+<style>
+body{margin:0;background:#070b16;color:#e9eeff;font:13px -apple-system,"PingFang SC",sans-serif;padding:20px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.side{width:214px;padding:10px 13px;background:#0c1324;border-radius:14px;display:grid;gap:8px}
+.screen{position:relative;height:60px;border-radius:10px;overflow:hidden;background:radial-gradient(circle at 50% 35%,#d4e8b0,#a9cc86);box-shadow:0 0 0 3px #1b2540,0 0 0 4px rgba(140,178,255,.2),inset 0 2px 6px rgba(0,0,0,.35)}
+.screen.tall{height:86px}.side.wide{width:270px}
+.screen[data-season=summer]{background:radial-gradient(circle at 50% 35%,#cfe6ee,#9cc6d6)}
+.screen[data-season=autumn]{background:radial-gradient(circle at 50% 35%,#ecd6a4,#d1ad6c)}
+.screen[data-season=winter]{background:radial-gradient(circle at 50% 35%,#cfdbe6,#9fb3c4)}
+.lcd{position:absolute;inset:0;display:grid;place-items:center}.lcd canvas{display:block;image-rendering:pixelated;max-width:100%;max-height:100%}
+.stage{position:relative;width:75px;height:75px;border-radius:7%;overflow:hidden;background:radial-gradient(circle at 50% 40%,#aebc93,#97a67c)}
+small{color:#8b98b8}
+</style></head><body>
+<div class="side"><div class="screen" id="a"><span class="lcd"><canvas></canvas></span></div><small id="ca">60px 高（笔记本常见）</small></div>
+<div class="side wide"><div class="screen tall" id="b"><span class="lcd"><canvas></canvas></span></div><small id="cb">86px 高</small></div>
+<div class="stage" id="c"><span class="lcd"><canvas></canvas></span></div>
+<script type="module">
+import { createPartnerLcd } from "./partner-lcd.js";
+const t = +(new URLSearchParams(location.search).get("t") || 0);
+for (const [id, opts] of [["a", { mode: "roam", dot: 3 }], ["b", { mode: "roam", dot: 4 }], ["c", { mode: "stage", cols: 16, rows: 18 }]]) {
+  const host = document.getElementById(id);
+  createPartnerLcd(host.querySelector("canvas"), { ...opts, startStep: t, reduced: new URLSearchParams(location.search).has("still"), onSeason: (s) => host.setAttribute("data-season", s.id) });
+}
+</script></body></html>

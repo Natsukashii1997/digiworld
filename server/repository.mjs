@@ -1,0 +1,270 @@
+import { mkdir, open, readFile, rename, lstat } from "node:fs/promises";
+import { join } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
+import { stringify, parse } from "../src/serialization.js";
+import {
+  validateState,
+  validateHistory,
+  canonical,
+  equivalent,
+} from "./schema.mjs";
+import { mergeBackup } from "./merge.mjs";
+import { DatabaseSync } from "node:sqlite";
+
+export const digest = (value) =>
+  createHash("sha256").update(value).digest("hex");
+export function failure(message, status = 400) {
+  return Object.assign(new Error(message), { status });
+}
+async function durableWrite(path, content) {
+  const file = await open(path, "wx", 0o600);
+  try {
+    await file.writeFile(content);
+    await file.sync();
+  } finally {
+    await file.close();
+  }
+}
+async function syncDirectory(path) {
+  const dir = await open(path, "r");
+  try {
+    await dir.sync();
+  } finally {
+    await dir.close();
+  }
+}
+
+export async function openRepository(directory) {
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  if ((await lstat(directory)).isSymbolicLink())
+    throw failure("数据目录不能是符号链接", 503);
+  await mkdir(join(directory, "snapshots"), { recursive: true, mode: 0o700 });
+  // OS-managed SQLite locking releases on crashes. State remains in JSON snapshots.
+  const lockPath = join(directory, ".writer-lock.sqlite");
+  try {
+    if ((await lstat(lockPath)).isSymbolicLink())
+      throw failure("锁文件不能是符号链接", 503);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  const lock = new DatabaseSync(lockPath);
+  try {
+    lock.exec("PRAGMA locking_mode = EXCLUSIVE; BEGIN EXCLUSIVE;");
+  } catch (error) {
+    lock.close();
+    throw failure(
+      "此数据目录正由另一服务使用，或文件锁不可用。请先关闭另一实例。",
+      503,
+    );
+  }
+  let queue = Promise.resolve(),
+    closed = false;
+  const previews = new Map();
+  async function read() {
+    let head;
+    try {
+      head = JSON.parse(
+        await readFile(join(directory, "CURRENT.json"), "utf8"),
+      );
+    } catch (error) {
+      if (error.code === "ENOENT") return null;
+      throw failure(
+        "主库指针损坏，已停止读取；请保留 data 目录并从备份恢复。",
+        503,
+      );
+    }
+    if (
+      !/^\d+-[a-f0-9-]+\.json$/.test(head.file) ||
+      !Number.isSafeInteger(head.revision)
+    )
+      throw failure("主库指针无效，未自动回退旧数据。", 503);
+    try {
+      const raw = await readFile(
+        join(directory, "snapshots", head.file),
+        "utf8",
+      );
+      if (digest(raw) !== head.sha256) throw new Error("checksum");
+      const state = parse(raw);
+      if (state.revision !== head.revision) throw new Error("revision");
+      return validateState(state);
+    } catch {
+      throw failure(
+        "主库快照校验失败，未用旧数据替代。请保留备份后检查。",
+        503,
+      );
+    }
+  }
+  async function commit(state) {
+    const raw = stringify(state),
+      file = `${state.revision}-${randomUUID()}.json`;
+    await durableWrite(join(directory, "snapshots", file), raw);
+    await syncDirectory(join(directory, "snapshots"));
+    const pointer = join(directory, `.CURRENT-${randomUUID()}.tmp`);
+    await durableWrite(
+      pointer,
+      JSON.stringify({ file, revision: state.revision, sha256: digest(raw) }),
+    );
+    await rename(pointer, join(directory, "CURRENT.json"));
+    await syncDirectory(directory);
+    return read();
+  }
+  function serial(operation) {
+    if (closed) return Promise.reject(failure("主库已关闭", 503));
+    const result = queue.then(operation);
+    queue = result.catch(() => {});
+    return result;
+  }
+  return {
+    directory,
+    read,
+    withSnapshot({ expectedRevision } = {}, operation) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先打开工作台初始化资产库", 409);
+        if (
+          expectedRevision !== undefined &&
+          expectedRevision !== stored.revision
+        )
+          throw failure("主库已变化，请刷新后重新预览确认", 409);
+        // Coordinates target edits without coupling an external file write to a
+        // subsequent main-database commit. The operation owns its durable journal.
+        return operation(stored);
+      });
+    },
+    updateAssets(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先打开工作台初始化资产库", 409);
+        if (expectedRevision !== stored.revision)
+          throw failure("主库已变化，请刷新后重新预览确认", 409);
+        const assets = await update(stored.assets);
+        if (equivalent(assets, stored.assets)) return stored;
+        const state = { ...stored, assets, revision: stored.revision + 1 };
+        validateState(state);
+        validateHistory(stored, state, { allowOrigins: true });
+        return commit(state);
+      });
+    },
+    updateActivity(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先初始化资产库", 409);
+        const assetActivity = await update(stored.assetActivity || [], stored);
+        if (equivalent(assetActivity, stored.assetActivity || [])) return stored;
+        if (expectedRevision !== stored.revision)
+          throw failure("主库已变化，请查询后补记", 409);
+        const state = { ...stored, assetActivity, revision: stored.revision + 1 };
+        validateState(state);
+        validateHistory(stored, state, { allowActivity: true });
+        return commit(state);
+      });
+    },
+    updateKnowledge(update, { expectedRevision, allowNoop = false } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先打开工作台初始化资产库", 409);
+        if (!allowNoop && expectedRevision !== stored.revision)
+          throw failure("主库已变化，请刷新后重试知识整理", 409);
+        const knowledgeTasks = await update(
+          stored.knowledgeTasks || [],
+          stored,
+        );
+        if (equivalent(knowledgeTasks, stored.knowledgeTasks || []))
+          return stored;
+        if (expectedRevision !== stored.revision)
+          throw failure("主库已变化，请刷新后重试知识整理", 409);
+        const state = {
+          ...stored,
+          knowledgeTasks,
+          revision: stored.revision + 1,
+        };
+        validateState(state);
+        validateHistory(stored, state, { allowKnowledge: true });
+        return commit(state);
+      });
+    },
+    updateConnections(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先打开工作台初始化资产库", 409);
+        if (
+          expectedRevision !== undefined &&
+          expectedRevision !== stored.revision
+        )
+          throw failure("另一个页面已更新主库，请刷新后重新确认连接", 409);
+        const state = {
+          ...stored,
+          connections: await update(stored.connections),
+          revision: stored.revision + 1,
+        };
+        validateState(state);
+        validateHistory(stored, state, { allowConnections: true });
+        return commit(state);
+      });
+    },
+    async previewImport(input) {
+      const stored = await read();
+      const { summary } = mergeBackup(stored, input);
+      const token = randomUUID();
+      for (const [key, value] of previews)
+        if (value.expires < Date.now()) previews.delete(key);
+      if (previews.size >= 20) previews.delete(previews.keys().next().value);
+      previews.set(token, {
+        revision: stored?.revision ?? 0,
+        hash: digest(JSON.stringify(canonical(input))),
+        expires: Date.now() + 300000,
+      });
+      return {
+        token,
+        summary,
+        revision: stored?.revision ?? 0,
+        expiresAt: new Date(Date.now() + 300000).toISOString(),
+      };
+    },
+    importBackup(input, token) {
+      return serial(async () => {
+        const stored = await read(),
+          preview = previews.get(token);
+        if (
+          !preview ||
+          preview.expires < Date.now() ||
+          preview.revision !== (stored?.revision ?? 0) ||
+          preview.hash !== digest(JSON.stringify(canonical(input)))
+        )
+          throw failure("导入预览已过期或主库已变化，请重新预览后确认。", 409);
+        const { state } = mergeBackup(stored, input);
+        validateHistory(stored, state, {
+          allowOrigins: true,
+          allowKnowledge: true,
+          allowActivity: true,
+        });
+        const result = await commit({
+          ...state,
+          revision: (stored?.revision ?? 0) + 1,
+        });
+        previews.delete(token);
+        return result;
+      });
+    },
+    write(state, { initialize = false } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (initialize && stored) return stored;
+        validateState(state);
+        if (!initialize && (state.revision ?? 0) !== (stored?.revision ?? 0))
+          throw failure(
+            "另一个页面已更新主库，本次没有覆盖。请先保留未保存内容，再刷新。",
+            409,
+          );
+        validateHistory(stored, state);
+        return commit({ ...state, revision: (stored?.revision ?? 0) + 1 });
+      });
+    },
+    async close() {
+      if (closed) return;
+      closed = true;
+      await queue;
+      lock.close();
+    },
+  };
+}

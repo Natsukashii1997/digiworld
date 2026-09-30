@@ -1,0 +1,87 @@
+{
+  "id": "digievolution-approved-art-crops-v1",
+  "source": "design/digievolution-v1/reference/approved.png",
+  "sourceSha256": "192d13e2e2e2be6c20b0c69758251ee290e7c0b6b3f2b6c3655ed4500454314f",
+  "sourceDimensions": { "width": 1402, "height": 1122 },
+  "sourceAuthority": "User-approved full UI reference, 2026-09-27",
+  "operation": "Mechanical pixel crop via /usr/bin/sips -c height width --cropOffset y x. No synthesis, resize, recoloring, background removal, or retouching.",
+  "script": "design/digievolution-v1/derive-assets.mjs",
+  "generationBudget": 0,
+  "generationCalls": 0,
+  "transparency": "Original contextual backgrounds preserved; these are not transparent cutouts.",
+  "coordinateSystem": "Top-left origin; x, y, width, height are source pixels.",
+  "visualVerification": {
+    "status": "passed",
+    "method": "All ten derived PNGs inspected individually at native size after cropping.",
+    "findings": [
+      "Ensemble excludes surrounding UI controls, border, and lower detail pane; only the approved illustration and its in-art decorative text remain.",
+      "Digivice contains the approved symbol without product-name text.",
+      "Crests contain the symbols without their English captions.",
+      "Island excludes FILE ISLAND caption and adjacent interface lines.",
+      "All six portrait crops exclude list text, image frames, and row separators."
+    ],
+    "limits": "Original pixels are reused without detail synthesis. Avoid displaying substantially above the source dimensions. The reference artwork is decorative, not a claim of official Digimon character-model accuracy."
+  },
+  "outputs": [
+    {
+      "file": "public/theme/digievolution/digivice.png",
+      "bounds": { "x": 27, "y": 20, "width": 53, "height": 49 },
+      "dimensions": { "width": 53, "height": 49 },
+      "sha256": "fbcc39b81a2da1580f12ac46803429c9741b9f4540ea836626f1ac06f6395d47"
+    },
+    {
+      "file": "public/theme/digievolution/ensemble.png",
+      "bounds": { "x": 720, "y": 216, "width": 663, "height": 414 },
+      "dimensions": { "width": 663, "height": 414 },
+      "sha256": "36d7f6198ab8a194d2f5136860f916d27c909bc5c154b0bb8dd80678bdaf1fa6"
+    },
+    {
+      "file": "public/theme/digievolution/island.png",
+      "bounds": { "x": 18, "y": 738, "width": 156, "height": 126 },
+      "dimensions": { "width": 156, "height": 126 },
+      "sha256": "cecfad4f3a0573f10f7697d35c25927ef168a7fe58c1b13739557101a344c9bc"
+    },
+    {
+      "file": "public/theme/digievolution/crests.png",
+      "bounds": { "x": 524, "y": 112, "width": 564, "height": 55 },
+      "dimensions": { "width": 564, "height": 55 },
+      "sha256": "964eb7bcaac7a3e4a8ebefe9009261233cd7e26a13f112dd87f66083992430f8"
+    },
+    {
+      "file": "public/theme/digievolution/partner-0.png",
+      "bounds": { "x": 234, "y": 335, "width": 85, "height": 98 },
+      "dimensions": { "width": 85, "height": 98 },
+      "sha256": "716987f13b329c60667125cd86f3b12676b0eea771789c1110d6a55f6dcc915c"
+    },
+    {
+      "file": "public/theme/digievolution/partner-1.png",
+      "bounds": { "x": 234, "y": 460, "width": 85, "height": 102 },
+      "dimensions": { "width": 85, "height": 102 },
+      "sha256": "6a5d31a744d529eac61aeef5e4d2f4e26efca0552948b22895e675bfcdf79b01"
+    },
+    {
+      "file": "public/theme/digievolution/partner-2.png",
+      "bounds": { "x": 234, "y": 587, "width": 85, "height": 102 },
+      "dimensions": { "width": 85, "height": 102 },
+      "sha256": "5f9c68967c602ad0d557243cf4430a9bca02fc0750e4a48369a5fbd299de51a0"
+    },
+    {
+      "file": "public/theme/digievolution/partner-3.png",
+      "bounds": { "x": 234, "y": 713, "width": 85, "height": 105 },
+      "dimensions": { "width": 85, "height": 105 },
+      "sha256": "2ece716b1be1c3277b20b635fefa524fabfec84fcbfedefdbe8577a22dd22405"
+    },
+    {
+      "file": "public/theme/digievolution/partner-4.png",
+      "bounds": { "x": 234, "y": 842, "width": 85, "height": 99 },
+      "dimensions": { "width": 85, "height": 99 },
+      "sha256": "b64b02410946c7aa18181655c32df3d0726a07b2d6c942a553c2ea9ae66eeb57"
+    },
+    {
+      "file": "public/theme/digievolution/partner-5.png",
+      "bounds": { "x": 234, "y": 966, "width": 85, "height": 101 },
+      "dimensions": { "width": 85, "height": 101 },
+      "sha256": "30607ecebb442467e71047558330b8a959e56a05e33c2b1795e7bac23ef70ac4"
+    }
+  ]
+}

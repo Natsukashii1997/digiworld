@@ -1,0 +1,637 @@
+import { validateActivity, validateActivityHistory } from "./asset-activity-schema.mjs";
+import { safePath } from "../src/store.js";
+import { stringify } from "../src/serialization.js";
+import { retainedDemoIds } from "../src/asset-origin.js";
+import {
+  validateKnowledgeTasks,
+  validateKnowledgeHistory,
+} from "./knowledge-compilation-schema.mjs";
+export function invalid(message) {
+  throw Object.assign(new Error(`数据校验失败：${message}`), { status: 400 });
+}
+const object = (v, label) => {
+  if (
+    !v ||
+    typeof v !== "object" ||
+    Array.isArray(v) ||
+    v instanceof Uint8Array
+  )
+    invalid(label);
+};
+const text = (v, label, max = 1000000) => {
+  if (typeof v !== "string" || v.length > max) invalid(label);
+};
+const id = (v) => {
+  if (typeof v !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(v))
+    invalid("记录 ID");
+};
+const date = (v) => {
+  if (typeof v !== "string" || v.length > 40 || !Number.isFinite(Date.parse(v)))
+    invalid("时间格式");
+};
+const array = (v, label, max = 5000) => {
+  if (!Array.isArray(v) || v.length > max) invalid(label);
+};
+const keys = (v, allowed) => {
+  object(v, "对象");
+  if (Object.keys(v).some((k) => !allowed.includes(k)))
+    invalid("包含不支持的字段");
+};
+const unique = (list, label) => {
+  if (new Set(list).size !== list.length) invalid(`${label}重复`);
+};
+const httpUrl = (v) => {
+  if (!v) return;
+  try {
+    const url = new URL(v);
+    if (!["http:", "https:"].includes(url.protocol)) invalid("链接协议");
+  } catch {
+    invalid("链接格式");
+  }
+};
+export function validateState(state) {
+  keys(state, [
+    "revision",
+    "assets",
+    "notes",
+    "projects",
+    "agents",
+    "references",
+    "night",
+    "model",
+    "connections",
+    "knowledgeTasks",
+    "assetActivity",
+  ]);
+  if (state.knowledgeTasks !== undefined)
+    validateKnowledgeTasks(state.knowledgeTasks);
+  if (
+    state.revision !== undefined &&
+    (!Number.isSafeInteger(state.revision) || state.revision < 0)
+  )
+    invalid("主库版本");
+  let totalBytes = 0,
+    totalVersions = 0;
+  for (const name of ["assets", "notes", "projects", "agents", "references"]) {
+    array(state[name], name);
+    unique(
+      state[name].map((v) => v?.id),
+      `${name} ID`,
+    );
+  }
+  const assetIndex = new Map(state.assets.map((a) => [a?.id, a]));
+  for (const a of state.assets) {
+    keys(a, [
+      "id",
+      "type",
+      "demo",
+      "favorite",
+      "archived",
+      "createdAt",
+      "versions",
+      "cover",
+      "origin",
+    ]);
+    id(a.id);
+    date(a.createdAt);
+    if (a.origin !== undefined) {
+      if (a.type !== "Skill") invalid("只有 Skill 支持来源关系");
+      const o = a.origin;
+      object(o, "来源关系");
+      if (o.kind === "local") {
+        keys(o, ["kind", "location", "fingerprint", "capturedAt"]);
+        text(o.location, "来源路径", 2000);
+        if (!o.location.startsWith("/") || /[\x00-\x1f\x7f]/.test(o.location))
+          invalid("来源路径");
+        if (!/^[a-f0-9]{64}$/.test(o.fingerprint)) invalid("来源指纹");
+        date(o.capturedAt);
+      } else if (o.kind === "derived") {
+        keys(o, ["kind", "assetId", "versionId"]);
+        id(o.assetId);
+        id(o.versionId);
+        if (o.assetId === a.id) invalid("来源不能指向自身");
+        const parent = assetIndex.get(o.assetId);
+        if (parent && parent.type !== "Skill") invalid("派生来源必须为 Skill");
+      } else invalid("来源类型");
+    }
+    if (!["Skill", "Prompt", "Workflow", "Rule"].includes(a.type)) invalid("资产类型");
+    for (const key of ["demo", "favorite", "archived"])
+      if (typeof a[key] !== "boolean") invalid("资产状态");
+    if (
+      a.cover !== undefined &&
+      (!Number.isInteger(a.cover) || a.cover < 0 || a.cover > 1000)
+    )
+      invalid("封面编号");
+    array(a.versions, "资产版本", 2000);
+    if (!a.versions.length) invalid("版本不能为空");
+    totalVersions += a.versions.length;
+    if (totalVersions > 20000) invalid("版本总量超过限制");
+    unique(
+      a.versions.map((v) => v?.id),
+      "版本 ID",
+    );
+    for (const v of a.versions) {
+      keys(v, [
+        "id",
+        "at",
+        "title",
+        "description",
+        "content",
+        "tags",
+        "files",
+        "source",
+        "restoredFrom",
+        "references",
+        "type",
+      ]);
+      id(v.id);
+      if (v.references !== undefined) {
+        if (a.type !== "Workflow") invalid("只有工作流可设置资产引用");
+        array(v.references, "工作流引用", 50);
+        unique(
+          v.references.map((r) => r?.assetId),
+          "引用资产",
+        );
+        for (const r of v.references) {
+          keys(r, ["assetId", "versionId"]);
+          id(r.assetId);
+          id(r.versionId);
+          const target = assetIndex.get(r.assetId);
+          if (target && !["Prompt", "Skill"].includes(target.type))
+            invalid("引用只能指向 Skill 或 Prompt");
+        }
+      }
+      if (v.type !== undefined && v.type !== a.type) invalid("版本类型不一致");
+      date(v.at);
+      if (v.restoredFrom !== undefined) id(v.restoredFrom);
+      text(v.title, "标题", 200);
+      if (!v.title.trim()) invalid("标题为空");
+      text(v.description, "说明", 5000);
+      text(v.content, "正文");
+      text(v.source, "来源", 20000);
+      array(v.tags, "标签", 100);
+      v.tags.forEach((t) => text(t, "标签", 100));
+      array(v.files, "文件", 300);
+      unique(
+        v.files.map((f) => f?.path),
+        "文件路径",
+      );
+      let versionBytes = 0;
+      for (const f of v.files) {
+        keys(f, ["path", "data", "text", "mode", "directory"]);
+        if (
+          f.mode !== undefined &&
+          (!Number.isInteger(f.mode) || f.mode < 0 || f.mode > 0o777)
+        )
+          invalid("文件权限");
+        if (f.directory !== undefined && typeof f.directory !== "boolean")
+          invalid("目录类型");
+        if (f.directory && f.data?.length) invalid("目录内容必须为空");
+        if (!safePath(f.path) || f.path.length > 500) invalid("文件路径不安全");
+        if (typeof f.text !== "boolean") invalid("文件编码");
+        if (f.text) {
+          text(f.data, "文本文件", 25 * 1024 * 1024);
+          versionBytes += Buffer.byteLength(f.data);
+        } else {
+          if (!(f.data instanceof Uint8Array)) invalid("二进制文件");
+          versionBytes += f.data.length;
+        }
+      }
+      if (
+        a.type === "Skill" &&
+        !v.files.some((f) => /(^|\/)SKILL\.md$/.test(f.path))
+      )
+        invalid("Skill 缺少 SKILL.md");
+      if (versionBytes > 25 * 1024 * 1024) invalid("单版本文件超过 25 MB");
+      totalBytes += versionBytes;
+      if (totalBytes > 64 * 1024 * 1024)
+        invalid("主库文件总量超过当前 64 MB 上限，请分批管理");
+    }
+  }
+  for (const n of state.notes) {
+    keys(n, ["id", "text", "at"]);
+    id(n.id);
+    text(n.text, "随手记");
+    date(n.at);
+  }
+  for (const a of state.agents) {
+    keys(a, ["id", "name", "path"]);
+    id(a.id);
+    text(a.name, "Agent 名称", 200);
+    text(a.path, "Agent 位置", 2000);
+  }
+  for (const p of state.projects) {
+    keys(p, ["id", "name", "goal", "next", "location", "status", "updatedAt"]);
+    id(p.id);
+    for (const k of ["name", "goal", "next", "location"])
+      text(p[k], `项目 ${k}`, 20000);
+    if (!["进行中", "等待确认", "已暂停", "已完成"].includes(p.status))
+      invalid("项目状态");
+    if (p.updatedAt) date(p.updatedAt);
+  }
+  for (const r of state.references) {
+    keys(r, ["id", "title", "url", "note"]);
+    id(r.id);
+    text(r.title, "参考名称", 1000);
+    text(r.note, "参考笔记");
+    text(r.url, "来源链接", 10000);
+    httpUrl(r.url);
+  }
+  keys(state.night, ["time", "end", "budget", "task", "enabled"]);
+  if (state.night.enabled !== false) invalid("本版不支持启用调度");
+  for (const k of ["time", "end"])
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(state.night[k])) invalid("计划时间");
+  text(state.night.budget, "预算", 10);
+  if (
+    !state.night.budget.trim() ||
+    !Number.isFinite(Number(state.night.budget)) ||
+    Number(state.night.budget) < 0 ||
+    Number(state.night.budget) > 10000
+  )
+    invalid("预算范围");
+  text(state.night.task, "夜间任务");
+  keys(state.model, ["provider", "model", "endpoint"]);
+  for (const k of ["provider", "model", "endpoint"])
+    text(state.model[k], `模型 ${k}`, 2000);
+  httpUrl(state.model.endpoint);
+  if (state.connections !== undefined) {
+    const c = state.connections;
+    keys(c, [
+      "roots",
+      "projects",
+      "agents",
+      "github",
+      "projectScannedAt",
+      "agentScannedAt",
+      "errors",
+      "truncated",
+      "contextBindings",
+      "agentTargets",
+      "skillCopies",
+      "knowledgeSources",
+    ]);
+    if (c.knowledgeSources !== undefined) {
+      array(c.knowledgeSources, "知识来源", 20);
+      unique(
+        c.knowledgeSources.map((s) => s?.id),
+        "知识来源 ID",
+      );
+      unique(
+        c.knowledgeSources.map((s) => s?.root),
+        "知识来源目录",
+      );
+      for (const s of c.knowledgeSources) {
+        keys(s, [
+          "schema",
+          "id",
+          "name",
+          "kind",
+          "root",
+          "identity",
+          "generation",
+          "connectedAt",
+        ]);
+        if (s.schema !== 1 || !["obsidian", "markdown"].includes(s.kind))
+          invalid("知识来源版本或类型");
+        id(s.id);
+        id(s.generation);
+        text(s.name, "知识来源名称", 100);
+        if (!s.name.trim() || /[\x00-\x1f\x7f]/.test(s.name))
+          invalid("知识来源名称");
+        text(s.root, "知识来源目录", 2000);
+        if (!s.root.startsWith("/") || /[\x00-\x1f\x7f]/.test(s.root))
+          invalid("知识来源目录");
+        if (
+          typeof s.identity !== "string" ||
+          !/^[a-f0-9]{64}$/.test(s.identity)
+        )
+          invalid("知识来源身份");
+        date(s.connectedAt);
+      }
+    }
+    if (c.agentTargets !== undefined) {
+      array(c.agentTargets, "Agent 管理目标", 100);
+      unique(
+        c.agentTargets.map((t) => t?.id),
+        "Agent 目标 ID",
+      );
+      unique(
+        c.agentTargets.map((t) =>
+          JSON.stringify([
+            t?.agentId,
+            t?.program?.path,
+            t?.program?.kind,
+            t?.home?.path,
+          ]),
+        ),
+        "Agent 程序与目录绑定",
+      );
+      for (const t of c.agentTargets) {
+        keys(t, [
+          "schema",
+          "id",
+          "agentId",
+          "bindingId",
+          "label",
+          "program",
+          "home",
+          "createdAt",
+          "updatedAt",
+        ]);
+        if (t.schema !== 1 || !["codex", "hermes"].includes(t.agentId))
+          invalid("Agent 目标版本或身份");
+        id(t.id);
+        if (t.bindingId !== undefined) id(t.bindingId);
+        text(t.label, "目标名称", 100);
+        if (!t.label.trim() || /[\x00-\x1f\x7f]/.test(t.label))
+          invalid("目标名称");
+        keys(t.program, ["path", "kind"]);
+        keys(t.home, ["id", "path", "label"]);
+        id(t.home.id);
+        text(t.home.label, "目录名称", 200);
+        if (!["App", "CLI"].includes(t.program.kind)) invalid("目标程序类型");
+        for (const path of [t.program.path, t.home.path]) {
+          text(path, "目标路径", 2000);
+          if (!path.startsWith("/") || /[\x00-\x1f\x7f]/.test(path))
+            invalid("目标路径");
+        }
+        date(t.createdAt);
+        date(t.updatedAt);
+      }
+    }
+    if (c.skillCopies !== undefined) {
+      array(c.skillCopies, "Skill 副本关联", 1000);
+      unique(
+        c.skillCopies.map((v) => v?.id),
+        "副本关联 ID",
+      );
+      unique(
+        c.skillCopies.map((v) => JSON.stringify([v?.targetId, v?.location])),
+        "目标副本路径",
+      );
+      for (const v of c.skillCopies) {
+        keys(v, [
+          "schema",
+          "id",
+          "assetId",
+          "versionId",
+          "targetId",
+          "targetSignature",
+          "scopeSignature",
+          "root",
+          "location",
+          "boundFingerprint",
+          "boundAt",
+        ]);
+        if (v.schema !== 1) invalid("副本关联版本");
+        for (const k of ["id", "assetId", "versionId", "targetId"]) id(v[k]);
+        for (const k of [
+          "targetSignature",
+          "scopeSignature",
+          "boundFingerprint",
+        ])
+          if (!/^[a-f0-9]{64}$/.test(v[k])) invalid("副本签名");
+        for (const k of ["root", "location"]) {
+          text(v[k], "副本路径", 2000);
+          if (!v[k].startsWith("/") || /[\x00-\x1f\x7f]/.test(v[k]))
+            invalid("副本路径");
+        }
+        date(v.boundAt);
+      }
+    }
+    if (c.contextBindings !== undefined) {
+      array(c.contextBindings, "项目上下文连接", 10000);
+      unique(
+        c.contextBindings.map((b) => b?.projectId),
+        "项目上下文连接",
+      );
+      for (const b of c.contextBindings) {
+        keys(b, [
+          "projectId",
+          "root",
+          "repoKey",
+          "currentPath",
+          "rulesPath",
+          "boundAt",
+          "relationVersion",
+          "directoryStamp",
+        ]);
+        id(b.projectId);
+        if (b.relationVersion !== undefined && b.relationVersion !== "")
+          id(b.relationVersion);
+        if (
+          b.directoryStamp !== undefined &&
+          !/^[a-f0-9]{64}$/.test(b.directoryStamp)
+        )
+          invalid("项目目录指纹");
+        for (const k of ["root", "repoKey", "currentPath", "rulesPath"])
+          text(b[k], "来源指针", 2000);
+        date(b.boundAt);
+      }
+    }
+    array(c.roots, "扫描目录", 12);
+    c.roots.forEach((p) => text(p, "目录", 2000));
+    array(c.projects, "已发现项目", 10000);
+    array(c.agents, "已检测 Agent", 100);
+    array(c.errors, "扫描错误", 10000);
+    c.errors.forEach((e) => text(e, "扫描错误", 3000));
+    if (typeof c.truncated !== "boolean") invalid("扫描完整性");
+    for (const key of ["projectScannedAt", "agentScannedAt"])
+      if (c[key]) date(c[key]);
+    keys(c.github, ["status", "login", "message", "at"]);
+    for (const key of ["status", "login", "message", "at"])
+      text(c.github[key], "GitHub 状态", 1000);
+    for (const p of c.projects) {
+      keys(p, [
+        "id",
+        "name",
+        "kind",
+        "repoKey",
+        "localPaths",
+        "branch",
+        "githubUrl",
+        "private",
+        "description",
+        "language",
+        "updatedAt",
+        "localSeenAt",
+        "githubSeenAt",
+        "seenThisScan",
+        "locations",
+        "relationVersion",
+        "aliases",
+        "identityConflict",
+      ]);
+      id(p.id);
+      if (p.relationVersion !== undefined) id(p.relationVersion);
+      if (
+        p.identityConflict !== undefined &&
+        typeof p.identityConflict !== "boolean"
+      )
+        invalid("项目身份冲突状态");
+      if (p.aliases !== undefined) {
+        array(p.aliases, "项目历史身份", 1000);
+        unique(p.aliases, "项目历史身份");
+        p.aliases.forEach(id);
+        if (p.aliases.includes(p.id)) invalid("项目历史身份不能指向自身");
+      }
+      text(p.name, "项目名", 1000);
+      array(p.localPaths, "本地位置", 100);
+      p.localPaths.forEach((path) => text(path, "路径", 2000));
+      unique(p.localPaths, "项目本地位置");
+      if (p.locations !== undefined) {
+        array(p.locations, "项目目录观测", 100);
+        unique(
+          p.locations.map((location) => location?.path),
+          "项目目录观测",
+        );
+        for (const location of p.locations) {
+          keys(location, [
+            "path",
+            "status",
+            "identity",
+            "observedIdentity",
+            "checkedAt",
+            "message",
+          ]);
+          text(location.path, "项目目录位置", 2000);
+          if (!p.localPaths.includes(location.path))
+            invalid("目录观测不属于项目");
+          if (
+            ![
+              "present",
+              "missing",
+              "unknown",
+              "out_of_scope",
+              "unrecognized",
+              "changed",
+            ].includes(location.status)
+          )
+            invalid("项目目录状态");
+          for (const key of ["identity", "observedIdentity"])
+            if (
+              location[key] !== undefined &&
+              !/^[a-f0-9]{64}$/.test(location[key])
+            )
+              invalid("项目目录身份");
+          if (location.checkedAt !== undefined) date(location.checkedAt);
+          if (location.message !== undefined)
+            text(location.message, "目录状态说明", 1000);
+        }
+      }
+      for (const key of [
+        "kind",
+        "repoKey",
+        "branch",
+        "githubUrl",
+        "description",
+        "language",
+        "updatedAt",
+        "localSeenAt",
+        "githubSeenAt",
+      ])
+        if (p[key] !== undefined) text(p[key], "项目元数据", 5000);
+      if (
+        p.githubUrl &&
+        !/^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(
+          p.githubUrl,
+        )
+      )
+        invalid("GitHub URL");
+    }
+    for (const a of c.agents) {
+      keys(a, [
+        "id",
+        "name",
+        "kind",
+        "status",
+        "programs",
+        "configFound",
+        "errors",
+      ]);
+      if (a.errors !== undefined) {
+        array(a.errors, "Agent 探测错误", 1000);
+        a.errors.forEach((e) => text(e, "探测错误", 3000));
+      }
+      id(a.id);
+      for (const key of ["name", "kind", "status"])
+        text(a[key], "Agent 元数据", 200);
+      array(a.programs, "Agent 路径", 100);
+      for (const p of a.programs) {
+        keys(p, ["path", "kind"]);
+        text(p.path, "程序路径", 2000);
+        text(p.kind, "程序类型", 20);
+      }
+    }
+  }
+  validateActivity(state);
+  return state;
+}
+export function canonical(value) {
+  if (value instanceof Uint8Array) return JSON.parse(stringify(value));
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((k) => [k, canonical(value[k])]),
+    );
+  return value;
+}
+export const equivalent = (a, b) =>
+  JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+export function validateHistory(
+  previous,
+  next,
+  {
+    allowConnections = false,
+    allowOrigins = false,
+    allowKnowledge = false,
+    allowActivity = false,
+  } = {},
+) {
+  validateActivityHistory(previous?.assetActivity || [], next.assetActivity || [], allowActivity);
+  if (
+    !allowKnowledge &&
+    !equivalent(previous?.knowledgeTasks || [], next.knowledgeTasks || [])
+  )
+    invalid("知识整理任务只能通过专用操作更新");
+  validateKnowledgeHistory(
+    previous?.knowledgeTasks || [],
+    next.knowledgeTasks || [],
+  );
+  if (!allowConnections && !equivalent(previous?.connections, next.connections))
+    invalid("连接结果只能通过扫描更新");
+  if (!allowOrigins) {
+    const oldIds = new Set(previous?.assets.map((a) => a.id) || []);
+    if (next.assets.some((a) => a.origin !== undefined && !oldIds.has(a.id)))
+      invalid("来源只能通过专用收录或派生操作建立");
+  }
+  if (!previous) return;
+  const protectedDemos = retainedDemoIds(
+    previous.assets,
+    previous.connections?.skillCopies,
+    previous.assetActivity,
+  );
+  for (const old of previous.assets) {
+    const asset = next.assets.find((a) => a.id === old.id);
+    if (!asset) {
+      if (protectedDemos.has(old.id))
+        invalid("示例被工作流历史或派生来源引用，或存在目标副本关联，不能移除");
+      if (old.demo) continue;
+      invalid("资产只能归档，不能直接移除历史");
+    }
+    if (
+      asset.type !== old.type ||
+      asset.demo !== old.demo ||
+      asset.createdAt !== old.createdAt
+    )
+      invalid("资产身份不可更改");
+    if (!equivalent(asset.origin, old.origin)) invalid("来源关系不可更改");
+    if (
+      asset.versions.length < old.versions.length ||
+      !old.versions.every((v, i) => equivalent(v, asset.versions[i]))
+    )
+      invalid("历史版本不可覆盖；请创建新版本");
+  }
+}

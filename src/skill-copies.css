@@ -1,0 +1,148 @@
+.skill-copies {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  padding-top: 20px;
+  font-size: 13px;
+}
+.skill-copies h3,
+.skill-copies h4,
+.skill-copies p {
+  margin: 0;
+}
+.skill-copies h3,
+.skill-copies h4 {
+  font-size: 14px;
+}
+.skill-copies p {
+  line-height: 1.7;
+}
+.skill-copies code {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.copy-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+.copy-card,
+.copy-editor,
+.copy-preview,
+.copy-confirm {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--canvas);
+  overflow-wrap: anywhere;
+}
+.copy-editor {
+  background: var(--surface);
+}
+.copy-preview {
+  scroll-margin-top: 84px;
+}
+.copy-selectors {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.copy-selectors label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.copy-selectors select {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+}
+.copy-target-paths,
+.copy-scan,
+.copy-comparison {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.copy-error {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+}
+.skill-copies summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 12px 0;
+}
+.copy-candidates {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.copy-candidates legend {
+  margin-bottom: 10px;
+}
+.copy-candidates label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.copy-candidates label span {
+  min-width: 0;
+}
+.copy-candidates input,
+.copy-replace input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0;
+}
+.copy-candidates label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.copy-candidates label:has(input:disabled) {
+  cursor: default;
+}
+.copy-replace {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.copy-differences {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.copy-differences li {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  .copy-selectors {
+    grid-template-columns: 1fr;
+  }
+}

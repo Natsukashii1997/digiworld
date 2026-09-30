@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>产品结构图 v1.1</title>
+<style>
+  /* 沿用工作台“数码世界”设计令牌（src/styles.css）。 */
+  :root {
+    --bg: #070b16; --panel: #0f1729; --panel-2: #131d33; --line: rgba(140,178,255,.19);
+    --line-3: rgba(140,178,255,.32); --text: #e9eeff; --text-2: #b4bfda; --muted: #8b98b8;
+    --orange: #ff8a24; --cyan: #4de3ff; --lcd: #a6e36e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.6 -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+  main { max-width: 1160px; margin: 0 auto; padding: 32px 16px 56px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 40px 0 6px; }
+  p { color: var(--text-2); margin: 0 0 12px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  figure { margin: 12px 0 0; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; overflow-x: auto; }
+  svg { display: block; width: 100%; min-width: 760px; height: auto; }
+  svg text { font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<main>
+  <h1>个人 AI 工作台 · 产品结构图 v1.1</h1>
+  <p class="meta">2026-09-29 · Claude · 依据《问题共识基线 v2.1》（已确认）；配套《产品定义 v1.1》《路线 v2》，用户已确认（2026-09-29）；R1、R2 均选方案 1</p>
+
+  <h2>一、产品结构：三层 + 进化回路 + 贯穿能力</h2>
+  <p>资产被目标层安装或挂载，运行层让它们跑起来，结果经进化回路改版后回到资产层。外部来源保持原件权威，工作台只保存指针和记录。</p>
+  <figure>
+  <svg viewBox="0 0 1120 660" role="img" aria-label="产品结构图：资产层、目标层、运行层，右侧进化回路，左侧贯穿能力，底部外部权威来源">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#8b98b8"/>
+      </marker>
+      <marker id="arrow-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#ff8a24"/>
+      </marker>
+    </defs>
+
+    <!-- 贯穿能力 -->
+    <rect x="20" y="40" width="170" height="500" rx="12" fill="#131d33" stroke="rgba(140,178,255,.19)"/>
+    <text x="105" y="70" text-anchor="middle" fill="#e9eeff" font-size="15" font-weight="600">贯穿能力</text>
+    <g font-size="13" fill="#b4bfda" text-anchor="middle">
+      <text x="105" y="110">版本（AI-Git）</text>
+      <text x="105" y="160">搜索</text>
+      <text x="105" y="210" fill="#ff8a24" font-weight="600">待处理收件箱</text>
+      <text x="105" y="260">能力体检</text>
+      <text x="105" y="310">成本与用量</text>
+      <text x="105" y="360">操作留痕</text>
+      <text x="105" y="410">常驻与备份</text>
+      <text x="105" y="460">安全准入</text>
+    </g>
+    <text x="105" y="515" text-anchor="middle" fill="#8b98b8" font-size="11">每层都要用到</text>
+
+    <!-- 资产层 -->
+    <rect x="220" y="40" width="680" height="150" rx="12" fill="#131d33" stroke="rgba(140,178,255,.32)"/>
+    <text x="240" y="68" fill="#e9eeff" font-size="15" font-weight="600">资产层 · 我有什么</text>
+    <g font-size="13" fill="#e9eeff">
+      <rect x="240" y="86" width="84" height="34" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/><text x="282" y="108" text-anchor="middle">Skill</text>
+      <rect x="334" y="86" width="84" height="34" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/><text x="376" y="108" text-anchor="middle">Prompt</text>
+      <rect x="428" y="86" width="190" height="34" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/><text x="523" y="108" text-anchor="middle">工作流（含协同模式）</text>
+      <rect x="628" y="86" width="116" height="34" rx="8" fill="#0f1729" stroke="rgba(77,227,255,.55)"/><text x="686" y="108" text-anchor="middle">规则模板 新</text>
+      <rect x="754" y="86" width="126" height="34" rx="8" fill="#0f1729" stroke="rgba(77,227,255,.55)"/><text x="817" y="108" text-anchor="middle">MCP 配置 新</text>
+      <rect x="240" y="134" width="116" height="34" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/><text x="298" y="156" text-anchor="middle">逆向成果</text>
+      <rect x="366" y="134" width="300" height="34" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)" stroke-dasharray="4 3"/><text x="516" y="156" text-anchor="middle">知识指针（正文在 Obsidian / 飞书）</text>
+    </g>
+
+    <!-- 资产→目标 -->
+    <line x1="560" y1="190" x2="560" y2="236" stroke="#8b98b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="574" y="218" fill="#8b98b8" font-size="12">发布 · 挂载 · 复制口令</text>
+
+    <!-- 目标层 -->
+    <rect x="220" y="240" width="680" height="110" rx="12" fill="#131d33" stroke="rgba(140,178,255,.32)"/>
+    <text x="240" y="268" fill="#e9eeff" font-size="15" font-weight="600">目标层 · 交给谁、在哪里</text>
+    <g font-size="13" fill="#e9eeff">
+      <rect x="240" y="286" width="310" height="44" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/>
+      <text x="395" y="304" text-anchor="middle">Agent 实例</text>
+      <text x="395" y="322" text-anchor="middle" fill="#8b98b8" font-size="11">配置 · 模型/API · 挂载的 Skill · 健康度</text>
+      <rect x="570" y="286" width="310" height="44" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/>
+      <text x="725" y="304" text-anchor="middle">项目</text>
+      <text x="725" y="322" text-anchor="middle" fill="#8b98b8" font-size="11">身份 · Current · 协同协议（托管区块）</text>
+    </g>
+
+    <!-- 目标→运行 -->
+    <line x1="560" y1="350" x2="560" y2="396" stroke="#8b98b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="574" y="378" fill="#8b98b8" font-size="12">执行者 · 工作现场</text>
+
+    <!-- 运行层 -->
+    <rect x="220" y="400" width="680" height="140" rx="12" fill="#131d33" stroke="#ff8a24"/>
+    <text x="240" y="428" fill="#ff8a24" font-size="15" font-weight="600">运行层（harness）· 怎么跑起来</text>
+    <g font-size="13" fill="#e9eeff">
+      <rect x="240" y="446" width="120" height="34" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/><text x="300" y="468" text-anchor="middle">上下文接力</text>
+      <rect x="370" y="446" width="120" height="34" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/><text x="430" y="468" text-anchor="middle">单目标执行</text>
+      <rect x="500" y="446" width="180" height="34" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/><text x="590" y="468" text-anchor="middle">协同：接力 · 执行+监工</text>
+      <rect x="690" y="446" width="190" height="34" rx="8" fill="#0f1729" stroke="rgba(140,178,255,.19)"/><text x="785" y="468" text-anchor="middle">夜间 = 运行层 + 时间窗口</text>
+      <rect x="240" y="492" width="640" height="34" rx="8" fill="#0f1729" stroke="rgba(166,227,110,.55)"/><text x="560" y="514" text-anchor="middle">日历 · 时间轴：你的规划块 · 会议 · 里程碑 · 夜间窗口 · 提醒（每日入口）</text>
+    </g>
+
+    <!-- 进化回路 -->
+    <rect x="950" y="190" width="150" height="200" rx="12" fill="#131d33" stroke="#ff8a24"/>
+    <text x="1025" y="222" text-anchor="middle" fill="#ff8a24" font-size="15" font-weight="600">进化回路</text>
+    <g font-size="12" fill="#b4bfda" text-anchor="middle">
+      <text x="1025" y="254">使用证据</text>
+      <text x="1025" y="280">↓ 改版候选</text>
+      <text x="1025" y="306">↓ 比较（收件箱）</text>
+      <text x="1025" y="332">↓ 采用 / 退回</text>
+      <text x="1025" y="364" fill="#8b98b8">＋ 新方法回收入池</text>
+    </g>
+    <path d="M900,470 H1025 V396" fill="none" stroke="#ff8a24" stroke-width="1.5" marker-end="url(#arrow-o)"/>
+    <text x="912" y="462" fill="#ff8a24" font-size="12">结果 · 证据</text>
+    <path d="M1025,190 V115 H906" fill="none" stroke="#ff8a24" stroke-width="1.5" marker-end="url(#arrow-o)"/>
+    <text x="912" y="106" fill="#ff8a24" font-size="12">新版本 · 入池</text>
+
+    <!-- 外部权威来源 -->
+    <text x="220" y="580" fill="#8b98b8" font-size="13">外部权威来源（原件留原处，工作台只存指针与记录）</text>
+    <g font-size="12" fill="#b4bfda">
+      <rect x="220" y="594" width="130" height="32" rx="8" fill="none" stroke="rgba(140,178,255,.32)" stroke-dasharray="4 3"/><text x="285" y="615" text-anchor="middle">~/.agents/skills</text>
+      <rect x="360" y="594" width="110" height="32" rx="8" fill="none" stroke="rgba(140,178,255,.32)" stroke-dasharray="4 3"/><text x="415" y="615" text-anchor="middle">Agent 原生配置</text>
+      <rect x="480" y="594" width="130" height="32" rx="8" fill="none" stroke="rgba(140,178,255,.32)" stroke-dasharray="4 3"/><text x="545" y="615" text-anchor="middle">项目目录 · GitHub</text>
+      <rect x="620" y="594" width="120" height="32" rx="8" fill="none" stroke="rgba(140,178,255,.32)" stroke-dasharray="4 3"/><text x="680" y="615" text-anchor="middle">Obsidian · 飞书</text>
+      <rect x="750" y="594" width="100" height="32" rx="8" fill="none" stroke="rgba(140,178,255,.32)" stroke-dasharray="4 3"/><text x="800" y="615" text-anchor="middle">macOS 日历</text>
+      <rect x="860" y="594" width="120" height="32" rx="8" fill="none" stroke="rgba(140,178,255,.32)" stroke-dasharray="4 3"/><text x="920" y="615" text-anchor="middle">Hermes 定时记录</text>
+    </g>
+  </svg>
+  <div class="legend">
+    <span><i style="background:#ff8a24"></i>运行层与进化回路：v1.0 没讲透、v1.1 的重点</span>
+    <span><i style="background:#4de3ff"></i>新增资产类型</span>
+    <span><i style="background:#a6e36e"></i>日历：每日入口</span>
+    <span><i style="border:1px dashed #8b98b8"></i>外部权威或指针</span>
+  </div>
+  </figure>
+
+  <h2>二、路线 v2：阶段、门槛与支线</h2>
+  <p>每个阶段末由你整体验收（决定点 R2）。第三阶段“每日入口”排在“Agent 管理”之前（决定点 R1）；如果 R1 选严格按优先级，第三、四阶段互换。监工试点作为平行支线，跑通后才并入第六阶段。</p>
+  <figure>
+  <svg viewBox="0 0 1120 420" role="img" aria-label="路线图：第一阶段收尾，第二阶段资产分发与体检，第三阶段每日入口，第四阶段 Agent 管理，第五阶段知识，第六阶段协同与执行，平行支线监工试点">
+    <defs>
+      <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b98b8"/></marker>
+    </defs>
+    <g font-size="12">
+      <!-- phases row -->
+      <rect x="20" y="40" width="160" height="200" rx="12" fill="#131d33" stroke="#ff8a24"/>
+      <text x="100" y="66" text-anchor="middle" fill="#ff8a24" font-size="14" font-weight="600">一 · 资产复用收尾</text>
+      <text x="36" y="96" fill="#b4bfda">1.1 使用记录 ✓</text>
+      <text x="36" y="120" fill="#b4bfda">1.3 搜索增强 ✓</text>
+      <text x="36" y="144" fill="#ff8a24">1.4 复核 ← 现在</text>
+      <text x="36" y="178" fill="#e9eeff" font-weight="600">1.E 整体验收 👤</text>
+
+      <rect x="200" y="40" width="170" height="200" rx="12" fill="#131d33" stroke="rgba(140,178,255,.32)"/>
+      <text x="285" y="66" text-anchor="middle" fill="#e9eeff" font-size="14" font-weight="600">二 · 资产分发与体检</text>
+      <text x="216" y="96" fill="#b4bfda">2.1 发布与挂载</text>
+      <text x="216" y="120" fill="#b4bfda">2.2 体检 + 收件箱</text>
+      <text x="216" y="144" fill="#b4bfda">2.3 规则模板</text>
+      <text x="216" y="168" fill="#b4bfda">2.4 接力 a + 留痕</text>
+      <text x="216" y="202" fill="#e9eeff" font-weight="600">2.E 整体验收 👤</text>
+
+      <rect x="390" y="40" width="170" height="200" rx="12" fill="#131d33" stroke="rgba(166,227,110,.6)"/>
+      <text x="475" y="66" text-anchor="middle" fill="#a6e36e" font-size="14" font-weight="600">三 · 每日入口</text>
+      <text x="406" y="96" fill="#b4bfda">3.1 常驻 + 备份 🔐</text>
+      <text x="406" y="120" fill="#b4bfda">3.2 日历 🔐</text>
+      <text x="406" y="144" fill="#b4bfda">3.3 夜间 v1 🔐</text>
+      <text x="406" y="168" fill="#b4bfda">3.4 进化回路</text>
+      <text x="406" y="192" fill="#b4bfda">3.5 导航重排</text>
+      <text x="406" y="222" fill="#e9eeff" font-weight="600">3.E 一周每日入口 👤</text>
+
+      <rect x="580" y="40" width="160" height="200" rx="12" fill="#131d33" stroke="rgba(140,178,255,.32)"/>
+      <text x="660" y="66" text-anchor="middle" fill="#e9eeff" font-size="14" font-weight="600">四 · Agent 管理</text>
+      <text x="596" y="96" fill="#b4bfda">4.1 模型/API 🔐</text>
+      <text x="596" y="120" fill="#b4bfda">4.2 交接 + 接力 b</text>
+      <text x="596" y="144" fill="#b4bfda">4.3 修复 + 迁移 🔐</text>
+      <text x="596" y="168" fill="#b4bfda">4.4 MCP 🔐</text>
+      <text x="596" y="202" fill="#e9eeff" font-weight="600">4.E 整体验收 👤</text>
+
+      <rect x="760" y="40" width="160" height="200" rx="12" fill="#131d33" stroke="rgba(140,178,255,.32)"/>
+      <text x="840" y="66" text-anchor="middle" fill="#e9eeff" font-size="14" font-weight="600">五 · 知识连续性</text>
+      <text x="776" y="96" fill="#b4bfda">5.1 随手记→Obsidian 🔐</text>
+      <text x="776" y="120" fill="#b4bfda">5.2 飞书只读+剪藏 🔐</text>
+      <text x="776" y="144" fill="#b4bfda">5.3 主动整理扩展</text>
+      <text x="776" y="202" fill="#e9eeff" font-weight="600">5.E 整体验收 👤</text>
+
+      <rect x="940" y="40" width="160" height="200" rx="12" fill="#131d33" stroke="rgba(140,178,255,.32)"/>
+      <text x="1020" y="66" text-anchor="middle" fill="#e9eeff" font-size="14" font-weight="600">六 · 协同与执行</text>
+      <text x="956" y="96" fill="#b4bfda">6.1 监工并入</text>
+      <text x="956" y="120" fill="#b4bfda">6.2 单目标执行</text>
+      <text x="956" y="144" fill="#b4bfda">6.3 工作流 B / W03</text>
+      <text x="956" y="168" fill="#b4bfda">6.4 逆向二层 · G01</text>
+      <text x="956" y="202" fill="#e9eeff" font-weight="600">6.E 全量验收 👤</text>
+
+      <!-- gates -->
+      <line x1="180" y1="140" x2="198" y2="140" stroke="#8b98b8" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="370" y1="140" x2="388" y2="140" stroke="#8b98b8" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="560" y1="140" x2="578" y2="140" stroke="#8b98b8" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="740" y1="140" x2="758" y2="140" stroke="#8b98b8" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="920" y1="140" x2="938" y2="140" stroke="#8b98b8" stroke-width="1.5" marker-end="url(#a2)"/>
+
+      <!-- R1 decision -->
+      <path d="M475,240 V280 H660 V244" fill="none" stroke="#ff8a24" stroke-width="1.2" stroke-dasharray="5 4"/>
+      <text x="567" y="298" text-anchor="middle" fill="#ff8a24">R1：若严格按 A＞B＞C＞D，三、四阶段互换</text>
+
+      <!-- parallel branch P1 -->
+      <rect x="560" y="330" width="360" height="52" rx="10" fill="none" stroke="rgba(140,178,255,.32)" stroke-dasharray="4 3"/>
+      <text x="740" y="352" text-anchor="middle" fill="#e9eeff" font-size="13">支线 P1 · 监工试点在一个真实项目跑通 👤🔐</text>
+      <text x="740" y="372" text-anchor="middle" fill="#8b98b8">随时由你启动，不占主线</text>
+      <path d="M920,356 H1020 V244" fill="none" stroke="#8b98b8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+      <text x="1030" y="300" fill="#8b98b8">6.1 的开始前置</text>
+
+      <rect x="20" y="330" width="300" height="52" rx="10" fill="none" stroke="rgba(140,178,255,.32)" stroke-dasharray="4 3"/>
+      <text x="170" y="352" text-anchor="middle" fill="#e9eeff" font-size="13">支线 P2 · 逆向第一层（素材与方法沉淀）</text>
+      <text x="170" y="372" text-anchor="middle" fill="#8b98b8">任何阶段可穿插</text>
+    </g>
+  </svg>
+  <div class="legend">
+    <span>👤 需要你参与</span><span>🔐 需要你单独授权</span><span>✓ 已实现并复核</span><span><i style="background:#ff8a24"></i>当前位置与决定点</span>
+  </div>
+  </figure>
+</main>
+</body>
+</html>

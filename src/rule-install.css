@@ -1,0 +1,83 @@
+.rule-install {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+.rule-install h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.rule-target {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+}
+.rule-target label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+}
+.rule-target select {
+  min-height: 44px;
+  min-width: 0;
+  width: 100%;
+}
+.rule-target > .button {
+  justify-self: start;
+}
+.rule-empty {
+  color: var(--muted);
+}
+.rule-installed {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.rule-installed h4 {
+  margin: 0;
+  font-size: 14px;
+}
+.rule-installed ul {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rule-installed li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+.rule-installed-main {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.rule-installed-main small {
+  overflow-wrap: anywhere;
+}
+.rule-installed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rule-load-error {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.project-rules ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

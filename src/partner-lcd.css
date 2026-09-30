@@ -1,0 +1,102 @@
+/* 伙伴液晶屏（UI v13.1）。画布按整数点距绘制，这里只负责容器、季节底色、背光与数据像素。 */
+.lcd-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+}
+.lcd-screen canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+/* 整块屏幕随季节换底色（1.2 秒过渡），是最直观的季节信号 */
+.partner-screen {
+  transition: background 1.2s var(--ease), box-shadow 0.25s var(--ease), filter 0.25s var(--ease);
+}
+.partner-screen[data-season="spring"] {
+  background: radial-gradient(circle at 50% 35%, #d4e8b0, #a9cc86);
+}
+.partner-screen[data-season="summer"] {
+  background: radial-gradient(circle at 50% 35%, #cfe6ee, #9cc6d6);
+}
+.partner-screen[data-season="autumn"] {
+  background: radial-gradient(circle at 50% 35%, #ecd6a4, #d1ad6c);
+}
+.partner-screen[data-season="winter"] {
+  background: radial-gradient(circle at 50% 35%, #cfdbe6, #9fb3c4);
+}
+/* 悬停像按下背光键：屏幕亮起一层青色冷光 */
+.partner:hover .partner-screen,
+.partner:focus-visible .partner-screen {
+  filter: brightness(1.1) saturate(1.1);
+  box-shadow:
+    0 0 0 3px #1b2540,
+    0 0 0 4px rgba(77, 227, 255, 0.55),
+    0 0 18px rgba(77, 227, 255, 0.35),
+    inset 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+.partner-screen .lcd-screen {
+  z-index: 1;
+}
+.partner-season {
+  flex: none;
+  font: 500 11px var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+/* 画布初始是默认 300×150，不能让它撑大容器：容器尺寸只由屏幕决定 */
+.lcd-screen canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+/* 复制成功时飞向伙伴屏的数据像素 */
+.data-bit {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 200;
+  width: 6px;
+  height: 6px;
+  pointer-events: none;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+.data-bit.alt {
+  background: var(--orange);
+  box-shadow: 0 0 8px var(--orange);
+}
+@media (prefers-reduced-motion: reduce) {
+  .partner-screen {
+    transition: none;
+  }
+}
+/* 画布自己画点阵：关掉原来的点阵叠层，保留玻璃反光与扫描线在最上层 */
+.partner-screen::before,
+.digivice-lcd:has(.lcd-screen)::before {
+  opacity: 0;
+}
+.partner-screen::after,
+.digivice-lcd::after {
+  z-index: 2;
+  pointer-events: none;
+}
+/* 首页数码暴龙机：屏幕区域是一个透明按钮，点一下蛋就动（键盘也可操作） */
+.digivice-poke {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: 84px;
+  height: 84px;
+  transform: translate(-50%, -50%);
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+.digivice-poke:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 4px;
+}

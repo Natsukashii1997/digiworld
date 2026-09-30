@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.DS_Store
+test-results/
+data/
+
+# 第三方拼豆图纸原图（带作者水印），仅本机参考，不入库
+design/pixel-refs/*.png
+
+# 交接证据目录：大量截图、前像代码副本、带本机绝对路径的日志；只在本机保留，仅交接正文 .md 入库
+docs/agents/handoffs/evidence-*/
+# 本机运行与私人资料防线（云端副本不得包含）
+.env
+.env.*
+*.pem
+*.key
+*.log
