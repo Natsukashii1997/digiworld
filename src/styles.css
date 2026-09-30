@@ -6334,3 +6334,26 @@ input[type="file"]::file-selector-button {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* 进化回路 v1：资产详情“改版进化”，沿用 asset-usage 的表面与令牌，不引入新视觉方向。 */
+.asset-evolution { margin: 20px 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 12px; min-width: 0; }
+.asset-evolution header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.asset-evolution h3, .asset-evolution h4 { margin: 0; font-size: 15px; }
+.asset-evolution p, .asset-evolution li { overflow-wrap: anywhere; }
+.asset-evolution pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; font: inherit; }
+.evolution-packet pre { max-height: 320px; overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 8px; font-family: var(--mono, ui-monospace, monospace); font-size: 13px; }
+.evolution-reply label, .evolution-return label { display: grid; gap: 8px; }
+.evolution-reply textarea, .evolution-return textarea { width: 100%; box-sizing: border-box; }
+.evolution-candidate { display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--line); min-width: 0; }
+.evolution-candidate .text-difference { min-width: 0; }
+/* 候选比较随抽屉整体滚动，差异区不再单独滚动（axe scrollable-region-focusable），长行在窄屏换行。 */
+.evolution-candidate .diff-lines { max-height: none; overflow: visible; }
+.evolution-candidate .diff-line pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.evolution-note { display: grid; gap: 4px; }
+.evolution-side summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+.evolution-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.evolution-columns > div { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.evolution-columns pre { padding: 10px; border: 1px solid var(--line); border-radius: 8px; max-height: 360px; overflow: auto; }
+.evolution-evidence ul, .evolution-decided ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.evolution-evidence li { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.evolution-decided li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

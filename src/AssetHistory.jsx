@@ -242,6 +242,11 @@ export function AssetHistory({ asset, state, save, notify, onExport }) {
           .0 恢复
         </p>
       )}
+      {selected.candidateId && (
+        <p className="context-receipt">
+          来自改版候选 {selected.candidateId.slice(0, 8)}
+        </p>
+      )}
       <details className="version-snapshot" open>
         <summary>v{number(selected)}.0 内容</summary>
         <h3>{selected.title}</h3>

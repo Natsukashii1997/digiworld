@@ -153,6 +153,7 @@ export function StoragePanel({ state, adoptState, notify }) {
               </div>
               <div><span>新增使用与反馈</span><strong>{preview.summary.activityAdded ?? 0}</strong></div>
               <div><span>新增协同留痕</span><strong>{preview.summary.collabAdded ?? 0}</strong></div>
+              <div><span>新增改版候选</span><strong>{preview.summary.candidatesAdded ?? 0}</strong></div>
             </div>
             <p className="body-copy">
               保留当前设置、连接与兼容历史。整理任务恢复后仍需核对来源，不恢复读取授权。确认后写入本机主库，不修改原备份文件。

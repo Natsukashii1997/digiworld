@@ -13,6 +13,10 @@ import {
   validateProfileHistory,
 } from "./knowledge-profile-schema.mjs";
 import { validateSilver, validateAgentRoles } from "./silver-schema.mjs";
+import {
+  validateRevisionCandidates,
+  validateCandidateHistory,
+} from "./revision-candidate-schema.mjs";
 export function invalid(message) {
   throw Object.assign(new Error(`数据校验失败：${message}`), { status: 400 });
 }
@@ -225,6 +229,7 @@ export function validateState(state) {
     "profileProposals",
     "silver",
     "agentRoles",
+    "revisionCandidates",
   ]);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
   if (state.learning !== undefined) validateLearning(state.learning);
@@ -319,6 +324,7 @@ export function validateState(state) {
         "restoredFrom",
         "references",
         "type",
+        "candidateId",
       ]);
       id(v.id);
       if (v.references !== undefined) {
@@ -768,6 +774,8 @@ export function validateState(state) {
   }
   validateActivity(state);
   validateCollabLog(state);
+  // 进化回路 v1：改版候选，旧库缺失按空处理；版本上的 candidateId 与候选互相核对。
+  validateRevisionCandidates(state);
   return state;
 }
 export function canonical(value) {
@@ -794,6 +802,7 @@ export function validateHistory(
     allowCollab = false,
     allowLearningFolders = false,
     allowProfile = false,
+    allowCandidateImport = false,
   } = {},
 ) {
   if (
@@ -811,6 +820,11 @@ export function validateHistory(
   validateProfileHistory(
     previous?.profileProposals || [],
     next.profileProposals || [],
+  );
+  validateCandidateHistory(
+    previous?.revisionCandidates || [],
+    next.revisionCandidates || [],
+    allowCandidateImport,
   );
   validateActivityHistory(previous?.assetActivity || [], next.assetActivity || [], allowActivity);
   validateCollabHistory(previous?.collabLog || [], next.collabLog || [], allowCollab);
