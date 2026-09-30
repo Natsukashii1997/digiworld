@@ -232,7 +232,7 @@
   shape-rendering: crispEdges;
 }
 
-/* 6. 首页数码暴龙机：A 键切换数码蛋 / 待处理条数，B 键背光 */
+/* 6. 首页数码暴龙机：A 键切换数码蛋 / 待处理条数，B 键背光，C 键戳一下 */
 .dv-wrap {
   position: relative;
   display: grid;
@@ -273,6 +273,14 @@
   left: 88%;
   top: 60%;
 }
+.dv-key.c {
+  left: 12%;
+  top: 50%;
+}
+.dv-key.c::after {
+  left: auto;
+  right: 100%;
+}
 .digivice-art.lit .digivice-lcd {
   background: radial-gradient(circle at 50% 40%, #d9fbe9, #8fe3c4);
   box-shadow:
@@ -295,8 +303,12 @@
   .cover .version-scan,
   .odo-digit.roll .odo-old,
   .odo-digit.roll .odo-new,
-  .nav-count .odometer.is-rolling {
+  .nav-count .odometer.is-rolling,
+  .topbar .nav-count:has(.is-rolling) {
     animation: none;
+  }
+  .odo-digit.roll .odo-old {
+    display: none;
   }
   .cover .version-tag {
     animation: none;

@@ -25,7 +25,7 @@
 | 仓库 | `personal-ai-workbench`（私有） |
 | Node | ≥ 24（`package.json` engines）。Default 镜像是 Node 22，需用镜像自带的 `/opt/nvm` 安装 24（实测约 5 秒） |
 | 环境变量 | `PLAYWRIGHT_MODULE=playwright`（浏览器脚本默认指向本机绝对路径，云端必须覆盖） |
-| 网络 | 2026-09-30 实测：npm registry、nodejs.org、Ubuntu apt 源可达；**`cdn.playwright.dev` 被 403 拦截**，必须在环境网络设置中放行它（或改用完全开放网络），否则浏览器回归无法运行 |
+| 网络 | Default 环境为 Custom：已放行 `cdn.playwright.dev`、`playwright.download.prss.microsoft.com`，并包含默认包管理器列表；第二次实测浏览器下载成功。镜像自带的两个 PPA 仍返回 403，只产生警告 |
 | 启动脚本 | 见下 |
 
 ```bash
@@ -43,6 +43,16 @@ npm run build
 timeout 1200 npm test
 ```
 
+**第二次实测（2026-09-30 15:53）补充**：
+- 放行 `cdn.playwright.dev` 后，浏览器下载成功；环境变量 `PLAYWRIGHT_MODULE` 已生效。
+- 启动脚本的工作目录不一定是仓库。按仓库名判断时须先定位仓库目录，否则 `npm ci`、浏览器下载和构建都会被跳过。
+- 启动脚本里 `nvm use` 的效果不会延续到会话，任务提示词仍须先切到 Node 24。
+- `npm test` 在云端必定跑满外层 `timeout 1200`：`rule-templates.test.mjs` 每次都挂起。会话等待后台任务期间显示 idle，任务结束后会自动继续（第二次实测 08:15 继续并交回结果；此前写的“不会被唤醒”是误判，已更正）。
+- 第二次结果（分支 `cloud/2026-09-30-baseline-regression-2@2581634`）：
+  - 浏览器脚本首次 23/28，重跑 0/5，失败原因与首次一致。其中 agent-config、rule-templates、rule-templates-fix 3 个与 npm test 同源；interaction（按下后 150ms 位移约 2.93，期望 3）与 search（命令面板冷启动 750ms，超过 500ms）2 个为时序类。
+  - npm test 的 19 个失败与第一次逐条相同，列为云端已知失败集，后续云端回归只看增减。
+  - 以上都未定位；本机 427/427、29/29。
+
 **云端与本机的已知差异（2026-09-30 首次实测，未定位）**：云端以 root 在 Linux 上运行。`npm test` 本机 427/427，云端 fail 19、skipped 5，且 `rule-templates.test.mjs` 挂起。其中 `plutil`、ChatGPT.app 发现、`wiki-local` helper 是本机专属依赖；`skill-files` 的权限拒绝对 root 无效；agent-config 与 rule-templates 的恢复/回读失败原因未查明。这些问题定位之前，云端 `npm test` 结果只能作为参考，不能替代本机回归。详见 [云端基线回归交接](docs/agents/handoffs/2026-09-30-claude-cloud.md)。
 
 ```bash
@@ -58,6 +68,7 @@ for f in tests/browser.mjs tests/accessibility.mjs tests/migration.mjs tests/his
 【基点】分支 main @ <提交哈希>。新建分支 cloud/<日期>-<主题>，结果以 PR（草稿）回报。
 【任务范围】<要做什么；允许修改的文件清单>
 【验收标准】<可验证的条件：哪些命令、哪些断言、需要复现几次>
+【运行方式】先 `export NVM_DIR=/opt/nvm; . "$NVM_DIR/nvm.sh"; nvm use 24`；npm test 外层加 `timeout 1200`（rule-templates.test.mjs 在云端会挂起）；结果与云端已知失败集（CLOUD-SESSIONS §3）对照，只报告增减。
 【禁止事项】不改范围外文件；不改测试凑通过、不加长超时、不跳过用例；不接收费模型/外部服务；不推 main；不读凭据或任何真实数据。
 【回传证据】新增 docs/agents/handoffs/<日期>-cloud-<主题>.md，写明：基点提交、改动文件及前后 SHA256、执行的命令与首次原始结果（通过/失败/未执行）、失败原文、未完成项与风险。命令输出较长时放 PR 描述或分支内 docs/agents/handoffs/cloud-<主题>-logs/ 纯文本，不放截图目录。
 ```

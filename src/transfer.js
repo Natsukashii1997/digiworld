@@ -42,26 +42,42 @@ function play(button) {
   overlay.setAttribute("aria-hidden", "true");
   const canvas = document.createElement("canvas");
   overlay.append(canvas);
-  let typing = 0;
+  let typing = 0,
+    timer = 0,
+    ended = false;
+  // 收尾只做一次：正常结束或任一步异常都清定时器、节点、状态类与运行锁，下一次复制可再演出
   const finish = () => {
+    if (ended) return;
+    ended = true;
     clearInterval(typing);
+    clearTimeout(timer);
     overlay.remove();
     button.classList.remove("is-transferring", "is-transferred");
     running.delete(button);
+  };
+  const guard = (step) => () => {
+    try {
+      step();
+    } catch {
+      finish();
+    }
   };
   const reveal = () => {
     button.classList.remove("is-transferring");
     button.classList.add("is-transferred");
     button.append(overlay);
-    const px = 2,
-      w = 7 + 3 + TEXT.length * 6 + 4,
+    const w = 7 + 3 + TEXT.length * 6 + 4,
       h = 9,
       ratio = window.devicePixelRatio || 1;
+    // 每点 2px；按钮较窄时缩到能放下为止，并对齐到整数设备像素，点阵保持清晰
+    const room = Math.max(1, overlay.clientWidth - 8) / w,
+      px = Math.min(2, Math.max(1, Math.floor(room * ratio)) / ratio);
     canvas.width = w * px * ratio;
     canvas.height = h * px * ratio;
     canvas.style.width = `${w * px}px`;
     canvas.style.height = `${h * px}px`;
     const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("no canvas context");
     ctx.setTransform(ratio * px, 0, 0, ratio * px, 0, 0);
     let shown = reduced ? TEXT.length : 0,
       frame = reduced ? 4 : 0;
@@ -81,15 +97,19 @@ function play(button) {
     };
     draw();
     if (!reduced) {
-      typing = setInterval(draw, 45);
-      sparks(button.getBoundingClientRect());
+      typing = setInterval(guard(draw), 45);
+      try {
+        sparks(button.getBoundingClientRect());
+      } catch {
+        /* 火花失败不影响液晶屏 */
+      }
     }
-    setTimeout(finish, reduced ? 1400 : 1300);
+    timer = setTimeout(finish, reduced ? 1400 : 1300);
   };
-  if (reduced) reveal();
+  if (reduced) guard(reveal)();
   else {
     button.classList.add("is-transferring");
-    setTimeout(reveal, 500);
+    timer = setTimeout(guard(reveal), 500);
   }
 }
 

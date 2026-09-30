@@ -472,6 +472,12 @@ export function createPartnerLcd(canvas, { mode = "roam", cols: fixedCols, rows:
     running = false;
     cancelAnimationFrame(raf);
   }
+  // 切换画面后立即重画；静止模式没有后续帧让残影褪去，所以直接画干净的当前画面
+  function redraw() {
+    tick();
+    if (reduced) glow.fill(0);
+    render();
+  }
   const visibility = () => (document.hidden ? stop() : start());
   const resize = () => {
     fit();
@@ -515,14 +521,12 @@ export function createPartnerLcd(canvas, { mode = "roam", cols: fixedCols, rows:
       view = "number";
       number = n;
       canvas.dataset.view = "number";
-      tick();
-      render();
+      redraw();
     },
     showEgg() {
       view = "egg";
       canvas.dataset.view = "egg";
-      tick();
-      render();
+      redraw();
     },
     get running() {
       return running;

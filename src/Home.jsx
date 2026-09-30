@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
   Layers,
@@ -111,12 +111,23 @@ function DayRuler({ night }) {
 export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
   const partner = partnerOf(state);
   const stageScreen = useRef();
-  // UI v13.2：暴龙机 A 键在数码蛋与待处理条数之间切换，B 键开关背光
+  // UI v13.2：暴龙机 A 键在数码蛋与待处理条数之间切换，B 键开关背光，C 键戳一下
   const [dvView, setDvView] = useState("egg"),
     [lit, setLit] = useState(false);
   const live = state.assets.filter((a) => !a.archived);
   const f = facts(state);
   const pending = pendingItems(state, ruleInstalls);
+  // 显示数字时跟随待处理条数（加载完成、读取失败等来源变化都会更新）
+  useEffect(() => {
+    if (dvView === "number") stageScreen.current?.showNumber(pending.length);
+  }, [dvView, pending.length]);
+  const poke = () => {
+    if (dvView !== "egg") {
+      setDvView("egg");
+      stageScreen.current?.showEgg();
+    }
+    stageScreen.current?.poke();
+  };
   const recent = [...live]
     .sort((a, b) => current(b).at.localeCompare(current(a).at))
     .slice(0, 5);
@@ -184,13 +195,7 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
               type="button"
               className="digivice-poke"
               aria-label={`戳一下${partner.name}`}
-              onClick={() => {
-                if (dvView !== "egg") {
-                  setDvView("egg");
-                  stageScreen.current?.showEgg();
-                }
-                stageScreen.current?.poke();
-              }}
+              onClick={poke}
             />
             <button
               type="button"
@@ -212,6 +217,13 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
               aria-label="B 键：背光"
               aria-pressed={lit}
               onClick={() => setLit(!lit)}
+            />
+            <button
+              type="button"
+              className="dv-key c"
+              data-key="C"
+              aria-label={`C 键：戳一下${partner.name}`}
+              onClick={poke}
             />
           </div>
         </div>
