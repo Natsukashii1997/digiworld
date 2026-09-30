@@ -1,0 +1,373 @@
+✖ failing tests:
+
+test at tests/agent-config-http.test.mjs:94:1
+✖ 配置 HTTP 确认后回读并保留历史，显式恢复原字节与权限且不宣称采用 (102.09016ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config-http.test.mjs:108:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:217:1
+✖ A changed binding and external edits block restoring an old operation (121.498907ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = true # keep\n# external\n'
+  - '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = false # keep\n# external\n'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:239:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = true # keep\n# external\n',
+    expected: '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = false # keep\n# external\n',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:299:1
+✖ Replacing the actual Home inode with identical configuration bytes invalidates old previews and operations (79.517174ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:302:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:333:1
+✖ BOM, Unicode and CRLF survive applying and restoring an exact byte-offset patch (64.90406ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:344:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:371:1
+✖ A missing original journal record invalidates a restore preview with a safe conflict (105.638687ms)
+  Error: 文件与原操作结果不一致，不能恢复；请重新读取配置
+      at failure (file:///home/user/personal-ai-workbench/server/repository.mjs:17:24)
+      at reverse (file:///home/user/personal-ai-workbench/server/agent-config.mjs:197:13)
+      at file:///home/user/personal-ai-workbench/server/agent-config.mjs:410:26 {
+    status: 409
+  }
+
+test at tests/agent-config.test.mjs:522:1
+✖ A configuration rename followed by failure returns observed state without claiming operationNotStarted (79.073527ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:543:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:560:1
+✖ A saved Hermes target applies and restores YAML booleans while preserving unrelated bytes (135.045291ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:595:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:624:1
+✖ Receipt failure after file write stays recoverable and repeating the operation does not rewrite (71.882226ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:647:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:672:1
+✖ A forged inverse patch cannot authorize editing another boolean (93.268095ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /恢复记录/. Input:
+  
+  'Error: 文件与原操作结果不一致，不能恢复；请重新读取配置'
+  
+      at async TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:684:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 文件与原操作结果不一致，不能恢复；请重新读取配置
+        at failure (file:///home/user/personal-ai-workbench/server/repository.mjs:17:24)
+        at reverse (file:///home/user/personal-ai-workbench/server/agent-config.mjs:197:13)
+        at file:///home/user/personal-ai-workbench/server/agent-config.mjs:410:26,
+    expected: /恢复记录/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:694:1
+✖ Restart recovery checks the same operation without replay; explicit restore returns original bytes (74.450924ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:703:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:729:1
+✖ Confirmed apply persists a minimal journal, reads back the file and never increments the workspace revision (82.136148ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:736:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-programs.test.mjs:424:1
+✖ App 版本来自 bundle 身份，内嵌 CLI 不冒用 App 版本；支持二进制 plist (10.559081ms)
+  Error: spawn /usr/bin/plutil ENOENT
+      at ChildProcess._handle.onexit (node:internal/child_process:287:19)
+      at onErrorNT (node:internal/child_process:525:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'spawn /usr/bin/plutil',
+    path: '/usr/bin/plutil',
+    spawnargs: [ '-convert', 'binary1', '/tmp/guiji-programs-ntkKZU/ChatGPT.app/Contents/Info.plist' ],
+    cmd: '/usr/bin/plutil -convert binary1 /tmp/guiji-programs-ntkKZU/ChatGPT.app/Contents/Info.plist'
+  }
+
+test at tests/discovery.test.mjs:93:1
+✖ ChatGPT.app 的 Codex bundle 身份归入 Codex，原 ChatGPT 身份不变 (10.735796ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   {
+  -     kind: 'App',
+  -     path: '/tmp/guiji-app-alias-BPPvm3/ChatGPT.app'
+  -   }
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/discovery.test.mjs:109:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ { path: '/tmp/guiji-app-alias-BPPvm3/ChatGPT.app', kind: 'App' } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/knowledge-writeback.test.mjs:310:1
+✖ 保存的候选能被既有 wiki-local 解析，但不能绕过有效性门禁成为当前知识 (228.58776ms)
+  Error: Command failed: python3 -B -c import sys,json,importlib.util; from pathlib import Path; s=importlib.util.spec_from_file_location('wiki',sys.argv[1]); w=importlib.util.module_from_spec(s); s.loader.exec_module(w); docs,audit=w.inspect(Path(sys.argv[2])); _,reviewed=w.inspect(Path(sys.argv[2]),audit); print(json.dumps({'errors':audit['errors'],'read':w.read_current(docs,reviewed,sys.argv[3],'knowledge')},ensure_ascii=False,default=str)) /home/user/wiki-local/wiki.py /tmp/guiji-knowledge-ui-bcZvlB/sources/合成知识库 00 待整理/工作/个人/判断候选.md
+  Traceback (most recent call last):
+    File "<string>", line 1, in <module>
+    File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+    File "<frozen importlib._bootstrap_external>", line 1073, in get_code
+    File "<frozen importlib._bootstrap_external>", line 1130, in get_data
+  FileNotFoundError: [Errno 2] No such file or directory: '/home/user/wiki-local/wiki.py'
+  
+      at genericNodeError (node:internal/errors:986:15)
+      at wrappedFn (node:internal/errors:540:14)
+      at ChildProcess.exithandler (node:child_process:417:12)
+      at ChildProcess.emit (node:events:514:28)
+      at maybeClose (node:internal/child_process:1141:16)
+      at Socket.<anonymous> (node:internal/child_process:498:11)
+      at Socket.emit (node:events:514:28)
+      at Pipe.<anonymous> (node:net:362:12) {
+    code: 1,
+    killed: false,
+    signal: null,
+    cmd: "python3 -B -c import sys,json,importlib.util; from pathlib import Path; s=importlib.util.spec_from_file_location('wiki',sys.argv[1]); w=importlib.util.module_from_spec(s); s.loader.exec_module(w); docs,audit=w.inspect(Path(sys.argv[2])); _,reviewed=w.inspect(Path(sys.argv[2]),audit); print(json.dumps({'errors':audit['errors'],'read':w.read_current(docs,reviewed,sys.argv[3],'knowledge')},ensure_ascii=False,default=str)) /home/user/wiki-local/wiki.py /tmp/guiji-knowledge-ui-bcZvlB/sources/合成知识库 00 待整理/工作/个人/判断候选.md",
+    stdout: '',
+    stderr: `Traceback (most recent call last):\n  File "<string>", line 1, in <module>\n  File "<frozen importlib._bootstrap_external>", line 936, in exec_module\n  File "<frozen importlib._bootstrap_external>", line 1073, in get_code\n  File "<frozen importlib._bootstrap_external>", line 1130, in get_data\nFileNotFoundError: [Errno 2] No such file or directory: '/home/user/wiki-local/wiki.py'\n`
+  }
+
+test at tests/rule-templates.test.mjs:236:1
+✖ 装入、升级、区块外手写内容不受影响，撤回恢复写入前字节 (82.396367ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:245:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:293:1
+✖ 区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容 (127.002099ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'append' !== 'drift'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:310:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'append',
+    expected: 'drift',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:396:1
+✖ 重复提交同一令牌只写一次，返回核对结果 (93.077285ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:409:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:470:1
+✖ D-R4：写入中途失败的操作不替代已装版本，单独标为未确认 (165.418162ms)
+  AssertionError [ERR_ASSERTION]: 仍是已完成的 v1
+  + actual - expected
+  
+  + null
+  - 'e60546e5-2353-4a58-ae07-69e7bbb7673b'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:496:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 'e60546e5-2353-4a58-ae07-69e7bbb7673b',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:1:1
+✖ tests/rule-templates.test.mjs (1192165.365029ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests/skill-files.test.mjs:198:1
+✖ 来源缺失或权限失败给出可操作错误，不以空包或部分包成功返回 (5.557529ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async file:///home/user/personal-ai-workbench/tests/skill-files.test.mjs:209:7
+      at async tree (file:///home/user/personal-ai-workbench/tests/skill-files.test.mjs:30:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+[exit=124 time=1200.016405304s] end 08:15:03

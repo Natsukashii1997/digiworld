@@ -1,0 +1,26 @@
+$ ls -la --time-style=full-iso /opt/nvm/versions/node /opt/pw-browsers
+/opt/nvm/versions/node:
+total 12
+drwxr-xr-x 3 root root 4096 2026-09-30 07:53:36.919353596 +0000 .
+drwxr-xr-x 3 root root 4096 2026-09-30 07:53:36.919353596 +0000 ..
+drwxr-xr-x 6 root root 4096 2026-09-30 07:53:36.923353596 +0000 v24.21.0
+
+/opt/pw-browsers:
+total 24
+drwxr-xr-x  6 root root 4096 2026-03-31 13:31:31.000000000 +0000 .
+drwxr-xr-x 17 root root 4096 2026-09-30 07:53:28.151353075 +0000 ..
+drwxr-xr-x  2 root root 4096 2026-03-31 13:31:26.000000000 +0000 .links
+lrwxrwxrwx  1 root root   50 2026-03-31 13:31:31.000000000 +0000 chromium -> /opt/pw-browsers/chromium-1194/chrome-linux/chrome
+drwxr-xr-x  3 root root 4096 2026-03-31 13:31:31.000000000 +0000 chromium-1194
+drwxr-xr-x  3 root root 4096 2026-03-31 13:31:31.000000000 +0000 chromium_headless_shell-1194
+drwxr-xr-x  2 root root 4096 2026-03-31 13:31:31.000000000 +0000 ffmpeg-1011
+$ stat repo
+2026-09-30 07:53:31.259353259 +0000 /home/user/personal-ai-workbench
+2026-09-30 07:53:43.608331993 +0000 /home/user/personal-ai-workbench/.git
+$ uptime / date
+Wed Sep 30 07:54:00 UTC 2026
+35.07 118.40
+$ find ms-playwright / chromium-1234 anywhere
+$ find stray node_modules/dist
+$ ls -la /opt/pw-browsers/chromium
+lrwxrwxrwx 1 root root 50 Mar 31  2026 /opt/pw-browsers/chromium -> /opt/pw-browsers/chromium-1194/chrome-linux/chrome

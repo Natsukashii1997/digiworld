@@ -1,0 +1,12 @@
+$ grep init-script / working_dir events in /tmp/environment-manager.out (filtered, no credentials)
+{"time":"2026-09-30T07:53:32.029034255Z","level":"INFO","msg":"Running init script","session_id":"cse_01Wpvo9DSb3X34kbBf1XYRGy"}
+{"time":"2026-09-30T07:53:32.02914699Z","level":"INFO","msg":"Running initialization script","session_id":"cse_01Wpvo9DSb3X34kbBf1XYRGy","script_length":378}
+{"time":"2026-09-30T07:53:37.838453066Z","level":"INFO","msg":"Successfully executed init script","session_id":"cse_01Wpvo9DSb3X34kbBf1XYRGy"}
+{"time":"2026-09-30T07:53:37.848815092Z","level":"INFO","msg":"Set working directory from environment config","session_id":"cse_01Wpvo9DSb3X34kbBf1XYRGy","working_dir":"/home/user"}
+{"time":"2026-09-30T07:53:37.857154758Z","level":"INFO","msg":"Claude Code will run in directory","session_id":"cse_01Wpvo9DSb3X34kbBf1XYRGy","working_dir":"/home/user/personal-ai-workbench"}
+
+$ ls /home/user
+total 12
+drwxr-xr-x  3 root root 4096 Sep 30 07:53 .
+drwxr-xr-x  5 root root 4096 Sep 30 07:53 ..
+drwxr-xr-x 12 root root 4096 Sep 30 07:55 personal-ai-workbench

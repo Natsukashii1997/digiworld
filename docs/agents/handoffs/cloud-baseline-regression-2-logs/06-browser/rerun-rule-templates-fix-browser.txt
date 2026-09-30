@@ -1,0 +1,24 @@
+$ timeout 600 node tests/rule-templates-fix-browser.mjs  [exit=1 time=0.7s] (last 80 lines)
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'matches_before'
+- 'matches_after'
+           ^
+
+    at installVia (file:///home/user/personal-ai-workbench/tests/rule-templates-fix-browser.mjs:39:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///home/user/personal-ai-workbench/tests/rule-templates-fix-browser.mjs:50:3 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'matches_before',
+  expected: 'matches_after',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0

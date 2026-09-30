@@ -1,0 +1,7 @@
+node v24.21.0 PLAYWRIGHT_MODULE=playwright PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
+tests/agent-config-browser.mjs	1	2.1
+tests/interaction-browser.mjs	1	1.4
+tests/rule-templates-browser.mjs	1	8.3
+tests/rule-templates-fix-browser.mjs	1	0.7
+tests/search-browser.mjs	1	13.8
+DONE

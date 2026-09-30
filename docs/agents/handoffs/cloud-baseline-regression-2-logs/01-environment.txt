@@ -1,0 +1,65 @@
+$ git rev-parse HEAD
+2069c810715cadba542793744cbfa0470500e300
+[exit=0 time=.006706883s]
+$ node -v
+v22.22.2
+[exit=0 time=.009395707s]
+$ which node
+/opt/node22/bin/node
+[exit=0 time=.006012911s]
+$ npm -v
+10.9.7
+[exit=0 time=.131519915s]
+$ echo PLAYWRIGHT_MODULE=$PLAYWRIGHT_MODULE
+PLAYWRIGHT_MODULE=playwright
+[exit=0 time=.004681873s]
+$ echo PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH
+PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
+[exit=0 time=.004821656s]
+$ ls dist
+ls: cannot access 'dist': No such file or directory
+[exit=2 time=.005868542s]
+$ ls $PLAYWRIGHT_BROWSERS_PATH
+chromium
+chromium-1194
+chromium_headless_shell-1194
+ffmpeg-1011
+[exit=0 time=.007595670s]
+$ ls ~/.cache/ms-playwright
+ls: cannot access '/root/.cache/ms-playwright': No such file or directory
+[exit=2 time=.004719104s]
+$ ls node_modules | head -3
+ls: cannot access 'node_modules': No such file or directory
+[exit=0 time=.006771999s]
+$ node -p "require('playwright/package.json').version"
+node:internal/modules/cjs/loader:1386
+  throw err;
+  ^
+
+Error: Cannot find module 'playwright/package.json'
+Require stack:
+- /home/user/personal-ai-workbench/[eval]
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1383:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1025:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1030:22)
+    at Function._load (node:internal/modules/cjs/loader:1192:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16)
+    at [eval]:1:1
+    at runScriptInThisContext (node:internal/vm:209:10) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/home/user/personal-ai-workbench/[eval]' ]
+}
+[exit=1 time=.048575439s]
+$ whoami
+root
+[exit=0 time=.006439357s]
+$ ls /opt/nvm/versions/node
+v24.21.0
+[exit=0 time=.005906594s]
+$ grep -o 'playwright[^,]*' package.json
+playwright": "4.10.2"
+playwright": "1.62.1"
+[exit=0 time=.005638513s]

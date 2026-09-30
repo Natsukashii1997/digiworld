@@ -1,0 +1,23 @@
+$ timeout 600 node tests/search-browser.mjs  [exit=1 time=14.0s] (last 80 lines)
+PASS ⌘K 正文、文件、标签、多词命中并打开详情
+PASS 随手记/参考/项目分组跳转，已归档只计数并可跳转
+PASS 无结果提示与搜索范围说明分开，可去知识中枢
+PASS 资产库正文搜索、标签筛选组合、清除筛选、已归档提示、空分类筛选退出
+PASS 搜索与筛选只读，主库 revision 不变
+PASS 1440/390/320 无溢出、按钮 44px、axe 无违规
+TIMING {"palette-cold":750,"palette-warm":104,"library":146}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: palette-cold 750ms > 500ms
+    at file:///home/user/personal-ai-workbench/tests/search-browser.mjs:283:14 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.21.0

@@ -1,0 +1,30 @@
+node v24.21.0 PLAYWRIGHT_MODULE=playwright PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
+tests/accessibility.mjs	0	14.0
+tests/agent-config-browser.mjs	1	2.0
+tests/agent-inventory-browser.mjs	0	12.9
+tests/agent-targets-browser.mjs	0	22.7
+tests/browser.mjs	0	12.4
+tests/context-browser.mjs	0	7.7
+tests/delivery-browser.mjs	0	7.1
+tests/history-browser.mjs	0	13.8
+tests/history-capacity.mjs	0	8.1
+tests/interaction-browser.mjs	1	1.3
+tests/knowledge-browser.mjs	0	33.6
+tests/knowledge-compilation-browser.mjs	0	17.8
+tests/knowledge-compilation-recovery-browser.mjs	0	7.4
+tests/knowledge-compilation-resilience-browser.mjs	0	9.6
+tests/knowledge-maintenance-browser.mjs	0	25.5
+tests/knowledge-maintenance-recovery-browser.mjs	0	14.1
+tests/knowledge-query-browser.mjs	0	22.1
+tests/knowledge-writeback-browser.mjs	0	12.8
+tests/migration.mjs	0	3.1
+tests/partner-browser.mjs	0	15.6
+tests/project-identity-browser.mjs	0	22.6
+tests/rule-templates-browser.mjs	1	8.5
+tests/rule-templates-fix-browser.mjs	1	0.9
+tests/search-browser.mjs	1	14.0
+tests/skill-copies-browser.mjs	0	25.7
+tests/skill-source-browser.mjs	0	19.4
+tests/usage-browser.mjs	0	29.2
+tests/workflow-browser.mjs	0	20.1
+DONE

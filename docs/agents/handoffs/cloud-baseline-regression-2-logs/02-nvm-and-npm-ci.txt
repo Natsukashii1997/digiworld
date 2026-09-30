@@ -1,0 +1,25 @@
+$ export NVM_DIR=/opt/nvm; . "$NVM_DIR/nvm.sh"; nvm use 24
+Now using node v24.21.0 (npm v11.19.0)
+[exit=0 time=.490859445s]
+v24.21.0
+/opt/nvm/versions/node/v24.21.0/bin/node
+11.19.0
+
+$ npm ci
+
+added 76 packages, and audited 77 packages in 6s
+
+13 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   esbuild@0.25.12 (postinstall: node install.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+npm notice
+npm notice New major version of npm available! 11.19.0 -> 12.1.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.1.0
+npm notice To update run: npm install -g npm@12.1.0
+npm notice
+[exit=0 time=6.043239291s]
