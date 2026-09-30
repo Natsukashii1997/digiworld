@@ -174,7 +174,9 @@ function ContentsCard({ agent, result, onResult, onStore }) {
   const [open, setOpen] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [toggle, setToggle] = useState(null);
+    [toggle, setToggle] = useState(null),
+    // 展开时发起的重读返回前，不把上一次结果当作当前清单显示（读取失败时再退回上次结果）。
+    [stale, setStale] = useState(false);
   const lock = useRef(false);
   const bodyId = `agent-contents-${agent.id}`;
   async function load() {
@@ -189,6 +191,7 @@ function ContentsCard({ agent, result, onResult, onStore }) {
     } finally {
       lock.current = false;
       setBusy(false);
+      setStale(false);
     }
   }
   const groups = result?.groups;
@@ -210,7 +213,10 @@ function ContentsCard({ agent, result, onResult, onStore }) {
           onClick={() => {
             setOpen(!open);
             // 每次展开都重新只读读取，避免把收录、清理之前的旧结果当成当前事实。
-            if (!open) load();
+            if (!open) {
+              setStale(true);
+              load();
+            }
           }}
         >
           <ChevronDown size={15} className={open ? "flip" : ""} />
@@ -231,8 +237,10 @@ function ContentsCard({ agent, result, onResult, onStore }) {
       )}
       {open && (
         <div id={bodyId} className="agent-contents-body">
-          {!result && busy && <p className="detail-footnote">正在只读读取…</p>}
-          {groups && (
+          {(!result || stale) && busy && (
+            <p className="detail-footnote">正在只读读取…</p>
+          )}
+          {groups && !stale && (
             <>
               <section aria-label={`${agent.name} · Skill`}>
                 <h4>
