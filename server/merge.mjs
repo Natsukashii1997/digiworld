@@ -20,6 +20,8 @@ export function mergeBackup(current, incoming) {
       scrolls: 0,
     },
     scrollEntriesAdded: 0,
+    learningLinksAdded: 0,
+    learningBooksAdded: 0,
     activityAdded: 0,
     newVersions: 0,
     knowledgeVersions: 0,
@@ -32,6 +34,12 @@ export function mergeBackup(current, incoming) {
     summary.activityAdded = (input.assetActivity || []).length;
     summary.settings = "采用备份中的配置草稿；连接结果需重新扫描";
     const { connections, ...content } = input;
+    if (input.learning) {
+      // 书架文件夹是本机读取授权，不随备份恢复，需要在设置里重新指定。
+      content.learning = { ...input.learning, folders: [] };
+      summary.learningLinksAdded = input.learning.links.length;
+      summary.learningBooksAdded = input.learning.books.length;
+    }
     return { state: { ...content, revision: 0 }, summary };
   }
   const next = structuredClone(current);
@@ -118,6 +126,7 @@ export function mergeBackup(current, incoming) {
     }
   }
   if (input.scrolls?.length) mergeScrolls(next, input.scrolls, summary);
+  if (input.learning) mergeLearning(next, input.learning, summary);
   if (input.assetActivity?.length) {
     next.assetActivity ||= [];
     const records = new Map(next.assetActivity.map((r) => [r.id, r]));
@@ -171,5 +180,35 @@ function mergeScrolls(next, incoming, summary) {
       }
     }
     summary.kept++;
+  }
+}
+
+// 学习成长（切片 5.4）：与焚决一样只做加法。缺失的链接与书的状态追加；已有记录保留当前库的编辑与状态；
+// 同一链接（URL 相同）已在当前库时不重复收藏。书架文件夹是本机读取授权，不随备份导入。
+function mergeLearning(next, incoming, summary) {
+  const hasContent = incoming.links.length || incoming.books.length;
+  if (!next.learning && !hasContent) return;
+  next.learning ||= { folders: [], books: [], links: [] };
+  const linkIds = new Set(next.learning.links.map((l) => l.id)),
+    urls = new Set(next.learning.links.map((l) => l.url)),
+    bookIds = new Set(next.learning.books.map((b) => b.id));
+  for (const link of incoming.links) {
+    if (linkIds.has(link.id) || urls.has(link.url)) {
+      summary.kept++;
+      continue;
+    }
+    next.learning.links.push(structuredClone(link));
+    linkIds.add(link.id);
+    urls.add(link.url);
+    summary.learningLinksAdded++;
+  }
+  for (const book of incoming.books) {
+    if (bookIds.has(book.id)) {
+      summary.kept++;
+      continue;
+    }
+    next.learning.books.push(structuredClone(book));
+    bookIds.add(book.id);
+    summary.learningBooksAdded++;
   }
 }

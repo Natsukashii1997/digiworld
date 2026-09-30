@@ -21,6 +21,8 @@ import { createKnowledgeConnections } from "./knowledge-connections.mjs";
 import { createKnowledgeCompilation } from "./knowledge-compilation.mjs";
 import { createKnowledgeMaintenance } from "./knowledge-maintenance.mjs";
 import { createKnowledgeWriteback } from "./knowledge-writeback.mjs";
+import { createAiHot } from "./aihot.mjs";
+import { createLearning } from "./learning.mjs";
 import packageInfo from "../package.json" with { type: "json" };
 import {
   scanLocalProjects,
@@ -127,6 +129,13 @@ export async function startServer({
     files: knowledgeFiles,
     clock,
   });
+  // AI HOT（切片 5.3）：拉取函数可由测试注入桩；未在页面确认“开始拉取”前不会访问网络。
+  const aihot = createAiHot({
+    directory,
+    fetch: adapters.aihotFetch || globalThis.fetch,
+    clock,
+  });
+  const learning = createLearning(repository, { clock });
   const scans = new Map();
   function singleScan(key, operation) {
     if (scans.has(key)) throw failure("已有扫描正在进行，请稍候", 409);
@@ -189,6 +198,29 @@ export async function startServer({
           throw failure("需要 JSON 请求", 415);
         if (url.pathname === "/api/workspace" && request.method === "GET")
           return send(response, 200, await repository.read());
+        if (url.pathname === "/api/aihot" && request.method === "GET")
+          return send(response, 200, await aihot.status());
+        if (url.pathname === "/api/aihot/refresh" && request.method === "POST") {
+          await body(request);
+          return send(response, 200, await aihot.refresh());
+        }
+        if (url.pathname === "/api/aihot/settings" && request.method === "POST")
+          return send(response, 200, await aihot.saveSettings(await body(request)));
+        if (url.pathname === "/api/learning/shelf" && request.method === "GET")
+          return send(response, 200, await learning.shelf());
+        const folderAction = url.pathname.match(/^\/api\/learning\/folders\/(add|remove)$/)?.[1];
+        if (folderAction && request.method === "POST") {
+          const input = await body(request);
+          if (!input || typeof input !== "object" || Array.isArray(input))
+            throw failure("请求格式无效");
+          return send(
+            response,
+            200,
+            folderAction === "add"
+              ? await learning.addFolder({ path: input.path, expectedRevision: input.expectedRevision })
+              : await learning.removeFolder({ id: input.id, expectedRevision: input.expectedRevision }),
+          );
+        }
         if (url.pathname === "/api/asset-activity") {
           if (request.method === "GET") return send(response, 200, await activity.query(url.searchParams.get("id")));
           if (request.method === "POST") return send(response, 200, await activity.append(await body(request)));
@@ -558,10 +590,12 @@ export async function startServer({
     await repository.close();
     throw error;
   }
+  aihot.start();
   return {
     url: `http://127.0.0.1:${server.address().port}`,
     repository,
     async close() {
+      aihot.close();
       await new Promise((resolve) => server.close(resolve));
       deliveries.close();
       await repository.close();

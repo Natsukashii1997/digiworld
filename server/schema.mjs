@@ -120,6 +120,84 @@ export function validateScrolls(scrolls) {
   if (entryIds.length > SCROLL_LIMITS.totalEntries) invalid("焚决条目总量");
   unique(entryIds, "条目 ID");
 }
+// 学习成长（路线 v3 切片 5.4）：顶层集合 learning = { folders, books, links }。旧库缺失按空处理。
+// folders 是允许只读索引的书架文件夹，只能经专用操作修改（见 validateHistory）；books 只记学习状态，不存原件；
+// links 是链接收藏（手动或来自 AI HOT），删除写 deletedAt 进回收区；同一链接只收藏一次。
+export const LEARNING_LIMITS = {
+  folders: 10,
+  books: 5000,
+  links: 2000,
+  path: 2000,
+  name: 255,
+  title: 200,
+  summary: 1000,
+  source: 80,
+  url: 2000,
+};
+export const LEARNING_STATUS = ["want", "learning", "done"];
+const absolutePath = (v, label) => {
+  text(v, label, LEARNING_LIMITS.path);
+  if (!v.startsWith("/") || /[\x00-\x1f\x7f]/.test(v)) invalid(label);
+};
+const line = (v, label, max, required = true) => {
+  text(v, label, max);
+  if ((required && !v.trim()) || /[\x00-\x1f\x7f]/.test(v)) invalid(label);
+};
+export function validateLearning(learning) {
+  if (!learning || typeof learning !== "object" || Array.isArray(learning)) invalid("学习成长");
+  keys(learning, ["folders", "books", "links"]);
+  array(learning.folders, "书架文件夹数", LEARNING_LIMITS.folders);
+  array(learning.books, "学习状态记录数", LEARNING_LIMITS.books);
+  array(learning.links, "链接收藏数", LEARNING_LIMITS.links);
+  unique(learning.folders.map((f) => f?.id), "书架文件夹 ID");
+  for (const f of learning.folders) {
+    keys(f, ["id", "path", "addedAt"]);
+    id(f.id);
+    absolutePath(f.path, "书架目录");
+    date(f.addedAt);
+  }
+  unique(learning.folders.map((f) => f.path), "书架目录");
+  unique(learning.books.map((b) => b?.id), "书 ID");
+  for (const b of learning.books) {
+    keys(b, ["id", "root", "path", "name", "status", "updatedAt"]);
+    id(b.id);
+    absolutePath(b.root, "书架目录");
+    if (!safePath(b.path) || b.path.length > LEARNING_LIMITS.path || /[\x00-\x1f\x7f]/.test(b.path))
+      invalid("书的路径");
+    line(b.name, "书名", LEARNING_LIMITS.name);
+    if (!LEARNING_STATUS.includes(b.status)) invalid("学习状态");
+    date(b.updatedAt);
+  }
+  unique(learning.links.map((l) => l?.id), "链接 ID");
+  for (const l of learning.links) {
+    keys(l, [
+      "id",
+      "title",
+      "url",
+      "summary",
+      "source",
+      "origin",
+      "status",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+    ]);
+    id(l.id);
+    line(l.title, "链接标题", LEARNING_LIMITS.title);
+    text(l.url, "链接", LEARNING_LIMITS.url);
+    if (!l.url) invalid("链接为空");
+    httpUrl(l.url);
+    text(l.summary, "摘要", LEARNING_LIMITS.summary);
+    if (CONTROL.test(l.summary)) invalid("摘要");
+    line(l.source, "链接来源", LEARNING_LIMITS.source, false);
+    if (!["manual", "aihot"].includes(l.origin)) invalid("链接来源类型");
+    if (!LEARNING_STATUS.includes(l.status)) invalid("学习状态");
+    date(l.createdAt);
+    optionalDate(l.updatedAt);
+    optionalDate(l.deletedAt);
+  }
+  unique(learning.links.map((l) => l.url), "链接");
+}
 export function validateState(state) {
   keys(state, [
     "revision",
@@ -134,8 +212,10 @@ export function validateState(state) {
     "knowledgeTasks",
     "assetActivity",
     "scrolls",
+    "learning",
   ]);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
+  if (state.learning !== undefined) validateLearning(state.learning);
   if (state.knowledgeTasks !== undefined)
     validateKnowledgeTasks(state.knowledgeTasks);
   if (
@@ -678,8 +758,14 @@ export function validateHistory(
     allowOrigins = false,
     allowKnowledge = false,
     allowActivity = false,
+    allowLearningFolders = false,
   } = {},
 ) {
+  if (
+    !allowLearningFolders &&
+    !equivalent(previous?.learning?.folders || [], next.learning?.folders || [])
+  )
+    invalid("书架文件夹只能在设置中通过专用操作修改");
   validateActivityHistory(previous?.assetActivity || [], next.assetActivity || [], allowActivity);
   if (
     !allowKnowledge &&
