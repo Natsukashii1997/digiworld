@@ -1,0 +1,50 @@
+✔ 首次装入：原有字节原样保留，区块追加在末尾并可解析 (2.963492ms)
+✔ 首次装入：没有换行结尾的文件先补空行，空文件不加前导空行 (0.40454ms)
+✔ 文件不存在时计划为新建，正文缺换行时补齐 (0.362354ms)
+✔ 升级只替换区块，区块前后字节逐字节不变 (0.579809ms)
+✔ 同一版本且未手改时不需要写入 (0.372704ms)
+✔ 区块被手改：默认拒绝写入，勾选覆盖后才计划升级 (0.513913ms)
+✔ 畸形或多个托管标记一律拒绝，不猜 (1.108667ms)
+✔ 文件里是另一个模板的区块时拒绝，不替换 (0.386648ms)
+✔ 模板正文不能包含托管标记 (0.38431ms)
+✔ CRLF 文件：追加与升级都不改动原有换行 (0.633762ms)
+✔ 规则资产类型可以保存，复制记为 copy-rule 使用 (134.399519ms)
+✔ 装入、升级、区块外手写内容不受影响，撤回恢复写入前字节 (202.775658ms)
+✔ 区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容 (147.969477ms)
+✔ 文件不存在时新建；新建的文件不提供撤回 (61.138296ms)
+✔ 预览后文件变化、主库变化或过期都拒绝写入，并声明未开始 (46.467461ms)
+✔ 重复提交同一令牌只写一次，返回核对结果 (70.328174ms)
+✔ 只接受白名单文件与已发现项目，拒绝符号链接 (50.185569ms)
+✔ 操作记录私有，只存区块片段，不存区块外正文 (53.082989ms)
+✖ D-R4：写入中途失败的操作不替代已装版本，单独标为未确认 (89.962278ms)
+✔ D-R5：核对等待在途写入完成，不会在 rename 前给出写入前结论 (209.745064ms)
+✔ D-R6：约 140 KiB 的模板两版升级后，记录仍可读、列表正常 (185.718168ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 20
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1446.811869
+
+✖ failing tests:
+
+test at tests/rule-templates.test.mjs:470:1
+✖ D-R4：写入中途失败的操作不替代已装版本，单独标为未确认 (89.962278ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '2026-09-30T09:10:10.385Z'
+  - null
+  
+      at TestContext.<anonymous> (file:///home/tester/pw-stub/tests/rule-templates.test.mjs:492:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '2026-09-30T09:10:10.385Z',
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

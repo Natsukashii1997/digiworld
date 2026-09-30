@@ -1,0 +1,7 @@
+stub-root	agent-config	exit=0	1.7s
+stub-root	agent-config-http	exit=0	0.7s
+stub-root	agent-programs	exit=1	0.3s
+stub-root	discovery	exit=1	0.2s
+stub-root	knowledge-writeback	exit=1	1.0s
+stub-root	skill-files	exit=1	5.6s
+stub-root	rule-templates	exit=1	1.5s

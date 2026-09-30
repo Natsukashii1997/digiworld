@@ -1,0 +1,57 @@
+$ timeout 10 node --import ./docs/agents/handoffs/cloud-env-diff-probes/preload-active-handles.mjs --test-name-pattern=D-R5 tests/rule-templates.test.mjs
+[timer] setInterval(30000ms) 创建于 at createDeliveries (file:///home/user/personal-ai-workbench/server/delivery.mjs:16:17) <- at startServer (file:///home/user/personal-ai-workbench/server/http.mjs:86:22) <- at async contextFixture (file:///home/user/personal-ai-workbench/tests/context-fixture.mjs:21:15)
+[handles +2002ms] resources=["Timeout"] handles=[]
+[handles +4004ms] resources=["Timeout"] handles=[]
+[handles +6007ms] resources=["Timeout"] handles=[]
+[handles +8008ms] resources=["Timeout"] handles=[]
+[exit=124]
+$ MODE=plain timeout 20 node --test docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs
+
+Interrupted while running:
+
+⚠ docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs (docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs:1:1)
+✖ docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs (19966.206021ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 0
+ℹ cancelled 1
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19972.222271
+
+✖ failing tests:
+
+test at docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs:1:1
+✖ docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs (19966.206021ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+[exit=124 20s]
+$ MODE=server timeout 20 node --test docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs
+
+Interrupted while running:
+
+⚠ docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs (docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs:1:1)
+✖ docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs (19961.590384ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 0
+ℹ cancelled 1
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19967.998668
+
+✖ failing tests:
+
+test at docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs:1:1
+✖ docs/agents/handoffs/cloud-env-diff-probes/minimal-never-resolves.test.mjs (19961.590384ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+[exit=124 20s]
+$ MODE=plain timeout 5 node --import preload minimal-never-resolves.test.mjs（直接运行，打印存活资源）
+[handles +2003ms] resources=["Timeout"] handles=[]
+[handles +4004ms] resources=["Timeout"] handles=[]
+[exit=124]
+$ timeout 5 node -e "new Promise(()=>{})"（非测试脚本对照）
+[exit=0]
+$ node -v
+v24.21.0

@@ -1,0 +1,24 @@
+Warning: Ignoring extra certs from `/root/.ccr/ca-bundle.crt`, load failed: error:8000000D:system library::Permission denied
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'matches_before'
+- 'matches_after'
+           ^
+
+    at installVia (file:///home/tester/pw/tests/rule-templates-fix-browser.mjs:39:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///home/tester/pw/tests/rule-templates-fix-browser.mjs:50:3 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'matches_before',
+  expected: 'matches_after',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0

@@ -1,0 +1,16 @@
+--- /home/user/personal-ai-workbench/server/config-file.mjs	2026-09-30 08:57:14.764572201 +0000
++++ server/config-file.mjs	2026-09-30 09:09:43.169235912 +0000
+@@ -145,8 +145,11 @@
+ // No ACL/quarantine/unknown-attribute stripping is permitted. Some macOS hosts
+ // silently retain provenance after `xattr -d`, so every mutation is read back.
+ async function defaultMetadataCheck(path, options = {}) {
+-  if (process.platform !== "darwin")
+-    throw fail("此平台尚不能可靠核验配置扩展属性，未写入");
++  if (process.platform !== "darwin") {
++    if (Object.hasOwn(options, "preserve") && options.preserve?.provenance !== null)
++      throw fail("PROBE: 非 darwin 探针不支持 provenance");
++    return { provenance: null };
++  }
+   try {
+     const commandOptions = {
+       encoding: "utf8",

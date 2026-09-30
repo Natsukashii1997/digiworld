@@ -1,0 +1,7 @@
+nonroot	agent-config	exit=1	1.5s
+nonroot	agent-config-http	exit=1	0.7s
+nonroot	agent-programs	exit=1	0.4s
+nonroot	discovery	exit=1	0.2s
+nonroot	knowledge-writeback	exit=1	1.1s
+nonroot	skill-files	exit=0	5.3s
+nonroot	rule-templates	exit=1	30.9s

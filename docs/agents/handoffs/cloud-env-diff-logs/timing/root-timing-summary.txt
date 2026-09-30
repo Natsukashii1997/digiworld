@@ -1,0 +1,6 @@
+root	interaction-browser	run1	exit=0	
+root	search-browser	run1	exit=1	TIMING {"palette-cold":507,"palette-warm":87,"library":182} palette-cold 507ms > 500ms 
+root	interaction-browser	run2	exit=0	
+root	search-browser	run2	exit=1	TIMING {"palette-cold":600,"palette-warm":193,"library":113} palette-cold 600ms > 500ms 
+root	interaction-browser	run3	exit=0	
+root	search-browser	run3	exit=0	TIMING {"palette-cold":396,"palette-warm":76,"library":211} 

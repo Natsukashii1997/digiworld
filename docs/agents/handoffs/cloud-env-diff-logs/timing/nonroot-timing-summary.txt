@@ -1,0 +1,6 @@
+nonroot	interaction-browser	run1	exit=0	
+nonroot	search-browser	run1	exit=1	TIMING {"palette-cold":559,"palette-warm":86,"library":148} palette-cold 559ms > 500ms 
+nonroot	interaction-browser	run2	exit=0	
+nonroot	search-browser	run2	exit=0	TIMING {"palette-cold":322,"palette-warm":62,"library":150} 
+nonroot	interaction-browser	run3	exit=0	
+nonroot	search-browser	run3	exit=0	TIMING {"palette-cold":346,"palette-warm":115,"library":233} 

@@ -1,0 +1,25 @@
+$ date -u; uname -srm; id; node -v; nproc
+Wed Sep 30 09:23:36 UTC 2026
+Linux 6.18.44-fc-v50 x86_64
+uid=0(root) gid=0(root) groups=0(root)
+v24.21.0
+4
+$ git rev-parse HEAD
+6d93fd6e03cd6395442fa3ce28961964fa6b6511
+$ node -p process.platform
+linux
+$ ls -l /usr/bin/plutil /usr/bin/xattr /bin/ls
+ls: cannot access '/usr/bin/plutil': No such file or directory
+ls: cannot access '/usr/bin/xattr': No such file or directory
+-rwxr-xr-x 1 root root 142312 Jun 22  2025 /bin/ls
+$ ls ../wiki-local/wiki.py（tests/../../wiki-local/wiki.py）
+ls: cannot access '/home/user/wiki-local/wiki.py': No such file or directory
+$ echo GUIJI_WIKI_HELPER=$GUIJI_WIKI_HELPER
+GUIJI_WIKI_HELPER=
+$ df -T /tmp
+Filesystem     Type 1K-blocks    Used Available Use% Mounted on
+/dev/vda       ext4 264212084 8754640  30093884  23% /
+$ id tester
+uid=1001(tester) gid=1002(tester) groups=1002(tester)
+$ cat /proc/loadavg
+0.33 0.79 0.48 1/108 18098

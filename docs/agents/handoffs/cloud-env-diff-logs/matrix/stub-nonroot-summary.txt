@@ -1,0 +1,7 @@
+stub-nonroot	agent-config	exit=0	1.7s
+stub-nonroot	agent-config-http	exit=0	0.7s
+stub-nonroot	agent-programs	exit=1	0.4s
+stub-nonroot	discovery	exit=1	0.2s
+stub-nonroot	knowledge-writeback	exit=1	1.0s
+stub-nonroot	skill-files	exit=0	5.6s
+stub-nonroot	rule-templates	exit=0	1.4s

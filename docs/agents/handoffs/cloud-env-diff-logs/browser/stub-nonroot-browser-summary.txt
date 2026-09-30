@@ -1,0 +1,3 @@
+stub-nonroot	agent-config-browser	exit=0	15.0s
+stub-nonroot	rule-templates-browser	exit=0	6.2s
+stub-nonroot	rule-templates-fix-browser	exit=0	6.8s

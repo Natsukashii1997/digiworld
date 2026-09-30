@@ -1,0 +1,7 @@
+Warning: Ignoring extra certs from `/root/.ccr/ca-bundle.crt`, load failed: error:8000000D:system library::Permission denied
+PASS 新建规则→预览→确认→写入并回读；区块外不变；axe
+PASS 改版→可升级→差异预览→升级；区块外手写内容保留
+PASS 撤回→文件恢复到升级前字节
+PASS 区块被手改：默认不给写入，勾选覆盖后才可预览写入
+PASS 控件 44px；390/320 无内部横溢
+PASS 待处理出现规则可升级提示；axe

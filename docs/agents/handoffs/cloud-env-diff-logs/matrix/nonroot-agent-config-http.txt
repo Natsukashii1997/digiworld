@@ -1,0 +1,38 @@
+Warning: Ignoring extra certs from `/root/.ccr/ca-bundle.crt`, load failed: error:8000000D:system library::Permission denied
+✔ 配置 HTTP 仅对可证明未开始的执行前拒绝返回解锁凭据 (128.603906ms)
+✔ 配置 HTTP 显式概览与差异预览只返回白名单，不修改源文件或主库 (70.124729ms)
+✖ 配置 HTTP 确认后回读并保留历史，显式恢复原字节与权限且不宣称采用 (69.56673ms)
+✔ 所有配置 HTTP 动作拒绝无会话、跨站、GET 和任意路径字段 (82.935119ms)
+✔ 配置 HTTP 拒绝非白名单、错误类型、无效 JSON 与不支持的配置而不回显正文 (102.059265ms)
+✔ Codex App 不冒充 CLI 配置目标，过期预览不能通过 HTTP 写入 (71.583988ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 669.533732
+
+✖ failing tests:
+
+test at tests/agent-config-http.test.mjs:94:1
+✖ 配置 HTTP 确认后回读并保留历史，显式恢复原字节与权限且不宣称采用 (69.56673ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/tester/pw/tests/agent-config-http.test.mjs:108:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

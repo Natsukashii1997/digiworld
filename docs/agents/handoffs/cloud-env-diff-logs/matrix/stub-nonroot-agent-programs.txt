@@ -1,0 +1,37 @@
+✔ Codex 安装包声明与入口对应，返回稳定身份而不执行程序 (17.5862ms)
+✔ 程序选择指纹随同路径替换或原地更新失效，逻辑 ID 不随版本变化 (12.593807ms)
+✔ 元数据普通文件若在打开前变为 FIFO，读取使用非阻塞标志 (6.159231ms)
+✔ 程序缺失、受阻、存在但未知版本是三个不同状态，重复入口不重复 (6.493474ms)
+✔ 安装元数据拒绝错误身份、坏版本、链接、目录和超大文件 (23.396951ms)
+✔ 版本读取只打开白名单元数据，不读取 Agent 配置、聊天或程序正文 (8.861133ms)
+✔ 元数据打开前被替换、读取中被修改均不返回版本 (9.925089ms)
+✔ Hermes 重复包、坏身份、重复头、权限或祖先改向不被当作有效版本 (33.680429ms)
+✔ Hermes 目录枚举截断或中途改向时失败关闭 (57.923331ms)
+✔ 检查期间程序被替换，不把旧版本证据赋给新入口 (7.061627ms)
+✔ Hermes 从同一 venv 的包和入口声明取得版本，不扫描其他 Home (21.137222ms)
+✔ npm 版本只接受 Codex 包身份及准确的 bin 映射 (12.240759ms)
+✖ App 版本来自 bundle 身份，内嵌 CLI 不冒用 App 版本；支持二进制 plist (10.812384ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 12
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 309.317
+
+✖ failing tests:
+
+test at tests/agent-programs.test.mjs:424:1
+✖ App 版本来自 bundle 身份，内嵌 CLI 不冒用 App 版本；支持二进制 plist (10.812384ms)
+  Error: spawn /usr/bin/plutil ENOENT
+      at ChildProcess._handle.onexit (node:internal/child_process:287:19)
+      at onErrorNT (node:internal/child_process:525:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'spawn /usr/bin/plutil',
+    path: '/usr/bin/plutil',
+    spawnargs: [ '-convert', 'binary1', '/tmp/guiji-programs-JhmwgA/ChatGPT.app/Contents/Info.plist' ],
+    cmd: '/usr/bin/plutil -convert binary1 /tmp/guiji-programs-JhmwgA/ChatGPT.app/Contents/Info.plist'
+  }

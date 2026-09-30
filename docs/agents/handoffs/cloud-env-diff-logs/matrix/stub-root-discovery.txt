@@ -1,0 +1,41 @@
+✔ 扫描范围内自动发现项目，忽略依赖/符号链接；Agent 程序与配置痕迹区分 (14.879099ms)
+✔ ChatGPT.app 错误、缺失或受阻的 bundle 身份不冒充任一品牌 (21.966179ms)
+✖ ChatGPT.app 的 Codex bundle 身份归入 Codex，原 ChatGPT 身份不变 (10.651146ms)
+✔ 本地 remote 与 GitHub 自动归并为一项；重新扫描保持稳定 ID (1.637142ms)
+✔ 后续补 remote 合并已有两条记录；换 remote 解除旧关联 (8.410773ms)
+✔ 不可读取的探测位置标记未知，不当作未安装 (3.131168ms)
+✔ Git 元数据读取失败保留上次关联并报告未知 (10.023398ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 6
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 156.131076
+
+✖ failing tests:
+
+test at tests/discovery.test.mjs:93:1
+✖ ChatGPT.app 的 Codex bundle 身份归入 Codex，原 ChatGPT 身份不变 (10.651146ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   {
+  -     kind: 'App',
+  -     path: '/tmp/guiji-app-alias-idqA4x/ChatGPT.app'
+  -   }
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/tester/pw-stub/tests/discovery.test.mjs:109:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ { path: '/tmp/guiji-app-alias-idqA4x/ChatGPT.app', kind: 'App' } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

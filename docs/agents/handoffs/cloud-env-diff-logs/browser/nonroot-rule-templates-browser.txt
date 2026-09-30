@@ -1,0 +1,18 @@
+Warning: Ignoring extra certs from `/root/.ccr/ca-bundle.crt`, load failed: error:8000000D:system library::Permission denied
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 5000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible[22m
+
+    at confirmWrite (/home/tester/pw/tests/rule-templates-browser.mjs:39:56)
+    at async file:///home/tester/pw/tests/rule-templates-browser.mjs:65:3 {
+  log: [
+    "  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0

@@ -1,0 +1,28 @@
+✔ Explicit configuration overview and preview expose only supported values and leave source unchanged (113.446564ms)
+✔ Expired previews, source drift and workspace changes cannot write (79.271942ms)
+✔ Known previews rejected before execution explicitly report operationNotStarted (57.105999ms)
+✔ Unknown or restarted previews and unreadable existing operations cannot claim operationNotStarted (71.940768ms)
+✔ A known preview reports a sanitized preflight failure when the scope adapter fails (47.721543ms)
+✔ A preview expiring while its durable prepared record is saved never writes or replays the configuration (49.19562ms)
+✔ A changed binding and external edits block restoring an old operation (97.192945ms)
+﹣ A group-only permission change is drift and blocks restoring identical configuration bytes (41.336812ms) # No alternate current-user group
+✔ Replacing the actual Home inode with identical configuration bytes invalidates old previews and operations (101.134806ms)
+✔ BOM, Unicode and CRLF survive applying and restoring an exact byte-offset patch (108.463527ms)
+✔ A missing original journal record invalidates a restore preview with a safe conflict (63.357684ms)
+✔ A failed prepared-journal write never starts a configuration write or leaks the filesystem error (36.898304ms)
+✔ An ambiguous prepared-record save is checked after restart instead of replaying its write (45.356042ms)
+✔ Failure syncing the new journal directory's parent cannot reach a source-file write (32.667726ms)
+✔ A configuration rename followed by failure returns observed state without claiming operationNotStarted (51.344914ms)
+✔ A saved Hermes target applies and restores YAML booleans while preserving unrelated bytes (120.731572ms)
+✔ Receipt failure after file write stays recoverable and repeating the operation does not rewrite (91.429048ms)
+✔ A forged inverse patch cannot authorize editing another boolean (66.092795ms)
+✔ Restart recovery checks the same operation without replay; explicit restore returns original bytes (121.817714ms)
+✔ Confirmed apply persists a minimal journal, reads back the file and never increments the workspace revision (61.158232ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 1626.983627

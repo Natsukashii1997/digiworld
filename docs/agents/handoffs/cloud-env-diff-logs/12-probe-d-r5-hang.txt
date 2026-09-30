@@ -1,0 +1,21 @@
+## root
+[+    0ms] platform linux uid 0
+[+   74ms] fixture 已停 HTTP 服务；打开仓库
+[+   83ms] preview ok, token 8ae3d2ee
+[+   95ms] apply 已 resolve：status=matches_before completedAt=null notice=本次写入未确认完成；已保留操作记录，请先核对，不要重复提交
+[+ 5085ms] race 结果: 5s 观察窗到期 | rename 钩子是否触发: false
+[+ 5085ms] 文件系统调用序列: open AGENTS.md | open AGENTS.md | open data | open .8ae3d2ee-d1d6-4af3-9869-2aaa04a6bd04-fce980ed-eb45-463d-ae1d-8518be99d97c.tmp | rename | open rule-operations | open 8ae3d2ee-d1d6-4af3-9869-2aaa04a6bd04.json | open AGENTS.md | open AGENTS.md
+[+ 5085ms] 此刻存活资源(getActiveResourcesInfo): []
+[+ 5085ms] 结论：D-R5 的 `await renaming` 永远不会 resolve —— rename 从未被调用；测试体停在这里，finally 里的 release()/app.close() 都不会执行
+[+ 5089ms] 探针清理完毕；此后存活资源: ["FSReqCallback"]
+## tester (uid 1001)
+Warning: Ignoring extra certs from `/root/.ccr/ca-bundle.crt`, load failed: error:8000000D:system library::Permission denied
+[+    0ms] platform linux uid 1001
+[+   65ms] fixture 已停 HTTP 服务；打开仓库
+[+   73ms] preview ok, token 514988e2
+[+   82ms] apply 已 resolve：status=matches_before completedAt=null notice=本次写入未确认完成；已保留操作记录，请先核对，不要重复提交
+[+ 5076ms] race 结果: 5s 观察窗到期 | rename 钩子是否触发: false
+[+ 5076ms] 文件系统调用序列: open AGENTS.md | open AGENTS.md | open data | open .514988e2-762c-49ba-88c9-714cb9758ecf-c0217f14-1934-48c4-a6ba-bc5207ded2f5.tmp | rename | open rule-operations | open 514988e2-762c-49ba-88c9-714cb9758ecf.json | open AGENTS.md | open AGENTS.md
+[+ 5076ms] 此刻存活资源(getActiveResourcesInfo): []
+[+ 5076ms] 结论：D-R5 的 `await renaming` 永远不会 resolve —— rename 从未被调用；测试体停在这里，finally 里的 release()/app.close() 都不会执行
+[+ 5082ms] 探针清理完毕；此后存活资源: ["FSReqCallback"]

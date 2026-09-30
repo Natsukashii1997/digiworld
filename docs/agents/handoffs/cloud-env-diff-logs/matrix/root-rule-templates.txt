@@ -1,0 +1,136 @@
+✔ 首次装入：原有字节原样保留，区块追加在末尾并可解析 (2.34911ms)
+✔ 首次装入：没有换行结尾的文件先补空行，空文件不加前导空行 (0.30294ms)
+✔ 文件不存在时计划为新建，正文缺换行时补齐 (0.24938ms)
+✔ 升级只替换区块，区块前后字节逐字节不变 (0.413927ms)
+✔ 同一版本且未手改时不需要写入 (0.252449ms)
+✔ 区块被手改：默认拒绝写入，勾选覆盖后才计划升级 (0.347656ms)
+✔ 畸形或多个托管标记一律拒绝，不猜 (0.78807ms)
+✔ 文件里是另一个模板的区块时拒绝，不替换 (0.225976ms)
+✔ 模板正文不能包含托管标记 (0.266036ms)
+✔ CRLF 文件：追加与升级都不改动原有换行 (0.511831ms)
+✔ 规则资产类型可以保存，复制记为 copy-rule 使用 (92.652963ms)
+✖ 装入、升级、区块外手写内容不受影响，撤回恢复写入前字节 (53.12532ms)
+✖ 区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容 (53.931821ms)
+✔ 文件不存在时新建；新建的文件不提供撤回 (62.126524ms)
+✔ 预览后文件变化、主库变化或过期都拒绝写入，并声明未开始 (48.764163ms)
+✖ 重复提交同一令牌只写一次，返回核对结果 (48.198415ms)
+✔ 只接受白名单文件与已发现项目，拒绝符号链接 (45.76971ms)
+✔ 操作记录私有，只存区块片段，不存区块外正文 (43.204147ms)
+✖ D-R4：写入中途失败的操作不替代已装版本，单独标为未确认 (71.725182ms)
+✖ D-R5：核对等待在途写入完成，不会在 rename 前给出写入前结论 (30001.69889ms)
+✖ D-R6：约 140 KiB 的模板两版升级后，记录仍可读、列表正常 (174.018708ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 15
+ℹ fail 5
+ℹ cancelled 1
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 30861.706889
+
+✖ failing tests:
+
+test at tests/rule-templates.test.mjs:236:1
+✖ 装入、升级、区块外手写内容不受影响，撤回恢复写入前字节 (53.12532ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:245:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:293:1
+✖ 区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容 (53.931821ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'append' !== 'drift'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:310:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'append',
+    expected: 'drift',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:396:1
+✖ 重复提交同一令牌只写一次，返回核对结果 (48.198415ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:409:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:470:1
+✖ D-R4：写入中途失败的操作不替代已装版本，单独标为未确认 (71.725182ms)
+  AssertionError [ERR_ASSERTION]: 仍是已完成的 v1
+  + actual - expected
+  
+  + null
+  - 'c36c4d24-9827-42e8-aafe-d26095cc41b1'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:496:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 'c36c4d24-9827-42e8-aafe-d26095cc41b1',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:503:1
+✖ D-R5：核对等待在途写入完成，不会在 rename 前给出写入前结论 (30001.69889ms)
+  'test timed out after 30000ms'
+
+test at tests/rule-templates.test.mjs:541:1
+✖ D-R6：约 140 KiB 的模板两版升级后，记录仍可读、列表正常 (174.018708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:552:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

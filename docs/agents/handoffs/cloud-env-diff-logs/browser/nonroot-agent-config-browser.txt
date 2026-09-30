@@ -1,0 +1,27 @@
+Warning: Ignoring extra certs from `/root/.ccr/ca-bundle.crt`, load failed: error:8000000D:system library::Permission denied
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ '# 中文与私有字段\nmodel = "PRIVATE_CONFIG_SENTINEL"\n[tui]\nanimations = true # 保留注释\n'
+- '# 中文与私有字段\nmodel = "PRIVATE_CONFIG_SENTINEL"\n[tui]\nanimations = false # 保留注释\n'
+
+    at file:///home/tester/pw/tests/agent-config-browser.mjs:100:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '# 中文与私有字段\n' +
+    'model = "PRIVATE_CONFIG_SENTINEL"\n' +
+    '[tui]\n' +
+    'animations = true # 保留注释\n',
+  expected: '# 中文与私有字段\n' +
+    'model = "PRIVATE_CONFIG_SENTINEL"\n' +
+    '[tui]\n' +
+    'animations = false # 保留注释\n',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0

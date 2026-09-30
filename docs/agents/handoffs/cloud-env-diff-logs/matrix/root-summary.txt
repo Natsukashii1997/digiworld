@@ -1,0 +1,7 @@
+root	agent-config	exit=1	1.7s
+root	agent-config-http	exit=1	0.6s
+root	agent-programs	exit=1	0.3s
+root	discovery	exit=1	0.3s
+root	knowledge-writeback	exit=1	1.0s
+root	skill-files	exit=1	4.0s
+root	rule-templates	exit=1	30.9s

@@ -1,0 +1,40 @@
+✔ 扫描子目录前祖先已被替换为链接时，不枚举未授权目录或泄露其名称 (17.99809ms)
+✔ 目录枚举后身份已更换时拒绝旧清单，不继续访问子目录 (5.88341ms)
+✔ 发现拒绝磁盘根、其他主目录和系统数据根，不开始目录遍历 (1.011777ms)
+✔ 大量普通文件的目录也有元数据上限，不能绕过目录与候选限额 (2226.251518ms)
+✔ 本机完整包保留中文、隐藏资源、空目录、二进制和普通权限 (10.773379ms)
+✖ 来源缺失或权限失败给出可操作错误，不以空包或部分包成功返回 (4.449343ms)
+✔ 来源指纹忽略修改时间但响应字节、权限、路径与目录结构变化 (10.689501ms)
+✔ 候选目录别名仅在显式根之间解析，去重显示且完整读取仍拒绝包内链接 (15.807369ms)
+✔ 扫描深度、候选和目录数量封顶时明确返回不完整，而非伪称无结果 (2801.082244ms)
+✔ 无 frontmatter 名称回退目录名，入口正文超过主库限额明确拒绝而不截断 (150.832123ms)
+✔ 发现仅返回候选元数据，止于首个入口并明确受阻根 (9.478346ms)
+✔ 入口须为 UTF-8 文本，完整包遵守文件数、大小与安全路径限制 (193.104948ms)
+✔ 凭据路径及依赖或版本目录阻断整个包，普通隐藏资源仍保留 (17.360238ms)
+✔ 认证配置 .netrc、.npmrc、.pypirc 在打开任何正文前整包阻断 (9.423199ms)
+✔ 完整读取阻断包内符号链接、硬链接、特殊文件和特殊权限 (14.820686ms)
+✔ 读取仅限显式具体根，拒绝越界、宽泛根和目录链符号链接 (5.125659ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 15
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5581.387906
+
+✖ failing tests:
+
+test at tests/skill-files.test.mjs:198:1
+✖ 来源缺失或权限失败给出可操作错误，不以空包或部分包成功返回 (4.449343ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async file:///home/tester/pw-stub/tests/skill-files.test.mjs:209:7
+      at async tree (file:///home/tester/pw-stub/tests/skill-files.test.mjs:30:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

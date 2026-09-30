@@ -1,0 +1,9 @@
+Warning: Ignoring extra certs from `/root/.ccr/ca-bundle.crt`, load failed: error:8000000D:system library::Permission denied
+PASS D-R7 项目详情显示已装模板、版本与文件
+PASS D-R1 覆盖授权不跨目标、不跨预览保留
+PASS D-R2 未知结果锁跨关闭与刷新保留，核对后解除
+PASS D-R3 读取失败如实显示并可重试
+PASS D-R2 请求在途时刷新，重开后仍须先核对
+PASS D-R3 读取中如实显示，不当作没有装入
+PASS D-R3 写后重读期间显示读取中，不沿用旧结果
+PASS D-R3 首页与待处理页读取中不给空结论，读完出现可升级
