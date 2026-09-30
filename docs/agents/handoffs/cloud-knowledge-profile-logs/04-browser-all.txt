@@ -1,0 +1,190 @@
+== tests/browser.mjs
+OK tests/browser.mjs
+== tests/accessibility.mjs
+OK tests/accessibility.mjs
+== tests/migration.mjs
+OK tests/migration.mjs
+== tests/history-capacity.mjs
+FAIL tests/history-capacity.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: 展开只应增加当前文件的差异节点，不应挂载其他折叠文件
+    at file:///home/user/personal-ai-workbench/tests/history-capacity.mjs:112:14 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+== tests/agent-config-browser.mjs
+FAIL tests/agent-config-browser.mjs
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ '# 中文与私有字段\nmodel = "PRIVATE_CONFIG_SENTINEL"\n[tui]\nanimations = true # 保留注释\n'
+- '# 中文与私有字段\nmodel = "PRIVATE_CONFIG_SENTINEL"\n[tui]\nanimations = false # 保留注释\n'
+
+    at file:///home/user/personal-ai-workbench/tests/agent-config-browser.mjs:100:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '# 中文与私有字段\n' +
+    'model = "PRIVATE_CONFIG_SENTINEL"\n' +
+    '[tui]\n' +
+    'animations = true # 保留注释\n',
+  expected: '# 中文与私有字段\n' +
+    'model = "PRIVATE_CONFIG_SENTINEL"\n' +
+    '[tui]\n' +
+    'animations = false # 保留注释\n',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+== tests/agent-inventory-browser.mjs
+OK tests/agent-inventory-browser.mjs
+== tests/agent-targets-browser.mjs
+OK tests/agent-targets-browser.mjs
+== tests/assets-pin-browser.mjs
+OK tests/assets-pin-browser.mjs
+== tests/context-browser.mjs
+OK tests/context-browser.mjs
+== tests/delivery-browser.mjs
+OK tests/delivery-browser.mjs
+== tests/history-browser.mjs
+OK tests/history-browser.mjs
+== tests/interaction-browser.mjs
+FAIL tests/interaction-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /matrix\(1, 0, 0, 1, 0, 3\)/. Input:
+
+'matrix(1, 0, 0, 1, 0, 2.92696)'
+
+    at file:///home/user/personal-ai-workbench/tests/interaction-browser.mjs:38:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'matrix(1, 0, 0, 1, 0, 2.92696)',
+  expected: /matrix\(1, 0, 0, 1, 0, 3\)/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+== tests/knowledge-browser.mjs
+OK tests/knowledge-browser.mjs
+== tests/knowledge-compilation-browser.mjs
+OK tests/knowledge-compilation-browser.mjs
+== tests/knowledge-compilation-recovery-browser.mjs
+OK tests/knowledge-compilation-recovery-browser.mjs
+== tests/knowledge-compilation-resilience-browser.mjs
+OK tests/knowledge-compilation-resilience-browser.mjs
+== tests/knowledge-maintenance-browser.mjs
+OK tests/knowledge-maintenance-browser.mjs
+== tests/knowledge-maintenance-recovery-browser.mjs
+OK tests/knowledge-maintenance-recovery-browser.mjs
+== tests/knowledge-query-browser.mjs
+OK tests/knowledge-query-browser.mjs
+== tests/knowledge-writeback-browser.mjs
+OK tests/knowledge-writeback-browser.mjs
+== tests/knowledge-zones-browser.mjs
+OK tests/knowledge-zones-browser.mjs
+== tests/nav-zones-browser.mjs
+OK tests/nav-zones-browser.mjs
+== tests/notes-rich-browser.mjs
+OK tests/notes-rich-browser.mjs
+== tests/partner-browser.mjs
+OK tests/partner-browser.mjs
+== tests/project-identity-browser.mjs
+OK tests/project-identity-browser.mjs
+== tests/r87-fix-browser.mjs
+OK tests/r87-fix-browser.mjs
+== tests/rule-templates-browser.mjs
+FAIL tests/rule-templates-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 5000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible[22m
+
+    at confirmWrite (/home/user/personal-ai-workbench/tests/rule-templates-browser.mjs:39:56)
+    at async file:///home/user/personal-ai-workbench/tests/rule-templates-browser.mjs:65:3 {
+  log: [
+    "  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0
+== tests/rule-templates-fix-browser.mjs
+FAIL tests/rule-templates-fix-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'matches_before'
+- 'matches_after'
+           ^
+
+    at installVia (file:///home/user/personal-ai-workbench/tests/rule-templates-fix-browser.mjs:39:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///home/user/personal-ai-workbench/tests/rule-templates-fix-browser.mjs:50:3 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'matches_before',
+  expected: 'matches_after',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+== tests/scrolls-browser.mjs
+OK tests/scrolls-browser.mjs
+== tests/search-browser.mjs
+FAIL tests/search-browser.mjs
+PASS ⌘K 正文、文件、标签、多词命中并打开详情
+PASS 随手记/参考/项目分组跳转，已归档只计数并可跳转
+PASS 无结果提示与搜索范围说明分开，可去知识仓库
+PASS 资产库正文搜索、标签筛选组合、清除筛选、已归档提示、空分类筛选退出
+PASS 搜索与筛选只读，主库 revision 不变
+PASS 1440/390/320 无溢出、按钮 44px、axe 无违规
+TIMING {"palette-cold":770,"palette-warm":123,"library":284}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: palette-cold 770ms > 500ms
+    at file:///home/user/personal-ai-workbench/tests/search-browser.mjs:283:14 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+== tests/skill-copies-browser.mjs
+OK tests/skill-copies-browser.mjs
+== tests/skill-source-browser.mjs
+OK tests/skill-source-browser.mjs
+== tests/usage-browser.mjs
+OK tests/usage-browser.mjs
+== tests/usage-odometer-browser.mjs
+OK tests/usage-odometer-browser.mjs
+== tests/workflow-browser.mjs
+OK tests/workflow-browser.mjs
