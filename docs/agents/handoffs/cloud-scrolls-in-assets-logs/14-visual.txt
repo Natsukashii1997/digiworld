@@ -1,0 +1,5 @@
+{
+  "out": "/home/user/personal-ai-workbench/test-results/visual/scrolls-in-assets",
+  "problems": []
+}
+exit=0

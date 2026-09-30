@@ -1,0 +1,38 @@
+✔ 资产卡片、编号、版本与迭代阶段都由真实资产数据派生 (134.028108ms)
+✔ 详情抽屉保留 Skill 本机交付与边界说明 (33.200794ms)
+✔ 没有使用证据时版本迭代不升级，伙伴只随自己的资产成长 (2.650613ms)
+✔ 总览只展示真实计数，未扫描如实显示为未扫描 (29.60842ms)
+✔ 品牌改为数码世界，入口与样式没有残留旧主题 (17.237237ms)
+✔ 本地 HTTP 供应当前构建的入口与资源 (47.163528ms)
+✔ 切片 1.2：导航按今日、资产、目标、运行、知识、生活、系统分组，规划中页面如实标注 (14.742641ms)
+✖ 切片 1.3b：焚决是资产仓库第五种类型，#scrolls 旧链接落到资产仓库焚决标签 (1.280869ms)
+✔ UI v12.1：侧栏名称与今日页快捷动作按用户决定 (25.0168ms)
+✔ 今日页：日历未接入时只显示夜间窗口草稿与说明，待处理来自真实数据 (31.243398ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 983.528696
+
+✖ failing tests:
+
+test at tests/digital-world-ui.test.mjs:224:1
+✖ 切片 1.3b：焚决是资产仓库第五种类型，#scrolls 旧链接落到资产仓库焚决标签 (1.280869ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/digital-world-ui.test.mjs:227:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+exit=1
