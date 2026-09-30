@@ -1,0 +1,393 @@
+## 第 1 次（尚无实现模块）2026-09-30T13:23:49Z
+$ node --test tests/collab-board.test.mjs
+node:internal/modules/esm/resolve:272
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/user/personal-ai-workbench/server/collab-board.mjs' imported from /home/user/personal-ai-workbench/tests/collab-board.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+    at #resolve (node:internal/modules/esm/loader:687:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///home/user/personal-ai-workbench/server/collab-board.mjs'
+}
+
+Node.js v24.21.0
+✖ tests/collab-board.test.mjs (194.785559ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 291.141779
+
+✖ failing tests:
+
+test at tests/collab-board.test.mjs:1:1
+✖ tests/collab-board.test.mjs (194.785559ms)
+  'test failed'
+exit=1
+
+## 第 2 次（放入只抛“未实现”的空桩；schema/合并/HTTP 为基点原样）2026-09-30T13:23:56Z
+$ node --test tests/collab-board.test.mjs
+✖ 模板 #1 的五个阶段按真实流程排列 (6.328473ms)
+✖ 阶段推断：写入者里的关键词优先 (0.386159ms)
+✖ 阶段推断：写入者为“无”或没有关键词时，看最新状态标题，再看最新交接 (0.441495ms)
+✖ 阶段推断：没有关键词、没有字段，都判为未知，不猜 (0.351796ms)
+✖ 笔在谁手上：从当前写入者读出 Agent；“无”为空闲；缺字段为未知 (0.366837ms)
+✖ 状态链：只取标题里带 state_id 的节，按编号取最新；与表头编号一致者优先 (0.502869ms)
+✖ readStateHeadings：读完整标题链（上限内），不因 64 KiB 截断丢失末尾新节；符号链接不读 (52.654264ms)
+✖ readHandoffIndex：只列 docs/agents/handoffs 下的 .md 文件名与修改时间，不读正文，不跟随符号链接 (3.000092ms)
+✖ 派发口令：字段齐全（项目路径、先读、输入状态、唯一下一步、验收标准、禁止事项、要回交的证据） (0.633038ms)
+✖ 派发口令：CURRENT 读不到时如实写未知，不编造状态 (0.822267ms)
+✖ 开工口令：项目路径、先读 AGENTS.md 与 CURRENT.md、唯一下一步 (0.536573ms)
+✖ 口令不含凭据、主库内容或私人会话：只用白名单字段，疑似凭据整段替换 (0.367277ms)
+✖ 口令的项目路径必须是登记过的绝对路径 (1.31662ms)
+✖ sha256Hex 与 Node 一致 (0.303795ms)
+✖ COLLAB_AGENTS 只有三个主力 Agent (0.787013ms)
+✖ 时间线：状态链、交接文档与工作台派发记录合并，按日期倒序 (0.318727ms)
+✖ 留痕 schema：旧库缺失按空；合法记录通过 (7.016267ms)
+✔ 留痕 schema：字段严格，多余字段、错误类型、重复 ID 都拒绝 (7.228359ms)
+✖ 留痕只能经专用接口追加：普通保存不能新增、改写或删除 (1.893613ms)
+✖ 备份合并：留痕按 ID 并集；同 ID 内容不同则整次拒绝；从空库恢复保留留痕 (0.575955ms)
+✖ 看板接口：只列在推进项目；阶段、笔、状态链与交接文档来自项目文件；不读交接正文；只读 (854.033966ms)
+✖ 留痕接口：复制成功后追加一条；同 ID 重放不重复；字段严格；项目必须已登记 (324.715653ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 1
+ℹ fail 21
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2731.870367
+
+✖ failing tests:
+
+test at tests/collab-board.test.mjs:41:1
+✖ 模板 #1 的五个阶段按真实流程排列 (6.328473ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   '认领',
+  -   '实现',
+  -   '复核',
+  -   '返修',
+  -   '验收'
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:42:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ '认领', '实现', '复核', '返修', '验收' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/collab-board.test.mjs:48:1
+✖ 阶段推断：写入者里的关键词优先 (0.386159ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/collab-board.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:49:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at tests/collab-board.test.mjs:65:1
+✖ 阶段推断：写入者为“无”或没有关键词时，看最新状态标题，再看最新交接 (0.441495ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/collab-board.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:66:21)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:85:1
+✖ 阶段推断：没有关键词、没有字段，都判为未知，不猜 (0.351796ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/collab-board.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:92:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:99:1
+✖ 笔在谁手上：从当前写入者读出 Agent；“无”为空闲；缺字段为未知 (0.366837ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/collab-board.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:100:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:118:1
+✖ 状态链：只取标题里带 state_id 的节，按编号取最新；与表头编号一致者优先 (0.502869ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/collab-board.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:119:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:143:1
+✖ readStateHeadings：读完整标题链（上限内），不因 64 KiB 截断丢失末尾新节；符号链接不读 (52.654264ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/collab-board.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:146:25)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:168:1
+✖ readHandoffIndex：只列 docs/agents/handoffs 下的 .md 文件名与修改时间，不读正文，不跟随符号链接 (3.000092ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/collab-board.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:171:25)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:225:1
+✖ 派发口令：字段齐全（项目路径、先读、输入状态、唯一下一步、验收标准、禁止事项、要回交的证据） (0.633038ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/src/collab.js:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:226:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:254:1
+✖ 派发口令：CURRENT 读不到时如实写未知，不编造状态 (0.822267ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/src/collab.js:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:255:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:272:1
+✖ 开工口令：项目路径、先读 AGENTS.md 与 CURRENT.md、唯一下一步 (0.536573ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/src/collab.js:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:273:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:285:1
+✖ 口令不含凭据、主库内容或私人会话：只用白名单字段，疑似凭据整段替换 (0.367277ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/src/collab.js:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:302:23)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:319:1
+✖ 口令的项目路径必须是登记过的绝对路径 (1.31662ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /项目路径/. Input:
+  
+  'Error: 未实现'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:321:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 未实现
+        at todo (file:///home/user/personal-ai-workbench/src/collab.js:1:28)
+        at file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:321:25
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:321:12)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1402:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+        at Test.postRun (node:internal/test_runner/test:1542:19)
+        at Test.run (node:internal/test_runner/test:1467:12),
+    expected: /项目路径/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests/collab-board.test.mjs:325:1
+✖ sha256Hex 与 Node 一致 (0.303795ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/src/collab.js:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:326:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:329:1
+✖ COLLAB_AGENTS 只有三个主力 Agent (0.787013ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'codex',
+  -   'claude-code',
+  -   'hermes'
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:330:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ 'codex', 'claude-code', 'hermes' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/collab-board.test.mjs:338:1
+✖ 时间线：状态链、交接文档与工作台派发记录合并，按日期倒序 (0.318727ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/collab-board.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:340:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/collab-board.test.mjs:388:1
+✖ 留痕 schema：旧库缺失按空；合法记录通过 (7.016267ms)
+  Error: 数据校验失败：包含不支持的字段
+      at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+      at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+      at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:124:3)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:392:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    status: 400
+  }
+
+test at tests/collab-board.test.mjs:422:1
+✖ 留痕只能经专用接口追加：普通保存不能新增、改写或删除 (1.893613ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:424:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /操作留痕/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests/collab-board.test.mjs:443:1
+✖ 备份合并：留痕按 ID 并集；同 ID 内容不同则整次拒绝；从空库恢复保留留痕 (0.575955ms)
+  Error: 数据校验失败：包含不支持的字段
+      at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+      at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+      at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:124:3)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:444:19)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    status: 400
+  }
+
+test at tests/collab-board.test.mjs:477:1
+✖ 看板接口：只列在推进项目；阶段、笔、状态链与交接文档来自项目文件；不读交接正文；只读 (854.033966ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  404 !== 200
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:482:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/collab-board.test.mjs:525:1
+✖ 留痕接口：复制成功后追加一条；同 ID 重放不重复；字段严格；项目必须已登记 (324.715653ms)
+  AssertionError [ERR_ASSERTION]: {"error":"接口不存在"}
+  
+  404 !== 200
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/collab-board.test.mjs:541:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+exit=1

@@ -9,6 +9,7 @@ import { createDeliveries } from "./delivery.mjs";
 import { createProjectContext } from "./project-context.mjs";
 import { createProjectIdentity } from "./project-identity.mjs";
 import { createProjectStatus, ghVisibility } from "./project-status.mjs";
+import { createCollabBoard } from "./collab-board.mjs";
 import { inspectProjectLocation } from "./project-scan.mjs";
 import { createSkillSources } from "./skill-sources.mjs";
 import { inspectAgentInventory } from "./agent-inventory.mjs";
@@ -104,6 +105,7 @@ export async function startServer({
     clock,
     visibility: adapters.repoVisibility,
   });
+  const collabBoard = createCollabBoard(repository, { clock });
   const agentTargets = createAgentTargets(repository, adapters, clock);
   const skillCopies = createSkillCopies(repository, adapters, clock);
   const agentConfig = createAgentConfig(repository, adapters, { clock });
@@ -276,6 +278,15 @@ export async function startServer({
             response,
             200,
             await projectStatus[statusAction](await body(request)),
+          );
+        const collabAction = url.pathname.match(
+          /^\/api\/collab\/(board|record)$/,
+        )?.[1];
+        if (collabAction && request.method === "POST")
+          return send(
+            response,
+            200,
+            await collabBoard[collabAction](await body(request)),
           );
         const configAction = url.pathname.match(
           /^\/api\/agent-config\/(inspect|preview|apply|check|history|restore-preview)$/,

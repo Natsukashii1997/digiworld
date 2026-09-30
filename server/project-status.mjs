@@ -111,8 +111,8 @@ function relativeParts(path) {
   return parts;
 }
 
-// 读 root 下的相对路径文件开头 CURRENT_READ_LIMIT 字节。root 必须已经过身份与范围校验。
-export async function readCurrentFile(root, path) {
+// 读 root 下的相对路径文件开头 limit 字节（默认 CURRENT_READ_LIMIT）。root 必须已经过身份与范围校验。
+export async function readCurrentFile(root, path, limit = CURRENT_READ_LIMIT) {
   try {
     const parts = relativeParts(path);
     let target = root;
@@ -133,7 +133,7 @@ export async function readCurrentFile(root, path) {
           state: "error",
           message: "状态文件必须是普通文件，不能是特殊文件或硬链接",
         };
-      const buffer = Buffer.alloc(CURRENT_READ_LIMIT);
+      const buffer = Buffer.alloc(limit);
       let length = 0;
       while (length < buffer.length) {
         const { bytesRead } = await file.read(
@@ -435,42 +435,55 @@ function revision(input) {
   return { expectedRevision: input.revision };
 }
 
+// 在推进项目的目录解析与校验（2.1 状态卡与 2.3 协同看板共用）：只用登记的本地目录，
+// 先核对身份与扫描范围，返回校验得到的真实路径与 CURRENT 相对路径；失败时返回 error，不抛出。
+export async function resolveProjectRoot(project, connections) {
+  const binding = connections.contextBindings?.find(
+    (b) => b.projectId === project.id,
+  );
+  const root =
+    binding && project.localPaths.includes(binding.root)
+      ? binding.root
+      : project.localPaths[0];
+  if (!root)
+    return { root: "", error: "没有本地目录（仅 GitHub 项目），无法读取状态与 Git" };
+  try {
+    assertDirectoryConfirmed(project, root);
+    const directory = await projectDirectory(connections.roots, root);
+    assertDirectoryConfirmed(project, root, directory.identity);
+    // 之后的读取与 Git 查询都用校验得到的真实路径。
+    return {
+      root,
+      canonical: directory.root,
+      path:
+        binding?.root === root && binding.currentPath
+          ? binding.currentPath
+          : "CURRENT.md",
+    };
+  } catch (e) {
+    if (e.status) return { root, error: e.message };
+    if (["ENOENT", "ENOTDIR"].includes(e.code))
+      return { root, error: "项目目录不存在，请重新扫描" };
+    return { root, error: "项目目录无法核实" };
+  }
+}
+
 export function createProjectStatus(
   repository,
   { clock = Date.now, visibility = ghVisibility } = {},
 ) {
   async function inspectProject(project, connections) {
     const item = { projectId: project.id, name: project.name, root: "" };
-    const binding = connections.contextBindings?.find(
-      (b) => b.projectId === project.id,
-    );
-    const root =
-      binding && project.localPaths.includes(binding.root)
-        ? binding.root
-        : project.localPaths[0];
     const blocked = (message) => ({
       ...item,
       current: { state: "error", path: "CURRENT.md", message },
       activity: { state: "unknown" },
       safety: { checks: unknownChecks(message), issues: [] },
     });
-    if (!root) return blocked("没有本地目录（仅 GitHub 项目），无法读取状态与 Git");
-    item.root = root;
-    let canonical;
-    try {
-      assertDirectoryConfirmed(project, root);
-      const directory = await projectDirectory(connections.roots, root);
-      assertDirectoryConfirmed(project, root, directory.identity);
-      // 之后的读取与 Git 查询都用校验得到的真实路径。
-      canonical = directory.root;
-    } catch (e) {
-      if (e.status) return blocked(e.message);
-      if (["ENOENT", "ENOTDIR"].includes(e.code))
-        return blocked("项目目录不存在，请重新扫描");
-      return blocked("项目目录无法核实");
-    }
-    const path =
-      binding?.root === root && binding.currentPath ? binding.currentPath : "CURRENT.md";
+    const resolved = await resolveProjectRoot(project, connections);
+    item.root = resolved.root;
+    if (resolved.error) return blocked(resolved.error);
+    const { canonical, path } = resolved;
     const file = await readCurrentFile(canonical, path);
     const current =
       file.state === "read"

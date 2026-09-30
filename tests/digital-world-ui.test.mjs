@@ -200,7 +200,9 @@ test("切片 1.2：导航按今日、资产、目标、运行、知识、生活�
     [...mapped].sort(),
     PAGES.filter((p) => !["今日", "系统"].includes(p.group) && !p.mergedInto && !p.partOf).map((p) => p.id).sort(),
   );
-  for (const id of ["health", "collab", "calendar", "aihot", "learning", "silver"]) {
+  // 协同页自路线 v3 切片 2.3/2.4 起可用（看板、留痕、一键派发），不再是规划页；成熟度如实标“部分可用”。
+  assert.equal(PAGES.find((x) => x.id === "collab").maturity, "partial");
+  for (const id of ["health", "calendar", "aihot", "learning", "silver"]) {
     const p = PAGES.find((x) => x.id === id);
     assert.equal(p.maturity, "planned", id);
     const html = renderToStaticMarkup(

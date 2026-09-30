@@ -1,0 +1,23 @@
+## 首跑：服务端已实现，前端恢复为基点版本后构建 2026-09-30T13:29:50Z
+$ node tests/collab-board-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('heading', { name: '还没有在推进项目' }) to be visible[22m
+
+    at /home/user/personal-ai-workbench/tests/collab-board-browser.mjs:91:57 {
+  log: [
+    "  - waiting for getByRole('heading', { name: '还没有在推进项目' }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0
+exit=1
+
+## 补记：实现后第 1 次运行（2026-09-30T13:31:05Z）
+新测试自身的一条断言写错：assert.doesNotMatch(preview, /BODY-MARKER|token|x-workbench/i) 会命中口令“禁止事项”里的规则文字“Token”。
+测试意图是“口令不含本机会话令牌”，改为取 /api/session 的真实令牌值断言不在口令里，并保留 BODY-MARKER 与 x-workbench 两项。该用例此前从未通过过，不涉及放宽已有断言。
