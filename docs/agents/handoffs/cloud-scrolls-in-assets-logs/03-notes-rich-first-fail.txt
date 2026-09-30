@@ -1,0 +1,23 @@
+PASS 格式工具栏：三种列表与五种字色，按钮不小于 44px
+PASS 工具栏按选区生成列表与字色标记，键盘可触发
+PASS 五种格式保存后刷新一致；旧随手记仍是纯文本；XSS 字符串被转义、未执行
+PASS 任务勾选与取消勾选保存后刷新一致
+PASS 选中文字炼入“灵感”：焚决新增条目，随手记标记已炼并显示卷名
+PASS 无选中时整条炼入“心法”；刷新后两边状态一致
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('group', { name: '资产类型' }).getByRole('button', { name: /^焚决/ })[22m
+
+    at /home/user/personal-ai-workbench/tests/notes-rich-browser.mjs:257:88 {
+  log: [
+    "  - waiting for getByRole('group', { name: '资产类型' }).getByRole('button', { name: /^焚决/ })"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0
+exit=1

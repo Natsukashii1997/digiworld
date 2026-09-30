@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { X, Layers, Quote, Workflow } from "lucide-react";
+import { X, Layers, Quote, Workflow, Flame } from "lucide-react";
 import { Pixel, StageBar } from "./pixel.jsx";
 import { Odometer } from "./Odometer.jsx";
 
@@ -11,7 +11,6 @@ const MARKS = {
   projects: "mark_folder",
   knowledge: "mark_book",
   notes: "mark_pencil",
-  scrolls: "mark_flame",
   history: "mark_branch",
   references: "mark_scan",
   night: "mark_moon",
@@ -24,12 +23,15 @@ export const typeLabel = {
   Prompt: "Prompt",
   Workflow: "工作流",
   Rule: "规则",
+  // 焚决（切片 1.3b）：资产仓库第五种类型，数据仍在主库顶层 scrolls，不进 assets。
+  Scroll: "焚决",
 };
 export const typeCode = {
   Skill: "SKL",
   Prompt: "PRM",
   Workflow: "WFL",
   Rule: "RUL",
+  Scroll: "FJ",
 };
 // 规则的小角标用像素卷轴（用户 2026-09-30 与封面对调），尺寸与其他线条小图标一致。
 export function TypeIcon({ type, size = 24, className = "" }) {
@@ -41,7 +43,8 @@ export function TypeIcon({ type, size = 24, className = "" }) {
         className={`type-icon-pixel ${className}`}
       />
     );
-  const Icon = type === "Skill" ? Layers : type === "Prompt" ? Quote : Workflow;
+  const Icon =
+    type === "Skill" ? Layers : type === "Prompt" ? Quote : type === "Scroll" ? Flame : Workflow;
   return <Icon size={size} className={className || undefined} />;
 }
 export function Button({
@@ -231,6 +234,7 @@ export function Dialog({ title, children, onClose, drawer = false }) {
 // bump：刚保存新版本时，封面扫一道光并冒出 NEW VERSION（UI v13.2 轻量新版本）
 // uses：资产库卡片左下角的大号使用次数（切片 1.1），只显示数字；读屏文字由卡片正文提供。
 // 次数变化时像里程表一样滚到新值（R87-S1）；减少动态效果时由 Odometer 直接显示新值。
+// version 为 null 时不显示版本（焚决卷不做版本）。
 export function Cover({ type, sprite, serial = 1, version = 1, stage, large = false, bump = false, uses }) {
   return (
     <div
@@ -240,7 +244,7 @@ export function Cover({ type, sprite, serial = 1, version = 1, stage, large = fa
       <span className="cover-code">
         {typeCode[type]}.{String(serial).padStart(2, "0")}
       </span>
-      <span className="cover-version">v{version}.0</span>
+      {version !== null && <span className="cover-version">v{version}.0</span>}
       {uses !== undefined && (
         <span className="cover-uses">
           <Odometer value={uses} />

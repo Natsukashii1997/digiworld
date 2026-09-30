@@ -252,11 +252,15 @@ try {
   await card().locator(".note-refined").filter({ hasText: "已炼 · 灵感" }).waitFor();
   ok("无选中时整条炼入“心法”；刷新后两边状态一致");
 
-  // 焚决页能看到炼入的条目。
-  await page.goto(app.url + "/#scrolls");
+  // 资产仓库的焚决卷能看到炼入的条目（焚决已迁入资产仓库，切片 1.3b）。
+  await page.goto(app.url + "/#assets");
+  await page.getByRole("group", { name: "资产类型" }).getByRole("button", { name: /^焚决/ }).click();
   await button(page, "打开卷 灵感").click();
-  await page.locator(".scroll-entry", { hasText: "有序一" }).waitFor();
-  ok("焚决页显示炼入的条目");
+  await page
+    .getByRole("dialog", { name: "焚决详情" })
+    .locator(".scroll-entry", { hasText: "有序一" })
+    .waitFor();
+  ok("资产仓库焚决卷显示炼入的条目");
 
   // 只存本应用：整个过程只调用本机主库接口，不触达知识库写入。
   assert.deepEqual(

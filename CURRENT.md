@@ -4,12 +4,12 @@
 
 | 字段 | 当前值 |
 |---|---|
-| state_id | WB-20260930-105 |
+| state_id | WB-20260930-107 |
 | 更新时间 | 2026-09-30，Asia/Shanghai |
 | 更新者 | Claude |
-| 当前写入者 | 无；Claude 完成认领104，输出105并释放 |
+| 当前写入者 | 无；Claude 完成认领106，输出107并释放 |
 | 当前任务 | **第一阶段 1.1–1.4 已合入 main（99f87d4）**：两区导航、计次置顶、⌘K、焚决、随手记富文本、使用次数滚动；本机 npm test 435/435、浏览器 34/34。用户纠正：焚决是资产仓库里的一种资产类型，迁入工作由云端 E1 进行。第二阶段 2.1+2.2 由云端 E2 提前开发（合入须等 1.E）。 |
-| 唯一下一步 | 等云端 E1（`session_01QNUuyrZ1FurQjGh4ZWmFYK` → `cloud/2026-09-30-scrolls-in-assets`）回来，本机复核合入，之后请用户做第一阶段整体验收 1.E；E2（`session_0149Mn9CDJCBTRk2F6rpAVov` → `…-phase2-projects`）等 1.E 通过后合入。R87 返修（96）仍待 Codex 复核 |
+| 唯一下一步 | **请用户做第一阶段整体验收 1.E**：日常用一段时间资产仓库（计次、置顶、⌘K、焚决类型）、随手记与炼入焚决、两区导航；通过后合入云端 E2（`cloud/2026-09-30-phase2-projects`，第二阶段 2.1+2.2）。R87 返修（96）仍待 Codex 复核 |
 | 最新交接 | [Claude 认领98](docs/agents/handoffs/2026-09-30-claude-98.md)；[Claude 认领95：R87返修+产品候选](docs/agents/handoffs/2026-09-30-claude-95.md)；[Claude 问题共识基线 v2.2](docs/agents/handoffs/2026-09-30-claude-product-v2.2.md)；[Claude 云端接入](docs/agents/handoffs/2026-09-30-claude-cloud.md)；[Codex认领87独立复核](docs/agents/handoffs/2026-09-30-codex-review-87.md)；[Claude 认领 87](docs/agents/handoffs/2026-09-30-claude-87.md)；[Codex认领83复核与模板收录](docs/agents/handoffs/2026-09-30-codex-review-83.md)；此前 [Claude 认领 83](docs/agents/handoffs/2026-09-30-claude-83.md)；[Codex 认领77复核：A残留/B延期](docs/agents/handoffs/2026-09-30-codex-review-77.md)；此前 [Claude 认领 77：D-R2/D-R3 + UI v13.1](docs/agents/handoffs/2026-09-30-claude-77.md)；[Codex 2.3 返修独立复核](docs/agents/handoffs/2026-09-30-codex-review-2.3-fix.md)；此前 [Claude 2.3 返修](docs/agents/handoffs/2026-09-29-claude-2.3-fix.md)；[Codex 2.3 复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；[Codex 2.3 与模板独立复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；此前  [Claude 2.3 规则模板](docs/agents/handoffs/2026-09-29-claude-2.3-rules.md)；[Claude 1.E 验收记录](docs/agents/handoffs/2026-09-29-claude-1.E-acceptance.md)；[Codex D-UI1 修复独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-d-ui1.md)； [Claude D-UI1 修复](docs/agents/handoffs/2026-09-29-claude-ui-d-ui1.md)；[Codex UI v12.1 独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-v12.1.md)； [Claude UI v12.1](docs/agents/handoffs/2026-09-29-claude-ui-v12.1.md)；[Claude UI v12](docs/agents/handoffs/2026-09-29-claude-ui-v12.md)；[Claude 宽屏空白修复](docs/agents/handoffs/2026-09-29-claude-ui-widescreen.md)；[Claude 1.4 独立复核](docs/agents/handoffs/2026-09-29-claude-review-1.4.md)；[Claude 产品定义 v1.1 与路线 v2](docs/agents/handoffs/2026-09-29-claude-product-v1.1.md)；[Codex 1.4来源维护收口](docs/agents/handoffs/2026-09-29-codex-1.4-maintenance.md)；[Codex D-S3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-ds3.md)；[Claude 1.3 D-S3 修复](docs/agents/handoffs/2026-09-29-claude-1.3-ds3.md)；[Codex 1.3 修复差异复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-fix.md)；被复核 [Claude 1.3 复核项修复](docs/agents/handoffs/2026-09-29-claude-1.3-fix.md)；[Codex 1.3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-search.md)；被复核 [Claude 1.3 搜索增强](docs/agents/handoffs/2026-09-29-claude-1.3-search.md)；前序 [Claude 1.1 修复复核](docs/agents/handoffs/2026-09-29-claude-review-1.1-fix.md)；被复核 [Codex 1.1 复核修复](docs/agents/handoffs/2026-09-29-codex-1.1-fix.md)；输入 [Claude 1.1 复核](docs/agents/handoffs/2026-09-29-claude-review-1.1.md) |
 | 完整项目说明 | [Claude 项目交接](PROJECT-HANDOFF-CLAUDE-2026-09-28.md)（历史快照；与当前状态冲突时以本文件、ROADMAP 及当前切片契约为准） |
 | Codex 已读状态 | **WB-20260930-88**（176文件、11前像匹配，认领89）；此前 **WB-20260930-84**（172文件、13前像及A阶段指纹匹配，认领85）；此前 **WB-20260930-80**（172文件与9前像匹配，认领81）；此前 **WB-20260930-76**（本轮认领75后输出并回读；代码 D-R2/D-R3 未闭合、模板通过；166文件未变）；此前 **WB-20260929-74**（166文件指纹和10个前像匹配，认领75）；此前  **WB-20260929-70**（165 文件及 17 前像一致；用户确认主库新哈希为已知操作）；此前  **WB-20260929-62**（160文件匹配、2个前像一致，认领63，复核输出64）；此前 **WB-20260929-58**（160 文件指纹及三轮前像全部匹配，认领59，复核输出60）；此前 WB-20260929-45（157文件指纹匹配，认领46/扩围47，交接WB-20260929-48）；此前 WB-20260929-43（157文件指纹及3个代码前像一致，完成复核输出WB-20260929-45）；此前 WB-20260929-39（新157文件指纹及5个前像全部匹配；完成输出WB-20260929-41）；前轮复核输出 WB-20260929-37 |
@@ -399,3 +399,8 @@ v0.17 来源维护工程验收已完成，Claude已于53独立复核通过，第
   - 基线 D22、产品定义 v1.2、路线 v3 已同步纠正。
   - 本机最终：npm test 435/435，浏览器脚本 34/34，visual problems=[]。
   - 用 `claude --cloud` 派出 E1、E2。写入者释放。
+
+## Claude 认领 106（WB-20260930-106）
+
+- 输入105。E1（`cloud/2026-09-30-scrolls-in-assets`）与 E2（`…-phase2-projects`）交接均已到。本轮只合入 E1 并在本机回归；E2 按规则等 1.E 后合入。
+- **完成（输出 WB-20260930-107）**：合入 E1，焚决成为资产仓库第五种类型，独立页面删除，#scrolls 落到资产仓库焚决标签。本机 npm test 436/436、浏览器脚本 34/34、visual problems=[]。第一阶段 1.1–1.4 全部完成，待用户 1.E。写入者释放。

@@ -221,6 +221,39 @@ test("切片 1.2：导航按今日、资产、目标、运行、知识、生活�
   assert.match(inbox, /尚未接入的来源/);
 });
 
+test("切片 1.3b：焚决是资产仓库第五种类型，#scrolls 旧链接落到资产仓库焚决标签", async () => {
+  const { resolveRoute } = await import("../src/pages.js");
+  // 用户 2026-09-30 纠正：焚决不再是独立页面。
+  assert.equal(PAGES.some((p) => p.id === "scrolls"), false);
+  assert.deepEqual(resolveRoute("scrolls"), { route: "assets", anchor: null, filter: "Scroll" });
+  const scroll = (id, name, entries, extra = {}) => ({
+    id,
+    name,
+    pinned: false,
+    createdAt: "2026-09-30T00:00:00.000Z",
+    entries,
+    ...extra,
+  });
+  const entry = (id, text, tags, uses) => ({ id, text, tags, uses, createdAt: "2026-09-30T00:00:00.000Z" });
+  const state = {
+    ...seed(),
+    scrolls: [
+      scroll("s1", "心法", [entry("e1", "先定义问题", ["判断", "核心"], 3), entry("e2", "小步可逆", ["判断"], 1)]),
+      scroll("s2", "已删卷", [], { deletedAt: "2026-09-30T01:00:00.000Z" }),
+    ],
+  };
+  const all = render(Assets, { state });
+  assert.equal((all.match(/class="asset-card"/g) || []).length, 7, "全部 = 6 份资产 + 1 张焚决卡");
+  assert.match(all, /FJ\.01/);
+  assert.match(all, /2 条/);
+  assert.match(all, /打开卷 心法/);
+  assert.doesNotMatch(all, /已删卷/);
+  const tab = render(Assets, { state, filter: "Scroll" });
+  assert.equal((tab.match(/class="asset-card"/g) || []).length, 1);
+  assert.match(tab, /使用 4 次/);
+  assert.match(tab, /回收区/);
+});
+
 test("UI v12.1：侧栏名称与今日页快捷动作按用户决定", () => {
   // 用户 2026-09-29：首页在侧栏叫“世界总览”，夜间值守改名“夜巡”，搜索只在右上角。
   assert.equal(PAGES.find((p) => p.id === "home").label, "世界总览");

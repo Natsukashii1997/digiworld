@@ -18,7 +18,6 @@ import {
   GraduationCap,
   Gem,
   Plus,
-  Flame,
 } from "lucide-react";
 import { current } from "./store.js";
 import { page, LAYERS, ZONES } from "./pages.js";
@@ -39,7 +38,6 @@ import { PartnerScreen } from "./PartnerScreen.jsx";
 export const ICONS = {
   inbox: Inbox,
   assets: Layers,
-  scrolls: Flame,
   references: ScanLine,
   history: GitBranch,
   agents: Bot,

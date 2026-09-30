@@ -45,6 +45,15 @@ import { Odometer } from "./Odometer.jsx";
 import { usageByAsset } from "./asset-usage.js";
 import { assetHit, tagCounts, terms } from "./search.js";
 import { StageBar, stageOf, glyphOf } from "./pixel.jsx";
+import { ScrollRecycle } from "./Scrolls.jsx";
+import {
+  scrollsOf,
+  scrollSerials,
+  scrollStats,
+  scrollHit,
+  pinScroll,
+  NAME_MAX as SCROLL_NAME_MAX,
+} from "./scrolls.js";
 
 export function download(name, bytes, type = "application/octet-stream") {
   const url = URL.createObjectURL(new Blob([bytes], { type }));
@@ -109,6 +118,7 @@ export function Assets({
   select,
   onFilter,
   navigate,
+  openScroll,
 }) {
   const [search, setSearch] = useState(""),
     [layout, setLayout] = useState("grid"),
@@ -120,7 +130,12 @@ export function Assets({
   const assets = state.assets.filter((a) => !a.archived);
   const serials = serialsOf(state.assets);
   const usage = usageByAsset(assets, state.assetActivity);
-  const ofType = assets.filter((a) => filter === "all" || a.type === filter);
+  // 焚决（切片 1.3b）：卷以卡片出现在“全部”和“焚决”标签下；数据仍在主库顶层 scrolls。
+  const allScrolls = scrollsOf(state);
+  const scrolls = allScrolls.filter((s) => !s.deletedAt);
+  const scrollSerial = scrollSerials(allScrolls);
+  const ofType = filter === "Scroll" ? [] : assets.filter((a) => filter === "all" || a.type === filter);
+  const scrollsOfType = filter === "all" || filter === "Scroll" ? scrolls : [];
   const narrowed = !!(words.length || tag);
   const archivedHits = words.length
     ? state.assets.filter((a) => a.archived && assetHit(a, words)).length
@@ -131,30 +146,61 @@ export function Assets({
   };
   // 置顶（切片 1.1）：置顶项在任何类型标签与排序下都排最前，置顶项之间按使用次数降序，再按最近使用。
   // favorite 字段仅作旧数据兼容，界面不再读取；演示资产默认 favorite=true，不能当成置顶。
-  const uses = (a) => usage.get(a.id);
-  const byUse = (a, b) =>
-    uses(b).count - uses(a).count || uses(b).lastAt.localeCompare(uses(a).lastAt);
+  // 资产与焚决卷统一成同一组排序键：焚决的次数是卷内条目复制次数之和，更新时间用卷的 updatedAt/createdAt。
+  const items = [
+    ...ofType
+      .filter(
+        (a) =>
+          (!tag || current(a).tags.includes(tag)) &&
+          (!words.length || assetHit(a, words)),
+      )
+      .map((a) => {
+        const u = usage.get(a.id);
+        return {
+          kind: "asset",
+          item: a,
+          pinned: !!a.pinned,
+          count: u.count,
+          lastAt: u.lastAt,
+          at: current(a).at,
+          title: current(a).title,
+        };
+      }),
+    ...scrollsOfType
+      .map((s) => ({ s, stats: scrollStats(s) }))
+      .filter(
+        ({ s, stats }) =>
+          (!tag || stats.tags.includes(tag)) && (!words.length || scrollHit(s, words)),
+      )
+      .map(({ s, stats }) => ({
+        kind: "scroll",
+        item: s,
+        stats,
+        pinned: !!s.pinned,
+        count: stats.uses,
+        lastAt: stats.lastAt,
+        at: s.updatedAt || s.createdAt,
+        title: s.name,
+      })),
+  ];
+  const byUse = (a, b) => b.count - a.count || b.lastAt.localeCompare(a.lastAt);
   const bySort = (a, b) =>
     sort === "name"
-      ? current(a).title.localeCompare(current(b).title, "zh")
+      ? a.title.localeCompare(b.title, "zh")
       : sort === "most"
-        ? byUse(a, b) || current(b).at.localeCompare(current(a).at)
+        ? byUse(a, b) || b.at.localeCompare(a.at)
         : sort === "used"
-          ? uses(b).lastAt.localeCompare(uses(a).lastAt) || current(b).at.localeCompare(current(a).at)
-          : current(b).at.localeCompare(current(a).at);
-  const shown = ofType
-    .filter(
-      (a) =>
-        (!tag || current(a).tags.includes(tag)) &&
-        (!words.length || assetHit(a, words)),
-    )
-    .sort(
-      (a, b) =>
-        !!b.pinned - !!a.pinned ||
-        (a.pinned && b.pinned && byUse(a, b)) ||
-        bySort(a, b),
-    );
-  const pinnedCount = shown.filter((a) => a.pinned).length;
+          ? b.lastAt.localeCompare(a.lastAt) || b.at.localeCompare(a.at)
+          : b.at.localeCompare(a.at);
+  const shown = items.sort(
+    (a, b) =>
+      b.pinned - a.pinned ||
+      (a.pinned && b.pinned && byUse(a, b)) ||
+      bySort(a, b),
+  );
+  const pinnedCount = shown.filter((x) => x.pinned).length;
+  const typeCount = { all: assets.length + scrolls.length, Scroll: scrolls.length };
+  const hasAny = ofType.length + scrollsOfType.length > 0;
   return (
     <>
       <PageHeading
@@ -175,13 +221,14 @@ export function Assets({
         }
       />
       <div className="asset-toolbar">
-        <div className="segmented" aria-label="资产类型">
+        <div className="segmented" role="group" aria-label="资产类型">
           {[
             ["all", "全部"],
             ["Skill", "Skills"],
             ["Prompt", "Prompts"],
             ["Workflow", "工作流"],
             ["Rule", "规则"],
+            ["Scroll", "焚决"],
           ].map(([id, name]) => (
             <button
               key={id}
@@ -191,9 +238,7 @@ export function Assets({
             >
               {name}
               <span>
-                {id === "all"
-                  ? assets.length
-                  : assets.filter((a) => a.type === id).length}
+                {typeCount[id] ?? assets.filter((a) => a.type === id).length}
               </span>
             </button>
           ))}
@@ -201,7 +246,7 @@ export function Assets({
         <label className="inline-search">
           <Search size={15} />
           <input
-            placeholder="搜索标题、说明、正文、标签"
+            placeholder="搜索标题、说明、正文、标签、卷名"
             aria-label="在资产中搜索"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -254,6 +299,7 @@ export function Assets({
           </button>
         </div>
       </div>
+      {filter === "Scroll" && <ScrollRecycle state={state} save={save} />}
       <div className="collection-meta">
         <span>
           全部资产 · <b>{shown.length}</b>
@@ -278,7 +324,19 @@ export function Assets({
         </div>
       )}
       <div className={`asset-grid ${layout === "list" ? "list-layout" : ""}`}>
-        {shown.map((a, i) => {
+        {shown.map(({ kind, item: a, stats }, i) => {
+          if (kind === "scroll")
+            return (
+              <ScrollCard
+                key={a.id}
+                scroll={a}
+                stats={stats}
+                serial={scrollSerial[a.id]}
+                index={i}
+                onOpen={() => openScroll(a.id)}
+                onPin={() => save({ ...state, scrolls: pinScroll(allScrolls, a.id, !a.pinned) })}
+              />
+            );
           const v = current(a);
           return (
             <article
@@ -302,7 +360,7 @@ export function Assets({
                   sprite={glyphOf(a)}
                   serial={serials[a.id]}
                   version={a.versions.length}
-                  uses={uses(a).count}
+                  uses={usage.get(a.id).count}
                 />
                 <div className="card-body">
                   <div className="card-type">
@@ -312,14 +370,14 @@ export function Assets({
                   </div>
                   <h3>{v.title}</h3>
                   <p>{v.description || "还没有一句话说明。"}</p>
-                  <span className="sr-only">使用 {uses(a).count} 次</span>
+                  <span className="sr-only">使用 {usage.get(a.id).count} 次</span>
                   <div className="card-bottom">
                     <div className="card-tags">
                       {v.tags.slice(0, 2).map((t) => (
                         <span key={t}>{t}</span>
                       ))}
                     </div>
-                    <StageBar stage={uses(a).stage} />
+                    <StageBar stage={usage.get(a.id).stage} />
                   </div>
                 </div>
               </button>
@@ -349,7 +407,7 @@ export function Assets({
           title="没有匹配的资产"
           action={
             <div className="empty-actions">
-              {!ofType.length && filter !== "all" && (
+              {!hasAny && filter !== "all" && (
                 <Button secondary onClick={() => onFilter("all")}>
                   查看全部类型
                 </Button>
@@ -360,7 +418,7 @@ export function Assets({
             </div>
           }
         >
-          {!ofType.length
+          {!hasAny
             ? "当前类型还没有资产，清除筛选后这里仍会是空的。"
             : words.length
               ? `没有资产同时匹配“${words.join(" ")}”和当前筛选条件。`
@@ -370,7 +428,7 @@ export function Assets({
       {shown.length === 0 && !narrowed && (
         <Empty
           sprite="numemon"
-          title="还没有符合条件的资产"
+          title={filter === "Scroll" ? "还没有卷" : "还没有符合条件的资产"}
           action={
             <Button
               secondary
@@ -381,7 +439,9 @@ export function Assets({
             </Button>
           }
         >
-          从一份新的 Skill、Prompt、工作流或规则开始。
+          {filter === "Scroll"
+            ? "先建一卷，比如“心法”或“prompt 碎片”，把提炼过、会反复用的碎片放进去。"
+            : "从一份新的 Skill、Prompt、工作流、规则或焚决开始。"}
         </Empty>
       )}
       {collecting && (
@@ -396,12 +456,59 @@ export function Assets({
     </>
   );
 }
+// 焚决卡（切片 1.3b）：与资产卡同一外形；封面左下角为卷内条目复制次数之和，正文为卷名、条数、最常用的 1–2 个标签。
+function ScrollCard({ scroll, stats, serial, index, onOpen, onPin }) {
+  return (
+    <article className="asset-card" style={{ "--i": Math.min(index, 12) }}>
+      <button
+        className="card-open type-Scroll"
+        onClick={onOpen}
+        aria-label={`打开卷 ${scroll.name}`}
+      >
+        <span className="lock" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+          <i />
+        </span>
+        <Cover type="Scroll" serial={serial} version={null} uses={stats.uses} />
+        <div className="card-body">
+          <div className="card-type">
+            <TypeIcon type="Scroll" size={13} />
+            {typeLabel.Scroll}
+            <span>卷</span>
+          </div>
+          <h3>{scroll.name}</h3>
+          <p>{stats.count} 条</p>
+          <span className="sr-only">使用 {stats.uses} 次</span>
+          <div className="card-bottom">
+            <div className="card-tags">
+              {stats.tags.slice(0, 2).map((t) => (
+                <span key={t}>{t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </button>
+      <button
+        aria-label={`${scroll.pinned ? "取消置顶" : "置顶"} ${scroll.name}`}
+        aria-pressed={!!scroll.pinned}
+        title={scroll.pinned ? "取消置顶" : "置顶"}
+        className={`pin-button ${scroll.pinned ? "is-pinned" : ""}`}
+        onClick={onPin}
+      >
+        <Pin size={16} fill={scroll.pinned ? "currentColor" : "none"} />
+      </button>
+    </article>
+  );
+}
 export function AssetEditor({
   asset,
   assets = [],
   type: initialType,
   onClose,
   onSave,
+  onCreateScroll,
   notify,
 }) {
   const old = asset && current(asset);
@@ -432,9 +539,25 @@ export function AssetEditor({
       setError(e.message || "无法读取 ZIP，请检查文件格式");
     }
   }
+  // 焚决（切片 1.3b）：只需卷名，创建后由调用方直接打开该卷；不生成资产版本。
+  const scroll = type === "Scroll";
   async function submit(e) {
     e.preventDefault();
     setError("");
+    if (scroll) {
+      if (!title.trim() || busy) return;
+      setBusy(true);
+      try {
+        if (!(await onCreateScroll(title))) {
+          setError("本次未保存。请查看保存提示，卷名仍在。");
+          return;
+        }
+        onClose();
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     setBusy(true);
     try {
       const values = {
@@ -479,14 +602,17 @@ export function AssetEditor({
           <p>
             {asset
               ? `保存后成为 v${next}.0，v${next - 1}.0 及更早版本完整保留在历史中。`
-              : "选择类型，写下名称与内容。以后每次修改都会留下一个新版本。"}
+              : scroll
+                ? "焚决是一卷有序的碎片：心法、prompt 碎片、判断准则。先起个卷名，建好后直接在卷里添加条目。"
+                : "选择类型，写下名称与内容。以后每次修改都会留下一个新版本。"}
           </p>
         </div>
         <div className="type-picker">
-          {["Skill", "Prompt", "Workflow", "Rule"].map((t) => (
+          {["Skill", "Prompt", "Workflow", "Rule", "Scroll"].map((t) => (
             <button
               type="button"
               disabled={!!asset}
+              aria-pressed={type === t}
               key={t}
               className={type === t ? "active" : ""}
               onClick={() => setType(t)}
@@ -496,84 +622,99 @@ export function AssetEditor({
             </button>
           ))}
         </div>
-        <label>
-          名称
-          <input
-            required
-            maxLength={80}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="例如：有依据的深度研究"
-          />
-        </label>
-        <label>
-          一句话说明
-          <input
-            maxLength={180}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="它解决什么问题？什么时候用？"
-          />
-        </label>
-        {type === "Skill" ? (
-          <label className="upload-zone">
-            <Upload size={22} />
-            <strong>
-              {files.length
-                ? `已包含 ${files.length} 个文件`
-                : "导入完整 Skill ZIP"}
-            </strong>
-            <span>保留 SKILL.md 与全部依赖文件 · 最大 10 MB</span>
-            <span className="upload-pick">
-              选择 ZIP 文件 <ArrowUpRight size={14} />
-            </span>
+        {scroll ? (
+          <label>
+            卷名
             <input
-              className="file-input"
-              aria-label="选择 Skill ZIP 文件"
-              type="file"
-              accept=".zip"
-              onChange={(e) => importZip(e.target.files[0])}
+              required
+              maxLength={SCROLL_NAME_MAX}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="例如：心法、prompt 碎片、判断准则"
             />
           </label>
         ) : (
-          <label>
-            {CONTENT_LABEL[type]}
-            <textarea
-              aria-label={CONTENT_LABEL[type]}
-              required
-              rows={8}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={CONTENT_HINT[type]}
-            />
-          </label>
+          <>
+            <label>
+              名称
+              <input
+                required
+                maxLength={80}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="例如：有依据的深度研究"
+              />
+            </label>
+            <label>
+              一句话说明
+              <input
+                maxLength={180}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="它解决什么问题？什么时候用？"
+              />
+            </label>
+            {type === "Skill" ? (
+              <label className="upload-zone">
+                <Upload size={22} />
+                <strong>
+                  {files.length
+                    ? `已包含 ${files.length} 个文件`
+                    : "导入完整 Skill ZIP"}
+                </strong>
+                <span>保留 SKILL.md 与全部依赖文件 · 最大 10 MB</span>
+                <span className="upload-pick">
+                  选择 ZIP 文件 <ArrowUpRight size={14} />
+                </span>
+                <input
+                  className="file-input"
+                  aria-label="选择 Skill ZIP 文件"
+                  type="file"
+                  accept=".zip"
+                  onChange={(e) => importZip(e.target.files[0])}
+                />
+              </label>
+            ) : (
+              <label>
+                {CONTENT_LABEL[type]}
+                <textarea
+                  aria-label={CONTENT_LABEL[type]}
+                  required
+                  rows={8}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder={CONTENT_HINT[type]}
+                />
+              </label>
+            )}
+            {type === "Workflow" && (
+              <WorkflowReferenceEditor
+                references={references}
+                assets={assets}
+                onChange={setReferences}
+                disabled={busy}
+              />
+            )}
+            <div className="form-row">
+              <label>
+                标签
+                <input
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="用逗号分隔"
+                />
+              </label>
+              <label>
+                来源
+                <input
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                  placeholder="作者、链接，或个人创建"
+                />
+              </label>
+            </div>
+          </>
         )}
-        {type === "Workflow" && (
-          <WorkflowReferenceEditor
-            references={references}
-            assets={assets}
-            onChange={setReferences}
-            disabled={busy}
-          />
-        )}
-        <div className="form-row">
-          <label>
-            标签
-            <input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="用逗号分隔"
-            />
-          </label>
-          <label>
-            来源
-            <input
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="作者、链接，或个人创建"
-            />
-          </label>
-        </div>
         {error && (
           <p role="alert" className="error">
             {error}
@@ -583,8 +724,8 @@ export function AssetEditor({
           <Button type="button" secondary onClick={onClose}>
             取消
           </Button>
-          <Button type="submit" disabled={busy}>
-            {busy ? "正在保存…" : asset ? "保存新版本" : "保存资产"}
+          <Button type="submit" disabled={busy || (scroll && !title.trim())}>
+            {busy ? "正在保存…" : asset ? "保存新版本" : scroll ? "新建卷" : "保存资产"}
           </Button>
         </div>
       </form>

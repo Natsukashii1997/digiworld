@@ -200,16 +200,16 @@ try {
   await button(page, `取消置顶 ${current(rule).title}`).waitFor();
   await axe(page, "assets");
 
-  // 新建资产：四个类型同一行。
+  // 新建资产：五个类型同一行（切片 1.3b 加入焚决，用户 2026-09-30 纠正）。
   await button(page, "新建资产").click();
   const types = page.locator(".type-picker button");
-  assert.equal(await types.count(), 4);
+  assert.equal(await types.count(), 5);
   const tops = [];
-  for (let i = 0; i < 4; i++) tops.push(Math.round((await size(types.nth(i))).y));
+  for (let i = 0; i < 5; i++) tops.push(Math.round((await size(types.nth(i))).y));
   assert.equal(new Set(tops).size, 1, `类型按钮不在同一行：${tops.join(",")}`);
   await axe(page, "create-dialog");
   await page.keyboard.press("Escape");
-  ok("1440 宽时四个类型按钮同一行；axe 无违规");
+  ok("1440 宽时五个类型按钮同一行；axe 无违规");
 
   // 390 宽：无横向溢出，控件仍至少 44px。
   const narrow = await open(390, 844);
