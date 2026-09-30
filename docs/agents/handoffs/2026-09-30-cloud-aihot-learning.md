@@ -91,7 +91,7 @@
 | `node tests/aihot-learning-browser.mjs`（实现后） | 10 个 PASS，`all passed`，exit 0 | 新测试 |
 | `npm run build`（`logs/10-build.txt`） | 通过（仍有原有的 chunk 超过 500 kB 提示） | — |
 | 35 个浏览器脚本各 1 次（`logs/11-browser-scripts.txt`：4 个基础脚本 + 31 个 `*-browser.mjs`，含新脚本） | 30/35 通过。失败：agent-config、rule-templates、rule-templates-fix（配置写入平台保护）、interaction（`2.73819` 期望 3）、search（`palette-cold 946ms > 500ms`） | 5 个失败都在已知集内，原因与已知描述一致：**增 0、减 0**。新脚本 aihot-learning-browser 在完整回归中 exit 0 |
-NPM_ROW
+| `timeout 1200 npm test`（`logs/12-npm-test.txt`） | tests 459 / pass 434 / fail 19 / cancelled 1 / skipped 5；`rule-templates.test.mjs` 照旧挂到外层超时（exit=124，用时 1200 秒） | 19 个失败（加上 rule-templates 文件级 1 条）与 `cloud-scrolls-in-assets-logs/12-npm-test.txt` 的失败清单去掉耗时后逐条 diff **完全相同**：**增 0、减 0**。tests 435→459、pass 410→434，差额 24 是本任务新增的测试（aihot 13、learning 10、digital-world-ui 1），全部通过 |
 | `node tests/visual.mjs aihot-learning`（`logs/13-visual.txt`） | `problems: []` | — |
 
 截图（`cloud-aihot-learning-shots/`，4 张）：`aihot-selected-1440.png`（AI HOT 精选标签，含一条无有效链接的条目）、`learning-1440.png`（学习成长全页：书架、链接收藏、内容解析）、`aihot-390.png`（390 宽，日报标签、拉取失败标注）、`home-hot-390.png`（390 宽，世界总览“今日热点”卡）。
