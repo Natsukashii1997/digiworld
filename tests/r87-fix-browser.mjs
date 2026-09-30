@@ -16,7 +16,7 @@ const open = (options = {}) =>
     viewport: { width: 1440, height: 1000 },
     permissions: ["clipboard-read", "clipboard-write"],
     ...options,
-  });需要
+  });
 const watch = (page) => {
   page.on("pageerror", (e) => errors.push(e.message));
   page.setDefaultTimeout(5000);
