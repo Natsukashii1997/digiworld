@@ -1,0 +1,21 @@
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.24s
+== unit
+✔ HTTP：gh 查询失败或抛错时远程私有性为未知，不报错 (193.084874ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1715.788135
+== browser
+PASS axe 项目空间 1440 无违规
+PASS 待处理列出体检与停滞事项，点击跳到项目空间
+PASS 390 宽无横向溢出、44px、axe 无违规
+PASS 全过程未修改任何项目文件
+PASS 无页面脚本错误
+exit=0

@@ -1,0 +1,11 @@
+✓ built in 2.86s
+== unit collab-board + digital-world-ui
+ℹ tests 32
+ℹ pass 32
+ℹ fail 0
+== browser collab-board
+exit=0
+PASS 一键开工口令字段齐全，确认后复制并计入留痕
+PASS 390 宽无横向溢出、44px、axe 无违规
+PASS 全过程未修改任何项目文件
+PASS 无页面脚本错误
