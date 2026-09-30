@@ -22,6 +22,8 @@ export function mergeBackup(current, incoming) {
     scrollEntriesAdded: 0,
     learningLinksAdded: 0,
     learningBooksAdded: 0,
+    silverAdded: { wall: 0, categories: 0, items: 0 },
+    agentRolesAdded: 0,
     activityAdded: 0,
     collabAdded: 0,
     newVersions: 0,
@@ -34,6 +36,9 @@ export function mergeBackup(current, incoming) {
       summary.added[name] = (input[name] || []).length;
     summary.activityAdded = (input.assetActivity || []).length;
     summary.collabAdded = (input.collabLog || []).length;
+    for (const name of Object.keys(summary.silverAdded))
+      summary.silverAdded[name] = (input.silver?.[name] || []).length;
+    summary.agentRolesAdded = (input.agentRoles || []).length;
     summary.settings = "采用备份中的配置草稿；连接结果需重新扫描";
     const { connections, ...content } = input;
     if (input.learning) {
@@ -132,6 +137,16 @@ export function mergeBackup(current, incoming) {
   }
   if (input.scrolls?.length) mergeScrolls(next, input.scrolls, summary);
   if (input.learning) mergeLearning(next, input.learning, summary);
+  if (input.silver) mergeSilver(next, input.silver, summary);
+  if (input.agentRoles?.length) {
+    // 角色卡：当前库已有的卡保留当前编辑，只补上备份独有的卡。
+    next.agentRoles ||= [];
+    for (const role of input.agentRoles)
+      if (!next.agentRoles.some((r) => r.agentId === role.agentId)) {
+        next.agentRoles.push(structuredClone(role));
+        summary.agentRolesAdded++;
+      }
+  }
   if (input.assetActivity?.length) {
     next.assetActivity ||= [];
     const records = new Map(next.assetActivity.map((r) => [r.id, r]));
@@ -230,5 +245,30 @@ function mergeLearning(next, incoming, summary) {
     next.learning.books.push(structuredClone(book));
     bookIds.add(book.id);
     summary.learningBooksAdded++;
+  }
+}
+
+// 银饰计划（路线 v3 5.5）：欣赏图、品类、已填格都是可变记录。合并只做加法：
+// 缺失的记录追加，已有记录保留当前库的编辑；同一已填格在两边属于不同品类视为冲突，整次不导入。
+// 图片文件不随备份走（备份只含主库），缺失的图片在界面上显示为“图片缺失”。
+function mergeSilver(next, incoming, summary) {
+  next.silver ||= { wall: [], categories: [], items: [] };
+  const target = next.silver;
+  for (const name of ["wall", "categories", "items"]) {
+    const existing = new Map(target[name].map((r) => [r.id, r]));
+    for (const record of incoming[name]) {
+      const old = existing.get(record.id);
+      if (old) {
+        if (name === "items" && old.categoryId !== record.categoryId)
+          throw Object.assign(new Error("银饰收藏存在冲突，本次不会导入任何记录"), {
+            status: 409,
+          });
+        summary.kept++;
+        continue;
+      }
+      target[name].push(structuredClone(record));
+      existing.set(record.id, record);
+      summary.silverAdded[name]++;
+    }
   }
 }

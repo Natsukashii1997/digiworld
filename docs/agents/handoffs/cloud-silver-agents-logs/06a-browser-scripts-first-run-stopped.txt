@@ -1,0 +1,137 @@
+== tests/browser.mjs
+PASS 冷启动：六份演示资产、无控制台异常
+PASS 分类、置顶和搜索过滤
+PASS Prompt 创建并刷新后保留
+PASS 全文复制真实写入剪贴板
+PASS 编辑追加版本，历史恢复生成第三版
+PASS 归档与恢复保留内容和版本
+PASS ZIP 导入导出：中文路径与二进制文件完整往返
+PASS 缺少 SKILL.md 的包明确拒绝
+PASS 随手记创建、编辑、刷新持久化
+PASS 项目首次自动扫描、同源关联、筛选、持久化；刷新不重复扫描
+PASS Agent 自动检测、配置痕迹区分与人工编写接力包
+PASS 夜间计划只保存草稿，刷新保留
+PASS 知识库未连接状态、明确目录与未勾选的只读确认
+PASS 参考资料本地保存与安全链接
+PASS 全局搜索快捷键、详情跳转、Escape 关闭
+PASS 配置草稿保存；清除演示保留用户资产
+PASS 390px 窄屏：九个页面无横向溢出，移动导航与弹窗可用
+PASS 编辑弹窗内 Cmd+K 不叠开搜索，焦点保留在单一弹窗
+PASS 多标签冲突阻止覆盖，失败时保留表单，已保存数据不丢失
+PASS 存储故障显示真实原因，不关闭表单或误报链接错误
+PASS 所有验证路径无浏览器 JavaScript 异常
+RESULT tests/browser.mjs exit=0
+== tests/accessibility.mjs
+assets []
+agents []
+projects []
+knowledge []
+notes []
+night []
+references []
+history []
+settings []
+inbox []
+health []
+collab []
+calendar []
+aihot []
+learning []
+silver []
+home []
+create-dialog []
+asset-drawer []
+search-dialog []
+RESULT tests/accessibility.mjs exit=0
+== tests/migration.mjs
+PASS 旧版自动迁移不修改 IndexedDB；新浏览器读取相同文件主库
+PASS UI 导出、选择备份、预览、确认合并、回读及保留旧记录
+RESULT tests/migration.mjs exit=0
+== tests/history-capacity.mjs
+PASS 101 文件 × 499 行：默认 0 差异行，展开 998 行准确差异，折叠释放；DOM 1511 → 5507 → 1511
+PASS 300 文件 × 499 行：默认 0 差异行，展开 998 行准确差异，折叠释放；DOM 2904 → 6900 → 2904
+RESULT tests/history-capacity.mjs exit=0
+== tests/agent-config-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Error: strict mode violation: getByRole('button', { name: /Codex/ }) resolved to 2 elements:
+    1) <button class="agent-discovery-card">…</button> aka getByRole('button', { name: '已检测 Codex 开发 Agent 管理证据 1' })
+    2) <button class="button secondary " aria-label="编辑 Codex 角色卡">编辑</button> aka getByRole('button', { name: '编辑 Codex 角色卡' })
+
+Call log:
+[2m  - waiting for getByRole('button', { name: /Codex/ })[22m
+
+    at /home/user/personal-ai-workbench/tests/agent-config-browser.mjs:68:53 {
+  log: [ "  - waiting for getByRole('button', { name: /Codex/ })" ]
+}
+
+Node.js v24.21.0
+RESULT tests/agent-config-browser.mjs exit=1
+== tests/agent-inventory-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 5000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('dialog', { name: 'Codex', exact: true }).getByText('目录与资产', { exact: true }) to be visible[22m
+
+    at /home/user/personal-ai-workbench/tests/agent-inventory-browser.mjs:197:52 {
+  log: [
+    "  - waiting for getByRole('dialog', { name: 'Codex', exact: true }).getByText('目录与资产', { exact: true }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0
+RESULT tests/agent-inventory-browser.mjs exit=1
+== tests/agent-targets-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Error: strict mode violation: getByRole('button', { name: /Codex/ }) resolved to 2 elements:
+    1) <button class="agent-discovery-card">…</button> aka getByRole('button', { name: '已检测 Codex 开发 Agent 管理证据 2' })
+    2) <button class="button secondary " aria-label="编辑 Codex 角色卡">编辑</button> aka getByRole('button', { name: '编辑 Codex 角色卡' })
+
+Call log:
+[2m  - waiting for getByRole('button', { name: /Codex/ })[22m
+
+    at open (/home/user/personal-ai-workbench/tests/agent-targets-browser.mjs:50:53)
+    at async file:///home/user/personal-ai-workbench/tests/agent-targets-browser.mjs:54:3 {
+  log: [ "  - waiting for getByRole('button', { name: /Codex/ })" ]
+}
+
+Node.js v24.21.0
+RESULT tests/agent-targets-browser.mjs exit=1
+== tests/assets-pin-browser.mjs
+PASS 去掉收藏；favorite=true 不等于置顶
+PASS 排序菜单：最近更新、最常用、最近使用、名称排序
+PASS 置顶后在全部与类型标签、所有排序下都排第一，刷新后保持
+PASS 复制一次后封面数字 +1
+PASS 置顶项之间按使用次数降序
+PASS 最常用排序
+PASS 规则卡片封面与小角标均为像素图标
+PASS 顶栏搜索：图标 + ⌘K，至少 44px，点击与 ⌘K 都能打开浮层
+PASS 1440 宽时五个类型按钮同一行；axe 无违规
+PASS 390 宽无横向溢出
+assets-pin-browser: 10 passed
+RESULT tests/assets-pin-browser.mjs exit=0
+== tests/context-browser.mjs
+PASS 预览→连接→真实复制；正文不进入交接包；axe
+PASS 重开保留来源；源文件变化阻断旧包且不改剪贴板
+PASS 剪贴板失败文本回退；axe；四档窄屏无溢出
+PASS 缺失与保存失败保留输入，不沿用旧包
+PASS Agent 接力复用同一连接；解绑跨入口刷新生效
+RESULT tests/context-browser.mjs exit=0
+== tests/delivery-browser.mjs
+PASS 复制→取回同版 ZIP→刷新管理→撤销
+PASS 新链接被并行撤销后回读纠正状态
+PASS 剪贴板拒绝保留可选文本，不伪报复制
+PASS 四种窄屏，复制失败文本可操作
+PASS 生成失败不复制旧链接，保留独立 ZIP 出口
+RESULT tests/delivery-browser.mjs exit=0
+== tests/history-browser.mjs
+（本轮在第 10 个脚本结果后手动停止：发现角色卡“编辑”按钮的可访问名含 Agent 名，与既有测试的 /Codex/ 定位撞名；修正后在最终代码上重跑全部脚本，见 07-browser-scripts.txt）

@@ -12,6 +12,7 @@ import {
   validateProfileProposals,
   validateProfileHistory,
 } from "./knowledge-profile-schema.mjs";
+import { validateSilver, validateAgentRoles } from "./silver-schema.mjs";
 export function invalid(message) {
   throw Object.assign(new Error(`数据校验失败：${message}`), { status: 400 });
 }
@@ -222,6 +223,8 @@ export function validateState(state) {
     "learning",
     "knowledgeZones",
     "profileProposals",
+    "silver",
+    "agentRoles",
   ]);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
   if (state.learning !== undefined) validateLearning(state.learning);
@@ -229,6 +232,9 @@ export function validateState(state) {
     validateKnowledgeZones(state.knowledgeZones);
   if (state.profileProposals !== undefined)
     validateProfileProposals(state.profileProposals);
+  // 路线 v3 5.5 / 4.3：银饰计划与智能体角色卡，旧库缺失按空处理。
+  if (state.silver !== undefined) validateSilver(state.silver);
+  if (state.agentRoles !== undefined) validateAgentRoles(state.agentRoles);
   if (state.knowledgeTasks !== undefined)
     validateKnowledgeTasks(state.knowledgeTasks);
   if (

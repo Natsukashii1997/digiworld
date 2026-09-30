@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { AgentRoles } from "./AgentRoles.jsx";
 import {
   Bot,
   Folder,
@@ -399,7 +400,7 @@ export function Projects({
   );
 }
 
-export function Agents({ state, adoptState, notify, onSelect, navigate = () => {} }) {
+export function Agents({ state, save, adoptState, notify, onSelect, navigate = () => {} }) {
   const { busy, error, run } = useDiscovery(
     "agents",
     state,
@@ -500,6 +501,8 @@ export function Agents({ state, adoptState, notify, onSelect, navigate = () => {
         </Empty>
       )}
       <LegacyRecords records={state.agents} />
+      {/* 路线 v3 4.3（提前开发）：主力与附属 Agent 的角色卡与派活推荐。 */}
+      <AgentRoles state={state} save={save} notify={notify} />
       {/* 产品定义 v1.2 §2.2：能力体检并入智能体群；旧地址 #health 定位到这里。仍是规划，不执行任何检查。 */}
       <section
         id="agent-health"

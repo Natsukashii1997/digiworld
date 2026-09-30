@@ -27,6 +27,8 @@ import { createAiHot } from "./aihot.mjs";
 import { createLearning } from "./learning.mjs";
 import { createKnowledgeProfile } from "./knowledge-profile.mjs";
 import { startProfileMcp } from "./profile-mcp.mjs";
+import { createSilverImages } from "./silver.mjs";
+import { createCutout } from "./silver-cutout.mjs";
 import packageInfo from "../package.json" with { type: "json" };
 import {
   scanLocalProjects,
@@ -104,6 +106,7 @@ export async function startServer({
     inspectAgentPrograms,
     inspectProjectLocation,
     repoVisibility: ghVisibility,
+    silverCutout: createCutout(),
     ...discovery,
   };
   const projectStatus = createProjectStatus(repository, {
@@ -111,6 +114,10 @@ export async function startServer({
     visibility: adapters.repoVisibility,
   });
   const collabBoard = createCollabBoard(repository, { clock });
+  // 银饰图片只存在数据目录 silver/ 下；抠图器可替换（测试注入桩）。
+  const silver = await createSilverImages(directory, {
+    cutout: adapters.silverCutout,
+  });
   const agentTargets = createAgentTargets(repository, adapters, clock);
   const skillCopies = createSkillCopies(repository, adapters, clock);
   const agentConfig = createAgentConfig(repository, adapters, { clock });
@@ -284,6 +291,22 @@ export async function startServer({
               }[profileAction]
             ](await body(request)),
           );
+        if (url.pathname === "/api/silver/images" && request.method === "POST")
+          return send(response, 200, await silver.store(await body(request)));
+        const silverFile = url.pathname.match(/^\/api\/silver\/images\/([^/]+)$/)?.[1];
+        if (silverFile && request.method === "GET") {
+          let file;
+          try {
+            file = decodeURIComponent(silverFile);
+          } catch {
+            throw failure("图片文件名无效");
+          }
+          return send(response, 200, await silver.read(file));
+        }
+        if (url.pathname === "/api/silver/cutout" && request.method === "POST")
+          return send(response, 200, await silver.cutout((await body(request)).file));
+        if (url.pathname === "/api/silver/status" && request.method === "GET")
+          return send(response, 200, await silver.status());
         const compilationAction = url.pathname.match(
           /^\/api\/knowledge\/tasks\/(create|packet|receive|check|archive)$/,
         )?.[1];

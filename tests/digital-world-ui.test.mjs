@@ -204,7 +204,8 @@ test("切片 1.2：导航按今日、资产、目标、运行、知识、生活�
   // 协同页自路线 v3 切片 2.3/2.4 起可用（看板、留痕、一键派发），不再是规划页；成熟度如实标“部分可用”。
   assert.equal(PAGES.find((x) => x.id === "collab").maturity, "partial");
   // 路线 v3 切片 5.3、5.4：AI HOT 与学习成长已开发，不再是规划中页面（见下方单独的用例）。
-  for (const id of ["health", "calendar", "silver"]) {
+  // 银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”，不再是规划页，由 silver-agents-browser.mjs 覆盖。
+  for (const id of ["health", "calendar"]) {
     const p = PAGES.find((x) => x.id === id);
     assert.equal(p.maturity, "planned", id);
     const html = renderToStaticMarkup(

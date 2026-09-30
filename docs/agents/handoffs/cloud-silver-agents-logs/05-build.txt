@@ -1,0 +1,19 @@
+
+> personal-ai-workbench@0.17.0 build
+> vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 1637 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   4.20 kB │ gzip:   0.86 kB
+dist/assets/index-BRYfRj83.css  123.94 kB │ gzip:  24.63 kB
+dist/assets/index-B0Dm43qE.js   584.13 kB │ gzip: 186.05 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.04s
+build exit=0

@@ -29,8 +29,9 @@ const EXPECTED = [
   ["系统", [["", ["模型设置", "版本归档"]]]],
 ];
 const OLD_NAMES = ["知识中枢", "逆向参考", "随手速记"];
-// 路线 v3 切片 5.3、5.4：AI HOT 与学习成长已开发，只有银饰计划仍是规划中。
-const LIFE_PLANNED = [["silver", "银饰计划"]];
+// 路线 v3 切片 5.3、5.4：AI HOT 与学习成长已开发；银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”。
+// 集成后生活区这三页都不再是规划页（日历不在本段检查范围内，与基点一致）。
+const LIFE_PLANNED = [];
 const LIFE_BUILT = [
   ["aihot", "AI HOT"],
   ["learning", "学习成长"],
@@ -207,7 +208,6 @@ try {
     await page.goto(`${app.url}/#${id}`);
     await page.locator("main h1", { hasText: name }).waitFor();
   }
-  await axe(page, "silver");
   for (const [id, name] of LIFE_BUILT) {
     await navItem(page, name).click();
     await page.locator("main h1", { hasText: name }).waitFor();
@@ -216,7 +216,8 @@ try {
     assert.match(await main.innerText(), /部分可用/);
     assert.equal(await page.evaluate(() => location.hash), `#${id}`);
   }
-  ok("生活区 AI HOT、学习成长可达且不再标注规划中；银饰计划标注规划中，无假按钮，axe 通过");
+  await axe(page, "learning");
+  ok("生活区 AI HOT、学习成长可达且不再标注规划中；银饰计划已可用（由 silver-agents-browser 覆盖），axe 通过");
 
   // 6. 世界总览结构地图同步为两区
   await page.goto(`${app.url}/#home`);
