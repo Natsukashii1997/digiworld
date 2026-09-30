@@ -54,7 +54,7 @@ export const PAGES = [
   {
     id: "references",
     group: "资产",
-    code: "03",
+    code: "02",
     label: "逆向工程",
     title: "逆向工程",
     eyebrow: "REVERSE ENGINEERING",
@@ -65,7 +65,7 @@ export const PAGES = [
   {
     id: "agents",
     group: "目标",
-    code: "04",
+    code: "03",
     label: "智能体群",
     title: "智能体群",
     eyebrow: "AGENT CENTER",
@@ -76,7 +76,7 @@ export const PAGES = [
   {
     id: "projects",
     group: "目标",
-    code: "05",
+    code: "04",
     label: "项目空间",
     title: "项目空间",
     eyebrow: "PROJECT SPACE",
@@ -92,7 +92,7 @@ export const PAGES = [
     navHidden: true,
     mergedInto: "agents",
     anchor: "agent-health",
-    code: "04",
+    code: "03",
     label: "能力体检",
     title: "能力体检",
     eyebrow: "HEALTH CHECK",
@@ -112,7 +112,7 @@ export const PAGES = [
   {
     id: "collab",
     group: "运行",
-    code: "06",
+    code: "05",
     label: "协同",
     title: "协同",
     eyebrow: "COLLABORATION",
@@ -132,7 +132,7 @@ export const PAGES = [
   {
     id: "night",
     group: "运行",
-    code: "07",
+    code: "06",
     label: "夜巡",
     title: "夜巡",
     eyebrow: "NIGHT SHIFT",
@@ -143,7 +143,7 @@ export const PAGES = [
   {
     id: "knowledge",
     group: "知识",
-    code: "08",
+    code: "07",
     label: "知识仓库",
     title: "知识仓库",
     eyebrow: "KNOWLEDGE",
@@ -154,7 +154,7 @@ export const PAGES = [
   {
     id: "calendar",
     group: "生活",
-    code: "09",
+    code: "08",
     label: "日历",
     title: "日历",
     eyebrow: "CALENDAR",
@@ -175,7 +175,7 @@ export const PAGES = [
   {
     id: "notes",
     group: "生活",
-    code: "10",
+    code: "09",
     label: "随手记",
     title: "随手记",
     eyebrow: "QUICK NOTES",
@@ -187,7 +187,7 @@ export const PAGES = [
     // 路线 v3 切片 5.3：公开只读接口 + 本机缓存。接口字段映射尚未在本机对真实接口实测，标“部分可用”。
     id: "aihot",
     group: "生活",
-    code: "11",
+    code: "10",
     label: "AI HOT",
     title: "AI HOT",
     eyebrow: "AI HOT · DAILY",
@@ -199,7 +199,7 @@ export const PAGES = [
     // 路线 v3 切片 5.4：书架只读索引、学习状态、链接收藏；内容解析以后再做，标“部分可用”。
     id: "learning",
     group: "生活",
-    code: "12",
+    code: "11",
     label: "学习成长",
     title: "学习成长",
     eyebrow: "LEARNING",
@@ -210,7 +210,7 @@ export const PAGES = [
   {
     id: "silver",
     group: "生活",
-    code: "13",
+    code: "12",
     label: "银饰计划",
     title: "银饰计划",
     eyebrow: "SILVER",
@@ -222,7 +222,7 @@ export const PAGES = [
   {
     id: "settings",
     group: "系统",
-    code: "14",
+    code: "13",
     label: "模型设置",
     title: "模型设置",
     eyebrow: "SETTINGS",
@@ -234,7 +234,7 @@ export const PAGES = [
     // 产品定义 v1.2 §2.2：版本归档下移到系统分组最下方；单个资产的版本在资产详情的“历史”标签里查看。
     id: "history",
     group: "系统",
-    code: "15",
+    code: "14",
     label: "版本归档",
     title: "版本归档",
     eyebrow: "VERSIONS & ARCHIVE",
