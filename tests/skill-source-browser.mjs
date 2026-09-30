@@ -189,7 +189,7 @@ try {
     .getByLabel("一句话说明", { exact: true })
     .fill("我的独立判断，不修改来源");
   await page.getByRole("button", { name: "保存新版本", exact: true }).click();
-  await page.getByRole("button", { name: "版本记录 2", exact: true }).waitFor();
+  await page.getByRole("button", { name: "历史 2", exact: true }).waitFor();
   const editedPersonal = (await getState()).assets.find(
     (a) => a.id === personal.id,
   );

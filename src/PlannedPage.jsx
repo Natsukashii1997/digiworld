@@ -12,10 +12,8 @@ import { pendingItems, rulePendingReady } from "./pending.js";
 
 // 规划中页面：如实说明将来做什么、在路线哪一步、现在可以怎么做。不放假数据或无效按钮。
 const NOW = {
-  health: [
-    ["在智能体群里查看各 Agent 的目录与 Skill 来源", "agents"],
-    ["在资产仓库里核对 Skill 与目标副本是否一致", "assets"],
-  ],
+  // 能力体检已并入智能体群页，不再放指回本页的链接。
+  health: [["在资产仓库里核对 Skill 与目标副本是否一致", "assets"]],
   collab: [
     ["用智能体群的“上下文接力”生成交接内容", "agents"],
     ["在项目空间查看项目 Current 与规则指针", "projects"],
@@ -23,7 +21,7 @@ const NOW = {
   calendar: [["在夜巡里先保存夜间时间窗口草稿", "night"]],
 };
 
-function PlanDetails({ id, navigate }) {
+export function PlanDetails({ id, navigate }) {
   const p = page(id);
   return (
     <div className="plan-grid">

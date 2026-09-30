@@ -323,7 +323,7 @@ try {
     .getByLabel("引用 1 的版本", { exact: true })
     .selectOption(current(updatedPrompt).id);
   await page.getByRole("button", { name: "保存新版本", exact: true }).click();
-  await page.getByRole("button", { name: "版本记录 2", exact: true }).waitFor();
+  await page.getByRole("button", { name: "历史 2", exact: true }).waitFor();
   const upgradedWorkflow = (await getState()).assets.find(
     (a) => a.id === workflowId,
   );
@@ -335,7 +335,7 @@ try {
     current(upgradedWorkflow).references[0].versionId,
     current(updatedPrompt).id,
   );
-  await page.getByRole("button", { name: "版本记录 2", exact: true }).click();
+  await page.getByRole("button", { name: "历史 2", exact: true }).click();
   await page
     .getByLabel("查看版本", { exact: true })
     .selectOption({ label: "v1.0" });
@@ -354,7 +354,7 @@ try {
   await page
     .getByRole("button", { name: "确认恢复为新版本", exact: true })
     .click();
-  await page.getByRole("button", { name: "版本记录 3", exact: true }).waitFor();
+  await page.getByRole("button", { name: "历史 3", exact: true }).waitFor();
   const restoredWorkflow = (await getState()).assets.find(
     (a) => a.id === workflowId,
   );
@@ -498,7 +498,7 @@ try {
   await page.getByRole("button", { name: "编辑资产", exact: true }).click();
   await page.getByRole("button", { name: "移除引用 1", exact: true }).click();
   await page.getByRole("button", { name: "保存新版本", exact: true }).click();
-  await page.getByRole("button", { name: "版本记录 4", exact: true }).waitFor();
+  await page.getByRole("button", { name: "历史 4", exact: true }).waitFor();
   const beforeCleanup = await getState();
   const removedReferenceWorkflow = beforeCleanup.assets.find(
     (a) => a.id === workflowId,
@@ -544,7 +544,7 @@ try {
   await page
     .getByRole("button", { name: "查看 上线复核", exact: true })
     .click();
-  await page.getByRole("button", { name: "版本记录 4", exact: true }).click();
+  await page.getByRole("button", { name: "历史 4", exact: true }).click();
   await page
     .getByLabel("查看版本", { exact: true })
     .selectOption({ label: "v1.0" });

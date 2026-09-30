@@ -47,6 +47,9 @@ try {
     "health",
     "collab",
     "calendar",
+    "aihot",
+    "learning",
+    "silver",
   ]) {
     await page.goto(app.url + "/#" + route);
     await page.locator(".page-heading").waitFor();

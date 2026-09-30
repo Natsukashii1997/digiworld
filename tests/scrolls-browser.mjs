@@ -66,14 +66,14 @@ const scrollNames = (page) =>
 
 try {
   const page = await open(1440);
-  // 导航：资产区出现焚决；页头与空状态。
-  await page
-    .getByRole("navigation", { name: "主导航" })
-    .getByRole("button", { name: /焚决/ })
-    .waitFor();
+  // 用户 2026-09-30 纠正：焚决是资产仓库里的一种资产类型，不单独占导航；迁入资产仓库前以 #scrolls 直达。
+  assert.equal(
+    await page.getByRole("navigation", { name: "主导航" }).getByRole("button", { name: /焚决/ }).count(),
+    0,
+  );
   await page.getByRole("heading", { name: "焚决", level: 1 }).waitFor();
   await page.getByText("还没有卷").waitFor();
-  ok("焚决出现在资产区，空库显示空状态");
+  ok("焚决不单独占导航，#scrolls 可达，空库显示空状态");
 
   // 建卷：两卷；名称不能为空。
   const newName = page.getByLabel("新卷名称");

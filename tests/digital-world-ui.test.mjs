@@ -190,17 +190,17 @@ test("本地 HTTP 供应当前构建的入口与资源", async () => {
   }
 });
 
-test("UI v12：导航按今日、资产、目标、运行、知识、系统分组，规划中页面如实标注", async () => {
+test("切片 1.2：导航按今日、资产、目标、运行、知识、生活、系统分组，规划中页面如实标注", async () => {
   const { GROUPS, LAYERS } = await import("../src/pages.js");
-  assert.deepEqual(GROUPS, ["今日", "资产", "目标", "运行", "知识", "系统"]);
+  assert.deepEqual(GROUPS, ["今日", "资产", "目标", "运行", "知识", "生活", "系统"]);
   for (const p of PAGES) assert.ok(GROUPS.includes(p.group), p.id);
-  // 三层地图覆盖除今日、待处理、系统之外的全部页面，各一次。
+  // 结构地图覆盖除今日、待处理、系统之外的全部页面，各一次；并入其他页面的旧页（能力体检）与属于资产仓库的焚决不单列。
   const mapped = LAYERS.flatMap((l) => l.pages);
   assert.deepEqual(
     [...mapped].sort(),
-    PAGES.filter((p) => !["今日", "系统"].includes(p.group)).map((p) => p.id).sort(),
+    PAGES.filter((p) => !["今日", "系统"].includes(p.group) && !p.mergedInto && !p.partOf).map((p) => p.id).sort(),
   );
-  for (const id of ["health", "collab", "calendar"]) {
+  for (const id of ["health", "collab", "calendar", "aihot", "learning", "silver"]) {
     const p = PAGES.find((x) => x.id === id);
     assert.equal(p.maturity, "planned", id);
     const html = renderToStaticMarkup(

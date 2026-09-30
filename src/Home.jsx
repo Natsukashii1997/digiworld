@@ -14,11 +14,14 @@ import {
   Stethoscope,
   Handshake,
   CalendarDays,
+  Newspaper,
+  GraduationCap,
+  Gem,
   Plus,
   Flame,
 } from "lucide-react";
 import { current } from "./store.js";
-import { page, LAYERS } from "./pages.js";
+import { page, LAYERS, ZONES } from "./pages.js";
 import { Maturity, TypeIcon, typeLabel } from "./components.jsx";
 import { pendingItems, rulePendingReady } from "./pending.js";
 import { PendingList } from "./PlannedPage.jsx";
@@ -47,6 +50,9 @@ export const ICONS = {
   night: Moon,
   knowledge: BookOpen,
   notes: PenLine,
+  aihot: Newspaper,
+  learning: GraduationCap,
+  silver: Gem,
   settings: Settings2,
 };
 
@@ -56,11 +62,12 @@ function facts(state) {
   const live = state.assets.filter((a) => !a.archived);
   const detected = (c.agents || []).filter((a) => a.status === "detected");
   return {
-    assets: `${live.length} 份资产`,
-    scrolls: `${(state.scrolls || []).filter((s) => !s.deletedAt).length} 卷`,
+    // 焚决属于资产仓库（用户 2026-09-30 纠正），在这一行注明，不单列。
+    assets: `${live.length} 份资产 · 含焚决 ${(state.scrolls || []).filter((s) => !s.deletedAt).length} 卷`,
     references: `${state.references.length} 条参考`,
     history: `${state.assets.reduce((n, a) => n + a.versions.length, 0)} 个版本 · ${state.assets.filter((a) => a.archived).length} 份归档`,
-    agents: c.agentScannedAt ? `已检测 ${detected.length} 个` : "尚未检测",
+    // 能力体检已并入智能体群（产品定义 v1.2 §2.2），在这一行注明，不单列。
+    agents: `${c.agentScannedAt ? `已检测 ${detected.length} 个` : "尚未检测"} · 含能力体检（规划中）`,
     projects: c.projectScannedAt ? `${(c.projects || []).length} 个项目` : "尚未扫描",
     health: "尚未开发",
     collab: "尚未开发",
@@ -68,6 +75,9 @@ function facts(state) {
     night: "计划草稿 · 未启用",
     knowledge: `${(c.knowledgeSources || []).length} 个知识源 · ${(state.knowledgeTasks || []).length} 个任务`,
     notes: `${state.notes.length} 条本机草稿`,
+    aihot: "尚未开发",
+    learning: "尚未开发",
+    silver: "尚未开发",
     settings: state.model?.provider ? `意向：${state.model.provider}` : "模型未连接",
   };
 }
@@ -289,47 +299,62 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
         </section>
       </div>
 
-      {/* 结构：三层能力地图 + 最近迭代 */}
+      {/* 结构：两区能力地图（工作区 / 生活区，产品定义 v1.2 §2）+ 最近迭代 */}
       <div className="home-row">
-        <section className="home-section">
+        <section className="home-section structure-map">
           <div className="section-title">
             <span className="section-index">C</span>
             <h2>能力地图</h2>
-            <p>资产被目标使用，运行层让它跑起来，结果回到知识与资产。</p>
+            <p>工作区：资产被目标使用，运行层让它跑起来，结果回到知识与资产。生活区：自己的日子。</p>
           </div>
-          <div className="layer-grid">
-            {LAYERS.map((layer) => (
-              <div key={layer.id} className="layer-card">
-                <div className="layer-head">
-                  <small>{layer.en}</small>
-                  <strong>{layer.id}</strong>
-                  <span>{layer.question}</span>
-                </div>
-                {layer.pages.map((id) => {
-                  const p = page(id);
-                  const Icon = ICONS[id];
-                  return (
-                    <button key={id} className="manage-row" onClick={() => navigate(id)}>
-                      <Icon size={15} strokeWidth={1.7} />
-                      <span>
-                        <strong>{p.label}</strong>
-                        <small>{f[id]}</small>
-                      </span>
-                      <Maturity level={p.maturity} />
-                    </button>
-                  );
-                })}
+          {ZONES.filter((zone) => LAYERS.some((l) => l.zone === zone.id)).map((zone) => (
+            <div key={zone.id} className={`map-zone map-zone-${zone.id}`}>
+              <h3 className="map-zone-title">
+                {zone.label}
+                <small aria-hidden="true">{zone.en}</small>
+              </h3>
+              <div className="layer-grid">
+                {LAYERS.filter((l) => l.zone === zone.id).map((layer) => (
+                  <div key={layer.id} className="layer-card">
+                    <div className="layer-head">
+                      <small>{layer.en}</small>
+                      <strong>{layer.id}</strong>
+                      <span>{layer.question}</span>
+                    </div>
+                    {layer.pages.map((id) => {
+                      const p = page(id);
+                      const Icon = ICONS[id];
+                      return (
+                        <button key={id} className="manage-row" onClick={() => navigate(id)}>
+                          <Icon size={15} strokeWidth={1.7} />
+                          <span>
+                            <strong>{p.label}</strong>
+                            <small>{f[id]}</small>
+                          </span>
+                          <Maturity level={p.maturity} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+          ))}
+          <div className="system-rows">
+            {["settings", "history"].map((id) => {
+              const Icon = ICONS[id];
+              return (
+                <button key={id} className="manage-row system-row" onClick={() => navigate(id)}>
+                  <Icon size={15} strokeWidth={1.7} />
+                  <span>
+                    <strong>{page(id).label}</strong>
+                    <small>系统 · {f[id]}</small>
+                  </span>
+                  <Maturity level={page(id).maturity} />
+                </button>
+              );
+            })}
           </div>
-          <button className="manage-row system-row" onClick={() => navigate("settings")}>
-            <Settings2 size={15} strokeWidth={1.7} />
-            <span>
-              <strong>{page("settings").label}</strong>
-              <small>系统 · {f.settings}</small>
-            </span>
-            <Maturity level={page("settings").maturity} />
-          </button>
         </section>
         <section className="home-section side">
           <div className="section-title">

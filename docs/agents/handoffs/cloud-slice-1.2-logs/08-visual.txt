@@ -1,0 +1,5 @@
+{
+  "out": "/home/user/personal-ai-workbench/test-results/visual/slice-1.2",
+  "problems": []
+}
+exit=0

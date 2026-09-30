@@ -4,10 +4,10 @@
 
 | 字段 | 当前值 |
 |---|---|
-| state_id | WB-20260930-103 |
+| state_id | WB-20260930-104 |
 | 更新时间 | 2026-09-30，Asia/Shanghai |
 | 更新者 | Claude |
-| 当前写入者 | 无；Claude 完成认领102，输出103并释放 |
+| 当前写入者 | **Claude（认领104：合入云端 D3 使用次数滚动、D2 焚决+随手记，随后合入 D1 两区导航）** |
 | 当前任务 | **切片 1.1 已合入 main（ce1f1f4，本机 428/428、浏览器 30/30）；第二批云端任务进行中**：D1 切片1.2、D2 切片1.3+1.4、D3 使用次数滚动（均由 `claude --cloud` 发起，消耗云端额度）。前序 **路线 v3 生效（99）**：产品定义 v1.2 与路线 v3 已由用户确认，ROADMAP §2 已替换；R87-B1～B5 返修（96）待 Codex 复核。前序 **问题共识基线 v2.2 已确认（94）**：一个入口分为工作区和生活区；优先级为 R87 → 界面小调整 → 项目空间与协同 → 知识仓库 → 资产分发与 Agent → 生活区，见 [基线v2.2](docs/product/2026-09-30-问题共识基线-v2.2.md)，与旧 PRD/ROADMAP 冲突时以 v2.2 为准。前序 **云端接入（92，已交接）**：应用独立 Git + 私有仓库 `abdoulaziznafiou03-creator/personal-ai-workbench`（main `0d596f4`）；云端首测浏览器被网络拦截、npm test 有 Linux/root 差异，见 [CLOUD-SESSIONS.md](CLOUD-SESSIONS.md)。前序 **认领87复核：A通过；B有5组重要返修事项，T2为TUNE**（工作流裁字、传送异常收尾、减动画、数字屏两分支、C机身键）；项目协同协议沿用已收录v1.0；2.1暂缓 |
 | 唯一下一步 | Codex 读回96，独立复核 R87 返修（177文件清单 `8378ab36…a016`，新增 tests/r87-fix-browser.mjs，含T2视觉）；并行：用户在云端环境替换启动脚本 |
 | 最新交接 | [Claude 认领98](docs/agents/handoffs/2026-09-30-claude-98.md)；[Claude 认领95：R87返修+产品候选](docs/agents/handoffs/2026-09-30-claude-95.md)；[Claude 问题共识基线 v2.2](docs/agents/handoffs/2026-09-30-claude-product-v2.2.md)；[Claude 云端接入](docs/agents/handoffs/2026-09-30-claude-cloud.md)；[Codex认领87独立复核](docs/agents/handoffs/2026-09-30-codex-review-87.md)；[Claude 认领 87](docs/agents/handoffs/2026-09-30-claude-87.md)；[Codex认领83复核与模板收录](docs/agents/handoffs/2026-09-30-codex-review-83.md)；此前 [Claude 认领 83](docs/agents/handoffs/2026-09-30-claude-83.md)；[Codex 认领77复核：A残留/B延期](docs/agents/handoffs/2026-09-30-codex-review-77.md)；此前 [Claude 认领 77：D-R2/D-R3 + UI v13.1](docs/agents/handoffs/2026-09-30-claude-77.md)；[Codex 2.3 返修独立复核](docs/agents/handoffs/2026-09-30-codex-review-2.3-fix.md)；此前 [Claude 2.3 返修](docs/agents/handoffs/2026-09-29-claude-2.3-fix.md)；[Codex 2.3 复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；[Codex 2.3 与模板独立复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；此前  [Claude 2.3 规则模板](docs/agents/handoffs/2026-09-29-claude-2.3-rules.md)；[Claude 1.E 验收记录](docs/agents/handoffs/2026-09-29-claude-1.E-acceptance.md)；[Codex D-UI1 修复独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-d-ui1.md)； [Claude D-UI1 修复](docs/agents/handoffs/2026-09-29-claude-ui-d-ui1.md)；[Codex UI v12.1 独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-v12.1.md)； [Claude UI v12.1](docs/agents/handoffs/2026-09-29-claude-ui-v12.1.md)；[Claude UI v12](docs/agents/handoffs/2026-09-29-claude-ui-v12.md)；[Claude 宽屏空白修复](docs/agents/handoffs/2026-09-29-claude-ui-widescreen.md)；[Claude 1.4 独立复核](docs/agents/handoffs/2026-09-29-claude-review-1.4.md)；[Claude 产品定义 v1.1 与路线 v2](docs/agents/handoffs/2026-09-29-claude-product-v1.1.md)；[Codex 1.4来源维护收口](docs/agents/handoffs/2026-09-29-codex-1.4-maintenance.md)；[Codex D-S3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-ds3.md)；[Claude 1.3 D-S3 修复](docs/agents/handoffs/2026-09-29-claude-1.3-ds3.md)；[Codex 1.3 修复差异复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-fix.md)；被复核 [Claude 1.3 复核项修复](docs/agents/handoffs/2026-09-29-claude-1.3-fix.md)；[Codex 1.3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-search.md)；被复核 [Claude 1.3 搜索增强](docs/agents/handoffs/2026-09-29-claude-1.3-search.md)；前序 [Claude 1.1 修复复核](docs/agents/handoffs/2026-09-29-claude-review-1.1-fix.md)；被复核 [Codex 1.1 复核修复](docs/agents/handoffs/2026-09-29-codex-1.1-fix.md)；输入 [Claude 1.1 复核](docs/agents/handoffs/2026-09-29-claude-review-1.1.md) |
@@ -388,3 +388,8 @@ v0.17 来源维护工程验收已完成，Claude已于53独立复核通过，第
   - CLOUD-SESSIONS 新增 §3.5 发起方式与额度（routine 不扣云端额度）、§3.6 已知失败根因。
   - 用 `claude --cloud` 派出 D1 `session_01NGrcvSyt81XvZCSsT2pLmW`、D2 `session_01Kj7WLBHCc89DU8ejDrV1DF`、D3 `session_017brL2ZcWP8a2PjVBMWDLaJ`，结果回到 `cloud/2026-09-30-slice-1.2`、`…-slice-1.3-1.4`、`…-usage-odometer`；合入时须重新认领并在本机回归。
   - 写入者释放。
+
+## Claude 认领 104（WB-20260930-104）
+
+- 输入103。用户用量上限重置后要求继续。D2（`cloud/2026-09-30-slice-1.3-1.4`）、D3（`…-usage-odometer`）已交回；D1（`…-slice-1.2`）因用量上限中断，已发继续消息。
+- 本轮：依次合入 D3、D2（再合 D1），解决冲突，本机构建与完整回归，推送 main。拟改范围即三个分支的改动文件及冲突处；不读 data 内容，不重启 5178。
