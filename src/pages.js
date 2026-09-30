@@ -59,8 +59,8 @@ export const PAGES = [
     title: "逆向工程",
     eyebrow: "REVERSE ENGINEERING",
     maturity: "draft",
-    lead: "记下值得学习的设计与代码来源。结构化拆解、交给 Agent 分析并沉淀为资产仍在规划中。",
-    stage: "观察 · 学习",
+    lead: "把你认为好的内容（文章、帖子、prompt）生成拆解任务包交给 Agent，回收报告后由你确认，沉淀为焚决条目或 Prompt。",
+    stage: "投素材 · 拆解 · 入库",
   },
   {
     id: "agents",

@@ -18,6 +18,7 @@ export function mergeBackup(current, incoming) {
       references: 0,
       knowledgeTasks: 0,
       scrolls: 0,
+      reverseRecords: 0,
     },
     scrollEntriesAdded: 0,
     activityAdded: 0,
@@ -36,7 +37,7 @@ export function mergeBackup(current, incoming) {
   }
   const next = structuredClone(current);
   for (const name of Object.keys(summary.added)) {
-    if (name === "knowledgeTasks" || name === "scrolls") continue;
+    if (["knowledgeTasks", "scrolls", "reverseRecords"].includes(name)) continue;
     const lookup = new Map(next[name].map((item, index) => [item.id, index]));
     for (const item of input[name]) {
       if (!lookup.has(item.id)) {
@@ -118,6 +119,20 @@ export function mergeBackup(current, incoming) {
     }
   }
   if (input.scrolls?.length) mergeScrolls(next, input.scrolls, summary);
+  // 逆向记录（支线 B2）：只做加法。缺失的记录整条追加；同 ID 保留当前库（回复与入库结果以当前为准）。
+  if (input.reverseRecords?.length) {
+    next.reverseRecords ||= [];
+    const known = new Set(next.reverseRecords.map((r) => r.id));
+    for (const record of input.reverseRecords) {
+      if (known.has(record.id)) {
+        summary.kept++;
+        continue;
+      }
+      next.reverseRecords.push(structuredClone(record));
+      known.add(record.id);
+      summary.added.reverseRecords++;
+    }
+  }
   if (input.assetActivity?.length) {
     next.assetActivity ||= [];
     const records = new Map(next.assetActivity.map((r) => [r.id, r]));

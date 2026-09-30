@@ -2,6 +2,7 @@ import { validateActivity, validateActivityHistory } from "./asset-activity-sche
 import { safePath } from "../src/store.js";
 import { stringify } from "../src/serialization.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
+import { REVERSE_LIMITS } from "../src/reverse.js";
 import {
   validateKnowledgeTasks,
   validateKnowledgeHistory,
@@ -94,8 +95,19 @@ export function validateScrolls(scrolls) {
         "updatedAt",
         "deletedAt",
         "lastUsedAt",
+        "source",
       ]);
       id(e.id);
+      // 逆向工程入库的条目带来源：逆向记录 ID 与可选的素材链接（支线 B2）。
+      if (e.source !== undefined) {
+        keys(e.source, ["reverseId", "url"]);
+        id(e.source.reverseId);
+        if (e.source.url !== undefined) {
+          text(e.source.url, "来源链接", REVERSE_LIMITS.url);
+          if (!e.source.url) invalid("来源链接");
+          httpUrl(e.source.url);
+        }
+      }
       entryIds.push(e.id);
       text(e.text, "条目正文", SCROLL_LIMITS.text);
       if (!e.text.trim() || CONTROL.test(e.text)) invalid("条目正文");
@@ -120,6 +132,73 @@ export function validateScrolls(scrolls) {
   if (entryIds.length > SCROLL_LIMITS.totalEntries) invalid("焚决条目总量");
   unique(entryIds, "条目 ID");
 }
+// 逆向工程（路线 v3 支线 B2）：顶层集合 reverseRecords。一条记录 = 素材 + 任务包 + Agent 回复 + 入库结果。
+// 记录可修改（保存回复、追加入库结果），不做版本；删除写 deletedAt 进回收区。旧库缺失该集合时按空处理。
+export { REVERSE_LIMITS };
+export function validateReverseRecords(records) {
+  array(records, "逆向记录数", REVERSE_LIMITS.records);
+  unique(
+    records.map((r) => r?.id),
+    "逆向记录 ID",
+  );
+  for (const r of records) {
+    keys(r, [
+      "id",
+      "title",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "material",
+      "why",
+      "pack",
+      "reply",
+      "imports",
+    ]);
+    id(r.id);
+    text(r.title, "逆向标题", REVERSE_LIMITS.title);
+    if (!r.title.trim() || CONTROL.test(r.title) || /[\n\t]/.test(r.title))
+      invalid("逆向标题");
+    date(r.createdAt);
+    optionalDate(r.updatedAt);
+    optionalDate(r.deletedAt);
+    keys(r.material, ["text", "url"]);
+    text(r.material.text, "逆向素材原文", REVERSE_LIMITS.material);
+    if (CONTROL.test(r.material.text)) invalid("逆向素材原文");
+    text(r.material.url, "逆向素材链接", REVERSE_LIMITS.url);
+    httpUrl(r.material.url);
+    if (!r.material.text.trim() && !r.material.url) invalid("逆向素材为空");
+    text(r.why, "好在哪里", REVERSE_LIMITS.why);
+    if (CONTROL.test(r.why)) invalid("好在哪里");
+    text(r.pack, "拆解任务包", REVERSE_LIMITS.pack);
+    if (!r.pack.trim()) invalid("拆解任务包为空");
+    if (r.reply !== undefined) {
+      text(r.reply, "Agent 回复", REVERSE_LIMITS.reply);
+      if (CONTROL.test(r.reply)) invalid("Agent 回复");
+    }
+    if (r.imports !== undefined) {
+      array(r.imports, "入库结果", REVERSE_LIMITS.imports);
+      unique(
+        r.imports.map((i) => i?.index),
+        "候选序号",
+      );
+      for (const i of r.imports) {
+        object(i, "入库结果");
+        if (i.kind === "scroll") {
+          keys(i, ["index", "kind", "scrollId", "entryId", "at"]);
+          id(i.scrollId);
+          id(i.entryId);
+        } else if (i.kind === "prompt") {
+          keys(i, ["index", "kind", "assetId", "versionId", "at"]);
+          id(i.assetId);
+          id(i.versionId);
+        } else invalid("入库类型");
+        if (!Number.isSafeInteger(i.index) || i.index < 0 || i.index > 10000)
+          invalid("候选序号");
+        date(i.at);
+      }
+    }
+  }
+}
 export function validateState(state) {
   keys(state, [
     "revision",
@@ -134,8 +213,11 @@ export function validateState(state) {
     "knowledgeTasks",
     "assetActivity",
     "scrolls",
+    "reverseRecords",
   ]);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
+  if (state.reverseRecords !== undefined)
+    validateReverseRecords(state.reverseRecords);
   if (state.knowledgeTasks !== undefined)
     validateKnowledgeTasks(state.knowledgeTasks);
   if (
