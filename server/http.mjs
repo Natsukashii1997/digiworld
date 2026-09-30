@@ -21,6 +21,8 @@ import { createKnowledgeConnections } from "./knowledge-connections.mjs";
 import { createKnowledgeCompilation } from "./knowledge-compilation.mjs";
 import { createKnowledgeMaintenance } from "./knowledge-maintenance.mjs";
 import { createKnowledgeWriteback } from "./knowledge-writeback.mjs";
+import { createKnowledgeProfile } from "./knowledge-profile.mjs";
+import { startProfileMcp } from "./profile-mcp.mjs";
 import packageInfo from "../package.json" with { type: "json" };
 import {
   scanLocalProjects,
@@ -81,6 +83,7 @@ export async function startServer({
   staticRoot,
   discovery,
   clock,
+  mcpPort,
 } = {}) {
   const repository = await openRepository(directory);
   const deliveries = createDeliveries(repository, clock);
@@ -127,6 +130,22 @@ export async function startServer({
     files: knowledgeFiles,
     clock,
   });
+  const knowledgeProfile = createKnowledgeProfile(repository, {
+    files: knowledgeFiles,
+    clock,
+  });
+  // 个人说明 MCP 服务：单独端口、只监听 127.0.0.1；启动失败不影响工作台本身，页面如实显示未启动。
+  let mcp = null,
+    mcpError = "";
+  if (mcpPort !== undefined)
+    try {
+      mcp = await startProfileMcp({ profile: knowledgeProfile, port: mcpPort });
+    } catch (error) {
+      mcpError =
+        error.code === "EADDRINUSE"
+          ? `端口 ${mcpPort} 已被占用，MCP 服务未启动`
+          : "MCP 服务未能启动";
+    }
   const scans = new Map();
   function singleScan(key, operation) {
     if (scans.has(key)) throw failure("已有扫描正在进行，请稍候", 409);
@@ -193,6 +212,38 @@ export async function startServer({
           if (request.method === "GET") return send(response, 200, await activity.query(url.searchParams.get("id")));
           if (request.method === "POST") return send(response, 200, await activity.append(await body(request)));
         }
+        const zonesAction = url.pathname.match(
+          /^\/api\/knowledge\/zones\/(rules|stats|summary)$/,
+        )?.[1];
+        if (zonesAction && request.method === "POST") {
+          const input = await body(request);
+          if (zonesAction === "summary")
+            return send(response, 200, {
+              ...(await knowledgeProfile.summary(input)),
+              mcp: { url: mcp?.url || null, error: mcp ? "" : mcpError || "MCP 服务未启用" },
+            });
+          return send(
+            response,
+            200,
+            await knowledgeProfile[zonesAction === "rules" ? "saveRules" : "stats"](input),
+          );
+        }
+        const profileAction = url.pathname.match(
+          /^\/api\/knowledge\/profile\/(sharing|proposals\/preview|proposals\/confirm|proposals\/reject)$/,
+        )?.[1];
+        if (profileAction && request.method === "POST")
+          return send(
+            response,
+            200,
+            await knowledgeProfile[
+              {
+                sharing: "setSharing",
+                "proposals/preview": "preview",
+                "proposals/confirm": "confirm",
+                "proposals/reject": "reject",
+              }[profileAction]
+            ](await body(request)),
+          );
         const compilationAction = url.pathname.match(
           /^\/api\/knowledge\/tasks\/(create|packet|receive|check|archive)$/,
         )?.[1];
@@ -554,6 +605,7 @@ export async function startServer({
       server.listen(port, "127.0.0.1", resolve);
     });
   } catch (error) {
+    await mcp?.close();
     deliveries.close();
     await repository.close();
     throw error;
@@ -561,8 +613,10 @@ export async function startServer({
   return {
     url: `http://127.0.0.1:${server.address().port}`,
     repository,
+    mcpUrl: mcp?.url || null,
     async close() {
       await new Promise((resolve) => server.close(resolve));
+      await mcp?.close();
       deliveries.close();
       await repository.close();
     },

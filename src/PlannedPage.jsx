@@ -9,6 +9,7 @@ import {
 import { page } from "./pages.js";
 import { PageHeading, Empty } from "./components.jsx";
 import { pendingItems, rulePendingReady } from "./pending.js";
+import { ProfileProposals } from "./ProfileProposals.jsx";
 
 // 规划中页面：如实说明将来做什么、在路线哪一步、现在可以怎么做。不放假数据或无效按钮。
 const NOW = {
@@ -108,7 +109,7 @@ export function PendingList({ items, navigate, select, limit }) {
   );
 }
 
-export function Inbox({ state, navigate, select, ruleInstalls }) {
+export function Inbox({ state, navigate, select, ruleInstalls, adoptState, notify }) {
   const items = pendingItems(state, ruleInstalls);
   return (
     <>
@@ -134,9 +135,10 @@ export function Inbox({ state, navigate, select, ruleInstalls }) {
           )
         )}
       </section>
+      <ProfileProposals state={state} adoptState={adoptState} notify={notify} index="B" />
       <section className="inbox-section" aria-label="尚未接入的来源">
         <div className="section-title">
-          <span className="section-index">B</span>
+          <span className="section-index">C</span>
           <h2>尚未接入的来源</h2>
           <p>随对应功能上线逐类加入</p>
         </div>

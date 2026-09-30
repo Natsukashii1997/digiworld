@@ -32,6 +32,9 @@ export function mergeBackup(current, incoming) {
     summary.activityAdded = (input.assetActivity || []).length;
     summary.settings = "采用备份中的配置草稿；连接结果需重新扫描";
     const { connections, ...content } = input;
+    // 个人说明共享是本机授权，与连接一样不随备份恢复；规则与建议保留。
+    if (content.knowledgeZones)
+      content.knowledgeZones = { ...content.knowledgeZones, profileSharing: false };
     return { state: { ...content, revision: 0 }, summary };
   }
   const next = structuredClone(current);

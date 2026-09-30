@@ -55,20 +55,22 @@ export function TextDifference({ before, after }) {
         <div className="diff-lines" aria-label="逐行差异">
           {diff.rows.map((row, i) => (
             <div className={`diff-line ${row.type}`} key={i}>
-              <span
-                aria-label={
-                  row.type === "added"
+              {/* 无角色的 span 不能带 aria-label（axe aria-prohibited-attr）；符号只给视觉，文字给读屏。 */}
+              <span>
+                <span aria-hidden="true">
+                  {row.type === "added"
+                    ? "+"
+                    : row.type === "removed"
+                      ? "−"
+                      : " "}
+                </span>
+                <span className="sr-only">
+                  {row.type === "added"
                     ? "新增"
                     : row.type === "removed"
                       ? "删除"
-                      : "未变"
-                }
-              >
-                {row.type === "added"
-                  ? "+"
-                  : row.type === "removed"
-                    ? "−"
-                    : " "}
+                      : "未变"}
+                </span>
               </span>
               <pre>{row.text.replace(/\r\n$|[\r\n]$/, "") || " "}</pre>
               {row.type !== "same" && (

@@ -451,7 +451,7 @@ export default function App() {
             />
           )}
           {route === "projects" && <Projects {...common} />}
-          {route === "knowledge" && <Knowledge {...common} />}
+          {route === "knowledge" && <Knowledge {...common} navigate={navigate} />}
           {route === "notes" && <Notes {...common} navigate={navigate} />}
           {route === "night" && <Night {...common} />}
           {route === "history" && (
