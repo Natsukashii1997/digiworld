@@ -359,7 +359,16 @@ export function validateState(state) {
       "agentTargets",
       "skillCopies",
       "knowledgeSources",
+      "projectStallDays",
     ]);
+    // 停滞雷达阈值（路线 v3 切片 2.1）：可选；缺失按默认 7 天。
+    if (
+      c.projectStallDays !== undefined &&
+      (!Number.isSafeInteger(c.projectStallDays) ||
+        c.projectStallDays < 1 ||
+        c.projectStallDays > 365)
+    )
+      invalid("停滞阈值");
     if (c.knowledgeSources !== undefined) {
       array(c.knowledgeSources, "知识来源", 20);
       unique(
@@ -551,8 +560,12 @@ export function validateState(state) {
         "relationVersion",
         "aliases",
         "identityConflict",
+        "active",
       ]);
       id(p.id);
+      // 在推进标记（路线 v3 切片 2.1）：可选布尔；旧库缺失即未标记。
+      if (p.active !== undefined && typeof p.active !== "boolean")
+        invalid("在推进标记");
       if (p.relationVersion !== undefined) id(p.relationVersion);
       if (
         p.identityConflict !== undefined &&

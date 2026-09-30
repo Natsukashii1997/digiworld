@@ -23,6 +23,7 @@ import { Relay } from "./WorkspacePages.jsx";
 import { ProjectContext } from "./ProjectContext.jsx";
 import { ProjectLocations } from "./ProjectLocations.jsx";
 import { ProjectRules } from "./RuleInstall.jsx";
+import { ActiveProjects, ActiveToggle } from "./ProjectStatus.jsx";
 import { AgentInventory } from "./AgentInventory.jsx";
 import { SkillSourceImport } from "./SkillSources.jsx";
 import { PlanDetails } from "./PlannedPage.jsx";
@@ -99,7 +100,15 @@ function LegacyRecords({ records }) {
     </details>
   );
 }
-export function Projects({ state, adoptState, notify, ruleInstalls, refreshRuleInstalls }) {
+export function Projects({
+  state,
+  adoptState,
+  notify,
+  ruleInstalls,
+  refreshRuleInstalls,
+  projectStatus = { items: [], error: "", loaded: true },
+  refreshProjectStatus = () => {},
+}) {
   const { busy, error, run } = useDiscovery(
     "projects",
     state,
@@ -187,6 +196,13 @@ export function Projects({ state, adoptState, notify, ruleInstalls, refreshRuleI
           已达到扫描数量上限，部分项目没有列出。可在“扫描目录”里缩小范围后重新扫描。
         </p>
       )}
+      <ActiveProjects
+        state={state}
+        adoptState={adoptState}
+        notify={notify}
+        status={projectStatus}
+        refresh={refreshProjectStatus}
+      />
       <div className="discovery-toolbar">
         <Filters
           value={filter}
@@ -241,6 +257,7 @@ export function Projects({ state, adoptState, notify, ruleInstalls, refreshRuleI
                     )}
                   </span>
                   <span className="project-row-meta">
+                    {p.active && <Badge tone="success">在推进</Badge>}
                     {bound.has(p.id) && (
                       <Badge tone="success">Current 已连接</Badge>
                     )}
@@ -292,6 +309,12 @@ export function Projects({ state, adoptState, notify, ruleInstalls, refreshRuleI
             {selected.description && (
               <p className="body-copy">{selected.description}</p>
             )}
+            <ActiveToggle
+              project={selected}
+              state={state}
+              adoptState={adoptState}
+              notify={notify}
+            />
             {selected.branch && (
               <p className="body-copy">分支 · {selected.branch}</p>
             )}
