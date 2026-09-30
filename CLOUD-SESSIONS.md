@@ -23,12 +23,13 @@
 | 项 | 取值 |
 |---|---|
 | 仓库 | `personal-ai-workbench`（私有） |
-| Node | ≥ 24（`package.json` engines）；镜像默认版本不足时在启动脚本用 nvm 安装 24 |
+| Node | ≥ 24（`package.json` engines）。Default 镜像是 Node 22，需用镜像自带的 `/opt/nvm` 安装 24（实测约 5 秒） |
 | 环境变量 | `PLAYWRIGHT_MODULE=playwright`（浏览器脚本默认指向本机绝对路径，云端必须覆盖） |
-| 网络 | 需能访问 npm 仓库与 Playwright 浏览器下载地址；以实测为准 |
+| 网络 | 2026-09-30 实测：npm registry、nodejs.org、Ubuntu apt 源可达；**`cdn.playwright.dev` 被 403 拦截**，必须在环境网络设置中放行它（或改用完全开放网络），否则浏览器回归无法运行 |
 | 启动脚本 | 见下 |
 
 ```bash
+export NVM_DIR=/opt/nvm; . "$NVM_DIR/nvm.sh"; nvm install 24; nvm use 24
 npm ci
 npx playwright install --with-deps chromium
 npm run build
@@ -36,11 +37,13 @@ npm run build
 
 `dist/` 不入库；`npm test` 中的 `digital-world-ui.test.mjs` 与全部浏览器脚本都依赖构建产物，所以启动时必须 build。
 
-回归入口：
+回归入口（外层 `timeout` 只防挂起，不改测试本身）：
 
 ```bash
-npm test
+timeout 1200 npm test
 ```
+
+**云端与本机的已知差异（2026-09-30 首次实测，未定位）**：云端以 root 在 Linux 上运行。`npm test` 本机 427/427，云端 fail 19、skipped 5，且 `rule-templates.test.mjs` 挂起。其中 `plutil`、ChatGPT.app 发现、`wiki-local` helper 是本机专属依赖；`skill-files` 的权限拒绝对 root 无效；agent-config 与 rule-templates 的恢复/回读失败原因未查明。这些问题定位之前，云端 `npm test` 结果只能作为参考，不能替代本机回归。详见 [云端基线回归交接](docs/agents/handoffs/2026-09-30-claude-cloud.md)。
 
 ```bash
 for f in tests/browser.mjs tests/accessibility.mjs tests/migration.mjs tests/history-capacity.mjs tests/*-browser.mjs; do echo "== $f"; node "$f" || echo "FAIL $f"; done
