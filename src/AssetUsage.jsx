@@ -4,6 +4,7 @@ import { transferFeedback } from "./transfer.js";
 import { request } from "./api.js";
 import { usageOf, usageTime } from "./asset-usage.js";
 import { Button, Badge } from "./components.jsx";
+import { Odometer } from "./Odometer.jsx";
 
 export function useAssetActivity(asset, state, adoptState) {
   const key = `workbench-activity-${asset.id}`;
@@ -240,6 +241,13 @@ export function useAssetActivity(asset, state, adoptState) {
 
 export function AssetUsage({ asset, state, activity }) {
   const summary = usageOf(asset, state.assetActivity);
+  // 上一次渲染看到的次数（同一资产）：第一次使用时“从未使用”换成计数，
+  // 数字从 0 滚到 1，而不是直接出现（R87-S1）。
+  const seen = useRef({ id: asset.id, count: summary.count });
+  const rollFrom = seen.current.id === asset.id ? seen.current.count : summary.count;
+  useEffect(() => {
+    seen.current = { id: asset.id, count: summary.count };
+  }, [asset.id, summary.count]);
   const [rating, setRating] = useState(null),
     [note, setNote] = useState("");
   useEffect(() => {
@@ -271,9 +279,14 @@ export function AssetUsage({ asset, state, activity }) {
         <Badge tone="muted">仅本机保存</Badge>
       </header>
       <p data-testid="usage-count">
-        {summary.count
-          ? `已使用 ${summary.count} 次 · 最近 ${new Date(summary.lastAt).toLocaleString("zh-CN")}`
-          : "从未使用"}
+        {summary.count ? (
+          <>
+            已使用 <Odometer value={summary.count} from={rollFrom} /> 次 · 最近{" "}
+            {new Date(summary.lastAt).toLocaleString("zh-CN")}
+          </>
+        ) : (
+          "从未使用"
+        )}
       </p>
       <p className="helper">
         {summary.evidence}。计次以成功复制为准；导出保存与 Agent

@@ -2155,6 +2155,14 @@ details.scan-notice {
   color: color-mix(in srgb, var(--tc) 70%, #fff);
   text-shadow: 0 0 12px color-mix(in srgb, var(--tc) 55%, transparent);
 }
+/* 静止时不裁掉数字的辉光；滚动中的那一位仍需裁切旧、新数字（R87-S1）。 */
+.cover-uses .odo-digit:not(.roll) {
+  overflow: visible;
+}
+/* 详情里的次数嵌在句子中：用行内块而非行内弹性盒，文字与复制结果仍是“已使用 1 次”一整句。 */
+.asset-usage .odometer {
+  display: inline-block;
+}
 .sr-only {
   position: absolute;
   width: 1px;
