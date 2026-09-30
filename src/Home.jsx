@@ -36,6 +36,7 @@ import {
 } from "./pixel.jsx";
 import { PartnerScreen } from "./PartnerScreen.jsx";
 import { HomeHot } from "./LifePages.jsx";
+import { HomeSchedule } from "./Calendar.jsx";
 
 export const ICONS = {
   inbox: Inbox,
@@ -71,7 +72,7 @@ function facts(state, zoneLatest) {
     projects: c.projectScannedAt ? `${(c.projects || []).length} 个项目` : "尚未扫描",
     health: "尚未开发",
     collab: "尚未开发",
-    calendar: "尚未开发",
+    calendar: "本机日历与提醒事项 · 需授权",
     night: "计划草稿 · 未启用",
     // 知识仓库的主要指标（切片 3.2）：“我的知识”本周新增或更新篇数，来自最近一次三区统计。
     knowledge: `${(c.knowledgeSources || []).length} 个知识源 · ${(state.knowledgeTasks || []).length} 个任务 · ${
@@ -264,12 +265,10 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls, projec
               <Moon size={14} />
               夜间窗口 {state.night.time}–{state.night.end} · 草稿，未启用
             </p>
-            <p className="schedule-note">
-              日历尚未接入。接入后这里会显示你提前写下的规划块，以及会议、项目里程碑和提醒，数据来自
-              macOS 日历（路线 3.2）。
-            </p>
+            {/* 路线 v3 5.2：今天的规划块与 todo，来自 macOS 日历与提醒事项；不可用 / 未授权时如实说明。 */}
+            <HomeSchedule />
             <button className="plan-link" onClick={() => navigate("calendar")}>
-              <span>查看日历规划</span>
+              <span>打开日历与 todo</span>
               <ArrowUpRight size={15} />
             </button>
           </div>

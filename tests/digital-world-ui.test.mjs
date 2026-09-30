@@ -205,7 +205,10 @@ test("切片 1.2：导航按今日、资产、目标、运行、知识、生活�
   assert.equal(PAGES.find((x) => x.id === "collab").maturity, "partial");
   // 路线 v3 切片 5.3、5.4：AI HOT 与学习成长已开发，不再是规划中页面（见下方单独的用例）。
   // 银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”，不再是规划页，由 silver-agents-browser.mjs 覆盖。
-  for (const id of ["health", "calendar"]) {
+  // 路线 v3 切片 5.2（分支 backup-calendar）：日历已开发，标“部分可用”，由 calendar-todo-browser.mjs 覆盖。
+  assert.equal(PAGES.find((x) => x.id === "calendar").maturity, "partial");
+  assert.equal(PAGES.find((x) => x.id === "calendar").plan, undefined);
+  for (const id of ["health"]) {
     const p = PAGES.find((x) => x.id === id);
     assert.equal(p.maturity, "planned", id);
     const html = renderToStaticMarkup(
@@ -268,11 +271,13 @@ test("UI v12.1：侧栏名称与今日页快捷动作按用户决定", () => {
   for (const action of ["记一笔", "新建资产", "上下文接力"]) assert.match(html, new RegExp(action));
 });
 
-test("今日页：日历未接入时只显示夜间窗口草稿与说明，待处理来自真实数据", () => {
+test("今日页：时间安排先如实显示正在读取日历（不再写“日历尚未接入”），夜间窗口草稿与待处理来自真实数据", () => {
   const s = seed();
   s.notes = [{ id: "n1", text: "合成随手记", at: "2026-09-29T00:00:00.000Z" }];
   const html = render(Home, { state: s });
-  assert.match(html, /日历尚未接入/);
+  // 路线 v3 5.2：今天的规划块与 todo 由服务端读取后显示；静态渲染时尚未读取。
+  assert.doesNotMatch(html, /日历尚未接入/);
+  assert.match(html, /正在读取日历…/);
   assert.match(html, /夜间窗口 23:00–07:00 · 草稿，未启用/);
   assert.match(html, /1 条随手记仍只在本机/);
   assert.match(html, /待处理 · 1/);

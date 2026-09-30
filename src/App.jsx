@@ -28,7 +28,8 @@ import { Dialog, TypeIcon, Maturity, typeLabel } from "./components.jsx";
 import { Assets, AssetEditor, AssetDetail } from "./Assets.jsx";
 import { Knowledge } from "./Knowledge.jsx";
 import { Home, ICONS as PAGE_ICONS } from "./Home.jsx";
-import { PlannedPage, Inbox } from "./PlannedPage.jsx";
+import { Inbox } from "./PlannedPage.jsx";
+import { CalendarPage } from "./Calendar.jsx";
 import { Collab } from "./Collab.jsx";
 import { pendingItems } from "./pending.js";
 import { PartnerScreen } from "./PartnerScreen.jsx";
@@ -508,9 +509,7 @@ export default function App() {
           {route === "aihot" && <AiHot {...common} navigate={navigate} />}
           {route === "learning" && <Learning {...common} navigate={navigate} />}
           {route === "silver" && <Silver {...common} />}
-          {["calendar"].includes(route) && (
-            <PlannedPage id={route} navigate={navigate} />
-          )}
+          {route === "calendar" && <CalendarPage {...common} />}
         </main>
       </div>
       {asset && !editing && (
