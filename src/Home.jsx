@@ -24,6 +24,7 @@ import { page, LAYERS, ZONES } from "./pages.js";
 import { Maturity, TypeIcon, typeLabel } from "./components.jsx";
 import { pendingItems, rulePendingReady } from "./pending.js";
 import { PendingList } from "./PlannedPage.jsx";
+import { useZoneSummary } from "./KnowledgeZones.jsx";
 import {
   Pixel,
   DigiviceArt,
@@ -56,7 +57,7 @@ export const ICONS = {
 };
 
 // 每个页面一条真实数据，读不到就如实写“尚未扫描 / 尚未检测 / 尚未开发”。
-function facts(state) {
+function facts(state, zoneLatest) {
   const c = state.connections || {};
   const live = state.assets.filter((a) => !a.archived);
   const detected = (c.agents || []).filter((a) => a.status === "detected");
@@ -72,7 +73,10 @@ function facts(state) {
     collab: "尚未开发",
     calendar: "尚未开发",
     night: "计划草稿 · 未启用",
-    knowledge: `${(c.knowledgeSources || []).length} 个知识源 · ${(state.knowledgeTasks || []).length} 个任务`,
+    // 知识仓库的主要指标（切片 3.2）：“我的知识”本周新增或更新篇数，来自最近一次三区统计。
+    knowledge: `${(c.knowledgeSources || []).length} 个知识源 · ${(state.knowledgeTasks || []).length} 个任务 · ${
+      zoneLatest ? `我的知识本周 +${zoneLatest.zones.mine.changedThisWeek}` : "三区尚未统计"
+    }`,
     notes: `${state.notes.length} 条本机草稿`,
     aihot: "精选 · 热点 · 日报 · 本机缓存",
     learning: `${(state.learning?.books || []).length} 本已标记 · ${(state.learning?.links || []).filter((l) => !l.deletedAt).length} 条链接`,
@@ -127,7 +131,8 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls, projec
   const [dvView, setDvView] = useState("egg"),
     [lit, setLit] = useState(false);
   const live = state.assets.filter((a) => !a.archived);
-  const f = facts(state);
+  const [zoneSummary] = useZoneSummary();
+  const f = facts(state, zoneSummary.latest);
   const pending = pendingItems(state, ruleInstalls, projectStatus);
   // 显示数字时跟随待处理条数（加载完成、读取失败等来源变化都会更新）
   useEffect(() => {

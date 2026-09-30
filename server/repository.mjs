@@ -214,6 +214,32 @@ export async function openRepository(directory) {
         return commit(state);
       });
     },
+    // 三区规则、个人说明共享授权与修改建议（切片 3.2/3.3）。expectedRevision 缺省时不核对版本
+    // （MCP 提交建议没有页面版本），更新本身仍在串行队列里基于最新快照进行。
+    updateProfile(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先打开工作台初始化资产库", 409);
+        if (
+          expectedRevision !== undefined &&
+          expectedRevision !== stored.revision
+        )
+          throw failure("主库已变化，请刷新后重试", 409);
+        const { knowledgeZones, profileProposals } = await update(stored);
+        const state = { ...stored, revision: stored.revision + 1 };
+        if (knowledgeZones !== undefined) state.knowledgeZones = knowledgeZones;
+        if (profileProposals !== undefined)
+          state.profileProposals = profileProposals;
+        if (
+          equivalent(state.knowledgeZones, stored.knowledgeZones) &&
+          equivalent(state.profileProposals, stored.profileProposals)
+        )
+          return stored;
+        validateState(state);
+        validateHistory(stored, state, { allowProfile: true });
+        return commit(state);
+      });
+    },
     updateConnections(update, { expectedRevision } = {}) {
       return serial(async () => {
         const stored = await read();
@@ -269,6 +295,7 @@ export async function openRepository(directory) {
           allowKnowledge: true,
           allowActivity: true,
           allowCollab: true,
+          allowProfile: true,
         });
         const result = await commit({
           ...state,

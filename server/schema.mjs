@@ -7,6 +7,11 @@ import {
   validateKnowledgeTasks,
   validateKnowledgeHistory,
 } from "./knowledge-compilation-schema.mjs";
+import {
+  validateKnowledgeZones,
+  validateProfileProposals,
+  validateProfileHistory,
+} from "./knowledge-profile-schema.mjs";
 export function invalid(message) {
   throw Object.assign(new Error(`数据校验失败：${message}`), { status: 400 });
 }
@@ -215,9 +220,15 @@ export function validateState(state) {
     "scrolls",
     "collabLog",
     "learning",
+    "knowledgeZones",
+    "profileProposals",
   ]);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
   if (state.learning !== undefined) validateLearning(state.learning);
+  if (state.knowledgeZones !== undefined)
+    validateKnowledgeZones(state.knowledgeZones);
+  if (state.profileProposals !== undefined)
+    validateProfileProposals(state.profileProposals);
   if (state.knowledgeTasks !== undefined)
     validateKnowledgeTasks(state.knowledgeTasks);
   if (
@@ -776,6 +787,7 @@ export function validateHistory(
     allowActivity = false,
     allowCollab = false,
     allowLearningFolders = false,
+    allowProfile = false,
   } = {},
 ) {
   if (
@@ -783,6 +795,17 @@ export function validateHistory(
     !equivalent(previous?.learning?.folders || [], next.learning?.folders || [])
   )
     invalid("书架文件夹只能在设置中通过专用操作修改");
+  // 三区规则、个人说明共享授权与修改建议只能经由专用操作更新（切片 3.2/3.3）。
+  if (
+    !allowProfile &&
+    (!equivalent(previous?.knowledgeZones, next.knowledgeZones) ||
+      !equivalent(previous?.profileProposals || [], next.profileProposals || []))
+  )
+    invalid("三区规则与个人说明建议只能通过专用操作更新");
+  validateProfileHistory(
+    previous?.profileProposals || [],
+    next.profileProposals || [],
+  );
   validateActivityHistory(previous?.assetActivity || [], next.assetActivity || [], allowActivity);
   validateCollabHistory(previous?.collabLog || [], next.collabLog || [], allowCollab);
   if (

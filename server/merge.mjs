@@ -42,6 +42,9 @@ export function mergeBackup(current, incoming) {
       summary.learningLinksAdded = input.learning.links.length;
       summary.learningBooksAdded = input.learning.books.length;
     }
+    // 个人说明共享是本机授权，与连接一样不随备份恢复；规则与建议保留。
+    if (content.knowledgeZones)
+      content.knowledgeZones = { ...content.knowledgeZones, profileSharing: false };
     return { state: { ...content, revision: 0 }, summary };
   }
   const next = structuredClone(current);

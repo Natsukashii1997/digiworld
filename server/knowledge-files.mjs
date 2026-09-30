@@ -180,7 +180,16 @@ export function createKnowledgeFiles({
       throw safe;
     }
   }
-  async function scan(source) {
+  // folder（可选）：只扫描来源内的一个子文件夹（个人说明读取用），路径规则与正文读取相同。
+  async function scan(source, { folder = "" } = {}) {
+    if (
+      typeof folder !== "string" ||
+      (folder &&
+        (folder.length > 1000 ||
+          /[\\:\x00-\x1f\x7f]/.test(folder) ||
+          folder.split("/").some((part) => !part || part === ".." || excluded(part))))
+    )
+      throw fail("扫描文件夹必须是来源内可见的相对路径", 400);
     await authorized(source);
     const files = [],
       issues = [];
@@ -277,12 +286,12 @@ export function createKnowledgeFiles({
       } catch (error) {
         files.splice(start);
         issues.splice(issueStart);
-        if (!path) throw sanitized(error);
+        if (path === folder) throw sanitized(error);
         skipped++;
         issues.push({ path, message: sanitized(error).message });
       }
     }
-    await walk("", 0);
+    await walk(folder, folder ? folder.split("/").length : 0);
     await authorized(source);
     return {
       status: issues.length ? "partial" : "complete",

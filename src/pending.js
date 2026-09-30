@@ -54,6 +54,17 @@ export function pendingItems(
         assetId: asset.id,
       });
   }
+  // 个人说明修改建议（切片 3.3）：Agent 通过本机 MCP 提交，在待处理页预览采纳或拒绝。
+  for (const p of state.profileProposals || []) {
+    if (p.status !== "pending") continue;
+    items.push({
+      id: `profile-${p.id}`,
+      kind: "知识",
+      title: `个人说明修改建议 · ${p.path}`,
+      detail: `来自 ${p.proposer}：${p.reason.length > 60 ? p.reason.slice(0, 60) + "…" : p.reason}`,
+      to: "inbox",
+    });
+  }
   const tasks = (state.knowledgeTasks || []).filter((t) => !t.archived);
   if (tasks.length)
     items.push({
