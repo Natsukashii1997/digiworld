@@ -1,0 +1,7 @@
+PASS Agent 卡片打开目录元数据，存在/缺失/受阻可区分；不自动扫描 Skill 或修改配置
+PASS 限定 Skill 目录不自动扫描；取消回 Agent 后重新读取；明确扫描→完整收录→单一资产详情→完整 ZIP
+PASS 刷新失败保留并标记旧目录、禁用旧 Skill 入口；重试恢复可用，主库无额外写入，三状态 axe 与四档布局通过
+PASS HTTP200 部分错误或截断不覆盖上次目录，展示本次问题并禁用入口；完整刷新接纳新状态
+PASS 首次目录响应有顶层错误或截断时展示部分结果但禁用 Skill；单项受阻不误伤完整响应
+PASS 实际 inspector 读取临时 Hermes Profiles，链接受阻产生HTTP200顶层partial，UI保留旧Profile并在真实恢复后重新启用
+PASS 关闭中的旧请求不复活或覆盖新 Agent；Tab/Shift+Tab 焦点环、Esc 返回卡片；无额外扫描、配置写入或 JS 异常

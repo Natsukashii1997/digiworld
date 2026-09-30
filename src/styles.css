@@ -2163,6 +2163,10 @@ details.scan-notice {
 .asset-usage .odometer {
   display: inline-block;
 }
+/* 裁切的行内块以底边为基线，会把数字顶高；顶端对齐后数字与句子同一基线。 */
+.asset-usage .odo-digit {
+  vertical-align: top;
+}
 .sr-only {
   position: absolute;
   width: 1px;

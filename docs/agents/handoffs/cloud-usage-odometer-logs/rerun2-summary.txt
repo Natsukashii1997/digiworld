@@ -1,0 +1,7 @@
+PASS tests/usage-odometer-browser.mjs
+PASS tests/usage-browser.mjs
+PASS tests/assets-pin-browser.mjs
+PASS tests/r87-fix-browser.mjs
+FAIL tests/interaction-browser.mjs
+PASS tests/accessibility.mjs
+PASS tests/browser.mjs

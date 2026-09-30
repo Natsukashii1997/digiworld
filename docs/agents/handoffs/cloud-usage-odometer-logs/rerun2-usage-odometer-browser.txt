@@ -1,0 +1,3 @@
+PASS 正常动效：复制后封面与详情数字滚到新值（0→1、1→2），出现 .is-rolling，axe 无违规
+PASS 减少动态效果：封面与详情直接显示新值，全程无 .odo-old / .is-rolling，axe 无违规
+usage-odometer-browser: 2 passed
