@@ -305,3 +305,535 @@
 ✔ 并发写入只接纳一个版本，禁止篡改既有 Skill 历史和危险路径 (33.666038ms)
 ✔ 备份恢复先预览，只增加缺失记录和兼容版本；过期预览和冲突不能写入 (23.918705ms)
 ✔ 置顶字段 pinned 可选且必须为布尔；旧库缺失即未置顶，备份合并不因置顶冲突 (48.140149ms)
+
+Interrupted while running:
+
+⚠ tests/rule-templates.test.mjs (tests/rule-templates.test.mjs:1:1)
+⚠ tests/scrolls-schema.test.mjs (tests/scrolls-schema.test.mjs:1:1)
+⚠ tests/search.test.mjs (tests/search.test.mjs:1:1)
+⚠ tests/server.test.mjs (tests/server.test.mjs:1:1)
+⚠ tests/skill-copies-http.test.mjs (tests/skill-copies-http.test.mjs:1:1)
+⚠ tests/skill-copies.test.mjs (tests/skill-copies.test.mjs:1:1)
+⚠ tests/skill-copy-diff.test.mjs (tests/skill-copy-diff.test.mjs:1:1)
+⚠ tests/skill-files.test.mjs (tests/skill-files.test.mjs:1:1)
+⚠ tests/skill-origins.test.mjs (tests/skill-origins.test.mjs:1:1)
+⚠ tests/skill-sources.test.mjs (tests/skill-sources.test.mjs:1:1)
+⚠ tests/store.test.mjs (tests/store.test.mjs:1:1)
+⚠ tests/version-diff.test.mjs (tests/version-diff.test.mjs:1:1)
+⚠ tests/workflow-references.test.mjs (tests/workflow-references.test.mjs:1:1)
+⚠ tests/workflow-state.test.mjs (tests/workflow-state.test.mjs:1:1)
+✔ 首次装入：原有字节原样保留，区块追加在末尾并可解析 (2.491603ms)
+✔ 首次装入：没有换行结尾的文件先补空行，空文件不加前导空行 (0.27783ms)
+✔ 文件不存在时计划为新建，正文缺换行时补齐 (0.215859ms)
+✔ 升级只替换区块，区块前后字节逐字节不变 (0.431217ms)
+✔ 同一版本且未手改时不需要写入 (0.203532ms)
+✔ 区块被手改：默认拒绝写入，勾选覆盖后才计划升级 (0.412946ms)
+✔ 畸形或多个托管标记一律拒绝，不猜 (0.768414ms)
+✔ 文件里是另一个模板的区块时拒绝，不替换 (0.380534ms)
+✔ 模板正文不能包含托管标记 (0.194434ms)
+✔ CRLF 文件：追加与升级都不改动原有换行 (0.399849ms)
+✔ 规则资产类型可以保存，复制记为 copy-rule 使用 (187.140537ms)
+✖ 装入、升级、区块外手写内容不受影响，撤回恢复写入前字节 (107.885546ms)
+✖ 区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容 (143.547843ms)
+✔ 文件不存在时新建；新建的文件不提供撤回 (90.748462ms)
+✔ 预览后文件变化、主库变化或过期都拒绝写入，并声明未开始 (95.51794ms)
+✖ 重复提交同一令牌只写一次，返回核对结果 (111.057959ms)
+✔ 只接受白名单文件与已发现项目，拒绝符号链接 (112.754873ms)
+✔ 操作记录私有，只存区块片段，不存区块外正文 (122.477101ms)
+✖ D-R4：写入中途失败的操作不替代已装版本，单独标为未确认 (178.36718ms)
+✖ tests/rule-templates.test.mjs (1190823.330613ms)
+✔ 焚决：旧库缺少 scrolls 按空处理，不写迁移 (5.716425ms)
+✔ 焚决：合法的卷、有序条目、标签、计次、置顶与回收区字段通过校验 (2.128533ms)
+✔ 焚决：严格校验字段、类型与长度上限 (6.553443ms)
+✔ 随手记：富文本格式与“已炼”标记可选；旧随手记不变；拒绝任意字段与控制字符 (4.277789ms)
+✔ 备份：没有 scrolls 的旧备份可导入，已有的卷保持不变 (2.859148ms)
+✔ 备份：新增卷与已有卷的新条目被合并，计次取较大值，当前库的编辑保留 (2.359414ms)
+✔ 备份：含焚决与富文本随手记的新备份经 HTTP 同款导出结构往返一致 (55.355907ms)
+✔ 关键词按空白拆分、忽略大小写，所有词须出现 (9.113442ms)
+✔ 资产命中标题、说明、标签、正文和文本文件，并给出位置与摘录 (1.50864ms)
+✔ 摘录截取关键词前后片段并用省略号标出截断 (0.349584ms)
+✔ 只搜当前版本：历史版本内容不命中 (0.319637ms)
+✔ 已归档资产只计数，不列入结果 (0.656524ms)
+✔ 全局搜索覆盖随手记、参考、手动与扫描项目 (0.615006ms)
+✔ 缺少扫描连接的旧主库也能搜索 (0.320685ms)
+✔ 标签统计只算未归档资产当前版本，按数量再按名称排序 (0.300399ms)
+✔ 按版本对象缓存，重复搜索结果稳定 (1.707262ms)
+✔ 多词跨字段命中时，摘录不受关键词顺序影响，并列出全部命中位置 (0.342781ms)
+✔ Agent 目标接口受会话保护、拒绝浏览器路径且只更新主库关系 (177.022496ms)
+✔ Agent 目录检查仅接受已支持身份、受会话保护且不写主库 (31.959482ms)
+✔ 扫描结果自动存入主库且不可伪造；重复扫描保留关联 ID (90.077189ms)
+✔ 本地 API 需本页会话令牌，拒绝跨域和伪造 Host；保存后可回读 (42.12424ms)
+✔ HTTP 从明确目标发现单一候选，关联固定版本并可重新核对、解除 (257.587986ms)
+✔ Skill 副本 HTTP 拒绝无会话、外部 Origin 和任意路径字段 (86.555202ms)
+✔ 备份导入不会激活其中的外来 Skill 副本路径 (102.106511ms)
+✔ 明确发现、预览后关联固定版本；重开、核对、解除只改变关系 (207.515794ms)
+✔ 主库排队期间副本变化必须拒绝确认，不能保存旧预览 (88.785177ms)
+✔ 资产更新仍核对固定旧版；显式改版保持关联 ID，响应丢失重试不重复 (130.118225ms)
+✔ 副本变化、消失、符号链接受阻与权限未知均如实显示且不持久化当前成功 (96.421837ms)
+▶ 预览后替换同内容目录、Home 根或目标绑定均不能确认
+  ✔ package (66.738596ms)
+  ✔ root (82.794375ms)
+  ✔ home (62.843272ms)
+  ✔ target (76.465755ms)
+✔ 预览后替换同内容目录、Home 根或目标绑定均不能确认 (290.96597ms)
+▶ 改绑、解除与归档保留关系但停止读取，目录身份替换需要重新关联
+  ✔ target_changed (78.150623ms)
+  ✔ target_missing (67.427811ms)
+  ✔ asset_unavailable (59.147757ms)
+  ✔ directory_changed (70.446899ms)
+✔ 改绑、解除与归档保留关系但停止读取，目录身份替换需要重新关联 (276.808414ms)
+▶ 扫描与确认令牌过期、淘汰、提交时过期均拒绝；并发确认只新增一次
+  ✔ scan_expired (43.321544ms)
+  ✔ scan_evicted (186.334051ms)
+  ✔ preview_expired (35.076478ms)
+  ✔ preview_evicted (299.029603ms)
+  ✔ queued_expired (37.765875ms)
+  ✔ concurrent (46.187502ms)
+✔ 扫描与确认令牌过期、淘汰、提交时过期均拒绝；并发确认只新增一次 (649.540805ms)
+✔ 部分目录发现不能推断不存在；共享 Home、不完整元数据及客户端路径拒绝 (51.070731ms)
+✔ 清理示例不得移除被副本关系引用的 Skill；通用写入不能伪造关系 (66.41095ms)
+✔ 核对过程中目标被改绑，不返回当前一致 (70.005064ms)
+✔ 旧包权限未知不会冒充完全一致，改名不使固定关系失效 (65.355008ms)
+✔ 仅剥除各自 SKILL.md 外包装目录及祖先，内部目录仍纳入比较 (4.929857ms)
+✔ 同一完整 Skill 的已知字节和权限一致 (0.594639ms)
+✔ 非空父目录可由子文件推导，但省略的目录权限保持未知 (0.877252ms)
+✔ 对原字节比较，不按文本标记或排列顺序比较；保留二进制差异 (0.779085ms)
+✔ 普通权限和文件类型分别核对；权限未知不掩盖已确认的差异 (2.322671ms)
+✔ 新增、缺失文件和内部空目录都属于集合差异，并稳定按路径输出 (0.486013ms)
+✔ 双方均省略父目录或普通文件缺少 mode 时都保持未核验 (0.763554ms)
+✔ 真实 ZIP 包往返保持完整比较，外包装未知权限不污染内部结论 (9.597289ms)
+✔ 换行、大小写路径与长度变化不被文本归一化，返回只含差异元数据 (0.763672ms)
+✔ 无入口、多入口、越界、冲突、危险权限和错误目录包均抛错 (1.440106ms)
+✔ 扫描子目录前祖先已被替换为链接时，不枚举未授权目录或泄露其名称 (23.237054ms)
+✔ 目录枚举后身份已更换时拒绝旧清单，不继续访问子目录 (10.201238ms)
+✔ 发现拒绝磁盘根、其他主目录和系统数据根，不开始目录遍历 (1.879521ms)
+✔ 大量普通文件的目录也有元数据上限，不能绕过目录与候选限额 (1757.200831ms)
+✔ 本机完整包保留中文、隐藏资源、空目录、二进制和普通权限 (20.25424ms)
+✖ 来源缺失或权限失败给出可操作错误，不以空包或部分包成功返回 (8.684519ms)
+✔ 来源指纹忽略修改时间但响应字节、权限、路径与目录结构变化 (23.226874ms)
+✔ 候选目录别名仅在显式根之间解析，去重显示且完整读取仍拒绝包内链接 (24.39993ms)
+✔ 扫描深度、候选和目录数量封顶时明确返回不完整，而非伪称无结果 (5307.722092ms)
+✔ 无 frontmatter 名称回退目录名，入口正文超过主库限额明确拒绝而不截断 (58.049723ms)
+✔ 发现仅返回候选元数据，止于首个入口并明确受阻根 (11.495179ms)
+✔ 入口须为 UTF-8 文本，完整包遵守文件数、大小与安全路径限制 (157.019316ms)
+✔ 凭据路径及依赖或版本目录阻断整个包，普通隐藏资源仍保留 (24.052369ms)
+✔ 认证配置 .netrc、.npmrc、.pypirc 在打开任何正文前整包阻断 (13.48895ms)
+✔ 完整读取阻断包内符号链接、硬链接、特殊文件和特殊权限 (20.696896ms)
+✔ 读取仅限显式具体根，拒绝越界、宽泛根和目录链符号链接 (6.105428ms)
+✔ 保留示例计数只包含实际示例，不计个人资产、缺失源或重复副本 (2.702164ms)
+✔ 专用资产写入保留本机来源，普通保存不能伪造或改变来源，旧资产仍兼容 (37.73093ms)
+✔ 独立个人改版保留固定源身份，源后续变化不传播且来源示例不能清除 (25.385404ms)
+✔ 来源随备份保留且合并幂等，同资产不同来源必须拒绝冲突 (20.889364ms)
+✔ 显式扫描与完整预览不写主库，确认收录保留原字节和固定来源，重试不重复 (79.574669ms)
+✔ 个人改版从服务端固定 Skill 版本完整派生，创建独立历史且并发不重复 (53.608111ms)
+✔ 确认收录同时绑定预览来源身份，同内容目录别名改向也必须重新预览 (55.345481ms)
+✔ 本机HTTP来源接口需会话令牌，完整扫描预览确认链可回读且不接受伪造文件 (133.061839ms)
+✔ 来源新增文件、预览过期或主库变化都阻止旧确认，不产生部分收录 (70.41518ms)
+✔ 资产输入校验 (1.949217ms)
+✔ 编辑版本不可变，ID 稳定，恢复生成新版本 (7.591176ms)
+✔ 恢复不存在版本会明确失败 (0.207853ms)
+✔ 拒绝危险文件路径 (0.479564ms)
+✔ 示例全部可识别且 Skill 包完整 (0.779209ms)
+✔ 比较资产展示字段，标签保留顺序，身份与时间不影响内容相同判定 (6.738342ms)
+✔ Skill 比较完整路径集合、二进制字节、权限与文件类型，保留空目录 (0.931291ms)
+✔ 逐行比较保留中文，显示插入与删除，可无损还原两版正文 (0.526058ms)
+✔ 换行风格变化单独标记，末尾换行与空行不被抹除 (0.359313ms)
+✔ 超过字符、行数或比较单元预算时明确退回全文，不生成不完整差异 (17.701105ms)
+✔ 正文与标签变化独立判定，空值明确呈现，不修改传入版本 (0.487003ms)
+✔ Skill 相同字节不受文本存储标记与文件顺序影响，未知权限不冒充已知权限 (0.436971ms)
+✔ 空文档、纯插入、纯删除与重复行均保留准确次序 (0.237455ms)
+✔ 逐行结果可无损重建中英文与混合换行的两版输入 (1.745128ms)
+✔ 工作流引用按固定版本和原顺序解析，上游更新不漂移 (4.025079ms)
+✔ 完整流程资料包保存 Prompt 原字节、Skill 全部文件权限及固定版本清单 (24.287752ms)
+✔ 缺失优先于归档，归档与非 Skill/Prompt 不可交付 (1.198703ms)
+✔ 可复制流程包含固定引用标识、Prompt 原文和需附送的 Skill 包路径 (1.626889ms)
+✔ 资料包仅使用合法固定 ID 建路径，并拒绝失效或越界的工作流输入 (14.286345ms)
+✔ 清理示例保留非示例工作流任意历史引用的示例资产 (0.896779ms)
+✔ 资料包原始输入以 UTF-8 和二进制字节累计，25 MiB 接受且超限拒绝 (1469.644321ms)
+✔ 固定 ID 仍须避免默认大小写不敏感磁盘上的导出路径冲突 (13.077834ms)
+✔ 复制流程与资料包共用 25 MiB 原始输入限制，不生成超限回退文本 (241.543172ms)
+✔ 工作流指定引用在保存回读后保持，更新上游不静默升级 (27.600577ms)
+✔ 恢复缺省引用的旧流程会清空当前引用，旧历史不改写且仍可恢复引用版 (14.702725ms)
+✔ 引用新增和更换版本进入历史比较，缺省与空引用等价 (0.687339ms)
+✔ 个人流程任意历史引用的示例不能被移除，未引用示例仍可清理 (14.435401ms)
+✔ 引用形状、唯一性、类型和数量在主库写入边界校验；缺失指针可保存为待修正 (23.495926ms)
+ℹ tests 434
+ℹ suites 0
+ℹ pass 409
+ℹ fail 19
+ℹ cancelled 1
+ℹ skipped 5
+ℹ todo 0
+ℹ duration_ms 1199845.462836
+
+✖ failing tests:
+
+test at tests/agent-config-http.test.mjs:94:1
+✖ 配置 HTTP 确认后回读并保留历史，显式恢复原字节与权限且不宣称采用 (119.967388ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config-http.test.mjs:108:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:217:1
+✖ A changed binding and external edits block restoring an old operation (177.291494ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = true # keep\n# external\n'
+  - '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = false # keep\n# external\n'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:239:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = true # keep\n# external\n',
+    expected: '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = false # keep\n# external\n',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:299:1
+✖ Replacing the actual Home inode with identical configuration bytes invalidates old previews and operations (73.316414ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:302:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:333:1
+✖ BOM, Unicode and CRLF survive applying and restoring an exact byte-offset patch (129.419307ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:344:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:371:1
+✖ A missing original journal record invalidates a restore preview with a safe conflict (94.282021ms)
+  Error: 文件与原操作结果不一致，不能恢复；请重新读取配置
+      at failure (file:///home/user/personal-ai-workbench/server/repository.mjs:17:24)
+      at reverse (file:///home/user/personal-ai-workbench/server/agent-config.mjs:197:13)
+      at file:///home/user/personal-ai-workbench/server/agent-config.mjs:410:26 {
+    status: 409
+  }
+
+test at tests/agent-config.test.mjs:522:1
+✖ A configuration rename followed by failure returns observed state without claiming operationNotStarted (99.920967ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:543:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:560:1
+✖ A saved Hermes target applies and restores YAML booleans while preserving unrelated bytes (134.512211ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:595:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:624:1
+✖ Receipt failure after file write stays recoverable and repeating the operation does not rewrite (101.516554ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:647:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:672:1
+✖ A forged inverse patch cannot authorize editing another boolean (101.073637ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /恢复记录/. Input:
+  
+  'Error: 文件与原操作结果不一致，不能恢复；请重新读取配置'
+  
+      at async TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:684:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 文件与原操作结果不一致，不能恢复；请重新读取配置
+        at failure (file:///home/user/personal-ai-workbench/server/repository.mjs:17:24)
+        at reverse (file:///home/user/personal-ai-workbench/server/agent-config.mjs:197:13)
+        at file:///home/user/personal-ai-workbench/server/agent-config.mjs:410:26,
+    expected: /恢复记录/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:694:1
+✖ Restart recovery checks the same operation without replay; explicit restore returns original bytes (125.146575ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:703:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:729:1
+✖ Confirmed apply persists a minimal journal, reads back the file and never increments the workspace revision (119.082843ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:736:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-programs.test.mjs:424:1
+✖ App 版本来自 bundle 身份，内嵌 CLI 不冒用 App 版本；支持二进制 plist (14.154153ms)
+  Error: spawn /usr/bin/plutil ENOENT
+      at ChildProcess._handle.onexit (node:internal/child_process:287:19)
+      at onErrorNT (node:internal/child_process:525:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'spawn /usr/bin/plutil',
+    path: '/usr/bin/plutil',
+    spawnargs: [ '-convert', 'binary1', '/tmp/guiji-programs-vEzqbr/ChatGPT.app/Contents/Info.plist' ],
+    cmd: '/usr/bin/plutil -convert binary1 /tmp/guiji-programs-vEzqbr/ChatGPT.app/Contents/Info.plist'
+  }
+
+test at tests/discovery.test.mjs:93:1
+✖ ChatGPT.app 的 Codex bundle 身份归入 Codex，原 ChatGPT 身份不变 (18.263335ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   {
+  -     kind: 'App',
+  -     path: '/tmp/guiji-app-alias-WjFmBC/ChatGPT.app'
+  -   }
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/discovery.test.mjs:109:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ { path: '/tmp/guiji-app-alias-WjFmBC/ChatGPT.app', kind: 'App' } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/knowledge-writeback.test.mjs:310:1
+✖ 保存的候选能被既有 wiki-local 解析，但不能绕过有效性门禁成为当前知识 (235.753403ms)
+  Error: Command failed: python3 -B -c import sys,json,importlib.util; from pathlib import Path; s=importlib.util.spec_from_file_location('wiki',sys.argv[1]); w=importlib.util.module_from_spec(s); s.loader.exec_module(w); docs,audit=w.inspect(Path(sys.argv[2])); _,reviewed=w.inspect(Path(sys.argv[2]),audit); print(json.dumps({'errors':audit['errors'],'read':w.read_current(docs,reviewed,sys.argv[3],'knowledge')},ensure_ascii=False,default=str)) /home/user/wiki-local/wiki.py /tmp/guiji-knowledge-ui-Zq8qYn/sources/合成知识库 00 待整理/工作/个人/判断候选.md
+  Traceback (most recent call last):
+    File "<string>", line 1, in <module>
+    File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+    File "<frozen importlib._bootstrap_external>", line 1073, in get_code
+    File "<frozen importlib._bootstrap_external>", line 1130, in get_data
+  FileNotFoundError: [Errno 2] No such file or directory: '/home/user/wiki-local/wiki.py'
+  
+      at genericNodeError (node:internal/errors:986:15)
+      at wrappedFn (node:internal/errors:540:14)
+      at ChildProcess.exithandler (node:child_process:417:12)
+      at ChildProcess.emit (node:events:514:28)
+      at maybeClose (node:internal/child_process:1141:16)
+      at ChildProcess._handle.onexit (node:internal/child_process:306:5) {
+    code: 1,
+    killed: false,
+    signal: null,
+    cmd: "python3 -B -c import sys,json,importlib.util; from pathlib import Path; s=importlib.util.spec_from_file_location('wiki',sys.argv[1]); w=importlib.util.module_from_spec(s); s.loader.exec_module(w); docs,audit=w.inspect(Path(sys.argv[2])); _,reviewed=w.inspect(Path(sys.argv[2]),audit); print(json.dumps({'errors':audit['errors'],'read':w.read_current(docs,reviewed,sys.argv[3],'knowledge')},ensure_ascii=False,default=str)) /home/user/wiki-local/wiki.py /tmp/guiji-knowledge-ui-Zq8qYn/sources/合成知识库 00 待整理/工作/个人/判断候选.md",
+    stdout: '',
+    stderr: `Traceback (most recent call last):\n  File "<string>", line 1, in <module>\n  File "<frozen importlib._bootstrap_external>", line 936, in exec_module\n  File "<frozen importlib._bootstrap_external>", line 1073, in get_code\n  File "<frozen importlib._bootstrap_external>", line 1130, in get_data\nFileNotFoundError: [Errno 2] No such file or directory: '/home/user/wiki-local/wiki.py'\n`
+  }
+
+test at tests/rule-templates.test.mjs:236:1
+✖ 装入、升级、区块外手写内容不受影响，撤回恢复写入前字节 (107.885546ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:245:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:293:1
+✖ 区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容 (143.547843ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'append' !== 'drift'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:310:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'append',
+    expected: 'drift',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:396:1
+✖ 重复提交同一令牌只写一次，返回核对结果 (111.057959ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:409:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:470:1
+✖ D-R4：写入中途失败的操作不替代已装版本，单独标为未确认 (178.36718ms)
+  AssertionError [ERR_ASSERTION]: 仍是已完成的 v1
+  + actual - expected
+  
+  + null
+  - 'ad5575d0-eb5a-419a-8d89-26085cdebf29'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:496:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 'ad5575d0-eb5a-419a-8d89-26085cdebf29',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:1:1
+✖ tests/rule-templates.test.mjs (1190823.330613ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests/skill-files.test.mjs:198:1
+✖ 来源缺失或权限失败给出可操作错误，不以空包或部分包成功返回 (8.684519ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async file:///home/user/personal-ai-workbench/tests/skill-files.test.mjs:209:7
+      at async tree (file:///home/user/personal-ai-workbench/tests/skill-files.test.mjs:30:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+exit=124
