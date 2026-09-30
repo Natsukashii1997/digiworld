@@ -48,24 +48,8 @@ export const PAGES = [
     title: "资产仓库",
     eyebrow: "ASSET LIBRARY",
     maturity: "ready",
-    lead: "Skill、Prompt、工作流与规则模板在这里收录与迭代，复制后交给任意 Agent，规则还能装进项目。",
+    lead: "Skill、Prompt、工作流、规则模板与焚决在这里收录与迭代，复制后交给任意 Agent，规则还能装进项目。",
     stage: "收集 · 迭代 · 交付",
-  },
-  {
-    // 路线 v3 切片 1.3：焚决。侧栏分组重排由切片 1.2 负责，这里只注册页面。
-    id: "scrolls",
-    // 用户 2026-09-30 纠正：焚决是资产仓库里的一种资产类型，不单独占导航，也不在结构地图单列（partOf）。
-    // 迁入资产仓库之前，#scrolls 仍可直达，避免已有入口（如随手记“去焚决建卷”）失效。
-    navHidden: true,
-    partOf: "assets",
-    group: "资产",
-    code: "02",
-    label: "焚决",
-    title: "焚决",
-    eyebrow: "SCROLLS · EMBER",
-    maturity: "ready",
-    lead: "自建若干卷，存放提炼过、会反复用的碎片：心法、prompt 碎片、判断准则。一键复制，复制成功才计一次。",
-    stage: "提炼 · 复用",
   },
   {
     id: "references",
@@ -297,8 +281,15 @@ export const ZONES = [
   { id: "system", label: "系统", groups: ["系统"] },
 ];
 
-// 并入其他页面的旧路由（如 #health）落到哪里：返回实际页面与页内锚点。
+// 已撤销的独立页面：旧链接落到哪个页面的哪个类型标签。
+// 焚决（切片 1.3b）：用户 2026-09-30 纠正，焚决是资产仓库第五种类型；#scrolls 落到资产仓库“焚决”标签。
+const RETIRED = {
+  scrolls: { route: "assets", anchor: null, filter: "Scroll" },
+};
+
+// 并入其他页面的旧路由（如 #health）落到哪里：返回实际页面、页内锚点，以及要选中的资产类型标签（如有）。
 export function resolveRoute(id) {
+  if (Object.hasOwn(RETIRED, id)) return { ...RETIRED[id] };
   const p = page(id);
   if (!p) return { route: "home", anchor: null };
   return p.mergedInto

@@ -2562,9 +2562,10 @@ details.scan-notice {
 }
 
 /* 编辑器 */
+/* 五种类型（切片 1.3b 加入焚决）：宽屏一行；放不下时自动换行，不横向溢出。 */
 .type-picker {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   gap: 8px;
 }
 @media (max-width: 640px) {
@@ -5822,105 +5823,11 @@ input[type="file"]::file-selector-button {
 .cover.type-Scroll::before {
   background-image: radial-gradient(rgba(255, 150, 110, 0.13) 1px, transparent 1.2px);
 }
-.scrolls-layout {
+/* 焚决回收区（切片 1.3b）：在资产仓库“焚决”类型标签下方。 */
+.scroll-recycle {
   display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
-}
-.scrolls-side,
-.scroll-main {
-  display: grid;
-  gap: 14px;
-  min-width: 0;
-}
-.scroll-create {
-  display: flex;
   gap: 8px;
-}
-.scroll-create input {
-  flex: 1;
-  min-width: 0;
-}
-.scroll-create .button {
-  flex: none;
-  padding: 0 14px;
-}
-.scroll-list {
-  display: grid;
-  gap: 10px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.scroll-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--panel-2), var(--panel));
-}
-.scroll-item.active {
-  border-color: rgba(255, 106, 61, 0.55);
-  box-shadow: inset 3px 0 0 #ff6a3d;
-}
-.scroll-open {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-  min-height: 44px;
-  text-align: left;
-  border-radius: 10px;
-}
-.scroll-cover.cover {
-  flex: none;
-  width: 76px;
-  height: 64px;
-  border-radius: 8px;
-}
-.scroll-cover .cover-code {
-  top: 5px;
-  left: 6px;
-  font-size: 8px;
-  letter-spacing: 0.08em;
-}
-.scroll-cover .cover-uses {
-  left: 6px;
-  bottom: 4px;
-  font-size: 16px;
-}
-.scroll-cover .cover-glyph {
-  margin-left: 22px;
-}
-.scroll-item:hover .scroll-cover .pixel.cycle .pixel-frame,
-.scroll-item.active .scroll-cover .pixel.cycle .pixel-frame {
-  animation-play-state: running;
-}
-.scroll-meta {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.scroll-name {
-  font-weight: 650;
-  color: var(--text);
-  overflow-wrap: anywhere;
-}
-.scroll-meta small {
-  font: 11px var(--mono);
-  color: var(--muted);
-}
-.scroll-pin {
-  color: var(--muted);
-}
-.scroll-pin.is-pinned {
-  color: #ff8a5c;
-  background: rgba(255, 106, 61, 0.12);
+  margin-bottom: 14px;
 }
 .recycle-toggle {
   justify-self: start;
@@ -5928,6 +5835,7 @@ input[type="file"]::file-selector-button {
 .recycle-list {
   display: grid;
   gap: 6px;
+  max-width: 640px;
 }
 .recycle-row {
   display: flex;
@@ -6103,11 +6011,6 @@ input[type="file"]::file-selector-button {
 .entry-copy {
   color: #ff8a5c;
 }
-@media (max-width: 900px) {
-  .scrolls-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
 @media (max-width: 640px) {
   .scroll-entry {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -6119,9 +6022,6 @@ input[type="file"]::file-selector-button {
   }
   .entry-actions {
     justify-content: space-between;
-  }
-  .scroll-create .button {
-    padding: 0 12px;
   }
 }
 

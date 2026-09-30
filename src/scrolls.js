@@ -111,3 +111,34 @@ export function moveEntry(scrolls, scrollId, entryId, step) {
     return { ...s, entries };
   });
 }
+
+// 资产仓库里的焚决卡（切片 1.3b）：编号按创建先后，含已删卷，恢复后编号不变（与资产 serialsOf 同义）。
+export function scrollSerials(scrolls) {
+  const out = {};
+  [...scrolls]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .forEach((s, i) => (out[s.id] = i + 1));
+  return out;
+}
+// 卡片摘要：条数、复制次数之和、最近复制时间、按出现次数排序的标签（同次数按首次出现先后）。
+export function scrollStats(scroll) {
+  const live = liveEntries(scroll);
+  const counts = new Map();
+  for (const e of live) for (const t of e.tags) counts.set(t, (counts.get(t) || 0) + 1);
+  return {
+    count: live.length,
+    uses: live.reduce((n, e) => n + e.uses, 0),
+    lastAt: live.reduce((at, e) => (e.lastUsedAt && e.lastUsedAt > at ? e.lastUsedAt : at), ""),
+    tags: [...counts].sort((a, b) => b[1] - a[1]).map(([t]) => t),
+  };
+}
+// 页内搜索：每个关键词都要命中卷名、某条未删除条目的正文或标签（words 已是小写，见 search.js terms）。
+export function scrollHit(scroll, words) {
+  const text = [
+    scroll.name,
+    ...liveEntries(scroll).flatMap((e) => [e.text, e.tags.join(" ")]),
+  ]
+    .join("\n")
+    .toLowerCase();
+  return words.every((w) => text.includes(w));
+}

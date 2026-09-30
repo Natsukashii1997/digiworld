@@ -355,7 +355,8 @@ function RefineDialog({ draft, scrolls, onClose, onConfirm, navigate }) {
           </>
         ) : (
           <>
-            <p className="body-copy">还没有卷。先到焚决建一卷，再回来炼入。</p>
+            <p className="body-copy">还没有卷。先到资产仓库的“焚决”标签建一卷，再回来炼入。</p>
+            {/* 焚决已迁入资产仓库（切片 1.3b）：#scrolls 旧路由落到资产仓库并选中“焚决”标签。 */}
             <Button type="button" secondary onClick={() => navigate("scrolls")}>
               去焚决建卷
             </Button>

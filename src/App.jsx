@@ -39,7 +39,8 @@ import {
   References,
   Settings,
 } from "./WorkspacePages.jsx";
-import { Scrolls } from "./Scrolls.jsx";
+import { ScrollDetail } from "./Scrolls.jsx";
+import { scrollsOf, createScroll } from "./scrolls.js";
 import { PAGES, ZONES, resolveRoute } from "./pages.js";
 import {
   Pixel,
@@ -52,18 +53,19 @@ import {
 } from "./pixel.jsx";
 
 const ICONS = { home: Sun, ...PAGE_ICONS };
-// 并入其他页面的旧地址（如 #health）改写为实际页面地址，并记下要定位的页内分区。
+// 并入其他页面的旧地址（如 #health、#scrolls）改写为实际页面地址，并记下要定位的页内分区或类型标签。
 function initialTarget() {
   const target = resolveRoute(location.hash.slice(1));
-  if (target.anchor) history.replaceState(null, "", `#${target.route}`);
+  if (target.anchor || target.filter) history.replaceState(null, "", `#${target.route}`);
   return target;
 }
 export default function App() {
   const [state, setState] = useState(null),
     [error, setError] = useState(""),
     [target, setTarget] = useState(initialTarget),
-    [filter, setFilter] = useState("all"),
+    [filter, setFilter] = useState(() => target.filter || "all"),
     [selected, setSelected] = useState(null),
+    [scrollId, setScrollId] = useState(null),
     [editing, setEditing] = useState(null),
     [create, setCreate] = useState(null),
     [toast, setToast] = useState(null),
@@ -143,6 +145,7 @@ export default function App() {
     };
     const hash = () => {
       const next = initialTarget();
+      if (next.filter) setFilter(next.filter);
       // 站内跳转到页内分区时，随后触发的 hashchange 不带锚点，不能把待定位的分区冲掉。
       setTarget((prev) => (next.route === prev.route && !next.anchor ? prev : next));
       setMenu(false);
@@ -186,10 +189,12 @@ export default function App() {
   }
   function navigate(id) {
     const next = resolveRoute(id);
+    if (next.filter) setFilter(next.filter);
     setTarget(next);
     location.hash = next.route;
     setMenu(false);
     setSelected(null);
+    setScrollId(null);
     window.scrollTo({ top: 0 });
   }
   function adoptState(next) {
@@ -206,6 +211,18 @@ export default function App() {
     refreshRuleInstalls,
   };
   const asset = state?.assets.find((a) => a.id === selected);
+  // 卷被删除（进回收区）后抽屉自动关闭。
+  const scroll = state && scrollsOf(state).find((s) => s.id === scrollId && !s.deletedAt);
+  // 新建资产选“焚决”：只建卷，保存成功后直接打开该卷。
+  async function createScrollNamed(name) {
+    const { scrolls, scroll: made } = createScroll(scrollsOf(state), name);
+    if (!(await save({ ...state, scrolls }))) return false;
+    notify(`已新建卷「${made.name}」`);
+    // 同一批更新里先关对话框再开抽屉：对话框先归还焦点，抽屉再接管焦点。
+    setCreate(null);
+    setScrollId(made.id);
+    return true;
+  }
   if (!state)
     return (
       <div className="boot-screen">
@@ -420,6 +437,7 @@ export default function App() {
               openCreate={setCreate}
               select={setSelected}
               navigate={navigate}
+              openScroll={setScrollId}
             />
           )}
           {route === "agents" && (
@@ -435,7 +453,6 @@ export default function App() {
           {route === "projects" && <Projects {...common} />}
           {route === "knowledge" && <Knowledge {...common} />}
           {route === "notes" && <Notes {...common} navigate={navigate} />}
-          {route === "scrolls" && <Scrolls {...common} />}
           {route === "night" && <Night {...common} />}
           {route === "history" && (
             <HistoryPage {...common} select={setSelected} />
@@ -461,12 +478,21 @@ export default function App() {
           onEdit={(a) => setEditing(a)}
         />
       )}
+      {scroll && (
+        <ScrollDetail
+          {...common}
+          key={scroll.id}
+          scroll={scroll}
+          onClose={() => setScrollId(null)}
+        />
+      )}
       {(create || editing) && (
         <AssetEditor
           asset={editing}
           assets={state.assets}
           type={create}
           notify={notify}
+          onCreateScroll={createScrollNamed}
           onClose={() => {
             setCreate(null);
             setEditing(null);
