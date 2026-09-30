@@ -1,0 +1,11 @@
+PASS 去掉收藏；favorite=true 不等于置顶
+PASS 排序菜单：最近更新、最常用、最近使用、名称排序
+PASS 置顶后在全部与类型标签、所有排序下都排第一，刷新后保持
+PASS 复制一次后封面数字 +1
+PASS 置顶项之间按使用次数降序
+PASS 最常用排序
+PASS 规则卡片封面与小角标均为像素图标
+PASS 顶栏搜索：图标 + ⌘K，至少 44px，点击与 ⌘K 都能打开浮层
+PASS 1440 宽时四个类型按钮同一行；axe 无违规
+PASS 390 宽无横向溢出
+assets-pin-browser: 10 passed

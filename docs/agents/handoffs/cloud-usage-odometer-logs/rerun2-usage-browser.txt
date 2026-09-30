@@ -1,0 +1,20 @@
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown

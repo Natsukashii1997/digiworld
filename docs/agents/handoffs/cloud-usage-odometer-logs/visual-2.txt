@@ -1,0 +1,5 @@
+{
+  "out": "/home/user/personal-ai-workbench/test-results/visual/usage-odometer-2",
+  "problems": []
+}
+exit 0

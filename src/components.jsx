@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { X, Layers, Quote, Workflow } from "lucide-react";
 import { Pixel, StageBar } from "./pixel.jsx";
+import { Odometer } from "./Odometer.jsx";
 
 // 各页标题区的背景纹样
 const MARKS = {
@@ -228,6 +229,7 @@ export function Dialog({ title, children, onClose, drawer = false }) {
 // 液晶封面：点阵屏 + 类型像素图标 + 编号与版本。
 // bump：刚保存新版本时，封面扫一道光并冒出 NEW VERSION（UI v13.2 轻量新版本）
 // uses：资产库卡片左下角的大号使用次数（切片 1.1），只显示数字；读屏文字由卡片正文提供。
+// 次数变化时像里程表一样滚到新值（R87-S1）；减少动态效果时由 Odometer 直接显示新值。
 export function Cover({ type, sprite, serial = 1, version = 1, stage, large = false, bump = false, uses }) {
   return (
     <div
@@ -238,7 +240,11 @@ export function Cover({ type, sprite, serial = 1, version = 1, stage, large = fa
         {typeCode[type]}.{String(serial).padStart(2, "0")}
       </span>
       <span className="cover-version">v{version}.0</span>
-      {uses !== undefined && <span className="cover-uses">{uses}</span>}
+      {uses !== undefined && (
+        <span className="cover-uses">
+          <Odometer value={uses} />
+        </span>
+      )}
       {large && <span className="cover-ring" />}
       <Pixel sprite={sprite || type} size={large ? 96 : 64} className="cover-glyph" />
       {bump && (

@@ -1,0 +1,21 @@
+PASS 移动后保留原身份，旧目录明确缺失，项目 ID 可真实复制
+PASS 预览与明确确认后保留 ID/别名；替换只改关联；Current 指针不被静默迁移
+PASS Current 重新预览保存后可交接；服务重启持久化与重扫无重复身份
+PASS 目录更换后暂时未核实仍保留重确认入口，旧 Current 继续阻断
+PASS 同路径目录更换保持待确认；显式接受新身份，不改原/新文件
+PASS 目录更换的新远端先显示旧→新；确认保留 ID、采用新 repo 并要求重存 Current
+PASS 双 Current 冲突拒绝且保留两指针；显式解绑候选后可重新预览，无自动选来源
+PASS 跨客户端 revision 改变拒绝旧确认；保留选择并先刷新核对
+PASS 过期预览拒绝，不修改目录关系，也不复用旧凭证
+PASS 双击只发一次确认；已提交响应丢失后刷新恢复，不重放写请求
+PASS 关闭抽屉后忽略晚到预览，不污染重新打开的项目
+PASS 确认框可键盘 Space 操作，Tab 顺序与可见焦点正常
+PASS 320px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 375px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 390px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 393px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 430px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 768px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 1024px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 1440px 长路径预览无溢出，主要操作44px，axe无违规
+PASS project identity browser: 20 flows, 12 axe scans

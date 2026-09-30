@@ -1,0 +1,16 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: 第 1 次：封面数字没有滚动（未出现 .is-rolling）
+    at file:///home/user/personal-ai-workbench/tests/usage-odometer-browser.mjs:95:14 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+exit 1
