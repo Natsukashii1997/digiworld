@@ -418,6 +418,16 @@ export function mergeProjects(
       ]),
     ].filter((id) => id !== p.id);
     if (aliases.length) p.aliases = aliases;
+    // 在推进标记是用户意图，跟随稳定项目 ID（含被吸收的历史身份），不因远端变化而丢失。
+    if (
+      previous.some(
+        (old) =>
+          old.active === true &&
+          (old.id === p.id || (p.aliases || []).includes(old.id)),
+      )
+    )
+      p.active = true;
+    else delete p.active;
     p.identityConflict =
       !!p.repoKey &&
       items.some((other) => other.id !== p.id && other.repoKey === p.repoKey);

@@ -75,6 +75,12 @@ export default function App() {
     [veil, setVeil] = useState(true),
     [season, setSeasonLabel] = useState("春 · 花开"),
     [ruleInstalls, setRuleInstalls] = useState({ items: [], error: "", loaded: false });
+  // 在推进项目的只读状态与体检（路线 v3 切片 2.1/2.2）。不在主库里，由服务端现读项目文件与 Git。
+  const [projectStatus, setProjectStatus] = useState({
+    items: [],
+    error: "",
+    loaded: true,
+  });
   const { route, anchor } = target;
   const [saveError, setSaveError] = useState("");
   const partnerScreen = useRef();
@@ -106,6 +112,29 @@ export default function App() {
       setRuleInstalls({ items: [], error: e.message || "读取失败", loaded: true });
     }
   }, []);
+  const statusRun = useRef(0);
+  const refreshProjectStatus = useCallback(async () => {
+    // 只采用最后一次读取的结果，先发出的旧请求晚到时不覆盖新结果。
+    const run = ++statusRun.current;
+    setProjectStatus((prev) => ({ ...prev, error: "", loaded: false }));
+    try {
+      const result = await request("/project-status/inspect", {});
+      if (run === statusRun.current)
+        setProjectStatus({ ...result, error: "", loaded: true });
+    } catch (e) {
+      if (run === statusRun.current)
+        setProjectStatus({ items: [], error: e.message || "读取失败", loaded: true });
+    }
+  }, []);
+  // 只在“在推进”集合或停滞阈值变化时重读；没有在推进项目时不发请求。
+  const activeKey = state
+    ? JSON.stringify([
+        (state.connections?.projects || [])
+          .filter((p) => p.active)
+          .map((p) => p.id),
+        state.connections?.projectStallDays || 0,
+      ])
+    : "";
   const ready = !!state;
   // 跳到页内分区（如能力体检）：等页面渲染出分区后滚动到位并移交焦点，然后清除锚点。
   useEffect(() => {
@@ -126,6 +155,14 @@ export default function App() {
   useEffect(() => {
     if (ready) refreshRuleInstalls();
   }, [ready, refreshRuleInstalls]);
+  useEffect(() => {
+    if (!ready) return;
+    if (activeKey.startsWith("[[]")) {
+      statusRun.current++;
+      setProjectStatus({ items: [], error: "", loaded: true });
+    }
+    else refreshProjectStatus();
+  }, [ready, activeKey, refreshProjectStatus]);
   useEffect(() => {
     if (!state || !veil) return;
     const t = setTimeout(() => setVeil(false), 900);
@@ -204,6 +241,8 @@ export default function App() {
     adoptState,
     ruleInstalls,
     refreshRuleInstalls,
+    projectStatus,
+    refreshProjectStatus,
   };
   const asset = state?.assets.find((a) => a.id === selected);
   if (!state)
@@ -222,7 +261,7 @@ export default function App() {
       </div>
     );
   const partner = partnerOf(state);
-  const pending = pendingItems(state, ruleInstalls);
+  const pending = pendingItems(state, ruleInstalls, projectStatus);
   const currentPage = PAGES.find((p) => p.id === route);
   return (
     <div className="app-shell">

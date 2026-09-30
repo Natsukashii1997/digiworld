@@ -8,6 +8,7 @@ import { createAssetActivity } from "./asset-activity.mjs";
 import { createDeliveries } from "./delivery.mjs";
 import { createProjectContext } from "./project-context.mjs";
 import { createProjectIdentity } from "./project-identity.mjs";
+import { createProjectStatus, ghVisibility } from "./project-status.mjs";
 import { inspectProjectLocation } from "./project-scan.mjs";
 import { createSkillSources } from "./skill-sources.mjs";
 import { inspectAgentInventory } from "./agent-inventory.mjs";
@@ -96,8 +97,13 @@ export async function startServer({
     inspectAgentInventory,
     inspectAgentPrograms,
     inspectProjectLocation,
+    repoVisibility: ghVisibility,
     ...discovery,
   };
+  const projectStatus = createProjectStatus(repository, {
+    clock,
+    visibility: adapters.repoVisibility,
+  });
   const agentTargets = createAgentTargets(repository, adapters, clock);
   const skillCopies = createSkillCopies(repository, adapters, clock);
   const agentConfig = createAgentConfig(repository, adapters, { clock });
@@ -261,6 +267,15 @@ export async function startServer({
             response,
             200,
             await projectIdentity[projectIdentityAction](await body(request)),
+          );
+        const statusAction = url.pathname.match(
+          /^\/api\/project-status\/(inspect|mark|settings)$/,
+        )?.[1];
+        if (statusAction && request.method === "POST")
+          return send(
+            response,
+            200,
+            await projectStatus[statusAction](await body(request)),
           );
         const configAction = url.pathname.match(
           /^\/api\/agent-config\/(inspect|preview|apply|check|history|restore-preview)$/,

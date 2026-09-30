@@ -9,7 +9,14 @@ export function rulePendingReady(ruleInstalls) {
 }
 // ruleInstalls 来自规则模板的本机操作记录（不在主库里），由 App 读取后传入：
 // { items, error }。读取失败单列一条，不当作“没有可升级”。
-export function pendingItems(state, ruleInstalls = { items: [], error: "" }) {
+// projectStatus 来自项目空间的只读状态与体检（路线 v3 切片 2.1/2.2），由 App 读取后传入：
+// { items, error, loaded }。只汇总和跳转，不执行任何动作；读取失败单列一条。
+export function pendingItems(
+  state,
+  ruleInstalls = { items: [], error: "" },
+  projectStatus = { items: [], error: "" },
+) {
+  ruleInstalls ||= { items: [], error: "" };
   const items = [];
   const c = state.connections || {};
   if (ruleInstalls.error)
@@ -64,6 +71,33 @@ export function pendingItems(state, ruleInstalls = { items: [], error: "" }) {
       detail: "尚未写入 Obsidian，可以整理后手动归位。",
       to: "notes",
     });
+  if (projectStatus?.error)
+    items.push({
+      id: "project-status-error",
+      kind: "项目",
+      title: "在推进项目的状态与体检读取失败",
+      detail: "停滞与安全提示暂时不可用；在项目空间可以重新读取。",
+      to: "projects",
+    });
+  for (const p of projectStatus?.items || []) {
+    const issues = p.safety?.issues || [];
+    if (issues.length)
+      items.push({
+        id: `project-safety-${p.projectId}`,
+        kind: "项目",
+        title: `项目「${p.name}」安全体检发现 ${issues.length} 项问题`,
+        detail: issues.map((i) => i.text).join("；"),
+        to: "projects",
+      });
+    if (p.activity?.state === "stalled")
+      items.push({
+        id: `project-stall-${p.projectId}`,
+        kind: "项目",
+        title: `项目「${p.name}」已 ${p.activity.idleDays} 天没有状态更新或提交`,
+        detail: "在推进项目超过停滞阈值；到项目空间查看状态卡，决定继续推进还是取消在推进。",
+        to: "projects",
+      });
+  }
   const targeted = new Set((c.agentTargets || []).map((t) => t.agentId));
   const untargeted = (c.agents || []).filter(
     (a) => a.status === "detected" && !targeted.has(a.id),

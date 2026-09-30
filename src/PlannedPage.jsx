@@ -108,8 +108,8 @@ export function PendingList({ items, navigate, select, limit }) {
   );
 }
 
-export function Inbox({ state, navigate, select, ruleInstalls }) {
-  const items = pendingItems(state, ruleInstalls);
+export function Inbox({ state, navigate, select, ruleInstalls, projectStatus }) {
+  const items = pendingItems(state, ruleInstalls, projectStatus);
   return (
     <>
       <PageHeading page="inbox" />

@@ -1,0 +1,21 @@
+# 只读解析本云端副本自己的 CURRENT.md（81 KB，只读开头 64 KiB）
+{
+ "file": {
+  "state": "read",
+  "truncated": true,
+  "size": 81413
+ },
+ "parse": {
+  "state": "ok",
+  "fields": {
+   "stateId": "WB-20260930-104",
+   "writer": "Claude（认领104：合入云端 D3 使用次数滚动、D2 焚决+随手记，随后合入 D1 两区导航）",
+   "next": "Codex 读回96，独立复核 R87 返修（177文件清单 8378ab36…a016，新增 tests/r87-fix-browser.mjs，含T2视觉）；并行：用户在云端环境替换启动脚本",
+   "handoff": {
+    "text": "Claude 认领98",
+    "href": "docs/agents/handoffs/2026-09-30-claude-98.md"
+   }
+  },
+  "missing": []
+ }
+}

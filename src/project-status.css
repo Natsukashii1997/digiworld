@@ -1,0 +1,200 @@
+/* 路线 v3 切片 2.1/2.2：在推进项目区、状态卡与安全体检。沿用现有令牌与徽标，不新增视觉方向。 */
+.active-projects {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin-bottom: 22px;
+}
+.active-projects-head {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-width: 0;
+}
+.active-projects-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.active-projects-head small {
+  color: var(--muted);
+  font-size: 12px;
+  flex: 1 1 240px;
+}
+.active-projects-tools {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+.stall-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+.stall-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.stall-form input {
+  width: 96px;
+}
+.project-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  min-width: 0;
+}
+.project-status-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--panel);
+}
+.project-status-card.stalled {
+  border-color: rgba(255, 107, 107, 0.55);
+  box-shadow: inset 3px 0 0 var(--red);
+}
+.project-status-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.project-status-card h3 {
+  margin: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.project-status-card small,
+.project-status-card code,
+.project-status-card dd {
+  overflow-wrap: anywhere;
+}
+.status-root,
+.status-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.status-fields {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+.status-fields div {
+  display: grid;
+  grid-template-columns: 6.5em minmax(0, 1fr);
+  gap: 8px;
+}
+.status-fields dt {
+  color: var(--muted);
+}
+.status-fields dd {
+  margin: 0;
+  color: var(--text);
+}
+.status-fields code {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.status-missing {
+  color: var(--yellow);
+}
+.status-empty {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-s);
+  font-size: 13px;
+}
+.status-empty small {
+  color: var(--text-2);
+  line-height: 1.6;
+}
+.status-safety {
+  display: grid;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.status-safety h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+.status-safety ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.status-check {
+  display: grid;
+  grid-template-columns: 6.5em minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+p.status-check {
+  display: block;
+}
+.status-check > span:first-child {
+  color: var(--muted);
+}
+.status-check.success > span:last-child {
+  color: var(--lcd);
+}
+.status-check.warning > span:last-child {
+  color: var(--yellow);
+}
+.status-check.danger,
+.status-check.danger > span:last-child {
+  color: #ff9a9a;
+}
+.status-check.muted > span:last-child,
+p.status-check.muted {
+  color: var(--text-2);
+}
+.project-active-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.project-active-toggle h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.project-active-toggle small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.project-active-toggle > div {
+  flex: 1 1 220px;
+  min-width: 0;
+}
