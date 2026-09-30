@@ -1,5 +1,6 @@
 import { validateActivity, validateActivityHistory } from "./asset-activity-schema.mjs";
 import { validateCollabLog, validateCollabHistory } from "./collab-schema.mjs";
+import { validateBriefReads, validateBriefHistory } from "./brief-schema.mjs";
 import { safePath } from "../src/store.js";
 import { stringify } from "../src/serialization.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
@@ -220,6 +221,7 @@ export function validateState(state) {
     "assetActivity",
     "scrolls",
     "collabLog",
+    "briefReads",
     "learning",
     "knowledgeZones",
     "profileProposals",
@@ -768,6 +770,7 @@ export function validateState(state) {
   }
   validateActivity(state);
   validateCollabLog(state);
+  validateBriefReads(state);
   return state;
 }
 export function canonical(value) {
@@ -792,6 +795,7 @@ export function validateHistory(
     allowKnowledge = false,
     allowActivity = false,
     allowCollab = false,
+    allowBriefs = false,
     allowLearningFolders = false,
     allowProfile = false,
   } = {},
@@ -814,6 +818,7 @@ export function validateHistory(
   );
   validateActivityHistory(previous?.assetActivity || [], next.assetActivity || [], allowActivity);
   validateCollabHistory(previous?.collabLog || [], next.collabLog || [], allowCollab);
+  validateBriefHistory(previous?.briefReads || [], next.briefReads || [], allowBriefs);
   if (
     !allowKnowledge &&
     !equivalent(previous?.knowledgeTasks || [], next.knowledgeTasks || [])

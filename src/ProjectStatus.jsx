@@ -6,6 +6,7 @@ import { Button, Badge } from "./components.jsx";
 import { request } from "./api.js";
 import { startPrompt } from "./collab.js";
 import { usePromptCopy, PromptDialog, AgentPicker } from "./Collab.jsx";
+import { GithubBlock, useGithubPanel } from "./ProjectGithub.jsx";
 import "./project-status.css";
 
 const SOFT_LIMIT = 7;
@@ -206,7 +207,7 @@ function SafetyBlock({ safety }) {
 
 // 路线 v3 切片 2.4 一键开工：选 Agent，生成开工口令（项目路径、先读 AGENTS.md 与 CURRENT.md、唯一下一步），
 // 确认后复制；复制成功计入协同留痕。项目路径只用服务端校验过的登记目录，不自动打开或执行 Agent。
-function StartWork({ item, adoptState, notify }) {
+export function StartWork({ item, adoptState, notify, label = "生成开工口令" }) {
   const [agent, setAgent] = useState("codex");
   const [prompt, setPrompt] = useState(null);
   const copier = usePromptCopy({ adoptState, notify });
@@ -229,7 +230,7 @@ function StartWork({ item, adoptState, notify }) {
       />
       <Button secondary disabled={blocked} onClick={open}>
         <Play size={16} />
-        生成开工口令
+        {label}
       </Button>
       {prompt && (
         <PromptDialog
@@ -254,7 +255,7 @@ function StartWork({ item, adoptState, notify }) {
   );
 }
 
-function StatusCard({ item, days, adoptState, notify }) {
+function StatusCard({ item, days, adoptState, notify, github, githubLoading }) {
   const stalled = item.activity.state === "stalled";
   return (
     <article
@@ -274,6 +275,7 @@ function StatusCard({ item, days, adoptState, notify }) {
           : "未知，不当作停滞"}
       </small>
       <SafetyBlock safety={item.safety} />
+      <GithubBlock github={github} loading={githubLoading} />
       <StartWork item={item} adoptState={adoptState} notify={notify} />
     </article>
   );
@@ -286,6 +288,10 @@ export function ActiveProjects({ state, adoptState, notify, status, refresh }) {
   const [days, setDays] = useState(String(saved));
   const [busy, setBusy] = useState(false);
   useEffect(() => setDays(String(saved)), [saved]);
+  // 项目空间第二批：GitHub 面板只查在推进项目；集合为空时不发请求。
+  const activeIds = active.length ? active.map((p) => p.id).join(",") : "";
+  const [github, loadGithub] = useGithubPanel(activeIds);
+  const githubOf = (id) => github.items.find((g) => g.projectId === id)?.github;
   if (!active.length)
     return (
       <section className="active-projects" aria-label="在推进项目">
@@ -339,6 +345,10 @@ export function ActiveProjects({ state, adoptState, notify, status, refresh }) {
             <RefreshCw size={16} className={status.loaded ? "" : "spinning"} />
             重新体检
           </Button>
+          <Button secondary disabled={!github.loaded} onClick={() => loadGithub(true)}>
+            <RefreshCw size={16} className={github.loaded ? "" : "spinning"} />
+            刷新 GitHub
+          </Button>
         </div>
       </div>
       {active.length > SOFT_LIMIT && (
@@ -349,6 +359,11 @@ export function ActiveProjects({ state, adoptState, notify, status, refresh }) {
       {status.error && (
         <p className="inline-error" role="alert">
           状态与体检读取失败：{status.error}
+        </p>
+      )}
+      {github.error && (
+        <p className="detail-footnote" role="status">
+          GitHub 面板读取失败：{github.error}。GitHub 情况按未知处理。
         </p>
       )}
       {!status.loaded && !status.items.length && (
@@ -364,6 +379,8 @@ export function ActiveProjects({ state, adoptState, notify, status, refresh }) {
             days={status.stallDays || saved}
             adoptState={adoptState}
             notify={notify}
+            github={githubOf(item.projectId)}
+            githubLoading={!github.loaded}
           />
         ))}
       </div>

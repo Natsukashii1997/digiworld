@@ -40,7 +40,8 @@ export function mergeBackup(current, incoming) {
       summary.silverAdded[name] = (input.silver?.[name] || []).length;
     summary.agentRolesAdded = (input.agentRoles || []).length;
     summary.settings = "采用备份中的配置草稿；连接结果需重新扫描";
-    const { connections, ...content } = input;
+    // 简报已读状态与连接一样是本机状态（项目 ID 来自本机扫描），不随备份恢复。
+    const { connections, briefReads, ...content } = input;
     if (input.learning) {
       // 书架文件夹是本机读取授权，不随备份恢复，需要在设置里重新指定。
       content.learning = { ...input.learning, folders: [] };

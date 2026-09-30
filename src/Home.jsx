@@ -36,6 +36,7 @@ import {
 } from "./pixel.jsx";
 import { PartnerScreen } from "./PartnerScreen.jsx";
 import { HomeHot } from "./LifePages.jsx";
+import { HomeBrief } from "./ProjectBrief.jsx";
 
 export const ICONS = {
   inbox: Inbox,
@@ -124,7 +125,7 @@ function DayRuler({ night }) {
   );
 }
 
-export function Home({ state, navigate, select, openCreate, ruleInstalls, projectStatus }) {
+export function Home({ state, navigate, select, openCreate, ruleInstalls, projectStatus, adoptState, notify }) {
   const partner = partnerOf(state);
   const stageScreen = useRef();
   // UI v13.2：暴龙机 A 键在数码蛋与待处理条数之间切换，B 键开关背光，C 键戳一下
@@ -303,11 +304,14 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls, projec
         </section>
       </div>
 
+      {/* 今日项目简报：在推进项目各一段（项目空间第二批，本机数据规则生成） */}
+      <HomeBrief state={state} adoptState={adoptState} notify={notify} navigate={navigate} />
+
       {/* 结构：两区能力地图（工作区 / 生活区，产品定义 v1.2 §2）+ 最近迭代 */}
       <div className="home-row">
         <section className="home-section structure-map">
           <div className="section-title">
-            <span className="section-index">C</span>
+            <span className="section-index">D</span>
             <h2>能力地图</h2>
             <p>工作区：资产被目标使用，运行层让它跑起来，结果回到知识与资产。生活区：自己的日子。</p>
           </div>
@@ -362,7 +366,7 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls, projec
         </section>
         <section className="home-section side">
           <div className="section-title">
-            <span className="section-index">D</span>
+            <span className="section-index">E</span>
             <h2>最近迭代</h2>
             <p>按最后保存时间</p>
           </div>
