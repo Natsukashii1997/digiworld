@@ -14,8 +14,11 @@ export function SkillSourceImport({
   onClose,
   onSelect,
   initialRoots,
+  initialSearch = "",
 }) {
   const [roots, setRoots] = useState(initialRoots?.join("\n") || "");
+  // 从智能体群“存入资产仓库”进来时，首次扫描后按该 Skill 名称筛选，仍需逐个预览并确认。
+  const pendingSearch = useRef(initialSearch);
   const [result, setResult] = useState(null);
   const [fresh, setFresh] = useState(false);
   const [search, setSearch] = useState("");
@@ -94,7 +97,8 @@ export function SkillSourceImport({
       if (!alive.current) return;
       setResult(value);
       setFresh(true);
-      setSearch("");
+      setSearch(pendingSearch.current);
+      pendingSearch.current = "";
     } catch (e) {
       if (alive.current) setError(messageOf(e));
     } finally {

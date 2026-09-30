@@ -9,7 +9,13 @@ export function rulePendingReady(ruleInstalls) {
 }
 // ruleInstalls 来自规则模板的本机操作记录（不在主库里），由 App 读取后传入：
 // { items, error }。读取失败单列一条，不当作“没有可升级”。
-export function pendingItems(state, ruleInstalls = { items: [], error: "" }) {
+// agentHealth 来自智能体群的内容清单体检（只在本次打开页面后明确读取过的 Agent 才有），
+// { [agentId]: { name, health: { brokenLinks, drift, unreadable } } }。未体检不下结论。
+export function pendingItems(
+  state,
+  ruleInstalls = { items: [], error: "" },
+  agentHealth = {},
+) {
   const items = [];
   const c = state.connections || {};
   if (ruleInstalls.error)
@@ -76,5 +82,22 @@ export function pendingItems(state, ruleInstalls = { items: [], error: "" }) {
       detail: "设置管理目标后，才能查看目录、关联 Skill 和受控修改配置。",
       to: "agents",
     });
+  for (const [agentId, entry] of Object.entries(agentHealth || {})) {
+    const h = entry?.health;
+    if (!h) continue;
+    const parts = [
+      h.brokenLinks && `${h.brokenLinks} 条失效链接`,
+      h.drift && `${h.drift} 个副本与仓库版本不一致`,
+      h.unreadable && `${h.unreadable} 项无法读取`,
+    ].filter(Boolean);
+    if (parts.length)
+      items.push({
+        id: `agent-health-${agentId}`,
+        kind: "智能体",
+        title: `${entry.name}：${parts.join("、")}`,
+        detail: "体检只读；清理、重建或同步需要你在本机单独授权后执行。",
+        to: "agents",
+      });
+  }
   return items;
 }
