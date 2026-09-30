@@ -41,6 +41,7 @@ import {
   Settings,
 } from "./WorkspacePages.jsx";
 import { ScrollDetail } from "./Scrolls.jsx";
+import { AiHot, Learning } from "./LifePages.jsx";
 import { scrollsOf, createScroll } from "./scrolls.js";
 import { PAGES, ZONES, resolveRoute } from "./pages.js";
 import {
@@ -503,7 +504,9 @@ export default function App() {
             <Inbox {...common} navigate={navigate} select={setSelected} />
           )}
           {route === "collab" && <Collab {...common} navigate={navigate} />}
-          {["calendar", "aihot", "learning", "silver"].includes(route) && (
+          {route === "aihot" && <AiHot {...common} navigate={navigate} />}
+          {route === "learning" && <Learning {...common} navigate={navigate} />}
+          {["calendar", "silver"].includes(route) && (
             <PlannedPage id={route} navigate={navigate} />
           )}
         </main>

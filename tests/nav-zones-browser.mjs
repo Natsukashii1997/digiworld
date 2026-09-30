@@ -1,5 +1,5 @@
 // 路线 v3 切片 1.2：导航两区重排——今日 / 工作区 / 生活区 / 系统；改名；版本归档下移 + 资产详情“历史”标签；
-// 能力体检并入智能体群（#health 仍可访问）；生活区三个规划中页面；390 宽无横溢；键盘可达；axe。
+// 能力体检并入智能体群（#health 仍可访问）；生活区 AI HOT、学习成长已开发，银饰计划仍是规划中；390 宽无横溢；键盘可达；axe。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import AxeBuilder from "@axe-core/playwright";
@@ -29,10 +29,11 @@ const EXPECTED = [
   ["系统", [["", ["模型设置", "版本归档"]]]],
 ];
 const OLD_NAMES = ["知识中枢", "逆向参考", "随手速记"];
-const LIFE_PLANNED = [
+// 路线 v3 切片 5.3、5.4：AI HOT 与学习成长已开发，只有银饰计划仍是规划中。
+const LIFE_PLANNED = [["silver", "银饰计划"]];
+const LIFE_BUILT = [
   ["aihot", "AI HOT"],
   ["learning", "学习成长"],
-  ["silver", "银饰计划"],
 ];
 
 async function open(width, hash = "home", height = 1000) {
@@ -207,7 +208,15 @@ try {
     await page.locator("main h1", { hasText: name }).waitFor();
   }
   await axe(page, "silver");
-  ok("生活区 AI HOT、学习成长、银饰计划可达，标注规划中，无假按钮，axe 通过");
+  for (const [id, name] of LIFE_BUILT) {
+    await navItem(page, name).click();
+    await page.locator("main h1", { hasText: name }).waitFor();
+    const main = page.locator("main");
+    assert.doesNotMatch(await main.innerText(), /尚未开发，这个页面不会执行任何动作/);
+    assert.match(await main.innerText(), /部分可用/);
+    assert.equal(await page.evaluate(() => location.hash), `#${id}`);
+  }
+  ok("生活区 AI HOT、学习成长可达且不再标注规划中；银饰计划标注规划中，无假按钮，axe 通过");
 
   // 6. 世界总览结构地图同步为两区
   await page.goto(`${app.url}/#home`);

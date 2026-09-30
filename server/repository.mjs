@@ -197,6 +197,23 @@ export async function openRepository(directory) {
         return commit(state);
       });
     },
+    // 学习成长书架文件夹（切片 5.4）：只有这里可以改 learning.folders，调用方负责先校验路径。
+    updateLearning(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先打开工作台初始化资产库", 409);
+        if (expectedRevision !== stored.revision)
+          throw failure("主库已变化，请刷新后重试", 409);
+        const learning = await update(
+          stored.learning || { folders: [], books: [], links: [] },
+          stored,
+        );
+        const state = { ...stored, learning, revision: stored.revision + 1 };
+        validateState(state);
+        validateHistory(stored, state, { allowLearningFolders: true });
+        return commit(state);
+      });
+    },
     updateConnections(update, { expectedRevision } = {}) {
       return serial(async () => {
         const stored = await read();

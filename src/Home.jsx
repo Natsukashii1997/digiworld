@@ -34,6 +34,7 @@ import {
   glyphOf,
 } from "./pixel.jsx";
 import { PartnerScreen } from "./PartnerScreen.jsx";
+import { HomeHot } from "./LifePages.jsx";
 
 export const ICONS = {
   inbox: Inbox,
@@ -73,8 +74,8 @@ function facts(state) {
     night: "计划草稿 · 未启用",
     knowledge: `${(c.knowledgeSources || []).length} 个知识源 · ${(state.knowledgeTasks || []).length} 个任务`,
     notes: `${state.notes.length} 条本机草稿`,
-    aihot: "尚未开发",
-    learning: "尚未开发",
+    aihot: "精选 · 热点 · 日报 · 本机缓存",
+    learning: `${(state.learning?.books || []).length} 本已标记 · ${(state.learning?.links || []).filter((l) => !l.deletedAt).length} 条链接`,
     silver: "尚未开发",
     settings: state.model?.provider ? `意向：${state.model.provider}` : "模型未连接",
   };
@@ -386,6 +387,9 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls, projec
           </div>
         </section>
       </div>
+
+      {/* 生活区：今日热点（AI HOT 本机缓存，路线 v3 切片 5.3） */}
+      <HomeHot navigate={navigate} />
     </div>
   );
 }
