@@ -1,0 +1,21 @@
+# 20 lines total; last 80 below
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+browserType.launch: Executable doesn't exist at /opt/pw-browsers/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     npx playwright install                                 ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+    at /home/user/personal-ai-workbench/tests/search-browser.mjs:62:32
+    at async node:internal/modules/esm/loader:647:26 {
+  log: [],
+  name: 'Error'
+}
+
+Node.js v24.21.0

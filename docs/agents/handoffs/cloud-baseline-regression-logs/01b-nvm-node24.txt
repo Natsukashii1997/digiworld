@@ -1,0 +1,14 @@
+$ source /opt/nvm/nvm.sh; nvm install 24
+Downloading and installing node v24.21.0...
+Downloading https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-x64.tar.xz...
+#=#=#                                                                          ##O#-#                                                                         #                                                                          1.4%####################                                                      28.6%########################################                                  55.9%##################################################################        92.4%######################################################################## 100.0%
+Computing checksum with sha256sum
+Checksums matched!
+Now using node v24.21.0 (npm v11.19.0)
+Creating default alias: [0;32mdefault[0m [0;90m->[0m [0;32m24[0m ([0;90m->[0m [0;32mv24.21.0[0m)
+[exit=0]
+Now using node v24.21.0 (npm v11.19.0)
+v24.21.0
+11.19.0
+/opt/nvm/versions/node/v24.21.0/bin/node
+elapsed=5s
