@@ -17,7 +17,9 @@ export function mergeBackup(current, incoming) {
       agents: 0,
       references: 0,
       knowledgeTasks: 0,
+      scrolls: 0,
     },
+    scrollEntriesAdded: 0,
     activityAdded: 0,
     newVersions: 0,
     knowledgeVersions: 0,
@@ -34,7 +36,7 @@ export function mergeBackup(current, incoming) {
   }
   const next = structuredClone(current);
   for (const name of Object.keys(summary.added)) {
-    if (name === "knowledgeTasks") continue;
+    if (name === "knowledgeTasks" || name === "scrolls") continue;
     const lookup = new Map(next[name].map((item, index) => [item.id, index]));
     for (const item of input[name]) {
       if (!lookup.has(item.id)) {
@@ -115,6 +117,7 @@ export function mergeBackup(current, incoming) {
       summary.kept++;
     }
   }
+  if (input.scrolls?.length) mergeScrolls(next, input.scrolls, summary);
   if (input.assetActivity?.length) {
     next.assetActivity ||= [];
     const records = new Map(next.assetActivity.map((r) => [r.id, r]));
@@ -131,4 +134,42 @@ export function mergeBackup(current, incoming) {
   }
   validateState(next);
   return { state: next, summary };
+}
+
+// 焚决（切片 1.3）：卷与条目是可变记录，没有版本。合并只做加法：
+// 缺失的卷整卷追加；已有卷保留当前库的名称、顺序与编辑，只在末尾追加备份独有的条目；
+// 两边都有的条目计次取较大值（计次只增不减）。同一条目 ID 落在不同卷里视为冲突。
+function mergeScrolls(next, incoming, summary) {
+  next.scrolls ||= [];
+  const owner = new Map();
+  for (const s of next.scrolls)
+    for (const e of s.entries) owner.set(e.id, s.id);
+  const conflict = () =>
+    Object.assign(new Error("焚决条目存在冲突，本次不会导入任何记录"), {
+      status: 409,
+    });
+  for (const scroll of incoming) {
+    const existing = next.scrolls.find((s) => s.id === scroll.id);
+    if (!existing) {
+      if (scroll.entries.some((e) => owner.has(e.id))) throw conflict();
+      next.scrolls.push(structuredClone(scroll));
+      for (const e of scroll.entries) owner.set(e.id, scroll.id);
+      summary.added.scrolls++;
+      continue;
+    }
+    for (const entry of scroll.entries) {
+      const at = owner.get(entry.id);
+      if (at !== undefined && at !== scroll.id) throw conflict();
+      const current = existing.entries.find((e) => e.id === entry.id);
+      if (!current) {
+        existing.entries.push(structuredClone(entry));
+        owner.set(entry.id, scroll.id);
+        summary.scrollEntriesAdded++;
+      } else if (entry.uses > current.uses) {
+        current.uses = entry.uses;
+        if (entry.lastUsedAt) current.lastUsedAt = entry.lastUsedAt;
+      }
+    }
+    summary.kept++;
+  }
 }

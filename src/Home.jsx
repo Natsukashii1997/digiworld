@@ -15,6 +15,7 @@ import {
   Handshake,
   CalendarDays,
   Plus,
+  Flame,
 } from "lucide-react";
 import { current } from "./store.js";
 import { page, LAYERS } from "./pages.js";
@@ -35,6 +36,7 @@ import { PartnerScreen } from "./PartnerScreen.jsx";
 export const ICONS = {
   inbox: Inbox,
   assets: Layers,
+  scrolls: Flame,
   references: ScanLine,
   history: GitBranch,
   agents: Bot,
@@ -55,6 +57,7 @@ function facts(state) {
   const detected = (c.agents || []).filter((a) => a.status === "detected");
   return {
     assets: `${live.length} 份资产`,
+    scrolls: `${(state.scrolls || []).filter((s) => !s.deletedAt).length} 卷`,
     references: `${state.references.length} 条参考`,
     history: `${state.assets.reduce((n, a) => n + a.versions.length, 0)} 个版本 · ${state.assets.filter((a) => a.archived).length} 份归档`,
     agents: c.agentScannedAt ? `已检测 ${detected.length} 个` : "尚未检测",

@@ -1,0 +1,150 @@
+✔ 焚决：旧库缺少 scrolls 按空处理，不写迁移 (4.280579ms)
+✖ 焚决：合法的卷、有序条目、标签、计次、置顶与回收区字段通过校验 (1.404583ms)
+✖ 焚决：严格校验字段、类型与长度上限 (0.972719ms)
+✖ 随手记：富文本格式与“已炼”标记可选；旧随手记不变；拒绝任意字段与控制字符 (0.802393ms)
+✖ 备份：没有 scrolls 的旧备份可导入，已有的卷保持不变 (1.107461ms)
+✖ 备份：新增卷与已有卷的新条目被合并，计次取较大值，当前库的编辑保留 (0.339842ms)
+✖ 备份：含焚决与富文本随手记的新备份经 HTTP 同款导出结构往返一致 (212.358123ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 1
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 318.436779
+
+✖ failing tests:
+
+test at tests/scrolls-schema.test.mjs:52:1
+✖ 焚决：合法的卷、有序条目、标签、计次、置顶与回收区字段通过校验 (1.404583ms)
+  AssertionError [ERR_ASSERTION]: Got unwanted exception.
+  Actual message: "数据校验失败：包含不支持的字段"
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:70:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: Error: 数据校验失败：包含不支持的字段
+        at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+        at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+        at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:53:3)
+        at file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:70:29
+        at getActual (node:assert:611:5)
+        at strict.doesNotThrow (node:assert:779:32)
+        at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:70:10)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1402:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:974:18),
+    expected: undefined,
+    operator: 'doesNotThrow',
+    diff: 'simple'
+  }
+
+test at tests/scrolls-schema.test.mjs:73:1
+✖ 焚决：严格校验字段、类型与长度上限 (0.972719ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /焚决/. Input:
+  
+  'Error: 数据校验失败：包含不支持的字段'
+  
+      at rejects (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:31:10)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:126:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 数据校验失败：包含不支持的字段
+        at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+        at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+        at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:53:3)
+        at file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:31:23
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at rejects (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:31:10)
+        at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:126:5)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1402:25),
+    expected: /焚决/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests/scrolls-schema.test.mjs:130:1
+✖ 随手记：富文本格式与“已炼”标记可选；旧随手记不变；拒绝任意字段与控制字符 (0.802393ms)
+  AssertionError [ERR_ASSERTION]: Got unwanted exception.
+  Actual message: "数据校验失败：包含不支持的字段"
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:142:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: Error: 数据校验失败：包含不支持的字段
+        at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+        at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+        at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:216:5)
+        at file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:142:29
+        at getActual (node:assert:611:5)
+        at strict.doesNotThrow (node:assert:779:32)
+        at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:142:10)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1402:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:974:18),
+    expected: undefined,
+    operator: 'doesNotThrow',
+    diff: 'simple'
+  }
+
+test at tests/scrolls-schema.test.mjs:159:1
+✖ 备份：没有 scrolls 的旧备份可导入，已有的卷保持不变 (1.107461ms)
+  Error: 数据校验失败：包含不支持的字段
+      at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+      at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+      at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:53:3)
+      at mergeBackup (file:///home/user/personal-ai-workbench/server/merge.mjs:132:3)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:164:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12) {
+    status: 400
+  }
+
+test at tests/scrolls-schema.test.mjs:173:1
+✖ 备份：新增卷与已有卷的新条目被合并，计次取较大值，当前库的编辑保留 (0.339842ms)
+  Error: 数据校验失败：包含不支持的字段
+      at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+      at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+      at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:53:3)
+      at backupState (file:///home/user/personal-ai-workbench/server/merge.mjs:8:10)
+      at mergeBackup (file:///home/user/personal-ai-workbench/server/merge.mjs:11:17)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/scrolls-schema.test.mjs:186:30)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19) {
+    status: 400
+  }
+
+test at tests/scrolls-schema.test.mjs:204:1
+✖ 备份：含焚决与富文本随手记的新备份经 HTTP 同款导出结构往返一致 (212.358123ms)
+  Error: 数据校验失败：包含不支持的字段
+      at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+      at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+      at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:53:3)
+      at file:///home/user/personal-ai-workbench/server/repository.mjs:253:9 {
+    status: 400
+  }
+exit=1

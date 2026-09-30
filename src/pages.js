@@ -51,6 +51,18 @@ export const PAGES = [
     stage: "收集 · 迭代 · 交付",
   },
   {
+    // 路线 v3 切片 1.3：焚决。侧栏分组重排由切片 1.2 负责，这里只注册页面。
+    id: "scrolls",
+    group: "资产",
+    code: "13",
+    label: "焚决",
+    title: "焚决",
+    eyebrow: "SCROLLS · EMBER",
+    maturity: "ready",
+    lead: "自建若干卷，存放提炼过、会反复用的碎片：心法、prompt 碎片、判断准则。一键复制，复制成功才计一次。",
+    stage: "提炼 · 复用",
+  },
+  {
     id: "references",
     group: "资产",
     code: "02",
@@ -184,7 +196,7 @@ export const PAGES = [
     title: "随手速记",
     eyebrow: "QUICK NOTES",
     maturity: "draft",
-    lead: "先把念头记下来。目前只保存在本机，尚未写入 Obsidian。",
+    lead: "先把念头记下来，支持列表、任务和五种字色。只保存在本应用；值得反复用的，炼入焚决。",
     stage: "捕捉",
   },
   {
@@ -205,7 +217,7 @@ export const GROUPS = ["今日", "资产", "目标", "运行", "知识", "系统
 
 // 三层骨架（产品定义 v1.1 §2），供今日页的结构地图使用。
 export const LAYERS = [
-  { id: "资产", en: "ASSETS", question: "我有什么", pages: ["assets", "references", "history"] },
+  { id: "资产", en: "ASSETS", question: "我有什么", pages: ["assets", "scrolls", "references", "history"] },
   { id: "目标", en: "TARGETS", question: "交给谁、在哪里", pages: ["agents", "projects", "health"] },
   { id: "运行", en: "RUNTIME", question: "怎么跑起来", pages: ["collab", "calendar", "night"] },
   { id: "知识", en: "KNOWLEDGE", question: "原件在 Obsidian", pages: ["knowledge", "notes"] },

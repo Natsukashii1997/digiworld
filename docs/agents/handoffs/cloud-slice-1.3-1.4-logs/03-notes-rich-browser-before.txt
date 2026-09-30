@@ -1,0 +1,14 @@
+file:///home/user/personal-ai-workbench/server/schema.mjs:10
+  throw Object.assign(new Error(`数据校验失败：${message}`), { status: 400 });
+                      ^
+
+Error: 数据校验失败：包含不支持的字段
+    at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+    at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+    at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:53:3)
+    at file:///home/user/personal-ai-workbench/server/repository.mjs:253:9 {
+  status: 400
+}
+
+Node.js v24.21.0
+exit=1

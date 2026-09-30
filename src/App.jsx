@@ -39,6 +39,7 @@ import {
   References,
   Settings,
 } from "./WorkspacePages.jsx";
+import { Scrolls } from "./Scrolls.jsx";
 import { PAGES, GROUPS } from "./pages.js";
 import {
   Pixel,
@@ -394,7 +395,8 @@ export default function App() {
           )}
           {route === "projects" && <Projects {...common} />}
           {route === "knowledge" && <Knowledge {...common} />}
-          {route === "notes" && <Notes {...common} />}
+          {route === "notes" && <Notes {...common} navigate={navigate} />}
+          {route === "scrolls" && <Scrolls {...common} />}
           {route === "night" && <Night {...common} />}
           {route === "history" && (
             <HistoryPage {...common} select={setSelected} />

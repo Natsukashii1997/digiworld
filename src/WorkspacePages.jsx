@@ -1,6 +1,6 @@
 import { StoragePanel } from "./StoragePanel.jsx";
 import { retainedDemoIds } from "./asset-origin.js";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Plus,
   ArrowUpRight,
@@ -30,12 +30,28 @@ import {
   Sparkles,
   Trash2,
   ScanLine,
+  Flame,
+  List,
+  ListOrdered,
+  ListChecks,
 } from "lucide-react";
 import { Button, Badge, Empty, PageHeading, Dialog } from "./components.jsx";
 import { Pixel } from "./pixel.jsx";
 import { uid, now, current } from "./store.js";
 import { copy, download } from "./Assets.jsx";
 import { ProjectContext } from "./ProjectContext.jsx";
+import {
+  NOTE_FORMAT,
+  NOTE_MAX,
+  INKS,
+  inline,
+  plainText,
+  parseNote,
+  toggleTask,
+  applyList,
+  applyInk,
+} from "./rich-note.js";
+import { scrollsOf, orderScrolls, addEntry } from "./scrolls.js";
 
 export function Relay({ state, adoptState, notify, onClose }) {
   const [mode, setMode] = useState("manual"),
@@ -165,26 +181,254 @@ export function Relay({ state, adoptState, notify, onClose }) {
   );
 }
 
-export function Notes({ state, save, notify }) {
+// 随手记（路线 v3 切片 1.4）：受限 Markdown 富文本，只存本应用；唯一去向是“炼入焚决”。
+function NoteBody({ note, onToggle, bodyRef }) {
+  if (note.format !== NOTE_FORMAT)
+    return (
+      <div className="note-body" ref={bodyRef}>
+        <p>{note.text}</p>
+      </div>
+    );
+  const spans = (text) =>
+    inline(text).map((part, i) =>
+      part.ink ? (
+        <span key={i} className={`ink-${part.ink}`}>
+          {part.text}
+        </span>
+      ) : (
+        <React.Fragment key={i}>{part.text}</React.Fragment>
+      ),
+    );
+  return (
+    <div className="note-body" ref={bodyRef}>
+      {parseNote(note.text).map((block) => {
+        const key = block.items[0].index;
+        if (block.type === "ul")
+          return (
+            <ul className="note-ul" key={key}>
+              {block.items.map((item) => (
+                <li key={item.index}>{spans(item.text)}</li>
+              ))}
+            </ul>
+          );
+        if (block.type === "ol")
+          return (
+            <ol className="note-ol" key={key} start={block.start}>
+              {block.items.map((item) => (
+                <li key={item.index}>{spans(item.text)}</li>
+              ))}
+            </ol>
+          );
+        if (block.type === "tasks")
+          return (
+            <ul className="note-tasks" key={key}>
+              {block.items.map((item) => (
+                <li key={item.index} className={item.checked ? "done" : ""}>
+                  <label className="note-task">
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      aria-label={plainText(item.text) || "未命名任务"}
+                      onChange={() => onToggle(item.index)}
+                    />
+                    <span>{spans(item.text)}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          );
+        return (
+          <p key={key}>
+            {block.items.map((item, i) => (
+              <React.Fragment key={item.index}>
+                {i > 0 && <br />}
+                {spans(item.text)}
+              </React.Fragment>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+// 选区完全落在这条随手记正文里时才采用，避免把页面其他文字炼进去。
+function selectionIn(element) {
+  const selection = window.getSelection?.();
+  if (!element || !selection || selection.isCollapsed || !selection.rangeCount)
+    return "";
+  if (
+    !element.contains(selection.anchorNode) ||
+    !element.contains(selection.focusNode)
+  )
+    return "";
+  return selection.toString().trim();
+}
+function NoteCard({ note, scrolls, onEdit, onToggle, onRefine, notify }) {
+  const body = useRef(null),
+    captured = useRef(null);
+  // 勾选先在界面上生效，保存失败再退回主库里的版本。
+  const [shown, setShown] = useState(note.text);
+  useEffect(() => setShown(note.text), [note.text]);
+  async function toggle(index) {
+    const next = toggleTask(shown, index);
+    setShown(next);
+    if (!(await onToggle(next))) setShown(note.text);
+  }
+  const target = note.refined
+    ? scrolls.find((s) => s.id === note.refined.scrollId)
+    : null;
+  const whole = note.format === NOTE_FORMAT ? plainText(note.text) : note.text;
+  return (
+    <article className={`note-card ${note.refined ? "refined" : ""}`}>
+      <time>{new Date(note.at).toLocaleString("zh-CN")}</time>
+      <NoteBody note={{ ...note, text: shown }} onToggle={toggle} bodyRef={body} />
+      {note.refined && (
+        <p className="note-refined">
+          <Flame size={14} />
+          已炼 · {target && !target.deletedAt ? target.name : "卷已移入回收区"}
+        </p>
+      )}
+      <footer>
+        <div>
+          <button className="text-button" onClick={onEdit}>
+            编辑
+          </button>
+          <button
+            className="icon-button"
+            aria-label="复制随手记"
+            onClick={() => copy(whole, notify)}
+          >
+            <Copy size={15} />
+          </button>
+        </div>
+        {!note.refined && (
+          <button
+            className="text-button refine-button"
+            onMouseDown={() => (captured.current = selectionIn(body.current))}
+            onClick={() => {
+              const text = captured.current ?? selectionIn(body.current);
+              captured.current = null;
+              onRefine(text || whole.trim(), !!text);
+            }}
+          >
+            <Flame size={15} />
+            炼入焚决
+          </button>
+        )}
+      </footer>
+    </article>
+  );
+}
+function RefineDialog({ draft, scrolls, onClose, onConfirm, navigate }) {
+  const live = orderScrolls(scrolls);
+  const [scrollId, setScrollId] = useState(live[0]?.id || "");
+  return (
+    <Dialog title="炼入焚决" onClose={onClose}>
+      <form
+        className="asset-form refine-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (scrollId) onConfirm(scrollId);
+        }}
+      >
+        <p className="body-copy">
+          {draft.partial ? "把选中的文字" : "把整条随手记"}
+          作为新条目加入所选卷的末尾，原随手记标记为“已炼”。
+        </p>
+        <blockquote className="refine-preview">{draft.text}</blockquote>
+        {live.length ? (
+          <>
+            <label>
+              目标卷
+              <select value={scrollId} onChange={(e) => setScrollId(e.target.value)}>
+                {live.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button type="submit">
+              <Flame size={16} />
+              炼入
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="body-copy">还没有卷。先到焚决建一卷，再回来炼入。</p>
+            <Button type="button" secondary onClick={() => navigate("scrolls")}>
+              去焚决建卷
+            </Button>
+          </>
+        )}
+      </form>
+    </Dialog>
+  );
+}
+export function Notes({ state, save, notify, navigate }) {
   const [text, setText] = useState(""),
-    [editId, setEditId] = useState(null);
+    [editId, setEditId] = useState(null),
+    [refining, setRefining] = useState(null);
+  const editor = useRef(null),
+    pendingSelection = useRef(null);
+  const scrolls = scrollsOf(state);
+  useEffect(() => {
+    const range = pendingSelection.current;
+    if (!range || !editor.current) return;
+    pendingSelection.current = null;
+    editor.current.focus();
+    editor.current.setSelectionRange(range[0], range[1]);
+  }, [text]);
+  function format(apply, arg) {
+    const el = editor.current;
+    const result = apply(text, el.selectionStart, el.selectionEnd, arg);
+    if (result.value.length > NOTE_MAX) {
+      notify(`单条随手记最多 ${NOTE_MAX} 字`, "warning");
+      return;
+    }
+    pendingSelection.current = [result.start, result.end];
+    setText(result.value);
+  }
   async function submit(e) {
     e.preventDefault();
     if (!text.trim()) return;
+    const value = text.trim().replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
     if (
       !(await save({
         ...state,
         notes: editId
           ? state.notes.map((n) =>
-              n.id === editId ? { ...n, text: text.trim(), at: now() } : n,
+              n.id === editId
+                ? { ...n, text: value, at: now(), format: NOTE_FORMAT }
+                : n,
             )
-          : [{ id: uid(), text: text.trim(), at: now() }, ...state.notes],
+          : [
+              { id: uid(), text: value, at: now(), format: NOTE_FORMAT },
+              ...state.notes,
+            ],
       }))
     )
       return;
     setText("");
     setEditId(null);
-    notify("已保存本地随手记；尚未写入 Obsidian");
+    notify("已保存本地随手记");
+  }
+  async function refine(scrollId) {
+    const { note, text: entryText } = refining;
+    const { scrolls: next, entry } = addEntry(scrolls, scrollId, entryText);
+    const at = now();
+    const success = await save({
+      ...state,
+      scrolls: next,
+      notes: state.notes.map((n) =>
+        n.id === note.id
+          ? { ...n, refined: { scrollId, entryId: entry.id, at } }
+          : n,
+      ),
+    });
+    if (!success) return;
+    setRefining(null);
+    notify(`已炼入「${next.find((s) => s.id === scrollId).name}」`);
   }
   return (
     <>
@@ -194,15 +438,53 @@ export function Notes({ state, save, notify }) {
           <PenLine size={17} />
           <span>{editId ? "修改这条想法" : "此刻在想什么？"}</span>
         </div>
+        <div className="note-toolbar" role="toolbar" aria-label="随手记格式">
+          {[
+            ["无序列表", List, "ul"],
+            ["有序列表", ListOrdered, "ol"],
+            ["任务列表", ListChecks, "task"],
+          ].map(([label, Icon, kind]) => (
+            <button
+              key={kind}
+              type="button"
+              className="icon-button"
+              aria-label={label}
+              title={label}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => format(applyList, kind)}
+            >
+              <Icon size={17} />
+            </button>
+          ))}
+          <span className="note-toolbar-sep" aria-hidden="true" />
+          {INKS.map(([ink, label]) => (
+            <button
+              key={ink}
+              type="button"
+              className={`icon-button ink-swatch ink-${ink}`}
+              aria-label={label}
+              title={`${label}字`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => format(applyInk, ink)}
+            >
+              <span aria-hidden="true">A</span>
+            </button>
+          ))}
+        </div>
         <textarea
+          ref={editor}
           value={text}
+          maxLength={NOTE_MAX}
           onChange={(e) => setText(e.target.value)}
           placeholder="一个念头、一个问题，或一件值得继续探索的事……"
           aria-label="随手记内容"
+          aria-describedby="note-syntax"
           rows={5}
         />
         <footer>
-          <span>仅保存在本机 · 尚未写入 Obsidian</span>
+          <span id="note-syntax">
+            只保存在本应用 · “- ”列表、“1. ”编号、“- [ ] ”任务、“[文字]{"{red}"}”字色
+          </span>
           <div>
             {editId && (
               <button
@@ -227,26 +509,6 @@ export function Notes({ state, save, notify }) {
         <h2>
           最近的想法 <span className="count">{state.notes.length}</span>
         </h2>
-        {state.notes.length > 0 && (
-          <button
-            className="text-button"
-            onClick={() =>
-              download(
-                "随手记.md",
-                state.notes
-                  .map(
-                    (n) =>
-                      `## ${new Date(n.at).toLocaleString("zh-CN")}\n\n${n.text}`,
-                  )
-                  .join("\n\n"),
-                "text/markdown;charset=utf-8",
-              )
-            }
-          >
-            <Download size={16} />
-            导出 Markdown
-          </button>
-        )}
       </div>
       {!state.notes.length ? (
         <Empty title="还没有记录">
@@ -255,31 +517,39 @@ export function Notes({ state, save, notify }) {
       ) : (
         <div className="notes-grid">
           {state.notes.map((n) => (
-            <article className="note-card" key={n.id}>
-              <time>{new Date(n.at).toLocaleString("zh-CN")}</time>
-              <p>{n.text}</p>
-              <footer>
-                <button
-                  className="text-button"
-                  onClick={() => {
-                    setEditId(n.id);
-                    setText(n.text);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                >
-                  编辑
-                </button>
-                <button
-                  className="icon-button"
-                  aria-label="复制随手记"
-                  onClick={() => copy(n.text, notify)}
-                >
-                  <Copy size={15} />
-                </button>
-              </footer>
-            </article>
+            <NoteCard
+              key={n.id}
+              note={n}
+              scrolls={scrolls}
+              notify={notify}
+              onEdit={() => {
+                setEditId(n.id);
+                setText(n.text);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              onToggle={(text) =>
+                save({
+                  ...state,
+                  notes: state.notes.map((x) =>
+                    x.id === n.id ? { ...x, text } : x,
+                  ),
+                })
+              }
+              onRefine={(text, partial) =>
+                setRefining({ note: n, text: text.slice(0, NOTE_MAX), partial })
+              }
+            />
           ))}
         </div>
+      )}
+      {refining && (
+        <RefineDialog
+          draft={refining}
+          scrolls={scrolls}
+          navigate={navigate}
+          onClose={() => setRefining(null)}
+          onConfirm={refine}
+        />
       )}
     </>
   );
