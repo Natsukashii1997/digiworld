@@ -373,8 +373,39 @@ export const SPRITES = {
       ".KKKKK..........",
     ]),
   },
-  // 规则：展开的卷轴（用户 2026-09-29 选定）。上下轴有高光（L）与背光（P），纸面右侧一列阴影，条款依次点亮。
+  // 规则封面（用户 2026-09-30 与小角标对调）：lucide ScrollText 的像素版——左上卷起的轴头、
+  // 三行条款、右下卷起的纸尾。描边 currentColor、填充 --px-glyph-fill，右侧一列阴影（P），条款依次点亮。
   Rule: {
+    mode: "cycle",
+    palette: {
+      K: "currentColor",
+      N: "var(--px-glyph-fill)",
+      P: "color-mix(in srgb, currentColor 40%, transparent)",
+      Q: "color-mix(in srgb, currentColor 55%, transparent)",
+      L: "#ffffff",
+    },
+    frames: [0, 1, 2].map((n) => {
+      const clause = (on, row) => row.replace(/x/g, on ? "L" : "Q");
+      return [
+        "..KKKKKKKKKKK...",
+        ".KNNKNNNNNNNPK..",
+        ".KLNKNNNNNNNPK..",
+        clause(n === 0, ".KNNKNxxxxxNPK.."),
+        "..KKKNNNNNNNPK..",
+        clause(n === 1, "....KNxxxxNNPK.."),
+        "....KNNNNNNNPK..",
+        clause(n === 2, "....KNxxxxxxPK.."),
+        "....KNNNNNNNPK..",
+        "....KNNKKKKKKKK.",
+        "....KNNKLNNNNNPK",
+        "....KNNKNNNNNNPK",
+        ".....KKKKKKKKKK.",
+      ];
+    }),
+  },
+  // 规则小角标：原封面的展开卷轴（用户 2026-09-29 选定，2026-09-30 改作小角标）。
+  // 上下轴有高光（L）与背光（P），纸面右侧一列阴影；小尺寸下由样式固定在第一帧。
+  rule_scroll: {
     mode: "cycle",
     palette: {
       K: "currentColor",

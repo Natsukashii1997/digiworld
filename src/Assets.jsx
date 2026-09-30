@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import {
   Search,
   Plus,
-  Star,
+  Pin,
   Grid2X2,
   List,
   ArrowUpRight,
@@ -111,7 +111,6 @@ export function Assets({
   navigate,
 }) {
   const [search, setSearch] = useState(""),
-    [favorites, setFavorites] = useState(false),
     [layout, setLayout] = useState("grid"),
     [sort, setSort] = useState("recent"),
     [tag, setTag] = useState("");
@@ -122,29 +121,40 @@ export function Assets({
   const serials = serialsOf(state.assets);
   const usage = usageByAsset(assets, state.assetActivity);
   const ofType = assets.filter((a) => filter === "all" || a.type === filter);
-  const narrowed = !!(words.length || tag || favorites);
+  const narrowed = !!(words.length || tag);
   const archivedHits = words.length
     ? state.assets.filter((a) => a.archived && assetHit(a, words)).length
     : 0;
   const clearFilters = () => {
     setSearch("");
     setTag("");
-    setFavorites(false);
   };
+  // 置顶（切片 1.1）：置顶项在任何类型标签与排序下都排最前，置顶项之间按使用次数降序，再按最近使用。
+  // favorite 字段仅作旧数据兼容，界面不再读取；演示资产默认 favorite=true，不能当成置顶。
+  const uses = (a) => usage.get(a.id);
+  const byUse = (a, b) =>
+    uses(b).count - uses(a).count || uses(b).lastAt.localeCompare(uses(a).lastAt);
+  const bySort = (a, b) =>
+    sort === "name"
+      ? current(a).title.localeCompare(current(b).title, "zh")
+      : sort === "most"
+        ? byUse(a, b) || current(b).at.localeCompare(current(a).at)
+        : sort === "used"
+          ? uses(b).lastAt.localeCompare(uses(a).lastAt) || current(b).at.localeCompare(current(a).at)
+          : current(b).at.localeCompare(current(a).at);
   const shown = ofType
     .filter(
       (a) =>
-        (!favorites || a.favorite) &&
         (!tag || current(a).tags.includes(tag)) &&
         (!words.length || assetHit(a, words)),
     )
-    .sort((a, b) =>
-      sort === "name"
-        ? current(a).title.localeCompare(current(b).title, "zh")
-        : sort === "used"
-          ? usage.get(b.id).lastAt.localeCompare(usage.get(a.id).lastAt) || current(b).at.localeCompare(current(a).at)
-          : current(b).at.localeCompare(current(a).at),
+    .sort(
+      (a, b) =>
+        !!b.pinned - !!a.pinned ||
+        (a.pinned && b.pinned && byUse(a, b)) ||
+        bySort(a, b),
     );
+  const pinnedCount = shown.filter((a) => a.pinned).length;
   return (
     <>
       <PageHeading
@@ -221,18 +231,10 @@ export function Assets({
             onChange={(e) => setSort(e.target.value)}
           >
             <option value="recent">最近更新</option>
-            <option value="name">名称排序</option>
+            <option value="most">最常用</option>
             <option value="used">最近使用</option>
+            <option value="name">名称排序</option>
           </select>
-          <button
-            className={`icon-button ${favorites ? "selected" : ""}`}
-            aria-pressed={favorites}
-            aria-label="只看收藏"
-            title="只看收藏"
-            onClick={() => setFavorites(!favorites)}
-          >
-            <Star size={16} fill={favorites ? "currentColor" : "none"} />
-          </button>
           <span className="divider" />
           <button
             className={`icon-button ${layout === "grid" ? "selected" : ""}`}
@@ -254,7 +256,12 @@ export function Assets({
       </div>
       <div className="collection-meta">
         <span>
-          {favorites ? "收藏" : "全部资产"} · <b>{shown.length}</b>
+          全部资产 · <b>{shown.length}</b>
+          {pinnedCount > 0 && (
+            <>
+              {" "}· 置顶 <b>{pinnedCount}</b>
+            </>
+          )}
         </span>
         <span className="collection-hint">
           进化阶段结合当前版本的复制记录与本人反馈，版本数单独保留。
@@ -295,6 +302,7 @@ export function Assets({
                   sprite={glyphOf(a)}
                   serial={serials[a.id]}
                   version={a.versions.length}
+                  uses={uses(a).count}
                 />
                 <div className="card-body">
                   <div className="card-type">
@@ -304,30 +312,32 @@ export function Assets({
                   </div>
                   <h3>{v.title}</h3>
                   <p>{v.description || "还没有一句话说明。"}</p>
-                  <span className="card-usage">{usage.get(a.id).count ? `使用 ${usage.get(a.id).count} 次 · ${new Date(usage.get(a.id).lastAt).toLocaleDateString("zh-CN")}` : "从未使用"}</span>
+                  <span className="sr-only">使用 {uses(a).count} 次</span>
                   <div className="card-bottom">
                     <div className="card-tags">
                       {v.tags.slice(0, 2).map((t) => (
                         <span key={t}>{t}</span>
                       ))}
                     </div>
-                    <StageBar stage={usage.get(a.id).stage} />
+                    <StageBar stage={uses(a).stage} />
                   </div>
                 </div>
               </button>
               <button
-                aria-label={`${a.favorite ? "取消收藏" : "收藏"} ${v.title}`}
-                className={`favorite-button ${a.favorite ? "is-favorite" : ""}`}
+                aria-label={`${a.pinned ? "取消置顶" : "置顶"} ${v.title}`}
+                aria-pressed={!!a.pinned}
+                title={a.pinned ? "取消置顶" : "置顶"}
+                className={`pin-button ${a.pinned ? "is-pinned" : ""}`}
                 onClick={() =>
                   save({
                     ...state,
                     assets: state.assets.map((x) =>
-                      x.id === a.id ? { ...x, favorite: !x.favorite } : x,
+                      x.id === a.id ? { ...x, pinned: !x.pinned } : x,
                     ),
                   })
                 }
               >
-                <Star size={15} fill={a.favorite ? "currentColor" : "none"} />
+                <Pin size={16} fill={a.pinned ? "currentColor" : "none"} />
               </button>
             </article>
           );

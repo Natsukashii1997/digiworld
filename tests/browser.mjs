@@ -41,14 +41,20 @@ try {
   await page.getByRole("button", { name: "Prompts 2", exact: true }).click();
   assert.equal(await page.locator(".asset-card").count(), 2);
   await page.getByRole("button", { name: "全部 6", exact: true }).click();
-  await page.getByRole("button", { name: "只看收藏" }).click();
-  assert.equal(await page.locator(".asset-card").count(), 2);
-  await page.getByRole("button", { name: "只看收藏" }).click();
+  // 切片 1.1：收藏改为置顶。置顶项排第一、数量行计数；取消后恢复，不影响后续步骤。
+  await page.getByRole("button", { name: "置顶 把经验，留在知识里", exact: true }).click();
+  await page.getByRole("button", { name: "取消置顶 把经验，留在知识里", exact: true }).waitFor();
+  assert.equal(await page.locator(".asset-card").count(), 6);
+  assert.equal(await page.locator(".asset-card h3").first().innerText(), "把经验，留在知识里");
+  assert.match(await page.locator(".collection-meta").innerText(), /置顶 1/);
+  await page.getByRole("button", { name: "取消置顶 把经验，留在知识里", exact: true }).click();
+  await page.getByRole("button", { name: "置顶 把经验，留在知识里", exact: true }).waitFor();
+  assert.doesNotMatch(await page.locator(".collection-meta").innerText(), /置顶/);
   await page.getByLabel("在资产中搜索").fill("复盘");
   // 1.3 起搜索覆盖正文：标题命中「一次真正有用的复盘」，正文命中「把经验，留在知识里」。
   assert.equal(await page.locator(".asset-card").count(), 2);
   await page.getByLabel("在资产中搜索").fill("");
-  ok("分类、收藏和搜索过滤");
+  ok("分类、置顶和搜索过滤");
   await page.getByRole("button", { name: "新建资产", exact: true }).click();
   await page.getByRole("button", { name: "Prompt", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("测试：我的提示词");

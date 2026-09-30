@@ -48,7 +48,9 @@ try {
   await page.goto(app.url + "/#assets");
   await page.locator(".asset-card").first().waitFor();
   assert.equal((await app.repository.read()).revision, initial.revision);
-  assert.equal(await page.getByText("从未使用", { exact: true }).count(), 6);
+  // 切片 1.1：卡片计次改为封面数字 + 读屏文字，“从未使用”一行已去掉。
+  assert.equal(await page.getByText("使用 0 次", { exact: true }).count(), 6);
+  assert.deepEqual(await page.locator(".cover-uses").allInnerTexts(), Array(6).fill("0"));
   await open(prompt);
   await button("复制全文").click();
   await page.getByText("使用记录已保存", { exact: true }).waitFor();
