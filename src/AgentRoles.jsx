@@ -141,7 +141,7 @@ export function AgentRoles({ state, save, notify }) {
             <li key={role.agentId}>
               <article className="role-card">
                 <header>
-                  <h3>{role.name}</h3>
+                  <h3 id={`role-name-${role.agentId}`}>{role.name}</h3>
                   <Badge tone={role.tier === "main" ? "" : "muted"}>{TIER_LABEL[role.tier]}</Badge>
                 </header>
                 {!role.edited && <small className="role-draft">草拟默认，未经你确认</small>}
@@ -165,8 +165,14 @@ export function AgentRoles({ state, save, notify }) {
                   <dt>备注</dt>
                   <dd>{role.note || "—"}</dd>
                 </dl>
-                <Button secondary aria-label={`编辑 ${role.name} 角色卡`} onClick={() => setEditing(role.agentId)}>
-                  编辑
+                {/* 可访问名不含 Agent 名：页面上按 Agent 名找发现卡片的入口（如 /Codex/）不会撞到这里；
+                    Agent 名由 aria-describedby 指向卡片标题读出。 */}
+                <Button
+                  secondary
+                  aria-describedby={`role-name-${role.agentId}`}
+                  onClick={() => setEditing(role.agentId)}
+                >
+                  编辑角色卡
                 </Button>
               </article>
             </li>

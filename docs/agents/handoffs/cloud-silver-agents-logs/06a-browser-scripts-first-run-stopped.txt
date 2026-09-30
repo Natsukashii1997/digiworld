@@ -107,3 +107,31 @@ Call log:
 Node.js v24.21.0
 RESULT tests/agent-targets-browser.mjs exit=1
 == tests/assets-pin-browser.mjs
+PASS 去掉收藏；favorite=true 不等于置顶
+PASS 排序菜单：最近更新、最常用、最近使用、名称排序
+PASS 置顶后在全部与类型标签、所有排序下都排第一，刷新后保持
+PASS 复制一次后封面数字 +1
+PASS 置顶项之间按使用次数降序
+PASS 最常用排序
+PASS 规则卡片封面与小角标均为像素图标
+PASS 顶栏搜索：图标 + ⌘K，至少 44px，点击与 ⌘K 都能打开浮层
+PASS 1440 宽时五个类型按钮同一行；axe 无违规
+PASS 390 宽无横向溢出
+assets-pin-browser: 10 passed
+RESULT tests/assets-pin-browser.mjs exit=0
+== tests/context-browser.mjs
+PASS 预览→连接→真实复制；正文不进入交接包；axe
+PASS 重开保留来源；源文件变化阻断旧包且不改剪贴板
+PASS 剪贴板失败文本回退；axe；四档窄屏无溢出
+PASS 缺失与保存失败保留输入，不沿用旧包
+PASS Agent 接力复用同一连接；解绑跨入口刷新生效
+RESULT tests/context-browser.mjs exit=0
+== tests/delivery-browser.mjs
+PASS 复制→取回同版 ZIP→刷新管理→撤销
+PASS 新链接被并行撤销后回读纠正状态
+PASS 剪贴板拒绝保留可选文本，不伪报复制
+PASS 四种窄屏，复制失败文本可操作
+PASS 生成失败不复制旧链接，保留独立 ZIP 出口
+RESULT tests/delivery-browser.mjs exit=0
+== tests/history-browser.mjs
+（本轮在第 10 个脚本结果后手动停止：发现角色卡“编辑”按钮的可访问名含 Agent 名，与既有测试的 /Codex/ 定位撞名；修正后在最终代码上重跑全部脚本，见 07-browser-scripts.txt）

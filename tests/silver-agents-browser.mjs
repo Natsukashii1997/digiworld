@@ -304,8 +304,12 @@ try {
   ok("角色卡：主力 3 个 + 附属 2 个；Codex 常驻项目由已登记项目的交接字段推断，其余留空；未编辑卡标注草拟");
 
   // 编辑 Hermes
-  await atLeast44(button(roles, "编辑 Hermes 角色卡"), "编辑角色卡");
-  await button(roles, "编辑 Hermes 角色卡").click();
+  // 编辑按钮的可访问名不含 Agent 名（避免与发现卡片的 /Codex/ 入口重名），Agent 名作为描述读出。
+  const editHermes = button(cardOf("Hermes"), "编辑角色卡");
+  assert.equal(await editHermes.getAttribute("aria-describedby"), "role-name-hermes");
+  assert.equal(await page.getByRole("button", { name: /Codex|Hermes|Claude Code|OpenClaw|豆包/ }).filter({ hasText: "编辑角色卡" }).count(), 0);
+  await atLeast44(editHermes, "编辑角色卡");
+  await editHermes.click();
   const edit = page.getByRole("dialog", { name: "编辑角色卡：Hermes" });
   await edit.getByLabel("擅长关键词（用逗号或空格分隔）").fill("夜巡，监工 定时任务");
   await edit.getByLabel("成本").selectOption("low");
