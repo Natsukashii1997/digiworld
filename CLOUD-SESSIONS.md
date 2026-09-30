@@ -65,6 +65,7 @@ for f in tests/browser.mjs tests/accessibility.mjs tests/migration.mjs tests/his
 
 - **用 `claude --cloud "任务描述"` 发起普通云端会话**（本机命令行 2.1.285 及以上；在仓库目录运行，云端克隆 GitHub 上的当前分支，所以先推送）。普通云端会话优先消耗账户的一次性云端额度（Pro 为 $100，11 月 5 日过期），用完后再用套餐额度。
 - **不要用 routine（定时任务接口）派活**：云端额度不适用于 Routines 和 Projects，routine 发起的会话消耗的是 Pro 套餐用量。2026-09-30 前 6 个云端任务都是 routine 发起的，额度一直停在 $100，这是教训。来源：[didcodexreset](https://didcodexreset.com/news/8d242daab48b4e8c945d230a.html)、[官方文档 · Use Claude Code in the cloud](https://code.claude.com/docs/en/claude-code-on-the-web)。
+- `--cloud` 需要交互式终端。本机会话里可以用 `script -q <记录文件> claude --cloud "$(cat 提示词文件)" < /dev/null` 模拟终端；输出中出现 “Created cloud session: … / View: https://claude.ai/code/session_…” 即为创建成功，本机进程随即退出。
 - 给进行中的云端会话追加消息：`claude -p "消息" --cloud <会话ID或链接>`。命令行登录过期时，需要用户本人运行 `claude auth login`。
 
 ## 3.6 云端已知失败的根因（C2 诊断，分支 `cloud/2026-09-30-env-diff`）
