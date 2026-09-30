@@ -212,6 +212,9 @@ try {
   // 6. 世界总览结构地图同步为两区
   await page.goto(`${app.url}/#home`);
   await page.locator(".today-hero").waitFor();
+  // 首页各区块只出现一次（防止结构地图替换时重复拼接）
+  assert.equal(await page.locator("main h2", { hasText: "能力地图" }).count(), 1);
+  assert.equal(await page.locator("main h2", { hasText: /^待处理 ·/ }).count(), 1);
   const map = page.locator(".structure-map");
   for (const zone of ["工作区", "生活区"])
     await map.getByRole("heading", { name: zone }).waitFor();
