@@ -62,13 +62,15 @@ export const deleteScroll = (scrolls, id) =>
 export const restoreScroll = (scrolls, id) =>
   mapScroll(scrolls, id, ({ deletedAt, ...s }) => ({ ...s, updatedAt: now() }));
 
-export function addEntry(scrolls, scrollId, text, tags = []) {
+// source：可选的来源（逆向工程入库时为 { reverseId, url? }），只记录，不参与显示与计次。
+export function addEntry(scrolls, scrollId, text, tags = [], source) {
   const entry = {
     id: uid(),
     text: cleanText(text),
     tags,
     uses: 0,
     createdAt: now(),
+    ...(source ? { source } : {}),
   };
   return {
     scrolls: mapScroll(scrolls, scrollId, (s) => ({

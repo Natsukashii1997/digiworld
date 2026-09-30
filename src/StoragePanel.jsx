@@ -133,6 +133,7 @@ export function StoragePanel({ state, adoptState, notify }) {
                 references: "参考",
                 knowledgeTasks: "整理任务",
                 scrolls: "焚决卷",
+                reverseRecords: "逆向记录",
               }).map(([key, label]) => (
                 <div key={key}>
                   <span>新增{label}</span>
