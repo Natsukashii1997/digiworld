@@ -80,3 +80,405 @@ AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
 Node.js v24.21.0
 EXIT 1 tests/agent-config-browser.mjs
 == tests/agent-inventory-browser.mjs
+PASS Agent 卡片打开目录元数据，存在/缺失/受阻可区分；不自动扫描 Skill 或修改配置
+PASS 限定 Skill 目录不自动扫描；取消回 Agent 后重新读取；明确扫描→完整收录→单一资产详情→完整 ZIP
+PASS 刷新失败保留并标记旧目录、禁用旧 Skill 入口；重试恢复可用，主库无额外写入，三状态 axe 与四档布局通过
+PASS HTTP200 部分错误或截断不覆盖上次目录，展示本次问题并禁用入口；完整刷新接纳新状态
+PASS 首次目录响应有顶层错误或截断时展示部分结果但禁用 Skill；单项受阻不误伤完整响应
+PASS 实际 inspector 读取临时 Hermes Profiles，链接受阻产生HTTP200顶层partial，UI保留旧Profile并在真实恢复后重新启用
+PASS 关闭中的旧请求不复活或覆盖新 Agent；Tab/Shift+Tab 焦点环、Esc 返回卡片；无额外扫描、配置写入或 JS 异常
+EXIT 0 tests/agent-inventory-browser.mjs
+== tests/agent-targets-browser.mjs
+PASS 明确选择入口和 Home→保存→重开仍可见；未核对不冒充运行，源配置不变
+PASS 安装包版本与未知证据分开；改名/换入口/Profile 保持身份，重复绑定拒绝并保留草稿
+PASS 目录 HTTP 失败与部分读取保留原候选和草稿、禁用保存；完整刷新后恢复，2 态 axe 无违规
+PASS 服务端过期与真实主库并发冲突均拒绝旧提交、保留草稿；检查刷新主库后可恢复
+PASS 保存 HTTP 失败保留草稿；真实保存成功但响应丢失后刷新核对，重复确认不生成第二目标
+PASS 320/375/393/430 编辑无横向溢出，键盘焦点不逃逸且 Escape 取消不写；2 态 axe 无违规
+PASS 解除需要二次确认，可取消；确认只删除工作台关系，重开有效，源程序与配置不变
+PASS 首次部分检查禁用绑定；程序/Home 缺失不删目标；提交前来源变化拒绝并保留草稿
+PASS 关闭详情后晚到的检查结果不恢复抽屉或污染新会话；重新检查可用，主库不变
+EXIT 0 tests/agent-targets-browser.mjs
+== tests/aihot-learning-browser.mjs
+PASS 首次拉取前：首页热点卡显示“尚未拉取”，AI HOT 页说明将访问 aihot.news 公开接口，未发出任何请求
+PASS 开始拉取后：精选 / 热点 / 日报三个标签切换正确，标题新标签打开原文（noopener noreferrer），不可信链接不渲染
+PASS 收藏到学习：写入标题、原文链接、摘要、来源、收藏时间；重复收藏提示已收藏
+PASS 世界总览“今日热点”卡显示 5 条（3–5 条），新标签打开
+PASS 拉取失败：保留上次缓存，标注“拉取失败”与上次成功时间
+PASS 设置：书架文件夹只接受绝对路径，添加后写入主库
+PASS 书架：只列 PDF/EPUB，标记“在学”写入主库，刷新后保持
+PASS 链接收藏：来自 AI HOT 与手动添加，三种状态，重复提示，删除进回收区并可恢复；axe 通过
+PASS 关闭网络访问后不再拉取，页面说明“网络访问已关闭”，仍显示本机缓存
+PASS 390 宽：AI HOT 三个标签、学习成长、世界总览、设置均无横向溢出；按钮 44px；axe 通过
+aihot-learning-browser: all passed
+EXIT 0 tests/aihot-learning-browser.mjs
+== tests/assets-pin-browser.mjs
+PASS 去掉收藏；favorite=true 不等于置顶
+PASS 排序菜单：最近更新、最常用、最近使用、名称排序
+PASS 置顶后在全部与类型标签、所有排序下都排第一，刷新后保持
+PASS 复制一次后封面数字 +1
+PASS 置顶项之间按使用次数降序
+PASS 最常用排序
+PASS 规则卡片封面与小角标均为像素图标
+PASS 顶栏搜索：图标 + ⌘K，至少 44px，点击与 ⌘K 都能打开浮层
+PASS 1440 宽时五个类型按钮同一行；axe 无违规
+PASS 390 宽无横向溢出
+assets-pin-browser: 10 passed
+EXIT 0 tests/assets-pin-browser.mjs
+== tests/context-browser.mjs
+PASS 预览→连接→真实复制；正文不进入交接包；axe
+PASS 重开保留来源；源文件变化阻断旧包且不改剪贴板
+PASS 剪贴板失败文本回退；axe；四档窄屏无溢出
+PASS 缺失与保存失败保留输入，不沿用旧包
+PASS Agent 接力复用同一连接；解绑跨入口刷新生效
+EXIT 0 tests/context-browser.mjs
+== tests/delivery-browser.mjs
+PASS 复制→取回同版 ZIP→刷新管理→撤销
+PASS 新链接被并行撤销后回读纠正状态
+PASS 剪贴板拒绝保留可选文本，不伪报复制
+PASS 四种窄屏，复制失败文本可操作
+PASS 生成失败不复制旧链接，保留独立 ZIP 出口
+EXIT 0 tests/delivery-browser.mjs
+== tests/history-browser.mjs
+PASS 历史正文与差异→取消→恢复→刷新→恢复回来
+PASS 历史 Markdown 导出、写入失败保留、重试、并发冲突拒绝覆盖
+PASS Skill 文件新增/删除/二进制/权限差异与完整历史包导出
+PASS 版本历史 axe 与四档窄屏；无 JS 异常
+EXIT 0 tests/history-browser.mjs
+== tests/interaction-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /matrix\(1, 0, 0, 1, 0, 3\)/. Input:
+
+'matrix(1, 0, 0, 1, 0, 2.73819)'
+
+    at file:///home/user/personal-ai-workbench/tests/interaction-browser.mjs:38:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'matrix(1, 0, 0, 1, 0, 2.73819)',
+  expected: /matrix\(1, 0, 0, 1, 0, 3\)/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+EXIT 1 tests/interaction-browser.mjs
+== tests/knowledge-browser.mjs
+    {
+      "state": "长原文 390",
+      "violations": []
+    },
+    {
+      "state": "长原文 393",
+      "violations": []
+    },
+    {
+      "state": "长原文 430",
+      "violations": []
+    },
+    {
+      "state": "长原文 768",
+      "violations": []
+    },
+    {
+      "state": "长原文 1024",
+      "violations": []
+    },
+    {
+      "state": "长原文 1440",
+      "violations": []
+    },
+    {
+      "state": "连接校验失败",
+      "violations": []
+    },
+    {
+      "state": "目录重新确认",
+      "violations": []
+    },
+    {
+      "state": "部分扫描",
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "failure": null
+}
+EXIT 0 tests/knowledge-browser.mjs
+== tests/knowledge-compilation-browser.mjs
+{
+  "flows": 8,
+  "axe": 10,
+  "errors": [],
+  "failure": null
+}
+EXIT 0 tests/knowledge-compilation-browser.mjs
+== tests/knowledge-compilation-recovery-browser.mjs
+{"cases":[{"mode":"create","status":500,"passed":true,"failure":null},{"mode":"create","status":503,"passed":true,"failure":null},{"mode":"receive","status":500,"passed":true,"failure":null},{"mode":"receive","status":503,"passed":true,"failure":null},{"mode":"archive","status":500,"passed":true,"failure":null},{"mode":"archive","status":503,"passed":true,"failure":null}],"errors":[],"failure":null}
+EXIT 0 tests/knowledge-compilation-recovery-browser.mjs
+== tests/knowledge-compilation-resilience-browser.mjs
+{"flows":5,"axe":6,"failure":null}
+EXIT 0 tests/knowledge-compilation-resilience-browser.mjs
+== tests/knowledge-maintenance-browser.mjs
+{"flows":12,"axe":20,"failure":null}
+EXIT 0 tests/knowledge-maintenance-browser.mjs
+== tests/knowledge-maintenance-recovery-browser.mjs
+{"flows":["inflight-refresh","close-reopen","reload-after-commit"],"failure":null}
+EXIT 0 tests/knowledge-maintenance-recovery-browser.mjs
+== tests/knowledge-query-browser.mjs
+    {
+      "state": "正文长片段 320",
+      "violations": []
+    },
+    {
+      "state": "正文长片段 375",
+      "violations": []
+    },
+    {
+      "state": "正文长片段 390",
+      "violations": []
+    },
+    {
+      "state": "正文长片段 393",
+      "violations": []
+    },
+    {
+      "state": "正文长片段 430",
+      "violations": []
+    },
+    {
+      "state": "正文长片段 768",
+      "violations": []
+    },
+    {
+      "state": "正文长片段 1024",
+      "violations": []
+    },
+    {
+      "state": "正文长片段 1440",
+      "violations": []
+    },
+    {
+      "state": "部分扫描下零命中",
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "failure": null
+}
+EXIT 0 tests/knowledge-query-browser.mjs
+== tests/knowledge-writeback-browser.mjs
+{"flows":5,"axe":10,"output":"test-results/v016-writeback"}
+EXIT 0 tests/knowledge-writeback-browser.mjs
+== tests/nav-zones-browser.mjs
+PASS 侧栏四段：今日 / 工作区（资产、目标、运行、知识）/ 生活区 / 系统，顺序正确，版本归档在最下
+PASS 改名：知识仓库、逆向工程、随手记（导航、页头、面包屑、搜索浮层）
+PASS 版本归档页可达；资产详情“历史”标签显示版本查看与比较
+PASS #health 与站内跳转都落到智能体群的“能力体检”分区（规划中），焦点与视口正确，axe 通过
+PASS 生活区 AI HOT、学习成长可达且不再标注规划中；银饰计划标注规划中，无假按钮，axe 通过
+PASS 世界总览结构地图按工作区 / 生活区展示
+PASS 键盘可逐项到达侧栏最底部的版本归档
+PASS 390 宽：抽屉导航四段可用、条目 44px、无横向溢出、axe 通过
+nav-zones-browser: all passed
+EXIT 0 tests/nav-zones-browser.mjs
+== tests/notes-rich-browser.mjs
+PASS 格式工具栏：三种列表与五种字色，按钮不小于 44px
+PASS 工具栏按选区生成列表与字色标记，键盘可触发
+PASS 五种格式保存后刷新一致；旧随手记仍是纯文本；XSS 字符串被转义、未执行
+PASS 任务勾选与取消勾选保存后刷新一致
+PASS 选中文字炼入“灵感”：焚决新增条目，随手记标记已炼并显示卷名
+PASS 无选中时整条炼入“心法”；刷新后两边状态一致
+PASS 资产仓库焚决卷显示炼入的条目
+PASS 没有请求知识库写入，页面不再提示写入 Obsidian
+PASS axe 1440 无违规
+PASS 390 宽无横向溢出，axe 无违规
+notes-rich-browser: all passed
+EXIT 0 tests/notes-rich-browser.mjs
+== tests/partner-browser.mjs
+PASS 侧栏液晶屏：两种屏高都整数点距铺满、动画运行、春季起始
+PASS 复制成功时数据像素飞向伙伴屏并自动移除
+PASS 焦点移走后仍从复制按钮起飞
+PASS 动效出错时清理干净
+PASS 首页数码暴龙机：固定数码蛋、可戳、无进化线、axe
+PASS 运行中切换减少动态效果，两块屏立即跟随
+PASS 伙伴屏不在视口时不飞数据像素
+PASS 减少动态效果：两块液晶屏都只画一帧
+EXIT 0 tests/partner-browser.mjs
+== tests/project-identity-browser.mjs
+PASS 移动后保留原身份，旧目录明确缺失，项目 ID 可真实复制
+PASS 预览与明确确认后保留 ID/别名；替换只改关联；Current 指针不被静默迁移
+PASS Current 重新预览保存后可交接；服务重启持久化与重扫无重复身份
+PASS 目录更换后暂时未核实仍保留重确认入口，旧 Current 继续阻断
+PASS 同路径目录更换保持待确认；显式接受新身份，不改原/新文件
+PASS 目录更换的新远端先显示旧→新；确认保留 ID、采用新 repo 并要求重存 Current
+PASS 双 Current 冲突拒绝且保留两指针；显式解绑候选后可重新预览，无自动选来源
+PASS 跨客户端 revision 改变拒绝旧确认；保留选择并先刷新核对
+PASS 过期预览拒绝，不修改目录关系，也不复用旧凭证
+PASS 双击只发一次确认；已提交响应丢失后刷新恢复，不重放写请求
+PASS 关闭抽屉后忽略晚到预览，不污染重新打开的项目
+PASS 确认框可键盘 Space 操作，Tab 顺序与可见焦点正常
+PASS 320px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 375px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 390px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 393px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 430px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 768px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 1024px 长路径预览无溢出，主要操作44px，axe无违规
+PASS 1440px 长路径预览无溢出，主要操作44px，axe无违规
+PASS project identity browser: 20 flows, 12 axe scans
+EXIT 0 tests/project-identity-browser.mjs
+== tests/r87-fix-browser.mjs
+PASS B1 三类复制按钮在 1440/390 宽度下 TRANSFER OK 都完整显示
+PASS B2 装饰失败后覆盖层、状态类与运行锁全部收尾，下一次复制可再演出
+PASS B3 减少动态效果：计数、REV、版本号直接显示新值，无旧数、无轻弹
+PASS B4 数字屏随待处理条数更新；减少动态效果下切换画面干净
+PASS B5 C 机身键可点、可键盘操作、44px，保留直接点屏幕
+EXIT 0 tests/r87-fix-browser.mjs
+== tests/rule-templates-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 5000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible[22m
+
+    at confirmWrite (/home/user/personal-ai-workbench/tests/rule-templates-browser.mjs:39:56)
+    at async file:///home/user/personal-ai-workbench/tests/rule-templates-browser.mjs:65:3 {
+  log: [
+    "  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0
+EXIT 1 tests/rule-templates-browser.mjs
+== tests/rule-templates-fix-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'matches_before'
+- 'matches_after'
+           ^
+
+    at installVia (file:///home/user/personal-ai-workbench/tests/rule-templates-fix-browser.mjs:39:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///home/user/personal-ai-workbench/tests/rule-templates-fix-browser.mjs:50:3 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'matches_before',
+  expected: 'matches_after',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+EXIT 1 tests/rule-templates-fix-browser.mjs
+== tests/scrolls-browser.mjs
+PASS #scrolls 旧链接落到资产仓库焚决标签；焚决不单独占导航；空库显示空状态
+PASS 资产类型标签第五个是“焚决”，空库计数 0
+PASS 新建资产五个类型同一行；选焚决只填卷名即可创建，空名称不能提交，创建后直接打开该卷
+PASS 在“全部”标签下选焚决类型建卷，回车提交
+PASS 焚决标签计数 2；“全部”同时显示资产卡与焚决卡（FJ 编号、N 条）
+PASS 在抽屉中新增三条，标签按空格或逗号拆分并醒目显示
+PASS 条目原地编辑正文与标签
+PASS 条目上移、下移，刷新后顺序一致
+PASS 按标签筛选，“全部”恢复
+PASS 复制成功计次（2 次），剪贴板失败不计次；卡片封面次数为条目之和，显示条数与常用标签
+PASS 删除条目进回收区（焚决标签下方），恢复后位置与计次不变
+PASS 卷置顶排第一（优先于“最常用”排序），刷新后保持，“全部”中也排最前
+PASS 页内搜索按卷名、条目正文、标签筛到焚决卡
+PASS 卷改名、删除进回收区并恢复，条目完整
+PASS 键盘可完成新增条目，按钮有可见焦点
+PASS 焚决控件点击区域不小于 44px
+PASS axe 1440 无违规（抽屉、焚决标签）
+PASS 首页资产行显示“含焚决 2 卷”
+PASS 390 宽：新建类型换行，抽屉无横向溢出，axe 无违规
+scrolls-browser: all passed
+EXIT 0 tests/scrolls-browser.mjs
+== tests/search-browser.mjs
+PASS ⌘K 正文、文件、标签、多词命中并打开详情
+PASS 随手记/参考/项目分组跳转，已归档只计数并可跳转
+PASS 无结果提示与搜索范围说明分开，可去知识仓库
+PASS 资产库正文搜索、标签筛选组合、清除筛选、已归档提示、空分类筛选退出
+PASS 搜索与筛选只读，主库 revision 不变
+PASS 1440/390/320 无溢出、按钮 44px、axe 无违规
+TIMING {"palette-cold":946,"palette-warm":221,"library":264}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: palette-cold 946ms > 500ms
+    at file:///home/user/personal-ai-workbench/tests/search-browser.mjs:283:14 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+EXIT 1 tests/search-browser.mjs
+== tests/skill-copies-browser.mjs
+PASS 显式查找→单包预览→确认关系→重开待核对；不自动读取、不安装、不改源包
+PASS 显式核对固定版本；资产有新版及时提示且不改关联；源包漂移可见、恢复后重新一致
+PASS 真实目录缺失/符号链接受阻不删关系；读取失败标旧结果过期，四档长错误不溢出且axe通过
+PASS Agent关联资产入口可达；固定版本改绑明示旧映射并二次确认、身份不变；预览四档无溢出且2态axe通过
+PASS token过期/主库并发阻断旧确认并保留选择；提交成功但响应丢失后重新预览核对，幂等不增关系
+PASS 目录检查不完整时保留选择但禁用旧候选/预览，完整重新查找可恢复，不写关系；窄屏axe通过
+PASS 字节相同但权限未知显示未核验而非完全一致；差异明细可展开、未确认不改固定版本；axe通过
+PASS 切换版本/目标与关闭编辑会废弃晚到结果；重新进入焦点明确，键盘不逃逸，Escape不写关系
+PASS 目标解除保留副本关系并标失效；二次确认可取消，解除只删关系且重开有效，源文件与资产保留；axe通过
+EXIT 0 tests/skill-copies-browser.mjs
+== tests/skill-source-browser.mjs
+PASS 显式目录扫描→完整包预览不入库→确认收录→Skill 详情
+PASS 另一页真实保存后旧确认409→重新预览保留名称并可确认→另一页随手记完整保留
+PASS 重载来源身份可见；完整 ZIP 保留入口原文、二进制、隐藏资源与空目录，磁盘来源未变
+PASS 完整个人改版独立编辑、固定来源身份与二级派生链，源资产及磁盘文件保持不变
+PASS 搜索/目录切换清空旧预览，重复相同来源快照回到原资产且不新增版本或主库修订
+PASS 来源预览后改变拒绝收录，目录/名称/预览保留，主库不改；预览与失败 axe、四档无溢出
+PASS 503 保留收录草稿并可重试；来源新内容建立独立快照，不覆盖原收录与个人改版
+PASS 改版表单 axe、四档无溢出、取消无写与 Esc 关闭；所有路径无浏览器异常
+EXIT 0 tests/skill-source-browser.mjs
+== tests/usage-browser.mjs
+PASS 旧主库零写入迁移、复制成功、反馈保存/取消/隐私拒绝、正负向阶段
+PASS 剪贴板拒绝不计；复制等待期间反馈锁与 Escape 关闭保护
+PASS 已写入但响应丢失，按同 ID 查询找回且不重复计次
+PASS 未知结果禁重试，刷新保留 ID，查询不存在后补记
+PASS revision 冲突不覆盖，查询后补记同一动作
+PASS 导出取消不计、最近使用排序、Skill/Workflow 成功与失败
+PASS 反馈未知结果查询后清草稿；Skill 临时确认失败不丢持久计次；补记保留 usedAt
+PASS 使用反馈桌面与四种窄屏、长备注、44px、axe、无页面错误
+PASS M1 recovery revoked
+PASS M1 recovery archived
+PASS M1 recovery committed-revoked
+PASS M1 recovery committed-archived
+PASS M1 recovery delivery-unknown
+PASS M1 recovery query-unknown
+PASS M1 recovery late-commit
+PASS M1 recovery delivery-http-unknown
+PASS M1 recovery delivery-malformed-unknown
+PASS M1 recovery final-query-unknown
+PASS M1 recovery feedback-archived
+PASS M1 recovery feedback-reload-unknown
+EXIT 0 tests/usage-browser.mjs
+== tests/usage-odometer-browser.mjs
+PASS 正常动效：复制后封面与详情数字滚到新值（0→1、1→2），出现 .is-rolling，axe 无违规
+PASS 减少动态效果：封面与详情直接显示新值，全程无 .odo-old / .is-rolling，axe 无违规
+usage-odometer-browser: 2 passed
+EXIT 0 tests/usage-odometer-browser.mjs
+== tests/workflow-browser.mjs
+PASS 空白工作流→选择Prompt与Skill固定版本→保存→重开引用不变
+PASS 上游升级不改固定引用、真实剪贴板原文与 Skill 包路径、导出完整嵌套 ZIP 与 SHA-256
+PASS 剪贴板拒绝展示完整 fallback；交付前新鲜读取归档状态并阻断剪贴板和下载
+PASS 显式升级引用保存新版本→历史引用差异→恢复旧版引用和交付仍为 v1
+PASS 工作流详情与编辑 axe、四档窄屏；503 保留正文与引用草稿、取消不改主库
+PASS 当前流程移除引用后，示例清理仍保护任意历史引用、移除无引用示例；所有路径无 JS 异常
+EXIT 0 tests/workflow-browser.mjs
