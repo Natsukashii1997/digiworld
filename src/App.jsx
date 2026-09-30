@@ -325,11 +325,11 @@ export default function App() {
             <button
               className="topbar-search"
               aria-label="搜索"
+              title="搜索工作台（⌘K）"
               onClick={() => setPalette(true)}
             >
-              <Search size={15} />
-              <span>搜索</span>
-              <kbd>⌘K</kbd>
+              <Search size={16} />
+              <kbd aria-hidden="true">⌘K</kbd>
             </button>
             <button
               className="icon-button topbar-inbox"

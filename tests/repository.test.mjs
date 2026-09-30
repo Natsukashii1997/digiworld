@@ -186,3 +186,34 @@ test("备份恢复先预览，只增加缺失记录和兼容版本；过期预�
     await assert.rejects(r.previewImport(conflict), /版本冲突/);
     assert.equal((await r.read()).revision, merged.revision);
   }));
+
+test("置顶字段 pinned 可选且必须为布尔；旧库缺失即未置顶，备份合并不因置顶冲突", () =>
+  withRepository(async (r) => {
+    const initial = seed();
+    // 旧库：没有 pinned 字段，演示资产 favorite=true 也不算置顶。
+    assert.ok(initial.assets.every((a) => !("pinned" in a)));
+    const first = await r.write(initial, { initialize: true });
+    const pinned = structuredClone(first);
+    pinned.assets[0].pinned = true;
+    pinned.assets[1].pinned = false;
+    const saved = await r.write(pinned);
+    assert.equal(saved.assets[0].pinned, true);
+    assert.equal(saved.assets[1].pinned, false);
+    assert.equal(saved.assets[2].pinned, undefined);
+    for (const bad of ["true", 1, null, {}]) {
+      const invalid = structuredClone(saved);
+      invalid.assets[0].pinned = bad;
+      await assert.rejects(r.write(invalid), /资产状态/);
+    }
+    // 备份里置顶状态不同、版本更多：合并不冲突，沿用当前库的置顶状态，只追加新版本。
+    const backup = structuredClone(saved);
+    backup.assets[0].pinned = false;
+    backup.assets[2].pinned = true;
+    backup.assets[0] = revise(backup.assets[0], { content: "备份中的新版本" });
+    const preview = await r.previewImport(backup);
+    assert.equal(preview.summary.newVersions, 1);
+    const merged = await r.importBackup(backup, preview.token);
+    assert.equal(merged.assets[0].pinned, true);
+    assert.equal(merged.assets[0].versions.length, 2);
+    assert.equal(merged.assets[2].pinned, undefined);
+  }));

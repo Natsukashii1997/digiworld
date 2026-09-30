@@ -61,6 +61,19 @@ for f in tests/browser.mjs tests/accessibility.mjs tests/migration.mjs tests/his
 
 视觉脚本 `node tests/visual.mjs <标签>` 只作辅助，不能替代真人视觉验收。
 
+## 3.5 发起方式与额度（2026-09-30 查证）
+
+- **用 `claude --cloud "任务描述"` 发起普通云端会话**（本机命令行 2.1.285 及以上；在仓库目录运行，云端克隆 GitHub 上的当前分支，所以先推送）。普通云端会话优先消耗账户的一次性云端额度（Pro 为 $100，11 月 5 日过期），用完后再用套餐额度。
+- **不要用 routine（定时任务接口）派活**：云端额度不适用于 Routines 和 Projects，routine 发起的会话消耗的是 Pro 套餐用量。2026-09-30 前 6 个云端任务都是 routine 发起的，额度一直停在 $100，这是教训。来源：[didcodexreset](https://didcodexreset.com/news/8d242daab48b4e8c945d230a.html)、[官方文档 · Use Claude Code in the cloud](https://code.claude.com/docs/en/claude-code-on-the-web)。
+- 给进行中的云端会话追加消息：`claude -p "消息" --cloud <会话ID或链接>`。命令行登录过期时，需要用户本人运行 `claude auth login`。
+
+## 3.6 云端已知失败的根因（C2 诊断，分支 `cloud/2026-09-30-env-diff`）
+
+- `server/config-file.mjs` 的元数据核验在非 macOS 平台上**有意拒绝写入**。在 Linux 云端，所有“写入配置 → 回读”的测试都会失败：agent-config 恢复类、rule-templates 4 个与 D-R5 挂起、D-R6，以及 agent-config-browser、rule-templates-browser、rule-templates-fix-browser。这不是产品缺陷。
+- 本机专有工具依赖 3 个：plutil、ChatGPT.app、wiki-local。root 权限造成的 1 个：skill-files 权限用例；以普通用户运行即可消除。
+- interaction-browser 与 search-browser 在云端偶尔超出时间阈值，属于机器性能差异。
+- 结论：**云端回归只对照已知失败集看增减**。涉及配置写入、规则装入的改动，必须在本机（macOS）验证后才能合入。
+
 ## 4. 任务提示词模板
 
 ```text

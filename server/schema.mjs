@@ -86,6 +86,7 @@ export function validateState(state) {
       "type",
       "demo",
       "favorite",
+      "pinned",
       "archived",
       "createdAt",
       "versions",
@@ -117,6 +118,9 @@ export function validateState(state) {
     if (!["Skill", "Prompt", "Workflow", "Rule"].includes(a.type)) invalid("资产类型");
     for (const key of ["demo", "favorite", "archived"])
       if (typeof a[key] !== "boolean") invalid("资产状态");
+    // 置顶（切片 1.1）：可选；旧库缺失即未置顶，不写迁移。favorite 仅作兼容保留。
+    if (a.pinned !== undefined && typeof a.pinned !== "boolean")
+      invalid("资产状态");
     if (
       a.cover !== undefined &&
       (!Number.isInteger(a.cover) || a.cover < 0 || a.cover > 1000)

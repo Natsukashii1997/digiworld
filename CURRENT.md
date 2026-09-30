@@ -4,10 +4,10 @@
 
 | 字段 | 当前值 |
 |---|---|
-| state_id | WB-20260930-99 |
+| state_id | WB-20260930-102 |
 | 更新时间 | 2026-09-30，Asia/Shanghai |
 | 更新者 | Claude |
-| 当前写入者 | 无；Claude 完成认领98，输出99并释放 |
+| 当前写入者 | **Claude（认领102：合入云端切片 1.1、更新云端约定、派第二批云端任务）** |
 | 当前任务 | **路线 v3 生效（99）**：产品定义 v1.2 与路线 v3 已由用户确认，ROADMAP §2 已替换；R87-B1～B5 返修（96）待 Codex 复核。前序 **问题共识基线 v2.2 已确认（94）**：一个入口分为工作区和生活区；优先级为 R87 → 界面小调整 → 项目空间与协同 → 知识仓库 → 资产分发与 Agent → 生活区，见 [基线v2.2](docs/product/2026-09-30-问题共识基线-v2.2.md)，与旧 PRD/ROADMAP 冲突时以 v2.2 为准。前序 **云端接入（92，已交接）**：应用独立 Git + 私有仓库 `abdoulaziznafiou03-creator/personal-ai-workbench`（main `0d596f4`）；云端首测浏览器被网络拦截、npm test 有 Linux/root 差异，见 [CLOUD-SESSIONS.md](CLOUD-SESSIONS.md)。前序 **认领87复核：A通过；B有5组重要返修事项，T2为TUNE**（工作流裁字、传送异常收尾、减动画、数字屏两分支、C机身键）；项目协同协议沿用已收录v1.0；2.1暂缓 |
 | 唯一下一步 | Codex 读回96，独立复核 R87 返修（177文件清单 `8378ab36…a016`，新增 tests/r87-fix-browser.mjs，含T2视觉）；并行：用户在云端环境替换启动脚本 |
 | 最新交接 | [Claude 认领98](docs/agents/handoffs/2026-09-30-claude-98.md)；[Claude 认领95：R87返修+产品候选](docs/agents/handoffs/2026-09-30-claude-95.md)；[Claude 问题共识基线 v2.2](docs/agents/handoffs/2026-09-30-claude-product-v2.2.md)；[Claude 云端接入](docs/agents/handoffs/2026-09-30-claude-cloud.md)；[Codex认领87独立复核](docs/agents/handoffs/2026-09-30-codex-review-87.md)；[Claude 认领 87](docs/agents/handoffs/2026-09-30-claude-87.md)；[Codex认领83复核与模板收录](docs/agents/handoffs/2026-09-30-codex-review-83.md)；此前 [Claude 认领 83](docs/agents/handoffs/2026-09-30-claude-83.md)；[Codex 认领77复核：A残留/B延期](docs/agents/handoffs/2026-09-30-codex-review-77.md)；此前 [Claude 认领 77：D-R2/D-R3 + UI v13.1](docs/agents/handoffs/2026-09-30-claude-77.md)；[Codex 2.3 返修独立复核](docs/agents/handoffs/2026-09-30-codex-review-2.3-fix.md)；此前 [Claude 2.3 返修](docs/agents/handoffs/2026-09-29-claude-2.3-fix.md)；[Codex 2.3 复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；[Codex 2.3 与模板独立复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；此前  [Claude 2.3 规则模板](docs/agents/handoffs/2026-09-29-claude-2.3-rules.md)；[Claude 1.E 验收记录](docs/agents/handoffs/2026-09-29-claude-1.E-acceptance.md)；[Codex D-UI1 修复独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-d-ui1.md)； [Claude D-UI1 修复](docs/agents/handoffs/2026-09-29-claude-ui-d-ui1.md)；[Codex UI v12.1 独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-v12.1.md)； [Claude UI v12.1](docs/agents/handoffs/2026-09-29-claude-ui-v12.1.md)；[Claude UI v12](docs/agents/handoffs/2026-09-29-claude-ui-v12.md)；[Claude 宽屏空白修复](docs/agents/handoffs/2026-09-29-claude-ui-widescreen.md)；[Claude 1.4 独立复核](docs/agents/handoffs/2026-09-29-claude-review-1.4.md)；[Claude 产品定义 v1.1 与路线 v2](docs/agents/handoffs/2026-09-29-claude-product-v1.1.md)；[Codex 1.4来源维护收口](docs/agents/handoffs/2026-09-29-codex-1.4-maintenance.md)；[Codex D-S3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-ds3.md)；[Claude 1.3 D-S3 修复](docs/agents/handoffs/2026-09-29-claude-1.3-ds3.md)；[Codex 1.3 修复差异复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-fix.md)；被复核 [Claude 1.3 复核项修复](docs/agents/handoffs/2026-09-29-claude-1.3-fix.md)；[Codex 1.3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-search.md)；被复核 [Claude 1.3 搜索增强](docs/agents/handoffs/2026-09-29-claude-1.3-search.md)；前序 [Claude 1.1 修复复核](docs/agents/handoffs/2026-09-29-claude-review-1.1-fix.md)；被复核 [Codex 1.1 复核修复](docs/agents/handoffs/2026-09-29-codex-1.1-fix.md)；输入 [Claude 1.1 复核](docs/agents/handoffs/2026-09-29-claude-review-1.1.md) |
@@ -358,3 +358,27 @@ v0.17 来源维护工程验收已完成，Claude已于53独立复核通过，第
 - 第3点“同意”按确认候选处理：产品定义v1.2与路线v3标为已确认，R3取方案1；替换ROADMAP §2，并在PRD读法中加入替代说明。
 - 拟修改：`docs/product/2026-09-30-产品定义-v1.2.md`、`docs/product/2026-09-30-路线-v3.md`（状态行）、`ROADMAP.md`、`PRD.md`（读法一条）、CURRENT、新增交接。然后按第4点提交并推送。
 - **完成（输出 WB-20260930-99）**：v1.2/v3 标为已确认（R3 方案 1）；ROADMAP §2/§3 与 PRD 读法已替换；主库变化经查为页面正常保存，未回退。见[交接](docs/agents/handoffs/2026-09-30-claude-98.md)。随后按用户指令提交推送。写入者释放。
+
+## Claude 认领 100（WB-20260930-100）
+
+- 输入99。用户9/30：“直接开工”。按用户指令先开始路线 v3 的 1.1，**不等 Codex 复核 R87（96）**；R87 复核仍是 Codex 的待办，两者文件范围有重叠（Assets/components/styles），复核时须以本轮输出的清单为准。
+- 基线：177文件清单 `2026-09-30-claude-95-code-baseline.sha256` 全部匹配；主库 `a4a66a80…` 只算哈希。
+- 1.1 契约（依据基线 v2.2 D23–D25、产品定义 v1.2 §4.5、路线 v3 1.1）：
+  - 去掉收藏星标，卡片醒目显示使用次数（沿用 1.1 计次契约：复制成功算一次，规则装入项目也算一次）；
+  - 全局置顶，置顶项在各类型标签下都排最前，置顶项之间按次数排序；
+  - 排序菜单增加“最常用”；
+  - 顶栏只保留搜索图标和 ⌘K 提示，点击或按 ⌘K 在中央弹出浮层，页内筛选保留；
+  - 规则卡片使用与其他类型同风格的像素图标；
+  - 44px、键盘、窄屏无溢出、axe 通过。
+- 拟改：`src/Assets.jsx`、`src/components.jsx`、`src/App.jsx`、`src/pixel.jsx`、`src/styles.css`、`src/asset-usage.js`（如需）、`server/schema.mjs` 与 `src/store.js`（仅当置顶需要新字段）、相关测试与新增 `tests/assets-pin-browser.mjs`、dist。不改真实数据；不重启5178（重建 dist 后静态即采用）。
+- **释放（输出 WB-20260930-101）**：
+  - 用户9/30指示“更优先用云端的额度写代码，先把这个花完”，1.1 改为派往云端实现，结果以 `cloud/*` 分支回来；本机只做设计、派发、复核与合入，合入时重新认领。
+  - 本机半成品（置顶改用新的可选字段 `pinned`，不复用 `favorite`，以免真实库中的演示资产被自动置顶）已存为 `evidence-2026-09-30-claude-100/local-partial.diff`，然后撤回；177 文件清单全部匹配。
+  - 另外修复了 `tests/r87-fix-browser.mjs` 第19行误入的“需要”（16:24:59 写入，已随 4a8f5f2 推送），`6d93fd6` 已修复并推送。
+  - 云端启动脚本第二版在会话启动时失败（`--with-deps` 那一步），会使会话无法启动；第三版（每步失败不阻断，脚本以 `exit 0` 结束）待用户替换。
+
+## Claude 认领 102（WB-20260930-102）
+
+- 输入101。用户9/30：“继续推进，目标是把100额度花完，让云端先多做”。
+- 本轮：本机复核并合入 `cloud/2026-09-30-slice-1.1`（C1）；在本机跑完整回归；把 C2 诊断结论（非 darwin 写入保护导致云端已知失败）和“routine 不扣云端额度、改用 `claude --cloud`”写入 CLOUD-SESSIONS.md；随后用 `claude --cloud` 派第二批云端任务（1.2、1.3+1.4、R87-S1）。
+- 用户已看过 C1 截图（规则图标对调、置顶、计次、⌘K、类型一行），未提出异议。

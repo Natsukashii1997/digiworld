@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { X, Layers, Quote, Workflow, ScrollText } from "lucide-react";
+import { X, Layers, Quote, Workflow } from "lucide-react";
 import { Pixel, StageBar } from "./pixel.jsx";
 
 // 各页标题区的背景纹样
@@ -29,16 +29,18 @@ export const typeCode = {
   Workflow: "WFL",
   Rule: "RUL",
 };
-export function TypeIcon({ type, ...props }) {
-  const Icon =
-    type === "Skill"
-      ? Layers
-      : type === "Prompt"
-        ? Quote
-        : type === "Rule"
-          ? ScrollText
-          : Workflow;
-  return <Icon {...props} />;
+// 规则的小角标用像素卷轴（用户 2026-09-30 与封面对调），尺寸与其他线条小图标一致。
+export function TypeIcon({ type, size = 24, className = "" }) {
+  if (type === "Rule")
+    return (
+      <Pixel
+        sprite="rule_scroll"
+        fit={size}
+        className={`type-icon-pixel ${className}`}
+      />
+    );
+  const Icon = type === "Skill" ? Layers : type === "Prompt" ? Quote : Workflow;
+  return <Icon size={size} className={className || undefined} />;
 }
 export function Button({
   children,
@@ -225,7 +227,8 @@ export function Dialog({ title, children, onClose, drawer = false }) {
 }
 // 液晶封面：点阵屏 + 类型像素图标 + 编号与版本。
 // bump：刚保存新版本时，封面扫一道光并冒出 NEW VERSION（UI v13.2 轻量新版本）
-export function Cover({ type, sprite, serial = 1, version = 1, stage, large = false, bump = false }) {
+// uses：资产库卡片左下角的大号使用次数（切片 1.1），只显示数字；读屏文字由卡片正文提供。
+export function Cover({ type, sprite, serial = 1, version = 1, stage, large = false, bump = false, uses }) {
   return (
     <div
       className={`cover lcd type-${type} ${large ? "large" : ""}`}
@@ -235,6 +238,7 @@ export function Cover({ type, sprite, serial = 1, version = 1, stage, large = fa
         {typeCode[type]}.{String(serial).padStart(2, "0")}
       </span>
       <span className="cover-version">v{version}.0</span>
+      {uses !== undefined && <span className="cover-uses">{uses}</span>}
       {large && <span className="cover-ring" />}
       <Pixel sprite={sprite || type} size={large ? 96 : 64} className="cover-glyph" />
       {bump && (

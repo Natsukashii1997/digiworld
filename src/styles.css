@@ -978,10 +978,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   overflow: hidden;
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: clamp(240px, 24vw, 360px);
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
   min-height: 44px;
-  padding: 0 12px 0 14px;
+  padding: 0 10px;
   border-radius: 12px;
   border: 1px solid rgba(77, 227, 255, 0.34);
   background: linear-gradient(
@@ -1033,7 +1034,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   color: var(--text);
 }
 .topbar-search kbd {
-  margin-left: auto;
   padding: 2px 6px;
   border-radius: 6px;
   border: 1px solid rgba(77, 227, 255, 0.4);
@@ -2110,16 +2110,17 @@ details.scan-notice {
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid var(--line);
 }
-.favorite-button {
+/* 置顶（切片 1.1）：原星标位置，点击区域 44px。 */
+.pin-button {
   position: absolute;
   z-index: 3;
-  right: 18px;
-  top: 103px;
+  right: 14px;
+  top: 94px;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   color: var(--muted);
   background: rgba(7, 12, 24, 0.7);
   border: 1px solid var(--line);
@@ -2129,18 +2130,41 @@ details.scan-notice {
     color 0.2s,
     transform 0.3s var(--ease-back);
 }
-.asset-card:hover .favorite-button,
-.favorite-button:focus-visible,
-.favorite-button.is-favorite {
+.asset-card:hover .pin-button,
+.pin-button:focus-visible,
+.pin-button.is-pinned {
   opacity: 1;
 }
-.favorite-button:hover {
+.pin-button:hover {
   color: var(--orange-2);
-  transform: scale(1.1);
+  transform: scale(1.06);
 }
-.favorite-button.is-favorite {
+.pin-button.is-pinned {
   color: var(--orange-2);
   border-color: rgba(255, 138, 36, 0.35);
+}
+/* 封面左下角的大号使用次数：只显示数字，读屏文字在卡片正文。 */
+.cover-uses {
+  position: absolute;
+  left: 11px;
+  bottom: 6px;
+  z-index: 1;
+  font: 600 30px/1 var(--mono);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--tc) 70%, #fff);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--tc) 55%, transparent);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .asset-grid.list-layout {
   grid-template-columns: 1fr;
@@ -2188,10 +2212,15 @@ details.scan-notice {
   margin: 0;
   padding: 0;
 }
-.list-layout .favorite-button {
+.list-layout .pin-button {
   top: 50%;
-  right: 16px;
+  right: 8px;
   transform: translateY(-50%);
+}
+.list-layout .cover-uses {
+  left: 8px;
+  bottom: 4px;
+  font-size: 20px;
 }
 .list-layout .lock {
   display: none;
@@ -2494,8 +2523,22 @@ details.scan-notice {
 /* 编辑器 */
 .type-picker {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
+}
+@media (max-width: 640px) {
+  .type-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* 规则小角标：像素卷轴与线条小图标同尺寸对齐，不跟随卡片悬停播放条款动效。 */
+.type-icon-pixel {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+}
+.type-icon-pixel .pixel-frame {
+  animation: none !important;
 }
 .type-picker button {
   display: flex;
@@ -5324,7 +5367,6 @@ input[type="file"]::file-selector-button {
 .asset-usage p { overflow-wrap: anywhere; }
 .usage-feedback-form label { display: grid; gap: 8px; }
 .usage-feedback-form textarea { width: 100%; box-sizing: border-box; }
-.card-usage { display: block; font-size: 11px; color: var(--muted); margin: 8px 0; }
 
 /* ---------- UI v12：今日 · 待处理 · 规划中页面（产品定义 v1.1） ---------- */
 .today-hero {
@@ -5657,8 +5699,7 @@ input[type="file"]::file-selector-button {
   white-space: nowrap;
 }
 .topbar-search {
-  flex: 0 1 auto;
-  min-width: 120px;
+  flex: none;
 }
 /* 641–960px：侧栏已收起，提前启用紧凑顶栏。 */
 @media (min-width: 641px) and (max-width: 960px) {
@@ -5667,19 +5708,13 @@ input[type="file"]::file-selector-button {
   .topbar .crumb-sep {
     display: none;
   }
-  .topbar-search {
-    width: clamp(160px, 30vw, 240px);
-  }
 }
 @media (max-width: 640px) {
   /* 窄屏顶栏只保留搜索图标，仍为 44px。 */
   .topbar-search {
     width: 44px;
-    min-width: 44px;
     padding: 0;
-    justify-content: center;
   }
-  .topbar-search span,
   .topbar-search kbd {
     display: none;
   }
