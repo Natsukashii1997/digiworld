@@ -1,0 +1,6 @@
+$ node tests/visual.mjs phase2-collab
+{
+  "out": "/home/user/personal-ai-workbench/test-results/visual/phase2-collab",
+  "problems": []
+}
+exit=0
