@@ -1,0 +1,9 @@
+✔ 来源新增文件、预览过期或主库变化都阻止旧确认，不产生部分收录 (58.855526ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1010.939267

@@ -119,6 +119,8 @@ const card = (page, name) =>
   page.locator(".agent-contents-card", {
     has: page.getByRole("heading", { name, exact: true }),
   });
+// 展开会重新读取：等卡片读完（aria-busy=false）再断言，避免读到上次结果。
+const settled = (c) => c.and(c.page().locator('[aria-busy="false"]')).waitFor();
 const pendingCount = async (page) =>
   Number(
     (await page.locator(".topbar-inbox").getAttribute("aria-label")).match(/\d+/)[0],
@@ -149,6 +151,7 @@ try {
   const claude = card(page, "Claude Code");
   const expand = claude.getByRole("button", { name: "展开清单" });
   await expand.click();
+  await settled(claude);
   await claude.getByRole("button", { name: "收起清单" }).waitFor();
   assert.equal(
     await claude.getByRole("button", { name: "收起清单" }).getAttribute("aria-expanded"),
@@ -187,6 +190,7 @@ try {
   assert.match(await claude.locator(".agent-contents-health").innerText(), /失效链接 1/);
   const hermes = card(page, "Hermes");
   await hermes.getByRole("button", { name: "展开清单" }).click();
+  await settled(hermes);
   await hermes.getByRole("region", { name: "Hermes · 插件" }).waitFor();
   assert.match(
     await hermes.getByRole("region", { name: "Hermes · 插件" }).innerText(),
@@ -199,6 +203,7 @@ try {
   assert.match(await hermes.locator(".agent-contents-health").innerText(), /无法读取 2/);
   const codex = card(page, "Codex");
   await codex.getByRole("button", { name: "展开清单" }).click();
+  await settled(codex);
   await codex.getByRole("region", { name: "Codex · Skill" }).locator(".agent-content-item").first().waitFor();
   assert.match(
     await codex.locator(".agent-content-item", { has: page.locator('strong:text-is("codex-old")') }).innerText(),
@@ -223,6 +228,7 @@ try {
   // 4. 开关预览：说明将移动哪条链接，标注需单独授权；不写入任何文件
   const claude2 = card(page, "Claude Code");
   await claude2.getByRole("button", { name: "展开清单" }).click();
+  await settled(claude2);
   await claude2.getByRole("button", { name: "开关预览：shared-writer" }).click();
   const toggle = page.getByRole("dialog", { name: "开关预览" });
   await toggle.waitFor();
@@ -273,6 +279,7 @@ try {
   await page.goto(`${app.url}/#agents`);
   const claude3 = card(page, "Claude Code");
   await claude3.getByRole("button", { name: "展开清单" }).click();
+  await settled(claude3);
   await claude3.getByRole("region", { name: "Claude Code · Skill" }).locator(".agent-content-item").first().waitFor();
   assert.match(
     await claude3.locator(".agent-content-item", { has: page.locator('strong:text-is("local-notes")') }).innerText(),
@@ -285,6 +292,7 @@ try {
   const narrow = await open(390);
   const narrowCard = card(narrow, "Claude Code");
   await narrowCard.getByRole("button", { name: "展开清单" }).click();
+  await settled(narrowCard);
   await narrowCard.getByRole("region", { name: "Claude Code · Skill" }).locator(".agent-content-item").first().waitFor();
   await noOverflow(narrow, "390 内容清单");
   await minTargets(narrow.locator("#agent-contents button"), "390 内容清单");

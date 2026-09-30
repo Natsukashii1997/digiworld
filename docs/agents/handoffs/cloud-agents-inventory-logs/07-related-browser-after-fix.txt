@@ -1,0 +1,5 @@
+OK tests/nav-zones-browser.mjs
+OK tests/agent-inventory-browser.mjs
+OK tests/skill-source-browser.mjs
+OK tests/accessibility.mjs
+OK tests/browser.mjs

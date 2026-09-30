@@ -231,7 +231,11 @@ function ContentsCard({ agent, result, onResult, onStore }) {
       )}
       {open && (
         <div id={bodyId} className="agent-contents-body">
-          {!result && busy && <p className="detail-footnote">正在只读读取…</p>}
+          {busy && (
+            <p className="detail-footnote" role="status">
+              {result ? "正在重新读取 · 下方为上次结果" : "正在只读读取…"}
+            </p>
+          )}
           {groups && (
             <>
               <section aria-label={`${agent.name} · Skill`}>

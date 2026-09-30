@@ -1,0 +1,145 @@
+== tests/browser.mjs
+OK tests/browser.mjs
+== tests/accessibility.mjs
+OK tests/accessibility.mjs
+== tests/migration.mjs
+OK tests/migration.mjs
+== tests/history-capacity.mjs
+OK tests/history-capacity.mjs
+== tests/agent-config-browser.mjs
+FAIL tests/agent-config-browser.mjs
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '# 中文与私有字段\n' +
+    'model = "PRIVATE_CONFIG_SENTINEL"\n' +
+    '[tui]\n' +
+    'animations = true # 保留注释\n',
+  expected: '# 中文与私有字段\n' +
+    'model = "PRIVATE_CONFIG_SENTINEL"\n' +
+    '[tui]\n' +
+    'animations = false # 保留注释\n',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+== tests/agent-inventory-browser.mjs
+OK tests/agent-inventory-browser.mjs
+== tests/agent-targets-browser.mjs
+OK tests/agent-targets-browser.mjs
+== tests/agents-inventory-browser.mjs
+FAIL tests/agents-inventory-browser.mjs
+    at file:///home/user/personal-ai-workbench/tests/agents-inventory-browser.mjs:277:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'local-notes\n' +
+    '独立副本\n' +
+    '资产仓库未收录同内容\n' +
+    '/tmp/guiji-agent-contents-3W7Wl0/synthetic-user/.claude/skills/local-notes\n' +
+    '开关预览\n' +
+    '存入资产仓库',
+  expected: /当前版本同内容/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+== tests/assets-pin-browser.mjs
+OK tests/assets-pin-browser.mjs
+== tests/context-browser.mjs
+OK tests/context-browser.mjs
+== tests/delivery-browser.mjs
+OK tests/delivery-browser.mjs
+== tests/history-browser.mjs
+OK tests/history-browser.mjs
+== tests/interaction-browser.mjs
+OK tests/interaction-browser.mjs
+== tests/knowledge-browser.mjs
+OK tests/knowledge-browser.mjs
+== tests/knowledge-compilation-browser.mjs
+OK tests/knowledge-compilation-browser.mjs
+== tests/knowledge-compilation-recovery-browser.mjs
+OK tests/knowledge-compilation-recovery-browser.mjs
+== tests/knowledge-compilation-resilience-browser.mjs
+OK tests/knowledge-compilation-resilience-browser.mjs
+== tests/knowledge-maintenance-browser.mjs
+OK tests/knowledge-maintenance-browser.mjs
+== tests/knowledge-maintenance-recovery-browser.mjs
+OK tests/knowledge-maintenance-recovery-browser.mjs
+== tests/knowledge-query-browser.mjs
+OK tests/knowledge-query-browser.mjs
+== tests/knowledge-writeback-browser.mjs
+OK tests/knowledge-writeback-browser.mjs
+== tests/nav-zones-browser.mjs
+OK tests/nav-zones-browser.mjs
+== tests/notes-rich-browser.mjs
+OK tests/notes-rich-browser.mjs
+== tests/partner-browser.mjs
+OK tests/partner-browser.mjs
+== tests/project-identity-browser.mjs
+OK tests/project-identity-browser.mjs
+== tests/r87-fix-browser.mjs
+OK tests/r87-fix-browser.mjs
+== tests/rule-templates-browser.mjs
+FAIL tests/rule-templates-browser.mjs
+    ^
+
+locator.waitFor: Timeout 5000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible[22m
+
+    at confirmWrite (/home/user/personal-ai-workbench/tests/rule-templates-browser.mjs:39:56)
+    at async file:///home/user/personal-ai-workbench/tests/rule-templates-browser.mjs:65:3 {
+  log: [
+    "  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0
+== tests/rule-templates-fix-browser.mjs
+FAIL tests/rule-templates-fix-browser.mjs
+- 'matches_after'
+           ^
+
+    at installVia (file:///home/user/personal-ai-workbench/tests/rule-templates-fix-browser.mjs:39:10)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///home/user/personal-ai-workbench/tests/rule-templates-fix-browser.mjs:50:3 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'matches_before',
+  expected: 'matches_after',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+== tests/scrolls-browser.mjs
+OK tests/scrolls-browser.mjs
+== tests/search-browser.mjs
+FAIL tests/search-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: palette-cold 718ms > 500ms
+    at file:///home/user/personal-ai-workbench/tests/search-browser.mjs:283:14 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+== tests/skill-copies-browser.mjs
+OK tests/skill-copies-browser.mjs
+== tests/skill-source-browser.mjs
+OK tests/skill-source-browser.mjs
+== tests/usage-browser.mjs
+OK tests/usage-browser.mjs
+== tests/usage-odometer-browser.mjs
+OK tests/usage-odometer-browser.mjs
+== tests/workflow-browser.mjs
+OK tests/workflow-browser.mjs
