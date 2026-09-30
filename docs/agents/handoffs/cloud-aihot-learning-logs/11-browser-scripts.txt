@@ -1,0 +1,82 @@
+== tests/browser.mjs
+PASS 冷启动：六份演示资产、无控制台异常
+PASS 分类、置顶和搜索过滤
+PASS Prompt 创建并刷新后保留
+PASS 全文复制真实写入剪贴板
+PASS 编辑追加版本，历史恢复生成第三版
+PASS 归档与恢复保留内容和版本
+PASS ZIP 导入导出：中文路径与二进制文件完整往返
+PASS 缺少 SKILL.md 的包明确拒绝
+PASS 随手记创建、编辑、刷新持久化
+PASS 项目首次自动扫描、同源关联、筛选、持久化；刷新不重复扫描
+PASS Agent 自动检测、配置痕迹区分与人工编写接力包
+PASS 夜间计划只保存草稿，刷新保留
+PASS 知识库未连接状态、明确目录与未勾选的只读确认
+PASS 参考资料本地保存与安全链接
+PASS 全局搜索快捷键、详情跳转、Escape 关闭
+PASS 配置草稿保存；清除演示保留用户资产
+PASS 390px 窄屏：九个页面无横向溢出，移动导航与弹窗可用
+PASS 编辑弹窗内 Cmd+K 不叠开搜索，焦点保留在单一弹窗
+PASS 多标签冲突阻止覆盖，失败时保留表单，已保存数据不丢失
+PASS 存储故障显示真实原因，不关闭表单或误报链接错误
+PASS 所有验证路径无浏览器 JavaScript 异常
+EXIT 0 tests/browser.mjs
+== tests/accessibility.mjs
+assets []
+agents []
+projects []
+knowledge []
+notes []
+night []
+references []
+history []
+settings []
+inbox []
+health []
+collab []
+calendar []
+aihot []
+learning []
+silver []
+home []
+create-dialog []
+asset-drawer []
+search-dialog []
+EXIT 0 tests/accessibility.mjs
+== tests/migration.mjs
+PASS 旧版自动迁移不修改 IndexedDB；新浏览器读取相同文件主库
+PASS UI 导出、选择备份、预览、确认合并、回读及保留旧记录
+EXIT 0 tests/migration.mjs
+== tests/history-capacity.mjs
+PASS 101 文件 × 499 行：默认 0 差异行，展开 998 行准确差异，折叠释放；DOM 1498 → 5494 → 1498
+PASS 300 文件 × 499 行：默认 0 差异行，展开 998 行准确差异，折叠释放；DOM 2869 → 6865 → 2869
+EXIT 0 tests/history-capacity.mjs
+== tests/agent-config-browser.mjs
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ '# 中文与私有字段\nmodel = "PRIVATE_CONFIG_SENTINEL"\n[tui]\nanimations = true # 保留注释\n'
+- '# 中文与私有字段\nmodel = "PRIVATE_CONFIG_SENTINEL"\n[tui]\nanimations = false # 保留注释\n'
+
+    at file:///home/user/personal-ai-workbench/tests/agent-config-browser.mjs:100:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '# 中文与私有字段\n' +
+    'model = "PRIVATE_CONFIG_SENTINEL"\n' +
+    '[tui]\n' +
+    'animations = true # 保留注释\n',
+  expected: '# 中文与私有字段\n' +
+    'model = "PRIVATE_CONFIG_SENTINEL"\n' +
+    '[tui]\n' +
+    'animations = false # 保留注释\n',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+EXIT 1 tests/agent-config-browser.mjs
+== tests/agent-inventory-browser.mjs
