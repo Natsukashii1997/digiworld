@@ -218,7 +218,15 @@ try {
   const mapText = await map.innerText();
   for (const name of ["逆向工程", "知识仓库", "随手记", "AI HOT", "学习成长", "银饰计划", "版本归档"])
     assert.ok(mapText.includes(name), `结构地图应含 ${name}`);
-  assert.ok(!mapText.includes("能力体检"), "结构地图不应单列能力体检");
+  assert.equal(
+    await map.locator(".manage-row strong", { hasText: "能力体检" }).count(),
+    0,
+    "结构地图不应单列能力体检",
+  );
+  assert.match(
+    await map.locator(".manage-row", { hasText: "智能体群" }).innerText(),
+    /含能力体检（规划中）/,
+  );
   await axe(page, "home");
   ok("世界总览结构地图按工作区 / 生活区展示");
 

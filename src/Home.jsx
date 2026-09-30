@@ -63,7 +63,8 @@ function facts(state) {
     assets: `${live.length} 份资产`,
     references: `${state.references.length} 条参考`,
     history: `${state.assets.reduce((n, a) => n + a.versions.length, 0)} 个版本 · ${state.assets.filter((a) => a.archived).length} 份归档`,
-    agents: c.agentScannedAt ? `已检测 ${detected.length} 个` : "尚未检测",
+    // 能力体检已并入智能体群（产品定义 v1.2 §2.2），在这一行注明，不单列。
+    agents: `${c.agentScannedAt ? `已检测 ${detected.length} 个` : "尚未检测"} · 含能力体检（规划中）`,
     projects: c.projectScannedAt ? `${(c.projects || []).length} 个项目` : "尚未扫描",
     health: "尚未开发",
     collab: "尚未开发",
