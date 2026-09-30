@@ -75,7 +75,7 @@ function facts(state) {
     notes: `${state.notes.length} 条本机草稿`,
     aihot: "尚未开发",
     learning: "尚未开发",
-    silver: "尚未开发",
+    silver: silverSummary(state.silver),
     settings: state.model?.provider ? `意向：${state.model.provider}` : "模型未连接",
   };
 }
@@ -388,4 +388,15 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
       </div>
     </div>
   );
+}
+
+// 银饰计划（路线 v3 5.5）：欣赏图张数与收藏格填充进度，只数未删除的记录。
+function silverSummary(silver) {
+  if (!silver) return "还没有收录";
+  const live = (list) => list.filter((r) => !r.deletedAt);
+  const categories = live(silver.categories);
+  const ids = new Set(categories.map((c) => c.id));
+  const target = categories.reduce((n, c) => n + c.target, 0);
+  const filled = live(silver.items).filter((i) => ids.has(i.categoryId)).length;
+  return `${live(silver.wall).length} 张欣赏图 · 已填 ${filled}/${target} 格`;
 }

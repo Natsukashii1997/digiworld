@@ -40,6 +40,7 @@ import {
   Settings,
 } from "./WorkspacePages.jsx";
 import { ScrollDetail } from "./Scrolls.jsx";
+import { Silver } from "./Silver.jsx";
 import { scrollsOf, createScroll } from "./scrolls.js";
 import { PAGES, ZONES, resolveRoute } from "./pages.js";
 import {
@@ -462,7 +463,8 @@ export default function App() {
           {route === "inbox" && (
             <Inbox {...common} navigate={navigate} select={setSelected} />
           )}
-          {["collab", "calendar", "aihot", "learning", "silver"].includes(route) && (
+          {route === "silver" && <Silver {...common} />}
+          {["collab", "calendar", "aihot", "learning"].includes(route) && (
             <PlannedPage id={route} navigate={navigate} />
           )}
         </main>

@@ -200,7 +200,8 @@ test("切片 1.2：导航按今日、资产、目标、运行、知识、生活�
     [...mapped].sort(),
     PAGES.filter((p) => !["今日", "系统"].includes(p.group) && !p.mergedInto && !p.partOf).map((p) => p.id).sort(),
   );
-  for (const id of ["health", "collab", "calendar", "aihot", "learning", "silver"]) {
+  // 银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”，不再是规划页，由 silver-agents-browser.mjs 覆盖。
+  for (const id of ["health", "collab", "calendar", "aihot", "learning"]) {
     const p = PAGES.find((x) => x.id === id);
     assert.equal(p.maturity, "planned", id);
     const html = renderToStaticMarkup(

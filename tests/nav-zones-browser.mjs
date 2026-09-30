@@ -29,10 +29,10 @@ const EXPECTED = [
   ["系统", [["", ["模型设置", "版本归档"]]]],
 ];
 const OLD_NAMES = ["知识中枢", "逆向参考", "随手速记"];
+// 银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”，不再列入规划页。
 const LIFE_PLANNED = [
   ["aihot", "AI HOT"],
   ["learning", "学习成长"],
-  ["silver", "银饰计划"],
 ];
 
 async function open(width, hash = "home", height = 1000) {
@@ -206,8 +206,8 @@ try {
     await page.goto(`${app.url}/#${id}`);
     await page.locator("main h1", { hasText: name }).waitFor();
   }
-  await axe(page, "silver");
-  ok("生活区 AI HOT、学习成长、银饰计划可达，标注规划中，无假按钮，axe 通过");
+  await axe(page, "learning");
+  ok("生活区 AI HOT、学习成长可达，标注规划中，无假按钮，axe 通过");
 
   // 6. 世界总览结构地图同步为两区
   await page.goto(`${app.url}/#home`);
