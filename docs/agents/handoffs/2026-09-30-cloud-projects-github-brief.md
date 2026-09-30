@@ -8,7 +8,13 @@
 
 ## 一、结论
 
-__RESULT_TABLE__
+| 项 | 结果 |
+|---|---|
+| 新单元测试 `tests/project-brief.test.mjs` | 首跑：模块不存在；空桩下 17/17 失败；实现后 17/17 通过 |
+| 新浏览器测试 `tests/projects-brief-browser.mjs` | 首跑：前端恢复为基点版本后，第 1 步等待“今日项目简报”超时失败；实现后 11 步全部通过 |
+| `timeout 1200 npm test` | tests 553 / pass 528 / fail 19 / cancelled 1 / skipped 5（外层 timeout 在已知挂起处到点，exit=124）。失败名单去掉耗时后与集成分支日志逐条 diff 为空：**新增 0、减少 0**；553 = 536 + 本任务新增 17 |
+| 全部浏览器脚本（40 个，含新增 projects-brief） | 36 通过、4 失败：agent-config、rule-templates、rule-templates-fix（配置写入平台保护）、search（palette-cold 828ms > 500ms）。4 个都在已知集内，**新增 0**；interaction 本次通过，属时序波动，不算减少 |
+| `node tests/visual.mjs projects-github-brief` | `problems: []`，exit 0 |
 
 ## 二、改动与理由
 
@@ -68,7 +74,24 @@ __RESULT_TABLE__
 
 | 文件 | 基点 7be59dc | 本分支 |
 |---|---|---|
-__SHA_TABLE__
+| server/http.mjs | 6e33caeb6d01d8f88da0567d979ca0bbf442effbb2fcd17571db3b8520cc55cc | 8cceecf7c6446150463d8fe57f6d3562d62cb72308e8f2e3cbbc71ff942e5907 |
+| server/merge.mjs | b6dda44a0135ba6f1a13b2015827a667d98a40d2e61f95addb221875180269d4 | 86fca5c1299aa644e3de275d8e182ffd8e1a543602aae364da5e57bc2412197f |
+| server/project-status.mjs | 2e86b3d23e2714285d1c136dfbbb02916a3f40f05b39d60495090c8555931c5e | 5e81ee1902a9916ee6da92294cbd076ba32dc91694a6bffa8a65fb5940400c44 |
+| server/repository.mjs | 47a02f318cde0d244e4a012f4aea3e49731b8ea96e7a0a9aeb075c1e9065c3ef | b46e469d10acdb6a927a8333d380f1115a4abf97fa0d583c8c64968b371cc84f |
+| server/schema.mjs | 86ee6f5695180f79bf7ec56d127fe6edeebb2f9de4709368ae71d1636f09a6c9 | c0314892f7a5045abc35fdb1495ebcaf636a59f0312766de77bbba56a831e13e |
+| src/Home.jsx | f64d06a0e1966cf1508b3b4a6a8f1e1462f4f9f8c9b390ea510742b5b784fadf | 217a62f56579d68a8d3f27876ca9585db10717e1609f02de2717e73aad6ae106 |
+| src/LifePages.jsx | 498316c40aed8b05216283bc9d2457e2ebdee4ef67a1c42366a016d195e86e03 | 6420876b9039b48f7d93d6418d3db9544fb4af98f36fd921160a8ca9ec16367d |
+| src/ProjectStatus.jsx | 67b9a43633f13ed1f91b844a24efc7470627a00e60a84830b2ca0981b1728534 | 8d0a59e3993266c3fa5d8fd44c2b787dda826cbcb959b4f83d5eda8932052cf9 |
+| server/brief-schema.mjs（新增） | —（新增） | 9aca3363349fd82b43e84466be0cd6f0cd7adbe15f3cd5db1cc371de8abe08aa |
+| server/project-brief.mjs（新增） | —（新增） | 564d454d20070d1bba00450c7fe7ac62a9158bf10a5bf5d8dd57ad00bc0b6921 |
+| server/project-github.mjs（新增） | —（新增） | 4a0ad88701490e0c4d96ec3824015a57e9b4899c003ef3d97ec6e51aa9dcf27b |
+| src/ProjectBrief.jsx（新增） | —（新增） | 0d36cc5d13a75720362a8313cade24f2dfcfcf3effc6fde85b82d47b618a5833 |
+| src/ProjectGithub.jsx（新增） | —（新增） | b0c65fb687ffe26224936e4c848008e6d37206cfe831b4c93e7fcd5170019524 |
+| src/project-brief.css（新增） | —（新增） | cdfd967553a80e5df738d668b09b1e7d0938d66ddbc910a07a270ea0610ed0e7 |
+| src/project-github.css（新增） | —（新增） | 66c927d2a595ceb5e42d7d42d9fb9ccf1d795d6a2fa12c2f2e26f422ef497798 |
+| tests/project-brief-fixture.mjs（新增） | —（新增） | edae041a32f42afc1ad2dee7dd1df82c9d97a88c5ca7a39a76378ea86f2e83ab |
+| tests/project-brief.test.mjs（新增） | —（新增） | 9288d277a6d12b8222e0ada77bce0a7dc1efdba3aa11bebcc489862e3a68e4ac |
+| tests/projects-brief-browser.mjs（新增） | —（新增） | a4eb24d5740c07a71ef23aa52fd2db5e6e455d1b6fbecf52f953e9c401355321 |
 
 说明：基点列与集成交接（2026-09-30-cloud-integration.md 第六节）记录的“集成分支”指纹一致，可据此确认基点无漂移。
 
@@ -92,7 +115,17 @@ __SHA_TABLE__
 
 全部在 Node 24 下运行，日志在 `docs/agents/handoffs/cloud-projects-github-brief-logs/`。
 
-__VERIFY_TABLE__
+| 命令 | 日志 | 首次结果 | 相对已知失败集 |
+|---|---|---|---|
+| `node --test tests/project-brief.test.mjs`（实现前） | 01 | 模块不存在；空桩 17/17 失败 | —（预期的首跑失败） |
+| `node --test tests/project-brief.test.mjs`（实现后） | 01 末尾、02 | 首次 16/17（测试自身正则过宽，见第四节），更正后 17/17 | — |
+| `node tests/projects-brief-browser.mjs`（前端为基点） | 03 | 第 1 步超时失败 | —（预期的首跑失败） |
+| `node tests/projects-brief-browser.mjs`（实现后） | 04 | 11 步全部 PASS，exit 0 | — |
+| `npm run build` | — | 通过 | — |
+| 定向回归：project-status、collab-board、digital-world-ui、server、repository、pending、silver-agents、knowledge-profile、learning、project-brief 单元测试；project-status、collab-board、nav-zones、aihot-learning 浏览器 | — | 120/120；4 个浏览器脚本 exit 0 | — |
+| `timeout 1200 npm test` | 05 | 553 / pass 528 / fail 19 / cancelled 1 / skipped 5 | **新增 0、减少 0** |
+| 全部浏览器脚本（每个外加 `timeout 600`，只防挂起） | 06 | 40 个：36 通过、4 失败 | 4 个均在已知集，**新增 0** |
+| `node tests/visual.mjs projects-github-brief` | 07 | `problems: []` | — |
 
 ## 六、需要真人确认的视觉点
 

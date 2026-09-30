@@ -1,0 +1,6 @@
+## 2026-09-30T15:45:35+00:00 node tests/visual.mjs projects-github-brief
+{
+  "out": "/home/user/personal-ai-workbench/test-results/visual/projects-github-brief",
+  "problems": []
+}
+EXIT=0
