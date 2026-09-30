@@ -132,6 +132,7 @@ export function StoragePanel({ state, adoptState, notify }) {
                 agents: "旧 Agent 记录",
                 references: "参考",
                 knowledgeTasks: "整理任务",
+                scrolls: "焚决卷",
               }).map(([key, label]) => (
                 <div key={key}>
                   <span>新增{label}</span>
@@ -145,6 +146,10 @@ export function StoragePanel({ state, adoptState, notify }) {
               <div>
                 <span>追加候选版本</span>
                 <strong>{preview.summary.knowledgeVersions ?? 0}</strong>
+              </div>
+              <div>
+                <span>追加焚决条目</span>
+                <strong>{preview.summary.scrollEntriesAdded ?? 0}</strong>
               </div>
               <div><span>新增使用与反馈</span><strong>{preview.summary.activityAdded ?? 0}</strong></div>
             </div>

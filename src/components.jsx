@@ -11,6 +11,7 @@ const MARKS = {
   projects: "mark_folder",
   knowledge: "mark_book",
   notes: "mark_pencil",
+  scrolls: "mark_flame",
   history: "mark_branch",
   references: "mark_scan",
   night: "mark_moon",

@@ -49,6 +49,77 @@ const httpUrl = (v) => {
     invalid("链接格式");
   }
 };
+// 除换行与制表符外的控制字符。
+const CONTROL = /[\x00-\x08\x0b-\x1f\x7f]/;
+const NOTE_MAX = 20000;
+// 焚决（路线 v3 切片 1.3）：顶层集合 scrolls。卷与条目都是可变记录，不做版本；
+// 删除写 deletedAt 进回收区；数组顺序即条目顺序。旧库缺失该集合时按空处理。
+export const SCROLL_LIMITS = {
+  scrolls: 200,
+  entries: 2000,
+  totalEntries: 20000,
+  name: 60,
+  text: 20000,
+  tags: 12,
+  tag: 24,
+};
+const optionalDate = (v) => {
+  if (v !== undefined) date(v);
+};
+export function validateScrolls(scrolls) {
+  array(scrolls, "焚决卷数", SCROLL_LIMITS.scrolls);
+  unique(
+    scrolls.map((s) => s?.id),
+    "卷 ID",
+  );
+  const entryIds = [];
+  for (const s of scrolls) {
+    keys(s, ["id", "name", "pinned", "createdAt", "updatedAt", "deletedAt", "entries"]);
+    id(s.id);
+    text(s.name, "卷名", SCROLL_LIMITS.name);
+    if (!s.name.trim() || CONTROL.test(s.name) || /[\n\t]/.test(s.name))
+      invalid("卷名");
+    if (typeof s.pinned !== "boolean") invalid("卷置顶状态");
+    date(s.createdAt);
+    optionalDate(s.updatedAt);
+    optionalDate(s.deletedAt);
+    array(s.entries, "焚决条目数", SCROLL_LIMITS.entries);
+    for (const e of s.entries) {
+      keys(e, [
+        "id",
+        "text",
+        "tags",
+        "uses",
+        "createdAt",
+        "updatedAt",
+        "deletedAt",
+        "lastUsedAt",
+      ]);
+      id(e.id);
+      entryIds.push(e.id);
+      text(e.text, "条目正文", SCROLL_LIMITS.text);
+      if (!e.text.trim() || CONTROL.test(e.text)) invalid("条目正文");
+      array(e.tags, "条目标签", SCROLL_LIMITS.tags);
+      for (const t of e.tags)
+        if (
+          typeof t !== "string" ||
+          !t ||
+          t.length > SCROLL_LIMITS.tag ||
+          /[\s,，、\x00-\x1f\x7f]/.test(t)
+        )
+          invalid("条目标签");
+      unique(e.tags, "条目标签");
+      if (!Number.isSafeInteger(e.uses) || e.uses < 0 || e.uses > 1e9)
+        invalid("条目计次");
+      date(e.createdAt);
+      optionalDate(e.updatedAt);
+      optionalDate(e.deletedAt);
+      optionalDate(e.lastUsedAt);
+    }
+  }
+  if (entryIds.length > SCROLL_LIMITS.totalEntries) invalid("焚决条目总量");
+  unique(entryIds, "条目 ID");
+}
 export function validateState(state) {
   keys(state, [
     "revision",
@@ -62,7 +133,9 @@ export function validateState(state) {
     "connections",
     "knowledgeTasks",
     "assetActivity",
+    "scrolls",
   ]);
+  if (state.scrolls !== undefined) validateScrolls(state.scrolls);
   if (state.knowledgeTasks !== undefined)
     validateKnowledgeTasks(state.knowledgeTasks);
   if (
@@ -213,10 +286,23 @@ export function validateState(state) {
     }
   }
   for (const n of state.notes) {
-    keys(n, ["id", "text", "at"]);
+    keys(n, ["id", "text", "at", "format", "refined"]);
     id(n.id);
     text(n.text, "随手记");
     date(n.at);
+    // 切片 1.4：format 缺失为旧纯文本；md1 为受限 Markdown（列表、任务、五色字），
+    // 只存文字，渲染时由前端解析并转义，不接受任何 HTML 字段。
+    if (n.format !== undefined) {
+      if (n.format !== "md1") invalid("随手记格式");
+      text(n.text, "随手记", NOTE_MAX);
+      if (CONTROL.test(n.text)) invalid("随手记包含控制字符");
+    }
+    if (n.refined !== undefined) {
+      keys(n.refined, ["scrollId", "entryId", "at"]);
+      id(n.refined.scrollId);
+      id(n.refined.entryId);
+      date(n.refined.at);
+    }
   }
   for (const a of state.agents) {
     keys(a, ["id", "name", "path"]);
