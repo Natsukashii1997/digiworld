@@ -4,10 +4,10 @@
 
 | 字段 | 当前值 |
 |---|---|
-| state_id | WB-20260930-108 |
+| state_id | WB-20260930-109 |
 | 更新时间 | 2026-09-30，Asia/Shanghai |
 | 更新者 | Claude |
-| 当前写入者 | 无；Claude 记录108（第四批云端派发）后释放 |
+| 当前写入者 | 无；Claude 记录109（第五批云端派发）后释放 |
 | 当前任务 | **第一阶段 1.1–1.4 已合入 main（99f87d4）**：两区导航、计次置顶、⌘K、焚决、随手记富文本、使用次数滚动；本机 npm test 435/435、浏览器 34/34。用户纠正：焚决是资产仓库里的一种资产类型，迁入工作由云端 E1 进行。第二阶段 2.1+2.2 由云端 E2 提前开发（合入须等 1.E）。 |
 | 唯一下一步 | **请用户做第一阶段整体验收 1.E**：日常用一段时间资产仓库（计次、置顶、⌘K、焚决类型）、随手记与炼入焚决、两区导航；通过后合入云端 E2（`cloud/2026-09-30-phase2-projects`，第二阶段 2.1+2.2）。R87 返修（96）仍待 Codex 复核 |
 | 最新交接 | [Claude 认领98](docs/agents/handoffs/2026-09-30-claude-98.md)；[Claude 认领95：R87返修+产品候选](docs/agents/handoffs/2026-09-30-claude-95.md)；[Claude 问题共识基线 v2.2](docs/agents/handoffs/2026-09-30-claude-product-v2.2.md)；[Claude 云端接入](docs/agents/handoffs/2026-09-30-claude-cloud.md)；[Codex认领87独立复核](docs/agents/handoffs/2026-09-30-codex-review-87.md)；[Claude 认领 87](docs/agents/handoffs/2026-09-30-claude-87.md)；[Codex认领83复核与模板收录](docs/agents/handoffs/2026-09-30-codex-review-83.md)；此前 [Claude 认领 83](docs/agents/handoffs/2026-09-30-claude-83.md)；[Codex 认领77复核：A残留/B延期](docs/agents/handoffs/2026-09-30-codex-review-77.md)；此前 [Claude 认领 77：D-R2/D-R3 + UI v13.1](docs/agents/handoffs/2026-09-30-claude-77.md)；[Codex 2.3 返修独立复核](docs/agents/handoffs/2026-09-30-codex-review-2.3-fix.md)；此前 [Claude 2.3 返修](docs/agents/handoffs/2026-09-29-claude-2.3-fix.md)；[Codex 2.3 复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；[Codex 2.3 与模板独立复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；此前  [Claude 2.3 规则模板](docs/agents/handoffs/2026-09-29-claude-2.3-rules.md)；[Claude 1.E 验收记录](docs/agents/handoffs/2026-09-29-claude-1.E-acceptance.md)；[Codex D-UI1 修复独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-d-ui1.md)； [Claude D-UI1 修复](docs/agents/handoffs/2026-09-29-claude-ui-d-ui1.md)；[Codex UI v12.1 独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-v12.1.md)； [Claude UI v12.1](docs/agents/handoffs/2026-09-29-claude-ui-v12.1.md)；[Claude UI v12](docs/agents/handoffs/2026-09-29-claude-ui-v12.md)；[Claude 宽屏空白修复](docs/agents/handoffs/2026-09-29-claude-ui-widescreen.md)；[Claude 1.4 独立复核](docs/agents/handoffs/2026-09-29-claude-review-1.4.md)；[Claude 产品定义 v1.1 与路线 v2](docs/agents/handoffs/2026-09-29-claude-product-v1.1.md)；[Codex 1.4来源维护收口](docs/agents/handoffs/2026-09-29-codex-1.4-maintenance.md)；[Codex D-S3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-ds3.md)；[Claude 1.3 D-S3 修复](docs/agents/handoffs/2026-09-29-claude-1.3-ds3.md)；[Codex 1.3 修复差异复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-fix.md)；被复核 [Claude 1.3 复核项修复](docs/agents/handoffs/2026-09-29-claude-1.3-fix.md)；[Codex 1.3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-search.md)；被复核 [Claude 1.3 搜索增强](docs/agents/handoffs/2026-09-29-claude-1.3-search.md)；前序 [Claude 1.1 修复复核](docs/agents/handoffs/2026-09-29-claude-review-1.1-fix.md)；被复核 [Codex 1.1 复核修复](docs/agents/handoffs/2026-09-29-codex-1.1-fix.md)；输入 [Claude 1.1 复核](docs/agents/handoffs/2026-09-29-claude-review-1.1.md) |
@@ -415,3 +415,12 @@ v0.17 来源维护工程验收已完成，Claude已于53独立复核通过，第
   - F3 知识仓库三区+个人说明 MCP `session_01DeCnBBA1UNoW8CtMDDRW1s` → `…-knowledge-profile`；
   - F4 银饰计划+智能体角色卡 `session_01RtiSa7dyfYBZHyXmzWpznf` → `…-silver-agents`。
 - 这些都属于提前开发，合入 main 须经本机复核，第二阶段以后仍按用户验收节奏。写入者释放。
+
+## Claude 记录 109（第五批云端派发，WB-20260930-109）
+
+- 输入108。第四批 F1–F4 与 E2 均已交回：新测试均为先失败后通过，相对云端已知失败集增 0、减 0。用户已自行重启 5178（新 PID 67296），焚决与置顶保存应已恢复。用户要求云端任务用 Opus 5.5 + High。
+- 派出第五批（`claude --model claude-opus-5-5 --effort high --cloud`）：
+  - G1 集成分支（按 E2→F1→F2→F3→F4 合并）`session_01N5o3xZBS81vqEy8ySnPGRw` → `cloud/2026-09-30-integration`；
+  - G2 逆向工程第一层 `session_019vzrSXdmBeK2cCN5yqczFY` → `…-reverse-engineering`；
+  - G3 智能体群内容清单与体检 `session_01DmLfrrHCmnwB8VDcWu9syM` → `…-agents-inventory`。
+- 合入 main 仍须等用户第一阶段验收 1.E 与本机复核。写入者释放。
