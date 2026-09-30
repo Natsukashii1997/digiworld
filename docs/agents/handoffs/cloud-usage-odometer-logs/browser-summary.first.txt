@@ -1,0 +1,7 @@
+== tests/browser.mjs
+PASS tests/browser.mjs
+== tests/accessibility.mjs
+PASS tests/accessibility.mjs
+== tests/migration.mjs
+PASS tests/migration.mjs
+== tests/history-capacity.mjs
