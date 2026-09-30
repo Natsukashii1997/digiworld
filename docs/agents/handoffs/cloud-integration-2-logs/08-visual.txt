@@ -1,0 +1,6 @@
+# node tests/visual.mjs integration-2 @ 3a0dd46 2026-09-30T15:45:53+00:00
+{
+  "out": "/home/user/personal-ai-workbench/test-results/visual/integration-2",
+  "problems": []
+}
+EXIT=0

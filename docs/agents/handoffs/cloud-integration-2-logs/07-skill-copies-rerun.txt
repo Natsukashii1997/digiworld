@@ -1,0 +1,8 @@
+# skill-copies-browser 定性：integration-2 当前构建单独 3 次；G1 集成基点 7be59dc 单独构建 3 次 2026-09-30T15:42:53+00:00
+integration-2 第1次 EXIT=0 9 项 PASS 
+integration-2 第2次 EXIT=0 9 项 PASS 
+integration-2 第3次 EXIT=0 9 项 PASS 
+✓ built in 3.19s
+G1 基点 第1次 EXIT=0 9 项 PASS 
+G1 基点 第2次 EXIT=0 9 项 PASS 
+G1 基点 第3次 EXIT=0 9 项 PASS 
