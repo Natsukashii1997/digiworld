@@ -29,6 +29,7 @@ import { Assets, AssetEditor, AssetDetail } from "./Assets.jsx";
 import { Knowledge } from "./Knowledge.jsx";
 import { Home, ICONS as PAGE_ICONS } from "./Home.jsx";
 import { PlannedPage, Inbox } from "./PlannedPage.jsx";
+import { Collab } from "./Collab.jsx";
 import { pendingItems } from "./pending.js";
 import { PartnerScreen } from "./PartnerScreen.jsx";
 import { Odometer } from "./Odometer.jsx";
@@ -501,7 +502,8 @@ export default function App() {
           {route === "inbox" && (
             <Inbox {...common} navigate={navigate} select={setSelected} />
           )}
-          {["collab", "calendar", "aihot", "learning", "silver"].includes(route) && (
+          {route === "collab" && <Collab {...common} navigate={navigate} />}
+          {["calendar", "aihot", "learning", "silver"].includes(route) && (
             <PlannedPage id={route} navigate={navigate} />
           )}
         </main>

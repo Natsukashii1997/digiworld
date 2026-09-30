@@ -1,9 +1,11 @@
 // 路线 v3 切片 2.1/2.2：在推进项目的状态卡、停滞雷达与安全体检。
 // 全部只读：状态来自项目自己的 CURRENT.md 与 Git，工作台不另存第二份 Current，不修改项目文件。
 import React, { useEffect, useState } from "react";
-import { RefreshCw, Flag } from "lucide-react";
+import { RefreshCw, Flag, Play } from "lucide-react";
 import { Button, Badge } from "./components.jsx";
 import { request } from "./api.js";
+import { startPrompt } from "./collab.js";
+import { usePromptCopy, PromptDialog, AgentPicker } from "./Collab.jsx";
 import "./project-status.css";
 
 const SOFT_LIMIT = 7;
@@ -202,7 +204,57 @@ function SafetyBlock({ safety }) {
   );
 }
 
-function StatusCard({ item, days }) {
+// 路线 v3 切片 2.4 一键开工：选 Agent，生成开工口令（项目路径、先读 AGENTS.md 与 CURRENT.md、唯一下一步），
+// 确认后复制；复制成功计入协同留痕。项目路径只用服务端校验过的登记目录，不自动打开或执行 Agent。
+function StartWork({ item, adoptState, notify }) {
+  const [agent, setAgent] = useState("codex");
+  const [prompt, setPrompt] = useState(null);
+  const copier = usePromptCopy({ adoptState, notify });
+  const blocked = !item.root || item.current.state === "error";
+  function open() {
+    try {
+      copier.reset();
+      setPrompt({ text: startPrompt(item, agent), agent });
+    } catch (e) {
+      notify(e.message, "error");
+    }
+  }
+  return (
+    <div className="status-start" aria-label="一键开工" role="group">
+      <AgentPicker
+        id={`start-${item.projectId}`}
+        label="开工 Agent"
+        value={agent}
+        onChange={setAgent}
+      />
+      <Button secondary disabled={blocked} onClick={open}>
+        <Play size={16} />
+        生成开工口令
+      </Button>
+      {prompt && (
+        <PromptDialog
+          title={`开工口令：${item.name}`}
+          lead="确认后复制到剪贴板，并计入这个项目的协同留痕；把口令粘贴给所选 Agent 即可开工，工作台不会替你打开或执行。"
+          text={prompt.text}
+          copier={copier}
+          onClose={() => setPrompt(null)}
+          onConfirm={async () => {
+            const done = await copier.copy({
+              text: prompt.text,
+              kind: "start",
+              projectId: item.projectId,
+              agent: prompt.agent,
+              stateId: item.current.fields?.stateId,
+            });
+            if (done) setPrompt(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function StatusCard({ item, days, adoptState, notify }) {
   const stalled = item.activity.state === "stalled";
   return (
     <article
@@ -222,6 +274,7 @@ function StatusCard({ item, days }) {
           : "未知，不当作停滞"}
       </small>
       <SafetyBlock safety={item.safety} />
+      <StartWork item={item} adoptState={adoptState} notify={notify} />
     </article>
   );
 }
@@ -305,7 +358,13 @@ export function ActiveProjects({ state, adoptState, notify, status, refresh }) {
       )}
       <div className="project-status-grid">
         {status.items.map((item) => (
-          <StatusCard key={item.projectId} item={item} days={status.stallDays || saved} />
+          <StatusCard
+            key={item.projectId}
+            item={item}
+            days={status.stallDays || saved}
+            adoptState={adoptState}
+            notify={notify}
+          />
         ))}
       </div>
     </section>

@@ -21,6 +21,7 @@ export function mergeBackup(current, incoming) {
     },
     scrollEntriesAdded: 0,
     activityAdded: 0,
+    collabAdded: 0,
     newVersions: 0,
     knowledgeVersions: 0,
     kept: 0,
@@ -30,6 +31,7 @@ export function mergeBackup(current, incoming) {
     for (const name of Object.keys(summary.added))
       summary.added[name] = (input[name] || []).length;
     summary.activityAdded = (input.assetActivity || []).length;
+    summary.collabAdded = (input.collabLog || []).length;
     summary.settings = "采用备份中的配置草稿；连接结果需重新扫描";
     const { connections, ...content } = input;
     return { state: { ...content, revision: 0 }, summary };
@@ -129,6 +131,21 @@ export function mergeBackup(current, incoming) {
         next.assetActivity.push(record);
         records.set(record.id, record);
         summary.activityAdded++;
+      }
+    }
+  }
+  // 协同操作留痕：按 ID 并集，只追加；同 ID 内容不同视为冲突，整次不导入。
+  if (input.collabLog?.length) {
+    next.collabLog ||= [];
+    const records = new Map(next.collabLog.map((r) => [r.id, r]));
+    for (const record of input.collabLog) {
+      const old = records.get(record.id);
+      if (old && !equivalent(old, record))
+        throw Object.assign(new Error("操作留痕记录存在冲突，本次不会导入任何记录"), { status: 409 });
+      if (!old) {
+        next.collabLog.push(record);
+        records.set(record.id, record);
+        summary.collabAdded++;
       }
     }
   }

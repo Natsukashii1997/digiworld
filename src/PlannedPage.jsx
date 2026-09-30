@@ -14,10 +14,6 @@ import { pendingItems, rulePendingReady } from "./pending.js";
 const NOW = {
   // 能力体检已并入智能体群页，不再放指回本页的链接。
   health: [["在资产仓库里核对 Skill 与目标副本是否一致", "assets"]],
-  collab: [
-    ["用智能体群的“上下文接力”生成交接内容", "agents"],
-    ["在项目空间查看项目 Current 与规则指针", "projects"],
-  ],
   calendar: [["在夜巡里先保存夜间时间窗口草稿", "night"]],
 };
 

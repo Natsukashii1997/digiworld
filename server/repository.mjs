@@ -159,6 +159,20 @@ export async function openRepository(directory) {
         return commit(state);
       });
     },
+    // 协同操作留痕（切片 2.3/2.4）：只追加。复制已在浏览器完成，不以 revision 冲突拒记；
+    // 追加只改 collabLog，其余内容原样保留，由 validateHistory 保证。
+    updateCollab(update) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先初始化资产库", 409);
+        const collabLog = await update(stored.collabLog || [], stored);
+        if (equivalent(collabLog, stored.collabLog || [])) return stored;
+        const state = { ...stored, collabLog, revision: stored.revision + 1 };
+        validateState(state);
+        validateHistory(stored, state, { allowCollab: true });
+        return commit(state);
+      });
+    },
     updateKnowledge(update, { expectedRevision, allowNoop = false } = {}) {
       return serial(async () => {
         const stored = await read();
@@ -237,6 +251,7 @@ export async function openRepository(directory) {
           allowOrigins: true,
           allowKnowledge: true,
           allowActivity: true,
+          allowCollab: true,
         });
         const result = await commit({
           ...state,

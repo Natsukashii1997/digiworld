@@ -1,4 +1,5 @@
 import { validateActivity, validateActivityHistory } from "./asset-activity-schema.mjs";
+import { validateCollabLog, validateCollabHistory } from "./collab-schema.mjs";
 import { safePath } from "../src/store.js";
 import { stringify } from "../src/serialization.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
@@ -134,6 +135,7 @@ export function validateState(state) {
     "knowledgeTasks",
     "assetActivity",
     "scrolls",
+    "collabLog",
   ]);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
   if (state.knowledgeTasks !== undefined)
@@ -668,6 +670,7 @@ export function validateState(state) {
     }
   }
   validateActivity(state);
+  validateCollabLog(state);
   return state;
 }
 export function canonical(value) {
@@ -691,9 +694,11 @@ export function validateHistory(
     allowOrigins = false,
     allowKnowledge = false,
     allowActivity = false,
+    allowCollab = false,
   } = {},
 ) {
   validateActivityHistory(previous?.assetActivity || [], next.assetActivity || [], allowActivity);
+  validateCollabHistory(previous?.collabLog || [], next.collabLog || [], allowCollab);
   if (
     !allowKnowledge &&
     !equivalent(previous?.knowledgeTasks || [], next.knowledgeTasks || [])
