@@ -85,7 +85,12 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
       onSummary((current) => ({ ...current, latest }));
     });
   const shown = stats?.sourceId === vault?.id ? stats : null;
-  const zoneFiles = shown ? shown.files.filter((f) => f.zone === zone) : [];
+  // 目录读取顺序随文件系统而异（APFS 与 ext4 不同），显示前按路径排序，让列表在各平台一致。
+  const zoneFiles = shown
+    ? shown.files
+        .filter((f) => f.zone === zone)
+        .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
+    : [];
   const label = ZONES.find((z) => z.id === zone).label;
   return (
     <section id="k-zones" className="knowledge-zones knowledge-anchor" aria-labelledby="k-zones-title">

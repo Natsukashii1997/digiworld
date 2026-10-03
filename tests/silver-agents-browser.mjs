@@ -8,11 +8,13 @@ import AxeBuilder from "@axe-core/playwright";
 import { mkdir } from "node:fs/promises";
 import { fixture } from "./fixture.mjs";
 import { seed } from "../src/store.js";
+import { createCutout } from "../server/silver-cutout.mjs";
 const { chromium } = createRequire(import.meta.url)(
   process.env.PLAYWRIGHT_MODULE ||
     "/Users/nat/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright",
 );
-const app = await fixture();
+// 本脚本测“自动抠图不可用 → 手动上传剪影”路径，注入不可用的抠图器，避免在 macOS 上调用真实 Vision。
+const app = await fixture({ discovery: { silverCutout: createCutout({ platform: "linux" }) } });
 const initial = {
   ...seed(),
   projects: [
