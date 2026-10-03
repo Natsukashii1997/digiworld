@@ -138,6 +138,31 @@ test("清洗：列表从常见外层结构中找出条目，条数有上限，�
   for (const bad of [null, "text", 42, { data: "x" }, { items: {} }]) assert.deepEqual(sanitizeList(bad), []);
 });
 
+// 用户 2026-10-03 本机核对真实接口（字段结构，数据为合成）：条目链接在 links.original / links.aihot；
+// 日报外层是 { schemaVersion, report: { sections: [{ label, items }] } }。
+test("真实接口结构：链接取 links.original（没有则 links.aihot）；日报从 report.sections 展开", () => {
+  const real = (n, links) => ({ id: `i${n}`, title: `条目 ${n}`, summary: "摘要", source: { name: "来源" }, links, publishedAt: "2026-10-03T01:00:00Z" });
+  const both = sanitizeItem(real(1, { aihot: "https://aihot.news/items/a", original: "https://example.com/a" }));
+  assert.equal(both.url, "https://example.com/a");
+  assert.equal(sanitizeItem(real(2, { aihot: "https://aihot.news/items/b" })).url, "https://aihot.news/items/b");
+  assert.equal(sanitizeItem(real(3, { original: "javascript:alert(1)" })).url, "");
+  assert.equal(sanitizeItem({ ...real(4, { original: "https://example.com/x" }), url: "https://example.com/flat" }).url, "https://example.com/flat");
+  const daily = {
+    schemaVersion: 1,
+    report: {
+      date: "2026-10-03",
+      lead: { title: "导语" },
+      sections: [
+        { label: "模型发布/更新", items: [real("a", { original: "https://example.com/a" })] },
+        { label: "行业动态", items: [real("b", { original: "https://example.com/b" })] },
+      ],
+      flashes: [{ title: "快讯", links: { original: "https://example.com/f" } }],
+    },
+  };
+  assert.deepEqual(titles(sanitizeList(daily)), ["条目 a", "条目 b"]);
+  assert.deepEqual(sanitizeList(daily).map((i) => i.url), ["https://example.com/a", "https://example.com/b"]);
+});
+
 test("默认设置：开启网络访问、每 3 小时；首次拉取前不自动访问", async () =>
   withDir(async (dir) => {
     const api = stubApi();

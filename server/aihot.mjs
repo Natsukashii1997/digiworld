@@ -77,7 +77,10 @@ export function sanitizeItem(raw) {
   const cleanTitle = cleanText(title, AIHOT_LIMITS.title);
   if (!cleanTitle) return null;
   const summary = pick(raw, ["summary", "description", "excerpt", "ai_summary", "aiSummary", "digest", "content"]);
-  const url = pick(raw, ["url", "link", "source_url", "sourceUrl", "original_url", "originalUrl", "href", "permalink"]);
+  // 真实接口把链接放在 links.original（原文）与 links.aihot（站内页）里（2026-10-03 本机核对）。
+  const url =
+    pick(raw, ["url", "link", "source_url", "sourceUrl", "original_url", "originalUrl", "href", "permalink"]) ??
+    (isObject(raw.links) ? pick(raw.links, ["original", "aihot"]) : undefined);
   const at = pick(raw, ["published_at", "publishedAt", "time", "created_at", "createdAt", "date", "pub_date"]);
   return {
     title: cleanTitle,
@@ -89,7 +92,8 @@ export function sanitizeItem(raw) {
 }
 
 // 在常见的外层结构里找条目数组（最多下探 3 层）；分节结构（sections[].items）展开拼接。
-const LIST_KEYS = ["items", "data", "list", "topics", "results", "entries", "news", "records"];
+// report：真实日报接口外层为 { report: { sections: [{ label, items }] } }（2026-10-03 本机核对）。
+const LIST_KEYS = ["items", "data", "list", "topics", "results", "entries", "news", "records", "report"];
 function findItems(payload, depth = 0) {
   if (Array.isArray(payload)) {
     const nested = payload.filter((v) => isObject(v) && Array.isArray(v.items));
