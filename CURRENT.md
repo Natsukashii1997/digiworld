@@ -4,10 +4,10 @@
 
 | 字段 | 当前值 |
 |---|---|
-| state_id | WB-20261003-111 |
+| state_id | WB-20261003-112 |
 | 更新时间 | 2026-10-03，Asia/Shanghai |
 | 更新者 | Claude |
-| 当前写入者 | 无；Claude 会话交接111后释放 |
+| 当前写入者 | **Claude**（认领112，2026-10-03 新会话） |
 | 当前任务 | **云端成果落地（交接111）**：main `3d9ca53` 已含第一阶段全部；第二阶段及以后的功能在云端分支 `cloud/2026-09-30-integration-2`（`13f2a10`）与 H2 `backup-calendar`、H3 `projects-github-brief`、H4 `evolution-loop`，尚未合入。用户 10-01 “全部验收，然后复核合入”，1.E 视为通过。云端额度已耗尽。 |
 | 唯一下一步 | 新会话 Claude 读 [会话交接](docs/agents/handoffs/2026-10-03-claude-session-handoff.md)，认领后按“落地步骤”：以 integration-2 为底合入 H2–H4 → 本机全量回归全绿 → 合入 main 并推送 → 请用户 `npm start` 重启 5178 后在网页查看 → 走本机验证清单。R87 返修（96）仍待 Codex 复核 |
 | 最新交接 | [Claude 会话交接（云端成果落地）](docs/agents/handoffs/2026-10-03-claude-session-handoff.md)；[Claude 认领98](docs/agents/handoffs/2026-09-30-claude-98.md)；[Claude 认领95：R87返修+产品候选](docs/agents/handoffs/2026-09-30-claude-95.md)；[Claude 问题共识基线 v2.2](docs/agents/handoffs/2026-09-30-claude-product-v2.2.md)；[Claude 云端接入](docs/agents/handoffs/2026-09-30-claude-cloud.md)；[Codex认领87独立复核](docs/agents/handoffs/2026-09-30-codex-review-87.md)；[Claude 认领 87](docs/agents/handoffs/2026-09-30-claude-87.md)；[Codex认领83复核与模板收录](docs/agents/handoffs/2026-09-30-codex-review-83.md)；此前 [Claude 认领 83](docs/agents/handoffs/2026-09-30-claude-83.md)；[Codex 认领77复核：A残留/B延期](docs/agents/handoffs/2026-09-30-codex-review-77.md)；此前 [Claude 认领 77：D-R2/D-R3 + UI v13.1](docs/agents/handoffs/2026-09-30-claude-77.md)；[Codex 2.3 返修独立复核](docs/agents/handoffs/2026-09-30-codex-review-2.3-fix.md)；此前 [Claude 2.3 返修](docs/agents/handoffs/2026-09-29-claude-2.3-fix.md)；[Codex 2.3 复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；[Codex 2.3 与模板独立复核](docs/agents/handoffs/2026-09-29-codex-review-2.3-rules.md)；此前  [Claude 2.3 规则模板](docs/agents/handoffs/2026-09-29-claude-2.3-rules.md)；[Claude 1.E 验收记录](docs/agents/handoffs/2026-09-29-claude-1.E-acceptance.md)；[Codex D-UI1 修复独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-d-ui1.md)； [Claude D-UI1 修复](docs/agents/handoffs/2026-09-29-claude-ui-d-ui1.md)；[Codex UI v12.1 独立复核](docs/agents/handoffs/2026-09-29-codex-review-ui-v12.1.md)； [Claude UI v12.1](docs/agents/handoffs/2026-09-29-claude-ui-v12.1.md)；[Claude UI v12](docs/agents/handoffs/2026-09-29-claude-ui-v12.md)；[Claude 宽屏空白修复](docs/agents/handoffs/2026-09-29-claude-ui-widescreen.md)；[Claude 1.4 独立复核](docs/agents/handoffs/2026-09-29-claude-review-1.4.md)；[Claude 产品定义 v1.1 与路线 v2](docs/agents/handoffs/2026-09-29-claude-product-v1.1.md)；[Codex 1.4来源维护收口](docs/agents/handoffs/2026-09-29-codex-1.4-maintenance.md)；[Codex D-S3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-ds3.md)；[Claude 1.3 D-S3 修复](docs/agents/handoffs/2026-09-29-claude-1.3-ds3.md)；[Codex 1.3 修复差异复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-fix.md)；被复核 [Claude 1.3 复核项修复](docs/agents/handoffs/2026-09-29-claude-1.3-fix.md)；[Codex 1.3 独立复核](docs/agents/handoffs/2026-09-29-codex-review-1.3-search.md)；被复核 [Claude 1.3 搜索增强](docs/agents/handoffs/2026-09-29-claude-1.3-search.md)；前序 [Claude 1.1 修复复核](docs/agents/handoffs/2026-09-29-claude-review-1.1-fix.md)；被复核 [Codex 1.1 复核修复](docs/agents/handoffs/2026-09-29-codex-1.1-fix.md)；输入 [Claude 1.1 复核](docs/agents/handoffs/2026-09-29-claude-review-1.1.md) |
@@ -443,3 +443,9 @@ v0.17 来源维护工程验收已完成，Claude已于53独立复核通过，第
 - 用户 10-01：“全部验收，然后复核合入，我要在网页上看到最新改后的样子”；10-03：云端额度已耗尽，要求交接给新会话在本机落实并继续。
 - 5178 当前未运行；主库哈希 `2f66fc3d72feb74ee914d5cbc712de0435914ffb9d0e0af8aee842a37ad9985d`，相对 108 的变化来自用户试用，本会话未写入。
 - 纯交接，未改代码、未运行测试。写入者释放。详见[交接](docs/agents/handoffs/2026-10-03-claude-session-handoff.md)。
+
+## Claude 认领 112（WB-20261003-112）
+
+- 输入111，读回：写入者无；main `b8deed1` 工作区干净，相对 integration-2 基点 `bf21a6d` 只多 CURRENT 与交接两份文档；远程 integration-2 `13f2a10`、H2 `349c7a5`、H3 `7251f87`、H4 `32ddca5` 与交接一致；主库哈希 `2f66fc3d…985d` 不变（仅算哈希）；5178 未监听。
+- 范围：以 integration-2 为底建 `merge/cloud-all`，依次合入 H2/H3/H4，冲突逐处解决、两边功能保留；只修合并造成的问题。会触及四个分支涉及的全部文件、dist（构建产物）、本机回归证据、CURRENT、ROADMAP §2、本轮交接。
+- 验证计划：每合一个分支 `npm run build` + 该分支新测试；全部合完后本机 npm test、全部浏览器脚本逐个、visual；全绿后合入 main，推送前告知用户。重启 5178 由用户本人操作。
