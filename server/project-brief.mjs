@@ -39,9 +39,11 @@ export function briefWindow(now) {
   };
 }
 
+// 简报是给人读的一段话：Markdown 链接 [文字](地址) 只保留文字（用户 2026-10-03）。
 const line = (value, limit = 300) => {
   const s = redactSecrets(
     String(value ?? "")
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
       .replace(/[\x00-\x1f\x7f]+/g, " ")
       .replace(/\s+/g, " ")
       .trim(),

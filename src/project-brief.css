@@ -47,6 +47,12 @@
   color: var(--text);
   overflow-wrap: anywhere;
 }
+.brief-text p {
+  margin: 0;
+}
+.brief-text p + p {
+  margin-top: 6px;
+}
 .brief-text strong {
   color: var(--cyan);
   font-weight: 600;

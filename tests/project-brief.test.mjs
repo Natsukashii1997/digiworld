@@ -465,6 +465,17 @@ test("简报：多来源同时有变化时逐项列出，唯一下一步来自 C
   );
 });
 
+test("简报：唯一下一步与状态标题里的 Markdown 链接只显示链接文字（用户 2026-10-03）", () => {
+  const facts = fullFacts();
+  facts.current.fields.next =
+    "新会话 Claude 读 [会话交接](docs/agents/handoffs/2026-10-03-claude-session-handoff.md)，认领后按[落地步骤](a.md#四)执行";
+  facts.states.headings[2].title = "Claude 实现 [GitHub 面板](docs/x.md)（P-20260930-21）";
+  const b = composeBrief(facts, windowOf());
+  assert.equal(b.next, "新会话 Claude 读 会话交接，认领后按落地步骤执行");
+  assert.equal(b.happened[0], "CURRENT 新增 2 个状态，最新 P-20260930-21（Claude 实现 GitHub 面板（P-20260930-21））");
+  assert.doesNotMatch(b.text, /\]\(|docs\/agents/);
+});
+
 test("简报：完全没有数据时如实写“没有记录到新的变化”和“未知”，不补造", () => {
   const b = composeBrief(
     {

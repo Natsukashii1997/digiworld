@@ -47,12 +47,21 @@ function BriefParagraph({ item, onRead, busy, adoptState, notify }) {
         <h3>{item.name}</h3>
         <Badge tone={tone}>{label}</Badge>
       </header>
-      <p className="brief-text">
-        <strong>昨天到今天：</strong>
-        {item.happened.join("；")}。<strong>今天的唯一下一步：</strong>
-        {item.next}。<strong>卡点：</strong>
-        {item.blockers.length ? item.blockers.join("；") : "未发现"}。
-      </p>
+      {/* 用户 2026-10-03：每个小标题及其内容单独一行。 */}
+      <div className="brief-text">
+        <p>
+          <strong>昨天到今天：</strong>
+          {item.happened.join("；")}。
+        </p>
+        <p>
+          <strong>今天的唯一下一步：</strong>
+          {item.next}。
+        </p>
+        <p>
+          <strong>卡点：</strong>
+          {item.blockers.length ? item.blockers.join("；") : "未发现"}。
+        </p>
+      </div>
       <div className="brief-actions">
         <Button
           secondary
