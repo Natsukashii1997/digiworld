@@ -222,7 +222,7 @@ export function sensitivePaths(paths) {
 
 // ---------- Git 只读查询 ----------
 
-function gitRunner(root) {
+export function gitRunner(root) {
   const env = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")),
   );
@@ -259,9 +259,9 @@ function gitRunner(root) {
       )
     ).stdout.toString("utf8");
 }
-const notRepository = (e) =>
+export const notRepository = (e) =>
   e.code === 128 && /not a git repository/i.test(String(e.stderr || ""));
-const noCommits = (e) =>
+export const noCommits = (e) =>
   e.code === 128 &&
   /does not have any commits|bad default revision|unknown revision/i.test(
     String(e.stderr || ""),

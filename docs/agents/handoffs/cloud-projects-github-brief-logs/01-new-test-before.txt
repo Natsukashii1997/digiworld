@@ -1,0 +1,305 @@
+## 第 1 次：2026-09-30T15:08:42+00:00 node --test tests/project-brief.test.mjs（实现前，模块不存在）
+node:internal/modules/esm/resolve:272
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/user/personal-ai-workbench/server/project-github.mjs' imported from /home/user/personal-ai-workbench/tests/project-brief.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+    at #resolve (node:internal/modules/esm/loader:687:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///home/user/personal-ai-workbench/server/project-github.mjs'
+}
+
+Node.js v24.21.0
+✖ tests/project-brief.test.mjs (141.000212ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 284.939371
+
+✖ failing tests:
+
+test at tests/project-brief.test.mjs:1:1
+✖ tests/project-brief.test.mjs (141.000212ms)
+  'test failed'
+EXIT=1
+
+## 第 2 次：2026-09-30T15:08:48+00:00 放入只抛“未实现”的空桩后（服务端未接路由、schema 未加 briefReads）
+node:internal/test_runner/harness:124
+      throw err;
+      ^
+
+Error: 未实现
+    at no (file:///home/user/personal-ai-workbench/server/project-brief.mjs:2:26)
+    at file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:374:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)
+    at async node:internal/modules/esm/loader:647:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.21.0
+✖ tests/project-brief.test.mjs (1070.996237ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1077.586632
+
+✖ failing tests:
+
+test at tests/project-brief.test.mjs:1:1
+✖ tests/project-brief.test.mjs (1070.996237ms)
+  'test failed'
+EXIT=1
+
+## 第 3 次：2026-09-30T15:09:05+00:00 第 2 次因测试文件顶层调用 briefWindow 而整体中止；把统计区间改为惰性计算（测试尚未通过过，断言未改）后，空桩下逐条运行
+✖ gh 只允许四种只读调用：api GET、pr list、issue list、run list (1.294493ms)
+✖ 解析 PR / Issue：只取白名单字段，去控制字符、截断标题，只接受 GitHub https 链接 (0.733846ms)
+✖ 解析仓库信息与 workflow run；CI 汇总取最近一次并与同一 workflow 的上一次比较 (0.244322ms)
+✖ gh 失败分类：找不到、未登录、无权限、超时、其他；都不要求登录 (0.319611ms)
+✖ gh 运行器：固定路径查找，找不到时为 missing，白名单外的命令不启动进程 (14.774056ms)
+✖ GitHub 面板查询：成功时四类数据齐全；未登录、无权限、输出损坏都回退为“未知”，不抛错 (9.133295ms)
+✖ 面板缓存：在推进且有 GitHub 远程才查询；有效期内复用并显示更新时间，刷新或过期才重查 (0.831353ms)
+✖ 统计区间是昨天 0 点（本机时区）到现在；日期按本机时区 (0.90596ms)
+✖ 简报：多来源同时有变化时逐项列出，唯一下一步来自 CURRENT，CI 失败进卡点 (0.473391ms)
+✖ 简报：完全没有数据时如实写“没有记录到新的变化”和“未知”，不补造 (1.936408ms)
+✖ 简报：停滞 + 安全体检问题 + GitHub 未知 + 提交数未知 (0.408598ms)
+✖ 简报：CURRENT 只改了正文、CI 成功未变化、区间外的失败仍是卡点、部分 GitHub 未知 (0.162414ms)
+✖ 简报：区间边界（恰好昨天 0 点算在内）、状态读取失败、唯一下一步缺失与疑似凭据 (0.139615ms)
+✖ 已读状态 schema：旧库缺失按空；字段、日期、指纹、重复与容量严格校验 (2.868236ms)
+✖ 已读状态只能经专用操作修改；备份合并不导入也不覆盖本机已读状态 (1.172306ms)
+✖ HTTP：面板与简报只读，项目文件与主库版本不变；gh 只收到白名单只读调用 (188.393458ms)
+✖ HTTP：标为已读写入主库；重复标记不增版本；内容变化后显示“有更新”；非法输入拒绝 (154.401127ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 0
+ℹ fail 17
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 567.435979
+
+✖ failing tests:
+
+test at tests/project-brief.test.mjs:56:1
+✖ gh 只允许四种只读调用：api GET、pr list、issue list、run list (1.294493ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:64:43)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+
+test at tests/project-brief.test.mjs:86:1
+✖ 解析 PR / Issue：只取白名单字段，去控制字符、截断标题，只接受 GitHub https 链接 (0.733846ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:87:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at tests/project-brief.test.mjs:137:1
+✖ 解析仓库信息与 workflow run；CI 汇总取最近一次并与同一 workflow 的上一次比较 (0.244322ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:138:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:187:1
+✖ gh 失败分类：找不到、未登录、无权限、超时、其他；都不要求登录 (0.319611ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:200:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:209:1
+✖ gh 运行器：固定路径查找，找不到时为 missing，白名单外的命令不启动进程 (14.774056ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:213:18)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:236:1
+✖ GitHub 面板查询：成功时四类数据齐全；未登录、无权限、输出损坏都回退为“未知”，不抛错 (9.133295ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:243:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:317:1
+✖ 面板缓存：在推进且有 GitHub 远程才查询；有效期内复用并显示更新时间，刷新或过期才重查 (0.831353ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:325:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:380:1
+✖ 统计区间是昨天 0 点（本机时区）到现在；日期按本机时区 (0.90596ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-brief.mjs:2:26)
+      at windowOf (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:376:42)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:381:18)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:437:1
+✖ 简报：多来源同时有变化时逐项列出，唯一下一步来自 CURRENT，CI 失败进卡点 (0.473391ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at fullFacts (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:393:16)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:438:26)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:464:1
+✖ 简报：完全没有数据时如实写“没有记录到新的变化”和“未知”，不补造 (1.936408ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-brief.mjs:2:26)
+      at windowOf (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:376:42)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:476:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:487:1
+✖ 简报：停滞 + 安全体检问题 + GitHub 未知 + 提交数未知 (0.408598ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at fullFacts (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:393:16)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:489:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:517:1
+✖ 简报：CURRENT 只改了正文、CI 成功未变化、区间外的失败仍是卡点、部分 GitHub 未知 (0.162414ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at fullFacts (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:393:16)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:518:17)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:568:1
+✖ 简报：区间边界（恰好昨天 0 点算在内）、状态读取失败、唯一下一步缺失与疑似凭据 (0.139615ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-brief.mjs:2:26)
+      at windowOf (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:376:42)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:569:17)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:640:1
+✖ 已读状态 schema：旧库缺失按空；字段、日期、指纹、重复与容量严格校验 (2.868236ms)
+  Error: 数据校验失败：包含不支持的字段
+      at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:17:23)
+      at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:45:5)
+      at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:209:3)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:644:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    status: 400
+  }
+
+test at tests/project-brief.test.mjs:662:1
+✖ 已读状态只能经专用操作修改；备份合并不导入也不覆盖本机已读状态 (1.172306ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:664:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /简报已读状态只能通过/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests/project-brief.test.mjs:678:1
+✖ HTTP：面板与简报只读，项目文件与主库版本不变；gh 只收到白名单只读调用 (188.393458ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at projectBriefFixture (file:///home/user/personal-ai-workbench/tests/project-brief-fixture.mjs:282:18)
+      at async TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:679:15)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-brief.test.mjs:744:1
+✖ HTTP：标为已读写入主库；重复标记不增版本；内容变化后显示“有更新”；非法输入拒绝 (154.401127ms)
+  Error: 未实现
+      at no (file:///home/user/personal-ai-workbench/server/project-github.mjs:2:26)
+      at projectBriefFixture (file:///home/user/personal-ai-workbench/tests/project-brief-fixture.mjs:282:18)
+      at async TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-brief.test.mjs:745:15)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+EXIT=1
+
+## 实现后首次运行中唯一失败的一条（测试自身正则过宽："merged"、"createdAt" 含 merge/create），原文摘录：
+AssertionError: The input was expected to not match the regular expression /create|merge|close|edit|comment|POST|PATCH|DELETE|token/ …（完整调用见 02 日志）
+更正：改为逐条检查子命令位置（api 必须 GET、其余必须 list）并禁止写方法与令牌；本意不变。

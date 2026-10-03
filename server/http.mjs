@@ -10,6 +10,8 @@ import { createProjectContext } from "./project-context.mjs";
 import { createProjectIdentity } from "./project-identity.mjs";
 import { createProjectStatus, ghVisibility } from "./project-status.mjs";
 import { createCollabBoard } from "./collab-board.mjs";
+import { createProjectGithub, createGhRunner } from "./project-github.mjs";
+import { createProjectBrief } from "./project-brief.mjs";
 import { inspectProjectLocation } from "./project-scan.mjs";
 import { createSkillSources } from "./skill-sources.mjs";
 import { inspectAgentInventory } from "./agent-inventory.mjs";
@@ -110,6 +112,8 @@ export async function startServer({
     inspectAgentPrograms,
     inspectProjectLocation,
     repoVisibility: ghVisibility,
+    // GitHub 面板的只读 gh 运行器（测试注入桩脚本）。
+    githubCli: createGhRunner(),
     silverCutout: createCutout(),
     ...discovery,
   };
@@ -118,6 +122,15 @@ export async function startServer({
     visibility: adapters.repoVisibility,
   });
   const collabBoard = createCollabBoard(repository, { clock });
+  const projectGithub = createProjectGithub(repository, {
+    clock,
+    gh: adapters.githubCli,
+  });
+  const projectBrief = createProjectBrief(repository, {
+    clock,
+    projectStatus,
+    github: projectGithub,
+  });
   // 银饰图片只存在数据目录 silver/ 下；抠图器可替换（测试注入桩）。
   const silver = await createSilverImages(directory, {
     cutout: adapters.silverCutout,
@@ -395,6 +408,17 @@ export async function startServer({
             response,
             200,
             await projectStatus[statusAction](await body(request)),
+          );
+        if (url.pathname === "/api/project-github/panel" && request.method === "POST")
+          return send(response, 200, await projectGithub.panel(await body(request)));
+        const briefAction = url.pathname.match(
+          /^\/api\/project-brief\/(today|read)$/,
+        )?.[1];
+        if (briefAction && request.method === "POST")
+          return send(
+            response,
+            200,
+            await projectBrief[briefAction](await body(request)),
           );
         const collabAction = url.pathname.match(
           /^\/api\/collab\/(board|record)$/,

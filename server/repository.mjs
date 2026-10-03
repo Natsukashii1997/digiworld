@@ -173,6 +173,19 @@ export async function openRepository(directory) {
         return commit(state);
       });
     },
+    // 每日项目简报的已读状态（项目空间第二批）：只改 briefReads；同一内容重复标记不写主库。
+    updateBriefReads(update) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先初始化资产库", 409);
+        const briefReads = await update(stored.briefReads || [], stored);
+        if (equivalent(briefReads, stored.briefReads || [])) return stored;
+        const state = { ...stored, briefReads, revision: stored.revision + 1 };
+        validateState(state);
+        validateHistory(stored, state, { allowBriefs: true });
+        return commit(state);
+      });
+    },
     updateKnowledge(update, { expectedRevision, allowNoop = false } = {}) {
       return serial(async () => {
         const stored = await read();

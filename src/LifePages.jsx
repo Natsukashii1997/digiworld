@@ -222,7 +222,7 @@ export function HomeHot({ navigate }) {
   return (
     <section className="home-section home-hot" aria-labelledby="home-hot-title">
       <div className="section-title">
-        <span className="section-index">E</span>
+        <span className="section-index">F</span>
         <h2 id="home-hot-title">今日热点</h2>
         <p>来自 AI HOT 的本机缓存</p>
       </div>
