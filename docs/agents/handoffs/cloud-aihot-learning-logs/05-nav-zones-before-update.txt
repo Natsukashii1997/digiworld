@@ -1,0 +1,72 @@
+$ node tests/nav-zones-browser.mjs（实现后、改断言前）
+PASS 侧栏四段：今日 / 工作区（资产、目标、运行、知识）/ 生活区 / 系统，顺序正确，版本归档在最下
+PASS 改名：知识仓库、逆向工程、随手记（导航、页头、面包屑、搜索浮层）
+PASS 版本归档页可达；资产详情“历史”标签显示版本查看与比较
+PASS #health 与站内跳转都落到智能体群的“能力体检”分区（规划中），焦点与视口正确，axe 通过
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The input did not match the regular expression /规划中/. Input:
+
+'11\n' +
+  'AI HOT · DAILY\n' +
+  '部分可用\n' +
+  'AI HOT\n' +
+  '\n' +
+  '每日 AI 资讯：精选、热点、日报，从 aihot.news 公开接口拉取后缓存在本机。看到值得学的，收藏到学习成长。\n' +
+  '\n' +
+  '将访问 aihot.news 公开接口：只读取精选、热点和最新日报，默认每 3 小时一次，结果缓存在本机。 返回的标题和摘要只当作文本显示，不执行其中的任何内容；仅个人非商业使用。可以在模型设置里关闭。\n' +
+  '\n' +
+  '首次使用需要你确认。点“开始拉取”后才会第一次访问，之后按间隔自动更新。\n' +
+  '\n' +
+  '开始拉取\n' +
+  '精选\n' +
+  '0\n' +
+  '热点\n' +
+  '0\n' +
+  '日报\n' +
+  '0\n' +
+  '\n' +
+  '尚未拉取\n' +
+  '\n' +
+  'NO DATA\n' +
+  '尚未拉取\n' +
+  '\n' +
+  '确认访问说明后点“开始拉取”，内容会缓存在本机。'
+
+    at file:///home/user/personal-ai-workbench/tests/nav-zones-browser.mjs:198:12 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: '11\n' +
+    'AI HOT · DAILY\n' +
+    '部分可用\n' +
+    'AI HOT\n' +
+    '\n' +
+    '每日 AI 资讯：精选、热点、日报，从 aihot.news 公开接口拉取后缓存在本机。看到值得学的，收藏到学习成长。\n' +
+    '\n' +
+    '将访问 aihot.news 公开接口：只读取精选、热点和最新日报，默认每 3 小时一次，结果缓存在本机。 返回的标题和摘要只当作文本显示，不执行其中的任何内容；仅个人非商业使用。可以在模型设置里关闭。\n' +
+    '\n' +
+    '首次使用需要你确认。点“开始拉取”后才会第一次访问，之后按间隔自动更新。\n' +
+    '\n' +
+    '开始拉取\n' +
+    '精选\n' +
+    '0\n' +
+    '热点\n' +
+    '0\n' +
+    '日报\n' +
+    '0\n' +
+    '\n' +
+    '尚未拉取\n' +
+    '\n' +
+    'NO DATA\n' +
+    '尚未拉取\n' +
+    '\n' +
+    '确认访问说明后点“开始拉取”，内容会缓存在本机。',
+  expected: /规划中/,
+  operator: 'match',
+  diff: 'simple'
+}
+
+Node.js v24.21.0
+exit=1

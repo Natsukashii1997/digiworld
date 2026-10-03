@@ -1,0 +1,4 @@
+{
+  "out": "/home/user/personal-ai-workbench/test-results/visual/reverse-engineering",
+  "problems": []
+}

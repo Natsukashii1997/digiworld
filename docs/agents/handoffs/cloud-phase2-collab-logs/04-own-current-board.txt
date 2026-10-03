@@ -1,0 +1,17 @@
+$ node scratchpad/own.mjs   # 只读解析本副本 CURRENT.md 与 docs/agents/handoffs 文件名
+CURRENT 读取： read 截断： false
+表头 state_id： WB-20260930-104
+当前写入者： Claude（认领104：合入云端 D3 使用次数滚动、D2 焚决+随手记，随后合入 D1 两区导航）
+笔在谁手上： {"state":"held","agent":"Claude","text":"…"}
+最新状态标题： WB-20260930-104 Claude 认领 104（WB-20260930-104）
+推断阶段： {"id":"claim","label":"认领","basis":"当前写入者","keyword":"认领"}
+状态链标题数： 43 首： WB-20260929-35 末： WB-20260930-104
+各节阶段分布： {"unknown":7,"review":15,"rework":5,"claim":15,"accept":1}
+未知阶段的标题： 1.3 搜索增强（WB-20260929-35，Claude） | 1.4 v0.17来源维护收口（WB-20260929-48，Codex） | 产品定义 v1.1 与路线 v2（WB-20260929-52，Claude，用户已确认） | UI v12（WB-20260929-56，Claude） | UI v12.1（WB-20260929-58，Claude） | 2.3 规则模板 + 托管区块写入（WB-20260929-68，Claude） | Claude 更正（WB-20260930-97）
+交接目录： ok md 文件数： 50 截断： false
+exit=0
+
+$ ls docs/agents/handoffs/*.md | wc -l
+50
+$ grep -cE "^#{1,6} .*[A-Z]+-[0-9]{8}-[0-9]+" CURRENT.md
+43

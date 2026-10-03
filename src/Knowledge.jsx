@@ -12,11 +12,12 @@ import {
 import { Badge, Button, Dialog, Empty, PageHeading } from "./components.jsx";
 import { request } from "./api.js";
 import { KnowledgeCompilation } from "./KnowledgeCompilation.jsx";
+import { KnowledgeZones, ZoneMetric, useZoneSummary } from "./KnowledgeZones.jsx";
 import "./knowledge.css";
 
 const date = (value) => new Date(value).toLocaleString("zh-CN");
 
-export function Knowledge({ state, adoptState, notify }) {
+export function Knowledge({ state, adoptState, notify, navigate }) {
   const sources = state.connections?.knowledgeSources || [];
   const [selectedId, setSelectedId] = useState("");
   const selected =
@@ -27,6 +28,7 @@ export function Knowledge({ state, adoptState, notify }) {
   const [pending, setPending] = useState(false);
   const [epoch, setEpoch] = useState(0);
   const [selections, setSelections] = useState([]);
+  const [zoneSummary, setZoneSummary] = useZoneSummary();
   const previousSources = useRef(sources);
   useEffect(() => {
     const previous = previousSources.current;
@@ -162,10 +164,13 @@ export function Knowledge({ state, adoptState, notify }) {
       <PageHeading
         page="knowledge"
         action={
-          <Button disabled={!!busy || pending} onClick={() => open("connect")}>
-            <Plus size={16} />
-            连接知识源
-          </Button>
+          <>
+            <ZoneMetric latest={zoneSummary.latest} />
+            <Button disabled={!!busy || pending} onClick={() => open("connect")}>
+              <Plus size={16} />
+              连接知识源
+            </Button>
+          </>
         }
       />
       <div className="knowledge-meta">
@@ -189,6 +194,15 @@ export function Knowledge({ state, adoptState, notify }) {
       <KnowledgeSteps
         sources={sources.length}
         tasks={(state.knowledgeTasks || []).filter((t) => !t.archived).length}
+      />
+      <KnowledgeZones
+        state={state}
+        adoptState={adoptState}
+        notify={notify}
+        summary={zoneSummary}
+        onSummary={setZoneSummary}
+        navigate={navigate}
+        blocked={!!busy || pending}
       />
       <div id="k-sources" className="knowledge-anchor" />
       {!sources.length ? (

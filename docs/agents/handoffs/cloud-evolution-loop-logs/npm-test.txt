@@ -1,0 +1,952 @@
+
+> personal-ai-workbench@0.17.0 test
+> node --test tests/*.test.mjs
+
+✔ 配置 HTTP 仅对可证明未开始的执行前拒绝返回解锁凭据 (192.887419ms)
+✔ 配置 HTTP 显式概览与差异预览只返回白名单，不修改源文件或主库 (77.482341ms)
+✖ 配置 HTTP 确认后回读并保留历史，显式恢复原字节与权限且不宣称采用 (133.922574ms)
+✔ 所有配置 HTTP 动作拒绝无会话、跨站、GET 和任意路径字段 (123.44449ms)
+✔ 配置 HTTP 拒绝非白名单、错误类型、无效 JSON 与不支持的配置而不回显正文 (145.875409ms)
+✔ Codex App 不冒充 CLI 配置目标，过期预览不能通过 HTTP 写入 (82.416995ms)
+✔ Explicit configuration overview and preview expose only supported values and leave source unchanged (166.683873ms)
+✔ Expired previews, source drift and workspace changes cannot write (103.542747ms)
+✔ Known previews rejected before execution explicitly report operationNotStarted (156.38073ms)
+✔ Unknown or restarted previews and unreadable existing operations cannot claim operationNotStarted (123.518185ms)
+✔ A known preview reports a sanitized preflight failure when the scope adapter fails (75.27429ms)
+✔ A preview expiring while its durable prepared record is saved never writes or replays the configuration (99.162602ms)
+✖ A changed binding and external edits block restoring an old operation (91.207153ms)
+﹣ A group-only permission change is drift and blocks restoring identical configuration bytes (50.709095ms) # No alternate current-user group
+✖ Replacing the actual Home inode with identical configuration bytes invalidates old previews and operations (45.517903ms)
+✖ BOM, Unicode and CRLF survive applying and restoring an exact byte-offset patch (59.779893ms)
+✖ A missing original journal record invalidates a restore preview with a safe conflict (82.920281ms)
+✔ A failed prepared-journal write never starts a configuration write or leaks the filesystem error (68.18101ms)
+✔ An ambiguous prepared-record save is checked after restart instead of replaying its write (79.440084ms)
+✔ Failure syncing the new journal directory's parent cannot reach a source-file write (49.283177ms)
+✖ A configuration rename followed by failure returns observed state without claiming operationNotStarted (63.151939ms)
+✖ A saved Hermes target applies and restores YAML booleans while preserving unrelated bytes (88.995116ms)
+✖ Receipt failure after file write stays recoverable and repeating the operation does not rewrite (87.937624ms)
+✖ A forged inverse patch cannot authorize editing another boolean (116.394131ms)
+✖ Restart recovery checks the same operation without replay; explicit restore returns original bytes (73.725575ms)
+✖ Confirmed apply persists a minimal journal, reads back the file and never increments the workspace revision (60.139665ms)
+✔ Codex 默认 Home 与共享用户 Skill 来源分开展示，刷新身份稳定 (33.878632ms)
+✔ Profile 链接单独受阻，删除标记目录链接或枚举权限错误不当作无 Profile (19.008049ms)
+✔ 仅目录元数据 API 和对应 Home 环境变量被读取，配置秘密与 active_profile 均不读取 (9.883638ms)
+✔ Home 与环境路径的任一祖先是链接时受阻，不进入目标目录枚举 (4.533182ms)
+✔ Codex 环境 Home 仅作为额外候选，规范化去重；非法宽泛路径不扫描 (18.228417ms)
+✔ 目录缺失是 missing，普通文件和无读取权限是 blocked，不假装为空成功 (6.260235ms)
+✔ Hermes 枚举默认和环境 Home 对应 Profiles，排除非法名字和已删除项并稳定去重 (17.401015ms)
+✔ Profile 数量与枚举项均有界，限额不伪装成完整结果 (683.706044ms)
+✔ 环境指定的 Profile 也须合法且非 tombstone，枚举失败不绕过单项核验 (21.099275ms)
+✔ 枚举打开时 Home 被替换成链接，中止并关闭句柄，不返回外部 Profile 名称 (5.746741ms)
+✔ 同一 Profile 枚举重复项不重置环境来源或身份 (17.160443ms)
+✔ Codex 安装包声明与入口对应，返回稳定身份而不执行程序 (26.622302ms)
+✔ 程序选择指纹随同路径替换或原地更新失效，逻辑 ID 不随版本变化 (8.869262ms)
+✔ 元数据普通文件若在打开前变为 FIFO，读取使用非阻塞标志 (2.561233ms)
+✔ 程序缺失、受阻、存在但未知版本是三个不同状态，重复入口不重复 (3.40529ms)
+✔ 安装元数据拒绝错误身份、坏版本、链接、目录和超大文件 (13.024045ms)
+✔ 版本读取只打开白名单元数据，不读取 Agent 配置、聊天或程序正文 (3.41226ms)
+✔ 元数据打开前被替换、读取中被修改均不返回版本 (4.421135ms)
+✔ Hermes 重复包、坏身份、重复头、权限或祖先改向不被当作有效版本 (27.370286ms)
+✔ Hermes 目录枚举截断或中途改向时失败关闭 (30.635676ms)
+✔ 检查期间程序被替换，不把旧版本证据赋给新入口 (4.052572ms)
+✔ Hermes 从同一 venv 的包和入口声明取得版本，不扫描其他 Home (19.635165ms)
+✔ npm 版本只接受 Codex 包身份及准确的 bin 映射 (15.717642ms)
+✖ App 版本来自 bundle 身份，内嵌 CLI 不冒用 App 版本；支持二进制 plist (13.188582ms)
+✔ 明确选择程序和 Home 后保存管理目标；重开、编辑保持身份且不生成运行状态 (49.996553ms)
+✔ 改绑程序或 Home 会轮换 bindingId，A→B→A 不恢复旧绑定代次 (112.027107ms)
+✔ legacy 目标同绑定编辑不补写 bindingId，首次真正改绑才生成 (77.863156ms)
+✔ 复查或主库排队期间过期、被容量淘汰的选项不能提交 (95.250996ms)
+✔ 候选和保存接口拒绝任意路径、无版本写入、非法名称与额外字段 (15.570182ms)
+✔ 重复关联不增目标、并发更新被保护；解除只删除工作台关系 (39.809326ms)
+✔ 过期、部分枚举、程序消失和目录变化都不能沿用旧选择写入；目标不会自动丢失 (33.324661ms)
+✔ 共享资产不冒充 Home，通用保存和备份导入不能制造目标 (46.819282ms)
+✔ 选择到保存间同路径的程序或目录被替换，旧选择必须失效 (17.056943ms)
+✔ 清洗：只保留标题、摘要、链接、来源、时间五个白名单字段，丢弃恶意与未知字段 (2.664223ms)
+✔ 清洗：链接只允许 http/https，javascript:、data:、带账号的链接一律清空 (1.790708ms)
+✔ 清洗：超长文本按上限截断，缺标题或标题不是文本的条目丢弃，时间无效置空 (2.043764ms)
+✔ 清洗：列表从常见外层结构中找出条目，条数有上限，非法负载得到空列表 (2.935697ms)
+✔ 默认设置：开启网络访问、每 3 小时；首次拉取前不自动访问 (9.015429ms)
+✔ 拉取：只请求 aihot.news 的四个只读地址，不跟随重定向；缓存只含白名单字段 (42.358573ms)
+✔ 失败：网络错误、5xx、坏 JSON、超大响应都保留上次缓存，并标注“拉取失败”与上次成功时间 (105.594471ms)
+✔ 失败：只有热点失败时，其余分区更新，热点保留旧内容和旧的更新时间 (10.386644ms)
+✔ 日报：日期不是 YYYY-MM-DD 时不拼进地址，日报分区记为失败 (5.37428ms)
+✔ 缓存：大小有上限，超长内容被截断或舍去后仍能写入 (39.715156ms)
+✔ 缓存：磁盘上的缓存被篡改（多余字段、脚本链接）时重新清洗；超过上限的缓存被忽略 (4.803753ms)
+✔ 设置：可关闭网络访问；关闭后手动与定时拉取都不访问接口；间隔可配置并严格校验 (18.675905ms)
+✔ 并发：同时发起的刷新只访问一次接口 (6.123629ms)
+✔ 旧主库重启与读取不迁移写入，旧备份缺字段兼容 (40.697857ms)
+✔ HTTP 成功写后回读、重复幂等、ID 冲突、旧 revision 拒绝、未知结果先查询 (144.313978ms)
+✔ Skill 只生成或未复制不计；有效复制可记；撤销失效不计 (61.809321ms)
+✔ 反馈追加、当前版本阶段、负向降级、新版不继承和零证据 (63.589301ms)
+✔ schema 白名单/隐私/引用/容量严格，反馈拒绝不回显秘密 (5.18219ms)
+✔ 普通写入不能伪造/删除/篡改；有记录示例保留 (51.933323ms)
+✔ 备份不可变并集，旧备份不清零，冲突整次拒绝且反馈引用合并后有效 (3.09368ms)
+✔ 导入 API 预览无写入，确认合并事件并经关闭重开保留 (83.625698ms)
+✔ 固定版本隐私校验不会让未来新正文作废旧反馈；null 不是旧格式 (1.048472ms)
+✔ Skill 固定版本文本文件正文和 UNC 路径拒绝，普通斜杠评价可保存 (0.854049ms)
+✔ 延迟补记保留实际复制时间，最近使用排序不按补记时间；旧记录回退 at (56.847709ms)
+✔ D1 普通评分/比较/格式/用量备注可保存，明确路径和凭据仍拒绝 (3.698218ms)
+✔ D1 备注通过 HTTP 保存后可回读及备份合并/重开，拒绝样例不入库 (213.238336ms)
+✔ M1 查询等待在途写入完成；链接期间撤销仍找到记录，不误报不存在 (71.419859ms)
+✔ 模板 #1 的五个阶段按真实流程排列 (1.643992ms)
+✔ 阶段推断：写入者里的关键词优先 (0.893567ms)
+✔ 阶段推断：写入者为“无”或没有关键词时，看最新状态标题，再看最新交接 (0.549894ms)
+✔ 阶段推断：没有关键词、没有字段，都判为未知，不猜 (0.242895ms)
+✔ 笔在谁手上：从当前写入者读出 Agent；“无”为空闲；缺字段为未知 (0.499067ms)
+✔ 状态链：只取标题里带 state_id 的节，按编号取最新；与表头编号一致者优先 (1.118772ms)
+✔ readStateHeadings：读完整标题链（上限内），不因 64 KiB 截断丢失末尾新节；符号链接不读 (52.975179ms)
+✔ readHandoffIndex：只列 docs/agents/handoffs 下的 .md 文件名与修改时间，不读正文，不跟随符号链接 (23.01433ms)
+✔ 派发口令：字段齐全（项目路径、先读、输入状态、唯一下一步、验收标准、禁止事项、要回交的证据） (3.237386ms)
+✔ 派发口令：CURRENT 读不到时如实写未知，不编造状态 (0.711996ms)
+✔ 开工口令：项目路径、先读 AGENTS.md 与 CURRENT.md、唯一下一步 (1.382999ms)
+✔ 口令不含凭据、主库内容或私人会话：只用白名单字段，疑似凭据整段替换 (1.591495ms)
+✔ 口令的项目路径必须是登记过的绝对路径 (0.500575ms)
+✔ sha256Hex 与 Node 一致 (7.951792ms)
+✔ COLLAB_AGENTS 只有三个主力 Agent (1.485345ms)
+✔ 时间线：状态链、交接文档与工作台派发记录合并，按日期倒序 (12.085706ms)
+✔ 留痕 schema：旧库缺失按空；合法记录通过 (6.475073ms)
+✔ 留痕 schema：字段严格，多余字段、错误类型、重复 ID 都拒绝 (3.791496ms)
+✔ 留痕只能经专用接口追加：普通保存不能新增、改写或删除 (2.022133ms)
+✔ 备份合并：留痕按 ID 并集；同 ID 内容不同则整次拒绝；从空库恢复保留留痕 (2.705533ms)
+✔ 看板接口：只列在推进项目；阶段、笔、状态链与交接文档来自项目文件；不读交接正文；只读 (454.334475ms)
+✔ 留痕接口：复制成功后追加一条；同 ID 重放不重复；字段严格；项目必须已登记 (262.53513ms)
+✔ Configuration keys never mutate JavaScript prototypes or become inherited settings (100.967753ms)
+✔ Codex display change preserves comments and unrelated private text byte for byte (7.441754ms)
+✔ A quoted dotted key is not the supported nested field (1.157367ms)
+✔ A leading UTF-8 BOM survives supported edits with original byte offsets (14.000945ms)
+✔ Hermes refuses YAML merge/complex keys and PyYAML-incompatible one-letter booleans (11.49356ms)
+✔ Invalid/private values, syntax and unsafe YAML constructs never leak into a view or error (7.247872ms)
+✔ Unset boolean insertion supports empty, dotted, inline and nested configuration without reserializing (11.991606ms)
+✔ Hermes replaces only an explicit boolean without exposing private scalars (1.076223ms)
+✔ Hermes can add a setting to flow maps with trailing commas or comments without changing existing bytes (2.555519ms)
+✔ Codex adds an unset field within an existing table without changing private content (0.68578ms)
+✔ reads an owned ordinary configuration as exact bytes with a stable fingerprint (18.211677ms)
+✔ rejects relative paths and linked ancestors or files instead of following them (6.539094ms)
+✔ rejects hard-linked, special-permission, foreign-owner, and oversized configuration files (8.556326ms)
+✔ refuses a file replaced while opening it and never exposes filesystem error details (4.452429ms)
+✔ applies exact bytes atomically, preserves ordinary permissions, and returns verified read-back (15.214396ms)
+✔ refuses stale previews, scope failures, and invalid next content without changing the configuration (5.199379ms)
+✔ detects an external change immediately before replacement and cleans only its own staged file (10.827987ms)
+✔ reports unknown when rename may have completed and never deletes a newly created temporary replacement (19.340333ms)
+✔ rejects mismatched read-back or failed directory durability without automatically rolling back (36.609002ms)
+✔ does not install or delete a staged file replaced by an external process (17.244018ms)
+﹣ the native metadata boundary rejects extended attributes and ACLs without exposing values (0.177049ms) # SKIP
+﹣ the native macOS writer exactly preserves the system provenance attribute (0.05199ms) # SKIP
+✔ blocks a metadata-only change before rename even when configuration bytes stay identical (12.580438ms)
+✔ reports unknown if provenance changes only after replacement (15.199263ms)
+﹣ preserves the original file group as well as mode when the directory has a different group (0.338645ms) # No alternate current-user group on this host
+✔ a mismatched expected group cannot authorize an atomic replacement (4.091499ms)
+✔ never attempts metadata writes on a replaced staging path (7.172805ms)
+✔ sanitizes a filesystem failure during the last pre-staging path check (5.206907ms)
+﹣ never removes quarantine to make a configuration writable (0.171098ms) # SKIP
+✔ rejects directories, missing files, and FIFO endpoints without waiting on input (9.620534ms)
+✔ Journal rejects foreign paths, private patch text, unsafe fields and corrupted records (42.570691ms)
+✔ Prepared operation survives reopen without storing full configuration; completed receipt is separate (30.134078ms)
+✔ Prepared records require a durable journal-directory entry before writing their own files (21.849327ms)
+✔ 来源子目录同字节替换使旧预览和旧绑定失效，重新确认后可交接 (170.363979ms)
+✔ 交接末端不能返回已被替换为符号链接的来源指针 (51.646978ms)
+✔ 旧连接兼容读取且保留来源草稿，缺目录指纹时必须重新保存才能交接 (95.409293ms)
+✔ 交接末端再次核验目录链，不接受读取后发生的同字节目录替换 (91.871134ms)
+✔ 已知目录更换不能通过预览或后续未知扫描绕过确认，普通未知观测可以主动读取核实 (154.271211ms)
+✔ 显式重关联轮换代次后保留旧指针，但旧预览和旧连接不能继续交接 (280.155927ms)
+✔ 同路径目录被替换，即使来源字节相同也必须重新预览保存后才能交接 (103.308223ms)
+✔ 扫描后的祖先目录替换不能经符号链接进入隐藏来源 (65.688475ms)
+✔ 指定项目来源可预览；原文保真、只读、不自动形成新状态正本 (62.655607ms)
+✔ 连接只保存指针；同版生成本机交接包，更新/并发冲突阻断旧预览，解绑保留原文件 (148.537628ms)
+✔ 来源边界拒绝越界、隐藏路径、符号与硬链接、超限、非 UTF-8；未授权和缺失不伪报成功 (106.474738ms)
+✔ 重启保留连接，备份不含来源正文；范围收缩与身份变化不能继续交接 (112.848297ms)
+✔ 口令的真实本机链接固定版本、包含全部文件与可复核哈希 (117.032878ms)
+✔ 本机链接到期、撤销、归档后拒绝下载；令牌不能操作主库 (94.35768ms)
+✔ 容量满拒绝新增但保留原链接；服务重启使全部链接失效 (121.573894ms)
+✔ 会话版本号取自 package.json，不另写一份 (60.970515ms)
+✔ 开发页面经代理访问本机服务，只接受自身来源，外部来源仍被拒绝 (447.166134ms)
+✔ 资产卡片、编号、版本与迭代阶段都由真实资产数据派生 (127.796641ms)
+✔ 详情抽屉保留 Skill 本机交付与边界说明 (28.880613ms)
+✔ 没有使用证据时版本迭代不升级，伙伴只随自己的资产成长 (1.884596ms)
+✔ 总览只展示真实计数，未扫描如实显示为未扫描 (37.546434ms)
+✔ 品牌改为数码世界，入口与样式没有残留旧主题 (23.258655ms)
+✔ 本地 HTTP 供应当前构建的入口与资源 (79.490474ms)
+✔ 切片 1.2：导航按今日、资产、目标、运行、知识、生活、系统分组，规划中页面如实标注 (19.079295ms)
+✔ 切片 1.3b：焚决是资产仓库第五种类型，#scrolls 旧链接落到资产仓库焚决标签 (60.941828ms)
+✔ UI v12.1：侧栏名称与今日页快捷动作按用户决定 (46.1341ms)
+✔ 今日页：日历未接入时只显示夜间窗口草稿与说明，待处理来自真实数据 (37.300462ms)
+✔ 切片 5.3、5.4：AI HOT 与学习成长不再是规划中页面；学习成长如实写明内容解析以后再做 (6.991003ms)
+✔ 扫描范围内自动发现项目，忽略依赖/符号链接；Agent 程序与配置痕迹区分 (29.271461ms)
+✔ ChatGPT.app 错误、缺失或受阻的 bundle 身份不冒充任一品牌 (34.804514ms)
+✖ ChatGPT.app 的 Codex bundle 身份归入 Codex，原 ChatGPT 身份不变 (12.439959ms)
+✔ 本地 remote 与 GitHub 自动归并为一项；重新扫描保持稳定 ID (2.164942ms)
+✔ 后续补 remote 合并已有两条记录；换 remote 解除旧关联 (12.562087ms)
+✔ 不可读取的探测位置标记未知，不当作未安装 (9.061389ms)
+✔ Git 元数据读取失败保留上次关联并报告未知 (15.369531ms)
+✔ 任务包：含当前版本全文、历次反馈与备注、改版要求、产出格式与禁止事项 (6.233905ms)
+✔ 回复解析：正常回复取出正文与改动说明，前后的闲聊和代码围栏不计入 (2.146705ms)
+✔ 回复解析：缺段、重复标记、空正文都明确报错，不猜测 (1.967746ms)
+✔ 回复解析：恶意内容原样当作文本保留，不解释、不执行 (0.414484ms)
+✔ 改版候选：严格 schema；旧库缺失集合按空；新增字段与非法状态被拒 (8.769739ms)
+✔ 采用：生成新版本并注明候选 ID，历史版本一字不改；改历史被拒 (3.191096ms)
+✔ 采用：当前版本已变化时拒绝，避免覆盖别的改动 (2.078651ms)
+✔ 退回：只标记候选已退回并保存原因，不产生新版本 (1.787043ms)
+✔ 证据：只用已有使用记录计算采用前后次数与需改进比例，没有反馈就如实为空 (5.918885ms)
+✔ 备份合并：候选按 ID 并集；同 ID 内容不同整次拒绝；旧备份缺集合不清空当前候选 (5.890809ms)
+✔ 待处理：待比较的候选进入顶栏待处理，决定后消失 (1.621989ms)
+✔ 整理HTTP：创建→原生任务包→候选导入→检查→备份→归档，仅存候选不改源 (303.457195ms)
+✔ 整理HTTP：伪造与未知字段不写入，旧revision不覆盖，变化与撤权不返回可交付包 (200.355531ms)
+✔ 整理HTTP：所有新动作继承同源/会话门禁且不泄露资料 (67.835982ms)
+✔ 知识任务和候选重启后可读；恢复到空主库保留历史但不恢复连接授权 (101.368303ms)
+✔ 备份合并追加新任务与兼容候选；旧备份不回退版本或归档 (124.132051ms)
+✔ 备份拒绝同任务身份变更、候选分叉和请求身份分叉，失败不写入 (80.099013ms)
+✔ 通用保存不能创建、删除、篡改或归档整理历史，专用事务也不能回退历史 (114.315273ms)
+✔ 缺 knowledgeTasks 的旧版快照仍合法，导入不替换当前知识连接 (84.30378ms)
+✔ 跨来源创建整理任务，只保存证据指针且源原文不进入主库 (100.628324ms)
+✔ 来源核对不依赖过期扫描，任务包只有指针且真实变动不能出新包 (136.913444ms)
+✔ 候选接收仅追加不可覆盖版本，来源已变仍能保留历史候选，归档保留历史 (139.248581ms)
+✔ 重复创建与候选导入可安全重试，旧版本的新请求和 requestId 分叉拒绝 (117.899434ms)
+✔ 跨文件捕获期间先读资料漂移，提交前再次核对拒绝整个任务 (86.833709ms)
+✔ 捕获读取不锁住主库；后读资料期间前一来源撤权阻止整次创建 (93.762799ms)
+✔ 核验期间撤权使整次结果失效，候选回传和重复创建不能恢复授权 (128.080614ms)
+✔ 同一创建请求并发重试只提交一个任务，接收候选并发重试只留一版 (99.393376ms)
+✔ 伪造路径、指纹、字段和过期清单不产生半任务 (97.957423ms)
+✔ 候选拒绝伪造 manifest、身份、引用、提升状态和超量，原文指令只作为字符串保存 (130.596281ms)
+✔ 知识连接只保存来源指针，显式扫描后才能读选中的原文 (49.11453ms)
+✔ 连接输入确认与版本严格校验，重复路径不产生第二份授权 (24.699677ms)
+✔ 未扫描、无权路径、跨来源、超时凭证及服务重启不能读取正文 (35.637717ms)
+✔ 重新扫描失败使旧索引失效，不误用陈旧结果 (22.397741ms)
+✔ 读取期间凭证过期不返回正文，必须重新扫描 (24.018007ms)
+✔ 重新确认更新身份代次，旧索引无效；断开不再允许读取 (27.21308ms)
+✔ 通用保存和备份不能新建或扩大知识授权，现有来源不丢失 (22.190194ms)
+✔ 断开与重确认必须有明确确认及当前版本，未知字段拒绝 (32.437991ms)
+✔ 刷新扫描与断开先入队后，排队的旧读取不再触及正文 (41.238575ms)
+✔ 最多20个知识来源，超限在来源探测前拒绝 (205.894006ms)
+✔ 知识来源身份必须是哈希字符串，禁止混入正文或额外授权字段 (15.100435ms)
+✔ 原文读取区分来源目录核验失败与单个文件缺失，来源范围错误保留受控标记 (22.547646ms)
+✔ 连接只核验目录身份，不枚举来源；普通新增文件不改变授权身份 (4.737762ms)
+✔ 宽泛、隐藏、秘密及系统来源在零 I/O 边界拒绝 (1.2534ms)
+✔ 连接拒绝链接根和文件；来源访问错误不透传私密正文 (5.837724ms)
+✔ 显式扫描只返回可见 Markdown 元数据与指纹，不读取正文 (10.04607ms)
+✔ 读取扫描选中的当前原文，返回准确来源、字节数和正文哈希 (13.198885ms)
+✔ 扫描和读取无效来源及相对文件路径必须零 I/O 拒绝 (1.307029ms)
+✔ 扫描受条目、文件、深度与时间预算约束，截断明确为部分结果 (26.083108ms)
+✔ 扫描跳过隐藏/秘密/依赖文件，链接、硬链接和受阻目录仅给部分结果 (16.748113ms)
+✔ 正文受256KiB与严格UTF-8边界约束，保留BOM和中文原文，不接受二进制 (14.001801ms)
+✔ 扫描期间父目录换代，不能把旧目录链指纹发布为当前文件 (13.190983ms)
+✔ 读取已打开文件期间父目录被替换，即使原句柄仍稳定也拒绝返回正文 (15.680202ms)
+✔ 读取内容不稳定即使stat不变也拒绝，句柄始终只读并关闭 (8.75709ms)
+✔ 条目预算在获取下一条目录记录之前生效，并关闭截断目录句柄 (7.827905ms)
+✔ 文件变化与根目录换代使旧扫描凭证失效，不因相同名称或字节重新授权 (14.952005ms)
+✔ 读取前新出现的硬链接、父链链接与特殊类型均在open前拒绝 (31.331411ms)
+✔ 空目录与空文本是有效零结果，上限不能被配置扩大 (12.187816ms)
+✔ 目录在opendir前被替换为外部链接时，首条记录前拒绝且不泄漏外部文件名 (9.162731ms)
+✔ 子树在末次核验前失稳时一并撤回文件与问题，但保留稳定兄弟节点 (15.45905ms)
+✔ 正文查询HTTP只读闭环继承会话/同源/JSON门禁，结果不进入备份 (108.943013ms)
+✔ 知识接口需要本机会话和同源，连接-扫描-原文-断开完整只读闭环 (54.788784ms)
+✔ 文件或来源目录变化必须重扫/重新确认；并发连接不会覆盖 (72.087276ms)
+✔ 首次通用保存与备份导入都不能创建知识读取授权 (65.729911ms)
+✔ 一份资料变化定位多个任务的候选主张，不修改任务或原文 (226.585987ms)
+✔ 预览当前原文后确认创建关联新任务，旧候选保留且重复确认不重复创建 (234.284409ms)
+✔ 影响核查分批不自动读后续任务，状态变化拒绝续查，归档任务仍可追溯 (486.844867ms)
+✔ 已保存候选只报告历史位置，日志损坏明确不可用，不冒充没有保存记录 (158.999139ms)
+✔ 重新整理确认时expired不能创建新任务 (121.67981ms)
+✔ 重新整理确认时changed不能创建新任务 (101.480441ms)
+✔ 重新整理确认时disconnected不能创建新任务 (115.873769ms)
+✔ 重新整理确认时revision不能创建新任务 (115.803281ms)
+✔ 断开来源只报告撤权且不预览当前文件，丢失文件不能报告一致 (124.458056ms)
+✔ 关联任务备份恢复保留原历史但不恢复读取权限，非法父关系全部拒绝 (228.020462ms)
+✔ 四个维护入口均要求本机会话凭证，未授权请求没有副作用 (128.954246ms)
+✔ 来源替换、链接和超大文件不能通过当前版本预览 (119.888921ms)
+✔ impact读取途中撤权拒绝整次结果，不阻塞撤权请求 (107.975111ms)
+✔ preview读取途中撤权拒绝整次结果，不阻塞撤权请求 (149.202916ms)
+✔ create读取途中撤权拒绝整次结果，不阻塞撤权请求 (127.48963ms)
+✔ 恢复查询不把仍执行的创建当作未创建，未开始的旧确认会被作废 (164.289572ms)
+✔ 确认读取途中到期不能写入；影响检查耗时达到预算后保留明确下一批 (225.112427ms)
+✔ 同字节file替换使旧预览失效，重新预览捕获新身份并保留历史 (165.362705ms)
+✔ 同字节directory替换使旧预览失效，重新预览捕获新身份并保留历史 (188.467478ms)
+✔ 维护预览最多30份，过期清理后可恢复且旧计划不能创建 (620.558789ms)
+✔ 50任务容量拒绝重新整理且不改revision或旧历史 (3627.651207ms)
+✔ 恢复查询作废仍在读取的预览，迟到结果不泄出原文并允许重新预览 (109.01149ms)
+✔ 部分依据变化只列相关主张冲突关系，多版本保存/撤回/未知记录不冒充文件现状 (378.511783ms)
+✔ 三区统计：按默认规则只读统计各区篇数与本周新增或更新，缓存最近一次供世界总览 (82.56898ms)
+✔ 规则保存到主库；新规则立即影响统计，越界规则与旧版本被拒绝 (59.073184ms)
+✔ read_profile：未开启共享时拒绝；开启后返回个人说明各文件正文，带大小上限 (119.009288ms)
+✔ read_profile 与 propose 拒绝个人说明以外的路径与越界路径 (121.909871ms)
+✔ propose_profile_change：输入校验、原段落核对，只写主库待处理队列不写 Vault (81.394146ms)
+✔ 采纳：预览差异→确认，只记录确认结果；文件在预览后变化则拒绝；拒绝为单向决定 (121.693845ms)
+✔ MCP 工具：initialize、tools/list 与两个工具的 schema，未知工具与非法参数 (70.751993ms)
+✔ MCP HTTP 只监听 127.0.0.1，拒绝跨站来源与错误 Host，只接受 POST JSON (91.334003ms)
+✔ 工作台 HTTP：三区与个人说明接口继承会话门禁；通用保存不能开启共享或伪造建议 (105.272476ms)
+✔ 查询命中正文而非文件名，返回原文哈希、行号与不持久化的片段 (48.107766ms)
+✔ 大小写匹配保留原行索引，特殊符号不是正则，片段最多三个不同行且有界 (18.565102ms)
+✔ 无效查询和清单位置在任何文件 I/O 前拒绝，空清单允许从零查询 (3.865088ms)
+✔ 文件批次预算可继续且无遗漏重复，不能扩大默认限制或设置零进度预算 (26.363125ms)
+✔ 正文预算在文件边界分页，超大文件不开始读取且仍推进位置 (28.855921ms)
+✔ 权限在读取前、读取后和返回前撤销均整批拒绝，不回传早先片段或再读下一篇 (20.721784ms)
+✔ 时间预算协作式完成在途读取，然后返回下一位置；命中文件预算独立分页 (27.058132ms)
+✔ 单实例查询不排队并发读取，忙碌返回429，失败后释放查询槽 (11.766641ms)
+✔ 空清单也核验来源根，开始或返回前根身份漂移整批拒绝 (15.967288ms)
+✔ 不可读文件返回受控部分结果，失败读取占用预计字节预算，编码错误不外泄原错误 (16.911086ms)
+✔ 文件指纹变化整批撤回；失败读取后的撤权检查不能降格为部分结果 (18.073268ms)
+✔ 权限复核等待耗尽预算时不启动新的正文读取，继续位置不丢失文件 (5.651313ms)
+✔ 根或中间目录短暂变为链接再恢复时，已观察到的不安全读取仍使整批片段撤回 (55.811245ms)
+▶ 根暂时缺失或核验 I/O 失败即使恢复，也不能返回之前取得的正文片段
+  ✔ missing (22.112612ms)
+  ✔ io (15.08738ms)
+✔ 根暂时缺失或核验 I/O 失败即使恢复，也不能返回之前取得的正文片段 (38.498013ms)
+✔ 正文查询能找到文件名没有的词，返回行号/来源版本而不写入主库 (56.012827ms)
+✔ 正文短语长度按去掉两端空白后计算，100字符边界可以查询 (34.070888ms)
+✔ 断开不等待整批查询，读取中撤权后整批片段作废且不继续读下一篇 (30.719827ms)
+✔ 无效请求、越界位置与失效扫描在来源探测前拒绝 (32.723718ms)
+✔ 分批查询无重复遗漏，扫描本就不完整时不能升级为全库查询完成 (43.429586ms)
+✔ 读取中重扫使本批结果失效 (38.757763ms)
+✔ 读取中重确认使本批结果失效 (38.670127ms)
+✔ 读取中到期使本批结果失效 (19.263834ms)
+✔ 读取中根更换使本批结果失效 (28.257241ms)
+✔ 无关主库更新不撤销知识权限，另一来源的扫描凭证不能混用 (58.240204ms)
+✔ 新候选排他创建并回读，原有文件不覆盖；撤回后可核验缺失 (49.531063ms)
+✔ 目录替换、路径穿越和同字节文件替换不能沿用旧预览或撤回 (39.997551ms)
+✔ 链接和部分写入不伪装成已保存，也不自动清理未知文件 (20.818865ms)
+✔ 撤回持久化边界重新核验：expiry-after-receipt (225.437915ms)
+✔ 撤回持久化边界重新核验：parent-replaced-after-receipt (245.989454ms)
+✔ 固定候选经确认保存到待整理，历史可回读，明确撤回不影响原文或主库 (451.981399ms)
+✔ 确认不可省略，预览过期或候选归档时不创建文件 (122.964304ms)
+✔ 源文件变化阻断保存，不把旧候选写成当前知识 (80.26494ms)
+✔ 断开目标后，旧预览不能写入；历史不读取已撤权的目标文件 (129.092865ms)
+✔ 服务重开保留成功记录，旧确认不能重放，同字节替换不能撤回 (228.447807ms)
+✔ 撤回预览后有新编辑时保留编辑，记录不能假称已撤回 (268.349519ms)
+✖ 保存的候选能被既有 wiki-local 解析，但不能绕过有效性门禁成为当前知识 (289.918627ms)
+✔ 默认规则：GET NOTES/** 为输入区，个人上下文/** 为个人说明，其余为我的知识 (2.92914ms)
+✔ 规则按顺序匹配，第一条命中生效；允许把输入区的子文件夹划回我的知识 (0.677132ms)
+✔ 规则校验拒绝越界、通配符滥用、重复、未知字段与超量 (1.331829ms)
+✔ 本周从周一 00:00（本机时区）开始 (0.493002ms)
+✔ 统计各区笔记数与本周新增或更新数（按修改时间） (0.839461ms)
+✔ 主库接受三区规则与个人说明建议；旧库缺字段合法 (6.14979ms)
+✔ 建议 schema 拒绝未知字段、越界路径、超长文本与非法状态 (1.609227ms)
+✔ 通用保存不能改三区规则或建议；专用操作只能追加建议并单向决定 (2.896495ms)
+✔ 备份导入不恢复个人说明共享授权；已有主库时保留当前规则与建议 (2.619327ms)
+✔ schema：旧库缺少 learning 按空处理，不写迁移 (6.281527ms)
+✔ schema：合法的书架文件夹、书的状态、链接收藏（含回收区）通过校验 (1.755599ms)
+✔ schema：严格校验字段、状态、链接协议、路径与上限 (8.261026ms)
+✔ merge：没有 learning 的旧备份可导入，当前收藏不变；空库导入不凭空生成 (2.571603ms)
+✔ merge：只做加法——新链接与新书状态追加，已有记录保留当前库的编辑，同链接不同 ID 不重复收藏；书架文件夹不随备份导入 (3.220245ms)
+✔ merge：经仓库导出/导入往返一致，导回自身不新增 (49.017688ms)
+✔ 书架文件夹只能经专用操作修改：通用保存改动文件夹被拒绝，链接与状态可以保存 (19.303852ms)
+✔ 路径校验：只接受存在的绝对目录；拒绝相对路径、根目录、文件、符号链接、控制字符与重复 (38.770139ms)
+✔ 书架索引：只列 PDF/EPUB 的文件名、大小、修改时间；不跟随符号链接、不读隐藏目录；原件与目录不变 (45.17834ms)
+✔ 书架索引：文件夹被替换为符号链接时拒绝读取 (16.304852ms)
+✔ 完整包往返保留中文、二进制、隐藏文件、空目录和执行权限 (9.154823ms)
+✔ 导入拒绝越界、路径冲突、符号链接、多入口与损坏内容 (4.616587ms)
+✔ ZIP 注释中的目录标记不得改变已经核验的解压范围 (0.609367ms)
+✔ 逐项解压跨多个压缩分块仍完整保留二进制 (19.285926ms)
+✔ 拒绝真实展开长度大于声明的损坏 ZIP，不可静默截断 (0.832412ms)
+✔ 伙伴屏的蛋就是最初那颗 12×14 像素蛋：直立时与原图逐格一致 (10.265732ms)
+✔ 任意角度都逐帧落在点阵上：轮廓闭合、面积稳定 (15.769574ms)
+✔ 压扁帧更矮更宽；四季按春夏秋冬轮换 (1.561228ms)
+✔ 示例主库没有任何待处理线索 (6.712606ms)
+✔ 只把当前版本最新反馈为需改进的未归档资产列为线索 (0.723711ms)
+✔ 知识任务、随手记和未设置目标的已检测 Agent 如实计数 (0.392897ms)
+✔ 项目扫描 HTTP 将已登记目录交给扫描器并保存逐目录观测 (135.6834ms)
+✔ 扫描期间范围被另一操作改变时拒绝迟到结果，不覆盖最新目录范围 (35.560495ms)
+✔ 扫描 HTTP 不折叠各自已有 Current 连接的两个同远端项目 (45.038076ms)
+✔ 目录重新确认 HTTP 预览不写主库，确认保留项目 ID 并轮换关联代次 (74.606487ms)
+✔ 项目关联 HTTP 继承会话、同源、JSON、POST与固定动作边界 (74.028147ms)
+✔ 关联已发现目录 HTTP 保留原 ID 与 Current 指针，只改变关系元数据 (75.203203ms)
+✔ 项目关联 HTTP 拒绝过期、旧 revision 与未知 token，不推进状态 (54.72851ms)
+✔ 目录移动后明确重关联保留原项目 ID 与 Current 指针，重扫不产生重复 (150.662627ms)
+✔ 多目录关联保留两处文件，响应重放不重复写入，历史别名跨扫描保留 (63.308563ms)
+✔ 重新确认不能将另一个冲突或未核实目录一并改绑远端 (79.632483ms)
+✔ 重新确认更换目录明确展示并接受新远端，不要求无限重扫且保留原 ID (61.205036ms)
+✔ 尚未重新扫描的同路径目录替换，不能用直接保存 Current 绕过目录确认 (56.979655ms)
+✔ 已有来源连接和已知不同远端拒绝吞并，原项目与指针完整保留 (57.612653ms)
+✔ 只允许替换实际缺失的旧目录，未知、范围外、现存目录均不作为缺失 (47.521584ms)
+✔ 目录替换需显式接纳；旧预览遇相同路径新身份后失效 (73.480572ms)
+✔ 五分钟过期、主库/范围变化、令牌驱逐与服务重启均拒绝旧确认 (195.656902ms)
+✔ 陌生字段、任意未登记目录和缺失版本被拒绝且不触发探测 (23.769085ms)
+✔ 同路径换目录时不使用新目录的 remote 改写或合并原项目 (12.355712ms)
+✔ 本地项目后补 GitHub 关联保留已有 Current 的稳定项目 ID (1.354237ms)
+✔ 逐目录观测区分缺失、未核实和更换；重复扫描不能自动接纳新目录身份 (0.548984ms)
+✔ 两个已有 Current 的项目同 remote 时保留两 ID 和各自目录，不按扫描顺序吞并 (1.547993ms)
+✔ 项目扫描与单项目检查给出真实目录身份和兼容项目记录 (25.638461ms)
+✔ 范围外与排除目录不探测；已知符号链接为未知，不能借重叠根穿透链接 (13.679533ms)
+✔ 目录改名保留底层身份，新路径重新签名；旧目录仅实际检查后为缺失 (8.684101ms)
+✔ 扫描截断与已知路径额外探测共享预算，未探测目录不冒充缺失 (6.295853ms)
+✔ Git 远端已知为空与读取失败区分，GitHub 地址仅规范化而不访问远端 (64.018107ms)
+✔ 扫描拒绝过宽、相对或无界参数；所有参数在探测前校验 (3.508337ms)
+✔ 实际 ENOTDIR 可判缺失，读取受阻为未知；空目录为未识别而非缺失 (7.149712ms)
+✔ Git 标记是链接时不解析其目标，也不误报远端已知为空 (6.625057ms)
+✔ 同一真实根的系统别名只扫描一次，同时容许根以上系统别名 (4.863239ms)
+✔ 检查期间祖先目录被替换，即使项目本身 inode 未变也只报告未知 (8.513476ms)
+✔ 批准根以上别名变向后，即使根 inode 保持也使规范化范围签名失效 (6.814456ms)
+✔ 解析协作状态表：状态编号、当前写入者、唯一下一步、最新交接链接 (2.820713ms)
+✔ 规则模板的“状态编号”与本项目的 state_id 同样识别；单元格里的转义竖线不拆列 (0.434436ms)
+✔ 缺字段：如实列出缺的项，不补造 (0.230579ms)
+✔ 没有协作状态表或空值：判为无法解析 (0.366782ms)
+✔ 超大值截断显示，不整段搬进工作台 (2.822977ms)
+✔ 非 UTF-8 内容不解析；读取上限处截断的多字节字符不误判为非 UTF-8 (1.01312ms)
+✔ readCurrentFile：缺失、超大、非 UTF-8、符号链接各有明确结果 (33.122044ms)
+✔ 停滞：取 CURRENT 修改时间与最近提交中较新者；恰好 N 天不算超过 (0.710661ms)
+✔ 停滞：读不到就是未知，不当作停滞 (1.447425ms)
+✔ 敏感文件按 git ls-files 路径判定 (0.563534ms)
+✔ schema：active 是可选布尔字段；旧库缺失即未标记；停滞阈值为 1–365 的整数天 (5.574726ms)
+✔ 合并备份：active 与其他项目连接字段一样，不从备份导入也不覆盖当前主库 (1.591546ms)
+✔ 重新扫描保留在推进标记，即使远端换了；消失的项目标记随项目保留 (9.714269ms)
+✔ 待处理：体检问题与停滞各进一条，只汇总与跳转；读取失败单列 (1.377558ms)
+✔ HTTP：标记在推进需要当前 revision，严格校验输入；超过 7 个只提示不阻止 (362.884464ms)
+✔ HTTP：停滞阈值可保存，非法值拒绝 (202.979667ms)
+✔ HTTP：只读状态卡、停滞雷达与安全体检覆盖合成仓库，且不改任何项目文件 (438.255994ms)
+✔ HTTP：不能借体检读任意路径；目录不在扫描范围或已更换时如实报告 (233.838685ms)
+✔ HTTP：gh 查询失败或抛错时远程私有性为未知，不报错 (223.210214ms)
+✔ 外部配置事务的快照锁不增加主库版本，且与目标编辑串行 (65.925248ms)
+✔ 子进程异常终止后可重新打开；活跃写入进程仍排他锁定 (138.331483ms)
+✔ 主库保存后关闭再打开，中文内容和完整二进制文件仍可读取 (13.375594ms)
+✔ 兼容旧版编辑器在版本中保存的 type 字段 (10.18496ms)
+✔ 并发写入只接纳一个版本，禁止篡改既有 Skill 历史和危险路径 (24.47509ms)
+✔ 备份恢复先预览，只增加缺失记录和兼容版本；过期预览和冲突不能写入 (31.060251ms)
+✔ 置顶字段 pinned 可选且必须为布尔；旧库缺失即未置顶，备份合并不因置顶冲突 (40.701702ms)
+
+Interrupted while running:
+
+⚠ tests/rule-templates.test.mjs (tests/rule-templates.test.mjs:1:1)
+⚠ tests/scrolls-schema.test.mjs (tests/scrolls-schema.test.mjs:1:1)
+⚠ tests/search.test.mjs (tests/search.test.mjs:1:1)
+⚠ tests/server.test.mjs (tests/server.test.mjs:1:1)
+⚠ tests/silver-agents.test.mjs (tests/silver-agents.test.mjs:1:1)
+⚠ tests/skill-copies-http.test.mjs (tests/skill-copies-http.test.mjs:1:1)
+⚠ tests/skill-copies.test.mjs (tests/skill-copies.test.mjs:1:1)
+⚠ tests/skill-copy-diff.test.mjs (tests/skill-copy-diff.test.mjs:1:1)
+⚠ tests/skill-files.test.mjs (tests/skill-files.test.mjs:1:1)
+⚠ tests/skill-origins.test.mjs (tests/skill-origins.test.mjs:1:1)
+⚠ tests/skill-sources.test.mjs (tests/skill-sources.test.mjs:1:1)
+⚠ tests/store.test.mjs (tests/store.test.mjs:1:1)
+⚠ tests/version-diff.test.mjs (tests/version-diff.test.mjs:1:1)
+⚠ tests/workflow-references.test.mjs (tests/workflow-references.test.mjs:1:1)
+⚠ tests/workflow-state.test.mjs (tests/workflow-state.test.mjs:1:1)
+✔ 首次装入：原有字节原样保留，区块追加在末尾并可解析 (3.433693ms)
+✔ 首次装入：没有换行结尾的文件先补空行，空文件不加前导空行 (1.04535ms)
+✔ 文件不存在时计划为新建，正文缺换行时补齐 (0.356026ms)
+✔ 升级只替换区块，区块前后字节逐字节不变 (0.54237ms)
+✔ 同一版本且未手改时不需要写入 (0.399912ms)
+✔ 区块被手改：默认拒绝写入，勾选覆盖后才计划升级 (0.624156ms)
+✔ 畸形或多个托管标记一律拒绝，不猜 (1.590517ms)
+✔ 文件里是另一个模板的区块时拒绝，不替换 (0.427198ms)
+✔ 模板正文不能包含托管标记 (0.324731ms)
+✔ CRLF 文件：追加与升级都不改动原有换行 (0.419988ms)
+✔ 规则资产类型可以保存，复制记为 copy-rule 使用 (161.011598ms)
+✖ 装入、升级、区块外手写内容不受影响，撤回恢复写入前字节 (73.95071ms)
+✖ 区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容 (103.748914ms)
+✔ 文件不存在时新建；新建的文件不提供撤回 (113.167409ms)
+✔ 预览后文件变化、主库变化或过期都拒绝写入，并声明未开始 (74.546283ms)
+✖ 重复提交同一令牌只写一次，返回核对结果 (83.153166ms)
+✔ 只接受白名单文件与已发现项目，拒绝符号链接 (65.356852ms)
+✔ 操作记录私有，只存区块片段，不存区块外正文 (83.854359ms)
+✖ D-R4：写入中途失败的操作不替代已装版本，单独标为未确认 (159.918047ms)
+✖ tests/rule-templates.test.mjs (1189986.141987ms)
+✔ 焚决：旧库缺少 scrolls 按空处理，不写迁移 (5.974875ms)
+✔ 焚决：合法的卷、有序条目、标签、计次、置顶与回收区字段通过校验 (1.569289ms)
+✔ 焚决：严格校验字段、类型与长度上限 (6.540074ms)
+✔ 随手记：富文本格式与“已炼”标记可选；旧随手记不变；拒绝任意字段与控制字符 (2.052009ms)
+✔ 备份：没有 scrolls 的旧备份可导入，已有的卷保持不变 (3.125144ms)
+✔ 备份：新增卷与已有卷的新条目被合并，计次取较大值，当前库的编辑保留 (2.254573ms)
+✔ 备份：含焚决与富文本随手记的新备份经 HTTP 同款导出结构往返一致 (55.791174ms)
+✔ 关键词按空白拆分、忽略大小写，所有词须出现 (7.045481ms)
+✔ 资产命中标题、说明、标签、正文和文本文件，并给出位置与摘录 (0.779579ms)
+✔ 摘录截取关键词前后片段并用省略号标出截断 (0.225174ms)
+✔ 只搜当前版本：历史版本内容不命中 (1.681686ms)
+✔ 已归档资产只计数，不列入结果 (0.422314ms)
+✔ 全局搜索覆盖随手记、参考、手动与扫描项目 (0.614815ms)
+✔ 缺少扫描连接的旧主库也能搜索 (0.388034ms)
+✔ 标签统计只算未归档资产当前版本，按数量再按名称排序 (0.343844ms)
+✔ 按版本对象缓存，重复搜索结果稳定 (0.354502ms)
+✔ 多词跨字段命中时，摘录不受关键词顺序影响，并列出全部命中位置 (0.313354ms)
+✔ Agent 目标接口受会话保护、拒绝浏览器路径且只更新主库关系 (135.879917ms)
+✔ Agent 目录检查仅接受已支持身份、受会话保护且不写主库 (30.052968ms)
+✔ 扫描结果自动存入主库且不可伪造；重复扫描保留关联 ID (73.826365ms)
+✔ 本地 API 需本页会话令牌，拒绝跨域和伪造 Host；保存后可回读 (28.571472ms)
+✔ 银饰与角色卡：旧库缺少 silver、agentRoles 按空处理，不写迁移 (5.125802ms)
+✔ 银饰：合法的欣赏墙、品类与已填格通过校验 (1.600089ms)
+✔ 银饰：非法字段、文件引用、数量与格式一律拒绝 (3.769699ms)
+✔ 角色卡：只接受五个主力/附属 Agent，字段严格 (1.750931ms)
+✔ 银饰与角色卡合并：只做加法，保留当前编辑；图片引用随记录合并 (2.37659ms)
+✔ 银饰合并：同一已填格落在不同品类视为冲突，整次不导入；旧备份无银饰可合并 (2.227749ms)
+✔ 银饰与角色卡：写入主库后回读一致 (21.489423ms)
+✔ 银饰图片：按文件头识别 jpg/png/webp，内容寻址去重，只落在数据目录的 silver/ 下 (9.187251ms)
+✔ 银饰图片：类型、大小、剪影格式与路径不合法时拒绝 (11.906735ms)
+✔ 抠图器：非 macOS 平台直接返回不可用，不调用任何命令 (0.548041ms)
+✔ 抠图器：macOS 上调用 Vision 脚本；成功写出 PNG 才算成功，出错、超时或输出无效都回退为不可用 (4.537292ms)
+✔ 抠图器：Vision 脚本随服务端发布，调用主体抠图请求 (0.730198ms)
+✔ 银饰图片抠图：成功时保存为新的 PNG 剪影；不可用时如实返回，不产生文件 (10.85951ms)
+✔ 银饰 HTTP：上传、读取、抠图接口继承会话与 JSON 门禁 (66.032097ms)
+✔ 收藏格：按目标数量生成空格与已填格，回收区中的已填格不占格 (0.402014ms)
+✔ 角色卡：用户编辑覆盖默认值；未编辑的 Agent 用草拟默认并标注 (0.526916ms)
+✔ 派活推荐：按擅长关键词匹配，最多推荐 2 个并写明理由；无命中时不推荐 (0.496897ms)
+✔ 常驻项目：只从已登记项目的交接字段推断，推断不了留空 (0.289543ms)
+✔ HTTP 从明确目标发现单一候选，关联固定版本并可重新核对、解除 (193.388721ms)
+✔ Skill 副本 HTTP 拒绝无会话、外部 Origin 和任意路径字段 (66.274889ms)
+✔ 备份导入不会激活其中的外来 Skill 副本路径 (63.212464ms)
+✔ 明确发现、预览后关联固定版本；重开、核对、解除只改变关系 (106.66859ms)
+✔ 主库排队期间副本变化必须拒绝确认，不能保存旧预览 (47.157608ms)
+✔ 资产更新仍核对固定旧版；显式改版保持关联 ID，响应丢失重试不重复 (92.747393ms)
+✔ 副本变化、消失、符号链接受阻与权限未知均如实显示且不持久化当前成功 (66.182151ms)
+▶ 预览后替换同内容目录、Home 根或目标绑定均不能确认
+  ✔ package (45.668087ms)
+  ✔ root (36.556309ms)
+  ✔ home (40.222868ms)
+  ✔ target (52.12595ms)
+✔ 预览后替换同内容目录、Home 根或目标绑定均不能确认 (176.075458ms)
+▶ 改绑、解除与归档保留关系但停止读取，目录身份替换需要重新关联
+  ✔ target_changed (71.029252ms)
+  ✔ target_missing (65.935527ms)
+  ✔ asset_unavailable (57.327775ms)
+  ✔ directory_changed (60.491426ms)
+✔ 改绑、解除与归档保留关系但停止读取，目录身份替换需要重新关联 (256.320203ms)
+▶ 扫描与确认令牌过期、淘汰、提交时过期均拒绝；并发确认只新增一次
+  ✔ scan_expired (28.771089ms)
+  ✔ scan_evicted (141.456518ms)
+  ✔ preview_expired (36.760896ms)
+  ✔ preview_evicted (243.74981ms)
+  ✔ queued_expired (34.199738ms)
+  ✔ concurrent (77.2934ms)
+✔ 扫描与确认令牌过期、淘汰、提交时过期均拒绝；并发确认只新增一次 (563.957191ms)
+✔ 部分目录发现不能推断不存在；共享 Home、不完整元数据及客户端路径拒绝 (77.613224ms)
+✔ 清理示例不得移除被副本关系引用的 Skill；通用写入不能伪造关系 (119.995433ms)
+✔ 核对过程中目标被改绑，不返回当前一致 (89.134374ms)
+✔ 旧包权限未知不会冒充完全一致，改名不使固定关系失效 (94.194678ms)
+✔ 仅剥除各自 SKILL.md 外包装目录及祖先，内部目录仍纳入比较 (3.272207ms)
+✔ 同一完整 Skill 的已知字节和权限一致 (0.422357ms)
+✔ 非空父目录可由子文件推导，但省略的目录权限保持未知 (0.590415ms)
+✔ 对原字节比较，不按文本标记或排列顺序比较；保留二进制差异 (0.599459ms)
+✔ 普通权限和文件类型分别核对；权限未知不掩盖已确认的差异 (1.787837ms)
+✔ 新增、缺失文件和内部空目录都属于集合差异，并稳定按路径输出 (0.485371ms)
+✔ 双方均省略父目录或普通文件缺少 mode 时都保持未核验 (0.55645ms)
+✔ 真实 ZIP 包往返保持完整比较，外包装未知权限不污染内部结论 (6.760891ms)
+✔ 换行、大小写路径与长度变化不被文本归一化，返回只含差异元数据 (0.983346ms)
+✔ 无入口、多入口、越界、冲突、危险权限和错误目录包均抛错 (0.940862ms)
+✔ 扫描子目录前祖先已被替换为链接时，不枚举未授权目录或泄露其名称 (23.149602ms)
+✔ 目录枚举后身份已更换时拒绝旧清单，不继续访问子目录 (8.256986ms)
+✔ 发现拒绝磁盘根、其他主目录和系统数据根，不开始目录遍历 (1.254647ms)
+✔ 大量普通文件的目录也有元数据上限，不能绕过目录与候选限额 (2241.977143ms)
+✔ 本机完整包保留中文、隐藏资源、空目录、二进制和普通权限 (16.077051ms)
+✖ 来源缺失或权限失败给出可操作错误，不以空包或部分包成功返回 (6.415613ms)
+✔ 来源指纹忽略修改时间但响应字节、权限、路径与目录结构变化 (20.720507ms)
+✔ 候选目录别名仅在显式根之间解析，去重显示且完整读取仍拒绝包内链接 (29.160565ms)
+✔ 扫描深度、候选和目录数量封顶时明确返回不完整，而非伪称无结果 (4288.159625ms)
+✔ 无 frontmatter 名称回退目录名，入口正文超过主库限额明确拒绝而不截断 (64.446562ms)
+✔ 发现仅返回候选元数据，止于首个入口并明确受阻根 (8.876331ms)
+✔ 入口须为 UTF-8 文本，完整包遵守文件数、大小与安全路径限制 (230.004107ms)
+✔ 凭据路径及依赖或版本目录阻断整个包，普通隐藏资源仍保留 (29.498966ms)
+✔ 认证配置 .netrc、.npmrc、.pypirc 在打开任何正文前整包阻断 (15.545007ms)
+✔ 完整读取阻断包内符号链接、硬链接、特殊文件和特殊权限 (22.617038ms)
+✔ 读取仅限显式具体根，拒绝越界、宽泛根和目录链符号链接 (8.567838ms)
+✔ 保留示例计数只包含实际示例，不计个人资产、缺失源或重复副本 (2.449751ms)
+✔ 专用资产写入保留本机来源，普通保存不能伪造或改变来源，旧资产仍兼容 (60.263777ms)
+✔ 独立个人改版保留固定源身份，源后续变化不传播且来源示例不能清除 (46.576683ms)
+✔ 来源随备份保留且合并幂等，同资产不同来源必须拒绝冲突 (31.581529ms)
+✔ 显式扫描与完整预览不写主库，确认收录保留原字节和固定来源，重试不重复 (72.901779ms)
+✔ 个人改版从服务端固定 Skill 版本完整派生，创建独立历史且并发不重复 (143.050351ms)
+✔ 确认收录同时绑定预览来源身份，同内容目录别名改向也必须重新预览 (182.260154ms)
+✔ 本机HTTP来源接口需会话令牌，完整扫描预览确认链可回读且不接受伪造文件 (223.322911ms)
+✔ 来源新增文件、预览过期或主库变化都阻止旧确认，不产生部分收录 (57.526911ms)
+✔ 资产输入校验 (1.507492ms)
+✔ 编辑版本不可变，ID 稳定，恢复生成新版本 (6.430698ms)
+✔ 恢复不存在版本会明确失败 (0.266179ms)
+✔ 拒绝危险文件路径 (0.658133ms)
+✔ 示例全部可识别且 Skill 包完整 (1.066661ms)
+✔ 比较资产展示字段，标签保留顺序，身份与时间不影响内容相同判定 (3.149125ms)
+✔ Skill 比较完整路径集合、二进制字节、权限与文件类型，保留空目录 (0.783608ms)
+✔ 逐行比较保留中文，显示插入与删除，可无损还原两版正文 (0.619951ms)
+✔ 换行风格变化单独标记，末尾换行与空行不被抹除 (0.591982ms)
+✔ 超过字符、行数或比较单元预算时明确退回全文，不生成不完整差异 (19.234989ms)
+✔ 正文与标签变化独立判定，空值明确呈现，不修改传入版本 (0.725776ms)
+✔ Skill 相同字节不受文本存储标记与文件顺序影响，未知权限不冒充已知权限 (0.686566ms)
+✔ 空文档、纯插入、纯删除与重复行均保留准确次序 (0.473369ms)
+✔ 逐行结果可无损重建中英文与混合换行的两版输入 (1.396456ms)
+✔ 工作流引用按固定版本和原顺序解析，上游更新不漂移 (3.195442ms)
+✔ 完整流程资料包保存 Prompt 原字节、Skill 全部文件权限及固定版本清单 (16.86096ms)
+✔ 缺失优先于归档，归档与非 Skill/Prompt 不可交付 (0.853496ms)
+✔ 可复制流程包含固定引用标识、Prompt 原文和需附送的 Skill 包路径 (1.543727ms)
+✔ 资料包仅使用合法固定 ID 建路径，并拒绝失效或越界的工作流输入 (12.403788ms)
+✔ 清理示例保留非示例工作流任意历史引用的示例资产 (0.843967ms)
+✔ 资料包原始输入以 UTF-8 和二进制字节累计，25 MiB 接受且超限拒绝 (1067.761073ms)
+✔ 固定 ID 仍须避免默认大小写不敏感磁盘上的导出路径冲突 (9.788069ms)
+✔ 复制流程与资料包共用 25 MiB 原始输入限制，不生成超限回退文本 (77.470358ms)
+✔ 工作流指定引用在保存回读后保持，更新上游不静默升级 (35.261089ms)
+✔ 恢复缺省引用的旧流程会清空当前引用，旧历史不改写且仍可恢复引用版 (11.952051ms)
+✔ 引用新增和更换版本进入历史比较，缺省与空引用等价 (0.595187ms)
+✔ 个人流程任意历史引用的示例不能被移除，未引用示例仍可清理 (41.833946ms)
+✔ 引用形状、唯一性、类型和数量在主库写入边界校验；缺失指针可保存为待修正 (21.626538ms)
+ℹ tests 547
+ℹ suites 0
+ℹ pass 522
+ℹ fail 19
+ℹ cancelled 1
+ℹ skipped 5
+ℹ todo 0
+ℹ duration_ms 1199821.923493
+
+✖ failing tests:
+
+test at tests/agent-config-http.test.mjs:94:1
+✖ 配置 HTTP 确认后回读并保留历史，显式恢复原字节与权限且不宣称采用 (133.922574ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config-http.test.mjs:108:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:217:1
+✖ A changed binding and external edits block restoring an old operation (91.207153ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = true # keep\n# external\n'
+  - '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = false # keep\n# external\n'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:239:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = true # keep\n# external\n',
+    expected: '# 中文\nmodel = "PRIVATE_SENTINEL"\n[tui]\nanimations = false # keep\n# external\n',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:299:1
+✖ Replacing the actual Home inode with identical configuration bytes invalidates old previews and operations (45.517903ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:302:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:333:1
+✖ BOM, Unicode and CRLF survive applying and restoring an exact byte-offset patch (59.779893ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:344:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:371:1
+✖ A missing original journal record invalidates a restore preview with a safe conflict (82.920281ms)
+  Error: 文件与原操作结果不一致，不能恢复；请重新读取配置
+      at failure (file:///home/user/personal-ai-workbench/server/repository.mjs:17:24)
+      at reverse (file:///home/user/personal-ai-workbench/server/agent-config.mjs:197:13)
+      at file:///home/user/personal-ai-workbench/server/agent-config.mjs:410:26 {
+    status: 409
+  }
+
+test at tests/agent-config.test.mjs:522:1
+✖ A configuration rename followed by failure returns observed state without claiming operationNotStarted (63.151939ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:543:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:560:1
+✖ A saved Hermes target applies and restores YAML booleans while preserving unrelated bytes (88.995116ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:595:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:624:1
+✖ Receipt failure after file write stays recoverable and repeating the operation does not rewrite (87.937624ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:647:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:672:1
+✖ A forged inverse patch cannot authorize editing another boolean (116.394131ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /恢复记录/. Input:
+  
+  'Error: 文件与原操作结果不一致，不能恢复；请重新读取配置'
+  
+      at async TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:684:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 文件与原操作结果不一致，不能恢复；请重新读取配置
+        at failure (file:///home/user/personal-ai-workbench/server/repository.mjs:17:24)
+        at reverse (file:///home/user/personal-ai-workbench/server/agent-config.mjs:197:13)
+        at file:///home/user/personal-ai-workbench/server/agent-config.mjs:410:26,
+    expected: /恢复记录/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:694:1
+✖ Restart recovery checks the same operation without replay; explicit restore returns original bytes (73.725575ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:703:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-config.test.mjs:729:1
+✖ Confirmed apply persists a minimal journal, reads back the file and never increments the workspace revision (60.139665ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/agent-config.test.mjs:736:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/agent-programs.test.mjs:424:1
+✖ App 版本来自 bundle 身份，内嵌 CLI 不冒用 App 版本；支持二进制 plist (13.188582ms)
+  Error: spawn /usr/bin/plutil ENOENT
+      at ChildProcess._handle.onexit (node:internal/child_process:287:19)
+      at onErrorNT (node:internal/child_process:525:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    errno: -2,
+    code: 'ENOENT',
+    syscall: 'spawn /usr/bin/plutil',
+    path: '/usr/bin/plutil',
+    spawnargs: [ '-convert', 'binary1', '/tmp/guiji-programs-GHu4gO/ChatGPT.app/Contents/Info.plist' ],
+    cmd: '/usr/bin/plutil -convert binary1 /tmp/guiji-programs-GHu4gO/ChatGPT.app/Contents/Info.plist'
+  }
+
+test at tests/discovery.test.mjs:93:1
+✖ ChatGPT.app 的 Codex bundle 身份归入 Codex，原 ChatGPT 身份不变 (12.439959ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   {
+  -     kind: 'App',
+  -     path: '/tmp/guiji-app-alias-SdnYyC/ChatGPT.app'
+  -   }
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/discovery.test.mjs:109:12)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ { path: '/tmp/guiji-app-alias-SdnYyC/ChatGPT.app', kind: 'App' } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/knowledge-writeback.test.mjs:310:1
+✖ 保存的候选能被既有 wiki-local 解析，但不能绕过有效性门禁成为当前知识 (289.918627ms)
+  Error: Command failed: python3 -B -c import sys,json,importlib.util; from pathlib import Path; s=importlib.util.spec_from_file_location('wiki',sys.argv[1]); w=importlib.util.module_from_spec(s); s.loader.exec_module(w); docs,audit=w.inspect(Path(sys.argv[2])); _,reviewed=w.inspect(Path(sys.argv[2]),audit); print(json.dumps({'errors':audit['errors'],'read':w.read_current(docs,reviewed,sys.argv[3],'knowledge')},ensure_ascii=False,default=str)) /home/user/wiki-local/wiki.py /tmp/guiji-knowledge-ui-jvTUq6/sources/合成知识库 00 待整理/工作/个人/判断候选.md
+  Traceback (most recent call last):
+    File "<string>", line 1, in <module>
+    File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+    File "<frozen importlib._bootstrap_external>", line 1073, in get_code
+    File "<frozen importlib._bootstrap_external>", line 1130, in get_data
+  FileNotFoundError: [Errno 2] No such file or directory: '/home/user/wiki-local/wiki.py'
+  
+      at genericNodeError (node:internal/errors:986:15)
+      at wrappedFn (node:internal/errors:540:14)
+      at ChildProcess.exithandler (node:child_process:417:12)
+      at ChildProcess.emit (node:events:514:28)
+      at maybeClose (node:internal/child_process:1141:16)
+      at ChildProcess._handle.onexit (node:internal/child_process:306:5) {
+    code: 1,
+    killed: false,
+    signal: null,
+    cmd: "python3 -B -c import sys,json,importlib.util; from pathlib import Path; s=importlib.util.spec_from_file_location('wiki',sys.argv[1]); w=importlib.util.module_from_spec(s); s.loader.exec_module(w); docs,audit=w.inspect(Path(sys.argv[2])); _,reviewed=w.inspect(Path(sys.argv[2]),audit); print(json.dumps({'errors':audit['errors'],'read':w.read_current(docs,reviewed,sys.argv[3],'knowledge')},ensure_ascii=False,default=str)) /home/user/wiki-local/wiki.py /tmp/guiji-knowledge-ui-jvTUq6/sources/合成知识库 00 待整理/工作/个人/判断候选.md",
+    stdout: '',
+    stderr: `Traceback (most recent call last):\n  File "<string>", line 1, in <module>\n  File "<frozen importlib._bootstrap_external>", line 936, in exec_module\n  File "<frozen importlib._bootstrap_external>", line 1073, in get_code\n  File "<frozen importlib._bootstrap_external>", line 1130, in get_data\nFileNotFoundError: [Errno 2] No such file or directory: '/home/user/wiki-local/wiki.py'\n`
+  }
+
+test at tests/rule-templates.test.mjs:236:1
+✖ 装入、升级、区块外手写内容不受影响，撤回恢复写入前字节 (73.95071ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:245:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:293:1
+✖ 区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容 (103.748914ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'append' !== 'drift'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:310:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'append',
+    expected: 'drift',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:396:1
+✖ 重复提交同一令牌只写一次，返回核对结果 (83.153166ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'matches_before'
+  - 'matches_after'
+             ^
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:409:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'matches_before',
+    expected: 'matches_after',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:470:1
+✖ D-R4：写入中途失败的操作不替代已装版本，单独标为未确认 (159.918047ms)
+  AssertionError [ERR_ASSERTION]: 仍是已完成的 v1
+  + actual - expected
+  
+  + null
+  - '0e36c7f6-bfe7-4670-886f-db85247170b4'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/rule-templates.test.mjs:496:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: '0e36c7f6-bfe7-4670-886f-db85247170b4',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/rule-templates.test.mjs:1:1
+✖ tests/rule-templates.test.mjs (1189986.141987ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests/skill-files.test.mjs:198:1
+✖ 来源缺失或权限失败给出可操作错误，不以空包或部分包成功返回 (6.415613ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async file:///home/user/personal-ai-workbench/tests/skill-files.test.mjs:209:7
+      at async tree (file:///home/user/personal-ai-workbench/tests/skill-files.test.mjs:30:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

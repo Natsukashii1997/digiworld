@@ -1,0 +1,37 @@
+✓ built in 2.79s
+== unit
+ℹ tests 115
+ℹ pass 115
+ℹ fail 0
+== browser silver-agents
+exit=0
+PASS 390 宽：银饰计划与角色卡无横向溢出，控件 44px，axe 无违规
+silver-agents-browser: all passed
+== browser nav-zones
+exit=0
+PASS 390 宽：抽屉导航四段可用、条目 44px、无横向溢出、axe 通过
+nav-zones-browser: all passed
+== browser agent-inventory
+exit=0
+PASS 实际 inspector 读取临时 Hermes Profiles，链接受阻产生HTTP200顶层partial，UI保留旧Profile并在真实恢复后重新启用
+PASS 关闭中的旧请求不复活或覆盖新 Agent；Tab/Shift+Tab 焦点环、Esc 返回卡片；无额外扫描、配置写入或 JS 异常
+== browser agent-targets
+exit=0
+PASS 首次部分检查禁用绑定；程序/Home 缺失不删目标；提交前来源变化拒绝并保留草稿
+PASS 关闭详情后晚到的检查结果不恢复抽屉或污染新会话；重新检查可用，主库不变
+== browser knowledge-zones
+exit=0
+PASS 390 宽：知识仓库与待处理无横向溢出，控件至少 44px，axe 无违规
+knowledge-zones-browser 全部通过
+== browser aihot-learning
+exit=0
+PASS 390 宽：AI HOT 三个标签、学习成长、世界总览、设置均无横向溢出；按钮 44px；axe 通过
+aihot-learning-browser: all passed
+== browser collab-board
+exit=0
+PASS 全过程未修改任何项目文件
+PASS 无页面脚本错误
+== browser project-status
+exit=0
+PASS 全过程未修改任何项目文件
+PASS 无页面脚本错误

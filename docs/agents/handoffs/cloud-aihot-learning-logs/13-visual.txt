@@ -1,0 +1,6 @@
+$ node tests/visual.mjs aihot-learning
+{
+  "out": "/home/user/personal-ai-workbench/test-results/visual/aihot-learning",
+  "problems": []
+}
+exit=0

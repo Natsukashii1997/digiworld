@@ -1,11 +1,24 @@
 import { validateActivity, validateActivityHistory } from "./asset-activity-schema.mjs";
+import { validateCollabLog, validateCollabHistory } from "./collab-schema.mjs";
+import { validateBriefReads, validateBriefHistory } from "./brief-schema.mjs";
 import { safePath } from "../src/store.js";
 import { stringify } from "../src/serialization.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
+import { REVERSE_LIMITS } from "../src/reverse.js";
 import {
   validateKnowledgeTasks,
   validateKnowledgeHistory,
 } from "./knowledge-compilation-schema.mjs";
+import {
+  validateKnowledgeZones,
+  validateProfileProposals,
+  validateProfileHistory,
+} from "./knowledge-profile-schema.mjs";
+import { validateSilver, validateAgentRoles } from "./silver-schema.mjs";
+import {
+  validateRevisionCandidates,
+  validateCandidateHistory,
+} from "./revision-candidate-schema.mjs";
 export function invalid(message) {
   throw Object.assign(new Error(`数据校验失败：${message}`), { status: 400 });
 }
@@ -94,8 +107,19 @@ export function validateScrolls(scrolls) {
         "updatedAt",
         "deletedAt",
         "lastUsedAt",
+        "source",
       ]);
       id(e.id);
+      // 逆向工程入库的条目带来源：逆向记录 ID 与可选的素材链接（支线 B2）。
+      if (e.source !== undefined) {
+        keys(e.source, ["reverseId", "url"]);
+        id(e.source.reverseId);
+        if (e.source.url !== undefined) {
+          text(e.source.url, "来源链接", REVERSE_LIMITS.url);
+          if (!e.source.url) invalid("来源链接");
+          httpUrl(e.source.url);
+        }
+      }
       entryIds.push(e.id);
       text(e.text, "条目正文", SCROLL_LIMITS.text);
       if (!e.text.trim() || CONTROL.test(e.text)) invalid("条目正文");
@@ -120,6 +144,151 @@ export function validateScrolls(scrolls) {
   if (entryIds.length > SCROLL_LIMITS.totalEntries) invalid("焚决条目总量");
   unique(entryIds, "条目 ID");
 }
+// 学习成长（路线 v3 切片 5.4）：顶层集合 learning = { folders, books, links }。旧库缺失按空处理。
+// folders 是允许只读索引的书架文件夹，只能经专用操作修改（见 validateHistory）；books 只记学习状态，不存原件；
+// links 是链接收藏（手动或来自 AI HOT），删除写 deletedAt 进回收区；同一链接只收藏一次。
+export const LEARNING_LIMITS = {
+  folders: 10,
+  books: 5000,
+  links: 2000,
+  path: 2000,
+  name: 255,
+  title: 200,
+  summary: 1000,
+  source: 80,
+  url: 2000,
+};
+export const LEARNING_STATUS = ["want", "learning", "done"];
+const absolutePath = (v, label) => {
+  text(v, label, LEARNING_LIMITS.path);
+  if (!v.startsWith("/") || /[\x00-\x1f\x7f]/.test(v)) invalid(label);
+};
+const line = (v, label, max, required = true) => {
+  text(v, label, max);
+  if ((required && !v.trim()) || /[\x00-\x1f\x7f]/.test(v)) invalid(label);
+};
+export function validateLearning(learning) {
+  if (!learning || typeof learning !== "object" || Array.isArray(learning)) invalid("学习成长");
+  keys(learning, ["folders", "books", "links"]);
+  array(learning.folders, "书架文件夹数", LEARNING_LIMITS.folders);
+  array(learning.books, "学习状态记录数", LEARNING_LIMITS.books);
+  array(learning.links, "链接收藏数", LEARNING_LIMITS.links);
+  unique(learning.folders.map((f) => f?.id), "书架文件夹 ID");
+  for (const f of learning.folders) {
+    keys(f, ["id", "path", "addedAt"]);
+    id(f.id);
+    absolutePath(f.path, "书架目录");
+    date(f.addedAt);
+  }
+  unique(learning.folders.map((f) => f.path), "书架目录");
+  unique(learning.books.map((b) => b?.id), "书 ID");
+  for (const b of learning.books) {
+    keys(b, ["id", "root", "path", "name", "status", "updatedAt"]);
+    id(b.id);
+    absolutePath(b.root, "书架目录");
+    if (!safePath(b.path) || b.path.length > LEARNING_LIMITS.path || /[\x00-\x1f\x7f]/.test(b.path))
+      invalid("书的路径");
+    line(b.name, "书名", LEARNING_LIMITS.name);
+    if (!LEARNING_STATUS.includes(b.status)) invalid("学习状态");
+    date(b.updatedAt);
+  }
+  unique(learning.links.map((l) => l?.id), "链接 ID");
+  for (const l of learning.links) {
+    keys(l, [
+      "id",
+      "title",
+      "url",
+      "summary",
+      "source",
+      "origin",
+      "status",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+    ]);
+    id(l.id);
+    line(l.title, "链接标题", LEARNING_LIMITS.title);
+    text(l.url, "链接", LEARNING_LIMITS.url);
+    if (!l.url) invalid("链接为空");
+    httpUrl(l.url);
+    text(l.summary, "摘要", LEARNING_LIMITS.summary);
+    if (CONTROL.test(l.summary)) invalid("摘要");
+    line(l.source, "链接来源", LEARNING_LIMITS.source, false);
+    if (!["manual", "aihot"].includes(l.origin)) invalid("链接来源类型");
+    if (!LEARNING_STATUS.includes(l.status)) invalid("学习状态");
+    date(l.createdAt);
+    optionalDate(l.updatedAt);
+    optionalDate(l.deletedAt);
+  }
+  unique(learning.links.map((l) => l.url), "链接");
+}
+// 逆向工程（路线 v3 支线 B2）：顶层集合 reverseRecords。一条记录 = 素材 + 任务包 + Agent 回复 + 入库结果。
+// 记录可修改（保存回复、追加入库结果），不做版本；删除写 deletedAt 进回收区。旧库缺失该集合时按空处理。
+export { REVERSE_LIMITS };
+export function validateReverseRecords(records) {
+  array(records, "逆向记录数", REVERSE_LIMITS.records);
+  unique(
+    records.map((r) => r?.id),
+    "逆向记录 ID",
+  );
+  for (const r of records) {
+    keys(r, [
+      "id",
+      "title",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "material",
+      "why",
+      "pack",
+      "reply",
+      "imports",
+    ]);
+    id(r.id);
+    text(r.title, "逆向标题", REVERSE_LIMITS.title);
+    if (!r.title.trim() || CONTROL.test(r.title) || /[\n\t]/.test(r.title))
+      invalid("逆向标题");
+    date(r.createdAt);
+    optionalDate(r.updatedAt);
+    optionalDate(r.deletedAt);
+    keys(r.material, ["text", "url"]);
+    text(r.material.text, "逆向素材原文", REVERSE_LIMITS.material);
+    if (CONTROL.test(r.material.text)) invalid("逆向素材原文");
+    text(r.material.url, "逆向素材链接", REVERSE_LIMITS.url);
+    httpUrl(r.material.url);
+    if (!r.material.text.trim() && !r.material.url) invalid("逆向素材为空");
+    text(r.why, "好在哪里", REVERSE_LIMITS.why);
+    if (CONTROL.test(r.why)) invalid("好在哪里");
+    text(r.pack, "拆解任务包", REVERSE_LIMITS.pack);
+    if (!r.pack.trim()) invalid("拆解任务包为空");
+    if (r.reply !== undefined) {
+      text(r.reply, "Agent 回复", REVERSE_LIMITS.reply);
+      if (CONTROL.test(r.reply)) invalid("Agent 回复");
+    }
+    if (r.imports !== undefined) {
+      array(r.imports, "入库结果", REVERSE_LIMITS.imports);
+      unique(
+        r.imports.map((i) => i?.index),
+        "候选序号",
+      );
+      for (const i of r.imports) {
+        object(i, "入库结果");
+        if (i.kind === "scroll") {
+          keys(i, ["index", "kind", "scrollId", "entryId", "at"]);
+          id(i.scrollId);
+          id(i.entryId);
+        } else if (i.kind === "prompt") {
+          keys(i, ["index", "kind", "assetId", "versionId", "at"]);
+          id(i.assetId);
+          id(i.versionId);
+        } else invalid("入库类型");
+        if (!Number.isSafeInteger(i.index) || i.index < 0 || i.index > 10000)
+          invalid("候选序号");
+        date(i.at);
+      }
+    }
+  }
+}
 export function validateState(state) {
   keys(state, [
     "revision",
@@ -134,8 +303,27 @@ export function validateState(state) {
     "knowledgeTasks",
     "assetActivity",
     "scrolls",
+    "collabLog",
+    "briefReads",
+    "learning",
+    "knowledgeZones",
+    "profileProposals",
+    "silver",
+    "agentRoles",
+    "reverseRecords",
+    "revisionCandidates",
   ]);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
+  if (state.learning !== undefined) validateLearning(state.learning);
+  if (state.knowledgeZones !== undefined)
+    validateKnowledgeZones(state.knowledgeZones);
+  if (state.profileProposals !== undefined)
+    validateProfileProposals(state.profileProposals);
+  // 路线 v3 5.5 / 4.3：银饰计划与智能体角色卡，旧库缺失按空处理。
+  if (state.silver !== undefined) validateSilver(state.silver);
+  if (state.agentRoles !== undefined) validateAgentRoles(state.agentRoles);
+  if (state.reverseRecords !== undefined)
+    validateReverseRecords(state.reverseRecords);
   if (state.knowledgeTasks !== undefined)
     validateKnowledgeTasks(state.knowledgeTasks);
   if (
@@ -220,6 +408,7 @@ export function validateState(state) {
         "restoredFrom",
         "references",
         "type",
+        "candidateId",
       ]);
       id(v.id);
       if (v.references !== undefined) {
@@ -359,7 +548,16 @@ export function validateState(state) {
       "agentTargets",
       "skillCopies",
       "knowledgeSources",
+      "projectStallDays",
     ]);
+    // 停滞雷达阈值（路线 v3 切片 2.1）：可选；缺失按默认 7 天。
+    if (
+      c.projectStallDays !== undefined &&
+      (!Number.isSafeInteger(c.projectStallDays) ||
+        c.projectStallDays < 1 ||
+        c.projectStallDays > 365)
+    )
+      invalid("停滞阈值");
     if (c.knowledgeSources !== undefined) {
       array(c.knowledgeSources, "知识来源", 20);
       unique(
@@ -551,8 +749,12 @@ export function validateState(state) {
         "relationVersion",
         "aliases",
         "identityConflict",
+        "active",
       ]);
       id(p.id);
+      // 在推进标记（路线 v3 切片 2.1）：可选布尔；旧库缺失即未标记。
+      if (p.active !== undefined && typeof p.active !== "boolean")
+        invalid("在推进标记");
       if (p.relationVersion !== undefined) id(p.relationVersion);
       if (
         p.identityConflict !== undefined &&
@@ -655,6 +857,10 @@ export function validateState(state) {
     }
   }
   validateActivity(state);
+  validateCollabLog(state);
+  validateBriefReads(state);
+  // 进化回路 v1：改版候选，旧库缺失按空处理；版本上的 candidateId 与候选互相核对。
+  validateRevisionCandidates(state);
   return state;
 }
 export function canonical(value) {
@@ -678,9 +884,37 @@ export function validateHistory(
     allowOrigins = false,
     allowKnowledge = false,
     allowActivity = false,
+    allowCollab = false,
+    allowBriefs = false,
+    allowLearningFolders = false,
+    allowProfile = false,
+    allowCandidateImport = false,
   } = {},
 ) {
+  if (
+    !allowLearningFolders &&
+    !equivalent(previous?.learning?.folders || [], next.learning?.folders || [])
+  )
+    invalid("书架文件夹只能在设置中通过专用操作修改");
+  // 三区规则、个人说明共享授权与修改建议只能经由专用操作更新（切片 3.2/3.3）。
+  if (
+    !allowProfile &&
+    (!equivalent(previous?.knowledgeZones, next.knowledgeZones) ||
+      !equivalent(previous?.profileProposals || [], next.profileProposals || []))
+  )
+    invalid("三区规则与个人说明建议只能通过专用操作更新");
+  validateProfileHistory(
+    previous?.profileProposals || [],
+    next.profileProposals || [],
+  );
+  validateCandidateHistory(
+    previous?.revisionCandidates || [],
+    next.revisionCandidates || [],
+    allowCandidateImport,
+  );
   validateActivityHistory(previous?.assetActivity || [], next.assetActivity || [], allowActivity);
+  validateCollabHistory(previous?.collabLog || [], next.collabLog || [], allowCollab);
+  validateBriefHistory(previous?.briefReads || [], next.briefReads || [], allowBriefs);
   if (
     !allowKnowledge &&
     !equivalent(previous?.knowledgeTasks || [], next.knowledgeTasks || [])

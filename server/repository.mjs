@@ -159,6 +159,33 @@ export async function openRepository(directory) {
         return commit(state);
       });
     },
+    // 协同操作留痕（切片 2.3/2.4）：只追加。复制已在浏览器完成，不以 revision 冲突拒记；
+    // 追加只改 collabLog，其余内容原样保留，由 validateHistory 保证。
+    updateCollab(update) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先初始化资产库", 409);
+        const collabLog = await update(stored.collabLog || [], stored);
+        if (equivalent(collabLog, stored.collabLog || [])) return stored;
+        const state = { ...stored, collabLog, revision: stored.revision + 1 };
+        validateState(state);
+        validateHistory(stored, state, { allowCollab: true });
+        return commit(state);
+      });
+    },
+    // 每日项目简报的已读状态（项目空间第二批）：只改 briefReads；同一内容重复标记不写主库。
+    updateBriefReads(update) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先初始化资产库", 409);
+        const briefReads = await update(stored.briefReads || [], stored);
+        if (equivalent(briefReads, stored.briefReads || [])) return stored;
+        const state = { ...stored, briefReads, revision: stored.revision + 1 };
+        validateState(state);
+        validateHistory(stored, state, { allowBriefs: true });
+        return commit(state);
+      });
+    },
     updateKnowledge(update, { expectedRevision, allowNoop = false } = {}) {
       return serial(async () => {
         const stored = await read();
@@ -180,6 +207,49 @@ export async function openRepository(directory) {
         };
         validateState(state);
         validateHistory(stored, state, { allowKnowledge: true });
+        return commit(state);
+      });
+    },
+    // 学习成长书架文件夹（切片 5.4）：只有这里可以改 learning.folders，调用方负责先校验路径。
+    updateLearning(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先打开工作台初始化资产库", 409);
+        if (expectedRevision !== stored.revision)
+          throw failure("主库已变化，请刷新后重试", 409);
+        const learning = await update(
+          stored.learning || { folders: [], books: [], links: [] },
+          stored,
+        );
+        const state = { ...stored, learning, revision: stored.revision + 1 };
+        validateState(state);
+        validateHistory(stored, state, { allowLearningFolders: true });
+        return commit(state);
+      });
+    },
+    // 三区规则、个人说明共享授权与修改建议（切片 3.2/3.3）。expectedRevision 缺省时不核对版本
+    // （MCP 提交建议没有页面版本），更新本身仍在串行队列里基于最新快照进行。
+    updateProfile(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先打开工作台初始化资产库", 409);
+        if (
+          expectedRevision !== undefined &&
+          expectedRevision !== stored.revision
+        )
+          throw failure("主库已变化，请刷新后重试", 409);
+        const { knowledgeZones, profileProposals } = await update(stored);
+        const state = { ...stored, revision: stored.revision + 1 };
+        if (knowledgeZones !== undefined) state.knowledgeZones = knowledgeZones;
+        if (profileProposals !== undefined)
+          state.profileProposals = profileProposals;
+        if (
+          equivalent(state.knowledgeZones, stored.knowledgeZones) &&
+          equivalent(state.profileProposals, stored.profileProposals)
+        )
+          return stored;
+        validateState(state);
+        validateHistory(stored, state, { allowProfile: true });
         return commit(state);
       });
     },
@@ -237,6 +307,9 @@ export async function openRepository(directory) {
           allowOrigins: true,
           allowKnowledge: true,
           allowActivity: true,
+          allowCollab: true,
+          allowProfile: true,
+          allowCandidateImport: true,
         });
         const result = await commit({
           ...state,

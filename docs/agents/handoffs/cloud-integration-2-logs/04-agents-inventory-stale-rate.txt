@@ -1,0 +1,13 @@
+# 修复前后各 5 次（同一合并工作树，只替换 src/AgentContents.jsx 并重建） 2026-09-30T15:09:46+00:00
+✓ built in 3.64s
+修复前 第1次 EXIT=0 最后通过: PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过 
+修复前 第2次 EXIT=0 最后通过: PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过 
+修复前 第3次 EXIT=0 最后通过: PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过 
+修复前 第4次 EXIT=1 最后通过: PASS 内容清单控件不小于 44px；展开状态 axe 通过 AssertionError [ERR_ASSERTION]: The input did not match the regular expression /当前版本同内容/. Input:
+修复前 第5次 EXIT=1 最后通过: PASS 内容清单控件不小于 44px；展开状态 axe 通过 AssertionError [ERR_ASSERTION]: The input did not match the regular expression /当前版本同内容/. Input:
+✓ built in 3.50s
+修复后 第1次 EXIT=0 最后通过: PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过 
+修复后 第2次 EXIT=0 最后通过: PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过 
+修复后 第3次 EXIT=0 最后通过: PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过 
+修复后 第4次 EXIT=0 最后通过: PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过 
+修复后 第5次 EXIT=0 最后通过: PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过 

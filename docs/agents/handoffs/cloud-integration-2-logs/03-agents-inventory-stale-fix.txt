@@ -1,0 +1,31 @@
+# agents-inventory-browser 第 6 步：修复前（G3 原样 AgentContents.jsx）与修复后 2026-09-30T15:08:54+00:00
+## 修复前 sha256 501d32cf45ca4ebb0ae8129abeeadbd2dc15b88578d306ffd4117f4f459de955
+✓ built in 3.42s
+$ node tests/agents-inventory-browser.mjs
+PASS 四张内容卡；未展开前不读取目录，显示“尚未体检”
+PASS 展开清单按 Skill/配置文件/插件/MCP 分组；链接分类与仓库比对正确，不显示配置正文
+PASS 卡片体检摘要正确；三条问题汇总进顶栏待处理，点击回到智能体群且保留上次结果
+PASS 开关预览给出移动计划与恢复方式，标注需单独授权；合成目录逐字节不变
+PASS 内容清单控件不小于 44px；展开状态 axe 通过
+PASS 存入资产仓库走收录本机 Skill：限定范围、预览后确认、打开资产详情；重读后显示同内容
+PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过
+agents-inventory-browser: all passed
+EXIT=0
+（另：G3 分支单独构建在本会话共跑 3 次：1 次通过、2 次在同一步失败；合并后未修复前跑 3 次均在同一步失败）
+## 修复后 sha256 04c53f94c52977959e0b53c3b1d115976a437784869aac0fc384e8a4470e7854
+✓ built in 3.43s
+$ node tests/agents-inventory-browser.mjs  # 第 1 次
+PASS 存入资产仓库走收录本机 Skill：限定范围、预览后确认、打开资产详情；重读后显示同内容
+PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过
+agents-inventory-browser: all passed
+EXIT=0
+$ node tests/agents-inventory-browser.mjs  # 第 2 次
+PASS 存入资产仓库走收录本机 Skill：限定范围、预览后确认、打开资产详情；重读后显示同内容
+PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过
+agents-inventory-browser: all passed
+EXIT=0
+$ node tests/agents-inventory-browser.mjs  # 第 3 次
+PASS 存入资产仓库走收录本机 Skill：限定范围、预览后确认、打开资产详情；重读后显示同内容
+PASS 390 宽展开清单无横向溢出，控件 44px，axe 通过
+agents-inventory-browser: all passed
+EXIT=0

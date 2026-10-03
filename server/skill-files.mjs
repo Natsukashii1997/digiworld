@@ -3,7 +3,11 @@ import { constants } from "node:fs";
 import { join, resolve, relative, isAbsolute, basename } from "node:path";
 import { homedir } from "node:os";
 import { createHash } from "node:crypto";
-import { inspectSkill, validateSkillFiles } from "../src/skill-package.js";
+import {
+  fileBytes,
+  inspectSkill,
+  validateSkillFiles,
+} from "../src/skill-package.js";
 
 const failure = (message, status = 400) =>
   Object.assign(new Error(message), { status });
@@ -426,8 +430,7 @@ async function readPackage(roots, path) {
     throw failure("Skill 目录链发生变化，请重新预览", 409);
   files.sort((a, b) => (a.path < b.path ? -1 : 1));
   validateSkillFiles(files);
-  const inspected = inspectSkill(files),
-    hash = createHash("sha256");
+  const inspected = inspectSkill(files);
   let content;
   try {
     content = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(
@@ -440,26 +443,33 @@ async function readPackage(roots, path) {
   if (content.length > 1000000)
     throw failure("SKILL.md 正文超过 100 万字符主库限额，未截断内容", 413);
   let bytes = 0;
-  for (const file of files) {
-    hash.update(
-      JSON.stringify([
-        file.path,
-        file.directory === true,
-        file.mode,
-        file.data.length,
-      ]) + "\n",
-    );
-    hash.update(file.data);
-    hash.update("\n");
-    bytes += file.data.length;
-  }
+  for (const file of files) bytes += file.data.length;
   return {
     location,
     files,
     identity: createHash("sha256").update(directory.stamp).digest("hex"),
     content,
     name: inspected.name || basename(location),
-    fingerprint: hash.digest("hex"),
+    fingerprint: skillFingerprint(files),
     bytes,
   };
+}
+
+// 完整包内容指纹：路径、类型、权限、字节。本机收录与资产仓库版本比对共用同一口径。
+export function skillFingerprint(files) {
+  const hash = createHash("sha256");
+  for (const file of [...files].sort((a, b) => (a.path < b.path ? -1 : 1))) {
+    const data = fileBytes(file);
+    hash.update(
+      JSON.stringify([
+        file.path,
+        file.directory === true,
+        file.mode,
+        data.length,
+      ]) + "\n",
+    );
+    hash.update(data);
+    hash.update("\n");
+  }
+  return hash.digest("hex");
 }

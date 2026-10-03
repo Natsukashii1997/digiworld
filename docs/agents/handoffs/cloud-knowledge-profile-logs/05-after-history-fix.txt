@@ -1,0 +1,20 @@
+== tests/history-capacity.mjs
+OK tests/history-capacity.mjs
+== tests/history-browser.mjs
+OK tests/history-browser.mjs
+== tests/knowledge-zones-browser.mjs
+OK tests/knowledge-zones-browser.mjs
+== tests/rule-templates-browser.mjs
+FAIL tests/rule-templates-browser.mjs
+Call log:
+[2m  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible[22m
+
+    at confirmWrite (/home/user/personal-ai-workbench/tests/rule-templates-browser.mjs:39:56)
+    at async file:///home/user/personal-ai-workbench/tests/rule-templates-browser.mjs:65:3 {
+  log: [
+    "  - waiting for getByRole('region', { name: '装入项目' }).getByText('已写入，回读一致', { exact: true }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0

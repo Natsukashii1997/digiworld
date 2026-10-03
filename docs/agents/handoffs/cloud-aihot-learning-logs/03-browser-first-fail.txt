@@ -1,0 +1,18 @@
+$ node tests/aihot-learning-browser.mjs  (基点 bc8e343 构建产物，实现前)
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('section.home-hot').getByRole('heading', { name: '今日热点' }) to be visible[22m
+
+    at /home/user/personal-ai-workbench/tests/aihot-learning-browser.mjs:115:62 {
+  log: [
+    "  - waiting for locator('section.home-hot').getByRole('heading', { name: '今日热点' }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0
+exit=1

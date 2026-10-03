@@ -48,6 +48,7 @@ export async function request(
     throw Object.assign(new Error(result.error || "本地服务处理失败"), {
       status: r.status,
       operationNotStarted: result.operationNotStarted === true,
+      unknownResult: result.unknownResult === true,
     });
   return result;
 }

@@ -29,6 +29,7 @@ async function bundle(entry, name) {
 const { Assets, AssetDetail } = await bundle("src/Assets.jsx", "Assets.mjs");
 const { Home } = await bundle("src/Home.jsx", "Home.mjs");
 const { PlannedPage, Inbox } = await bundle("src/PlannedPage.jsx", "PlannedPage.mjs");
+const { Learning, HomeHot } = await bundle("src/LifePages.jsx", "LifePages.mjs");
 const pixel = await bundle("src/pixel.jsx", "pixel.mjs");
 const { PAGES, MATURITY } = await import("../src/pages.js");
 const common = {
@@ -200,7 +201,14 @@ test("切片 1.2：导航按今日、资产、目标、运行、知识、生活�
     [...mapped].sort(),
     PAGES.filter((p) => !["今日", "系统"].includes(p.group) && !p.mergedInto && !p.partOf).map((p) => p.id).sort(),
   );
-  for (const id of ["health", "collab", "calendar", "aihot", "learning", "silver"]) {
+  // 协同页自路线 v3 切片 2.3/2.4 起可用（看板、留痕、一键派发），不再是规划页；成熟度如实标“部分可用”。
+  assert.equal(PAGES.find((x) => x.id === "collab").maturity, "partial");
+  // 路线 v3 切片 5.3、5.4：AI HOT 与学习成长已开发，不再是规划中页面（见下方单独的用例）。
+  // 银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”，不再是规划页，由 silver-agents-browser.mjs 覆盖。
+  // 路线 v3 切片 5.2（分支 backup-calendar）：日历已开发，标“部分可用”，由 calendar-todo-browser.mjs 覆盖。
+  assert.equal(PAGES.find((x) => x.id === "calendar").maturity, "partial");
+  assert.equal(PAGES.find((x) => x.id === "calendar").plan, undefined);
+  for (const id of ["health"]) {
     const p = PAGES.find((x) => x.id === id);
     assert.equal(p.maturity, "planned", id);
     const html = renderToStaticMarkup(
@@ -263,12 +271,66 @@ test("UI v12.1：侧栏名称与今日页快捷动作按用户决定", () => {
   for (const action of ["记一笔", "新建资产", "上下文接力"]) assert.match(html, new RegExp(action));
 });
 
-test("今日页：日历未接入时只显示夜间窗口草稿与说明，待处理来自真实数据", () => {
+test("今日页：时间安排先如实显示正在读取日历（不再写“日历尚未接入”），夜间窗口草稿与待处理来自真实数据", () => {
   const s = seed();
   s.notes = [{ id: "n1", text: "合成随手记", at: "2026-09-29T00:00:00.000Z" }];
   const html = render(Home, { state: s });
-  assert.match(html, /日历尚未接入/);
+  // 路线 v3 5.2：今天的规划块与 todo 由服务端读取后显示；静态渲染时尚未读取。
+  assert.doesNotMatch(html, /日历尚未接入/);
+  assert.match(html, /正在读取日历…/);
   assert.match(html, /夜间窗口 23:00–07:00 · 草稿，未启用/);
   assert.match(html, /1 条随手记仍只在本机/);
   assert.match(html, /待处理 · 1/);
+});
+
+test("切片 5.3、5.4：AI HOT 与学习成长不再是规划中页面；学习成长如实写明内容解析以后再做", () => {
+  for (const id of ["aihot", "learning"]) {
+    const p = PAGES.find((x) => x.id === id);
+    assert.equal(p.group, "生活", id);
+    assert.equal(p.maturity, "partial", id);
+    assert.equal(p.plan, undefined, id);
+  }
+  const state = {
+    ...seed(),
+    learning: {
+      folders: [],
+      books: [],
+      links: [
+        {
+          id: "l1",
+          title: "合成链接",
+          url: "https://example.com/a",
+          summary: "摘要",
+          source: "合成来源",
+          origin: "aihot",
+          status: "learning",
+          createdAt: "2026-09-30T00:00:00.000Z",
+        },
+        {
+          id: "l2",
+          title: "回收中的链接",
+          url: "https://example.com/b",
+          summary: "",
+          source: "手动添加",
+          origin: "manual",
+          status: "want",
+          createdAt: "2026-09-30T00:00:00.000Z",
+          deletedAt: "2026-09-30T01:00:00.000Z",
+        },
+      ],
+    },
+  };
+  const html = renderToStaticMarkup(React.createElement(Learning, { ...common, state, navigate() {} }));
+  assert.match(html, /以后再做/);
+  assert.match(html, /还没有指定书架文件夹/);
+  assert.match(html, /href="https:\/\/example.com\/a" target="_blank" rel="noopener noreferrer"/);
+  assert.match(html, /aria-label="学习状态：合成链接"/);
+  assert.match(html, /aria-pressed="true"[^>]*>在学</);
+  assert.doesNotMatch(html, /回收中的链接<\/a>/);
+  assert.match(html, /回收区 <!-- -->1|回收区 1/);
+  // 世界总览热点卡：首屏渲染时还没有读到缓存，如实写“正在读取”，不放假数据。
+  const hot = renderToStaticMarkup(React.createElement(HomeHot, { navigate() {} }));
+  assert.match(hot, /今日热点/);
+  assert.match(hot, /正在读取本机缓存/);
+  assert.doesNotMatch(hot, /<a /);
 });

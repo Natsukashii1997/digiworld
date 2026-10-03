@@ -1,4 +1,5 @@
 import { StoragePanel } from "./StoragePanel.jsx";
+import { AiHotSettings, ShelfSettings } from "./LifePages.jsx";
 import { retainedDemoIds } from "./asset-origin.js";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -39,6 +40,7 @@ import { Button, Badge, Empty, PageHeading, Dialog } from "./components.jsx";
 import { Pixel } from "./pixel.jsx";
 import { uid, now, current } from "./store.js";
 import { copy, download } from "./Assets.jsx";
+import { ReverseWorkbench } from "./ReverseEngineering.jsx";
 import { ProjectContext } from "./ProjectContext.jsx";
 import {
   NOTE_FORMAT,
@@ -752,7 +754,13 @@ export function References({ state, save, notify }) {
       />
       <div className="subtle-notice">
         <ShieldCheck size={17} />
-        只记录你有权访问的资料；区分看到的事实与自己的推断，不用于绕过授权或复制私有代码。
+        只分析你提供的或公开的材料；报告区分“原文观察 / 推断 / 已验证”，不用于绕过授权或复制私有代码。
+      </div>
+      <ReverseWorkbench state={state} save={save} notify={notify} />
+      <div className="section-head">
+        <h2>
+          参考链接 <span className="count">{state.references.length}</span>
+        </h2>
       </div>
       {!state.references.length ? (
         <Empty
@@ -923,6 +931,8 @@ export function Settings({ state, save, notify, adoptState }) {
           <Button secondary>保存配置草稿</Button>
         </form>
       </section>
+      <AiHotSettings notify={notify} />
+      <ShelfSettings state={state} notify={notify} adoptState={adoptState} />
       <StoragePanel state={state} adoptState={adoptState} notify={notify} />
       <section className="settings-panel">
         <div className="setting-row">

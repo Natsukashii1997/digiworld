@@ -28,7 +28,9 @@ import { Dialog, TypeIcon, Maturity, typeLabel } from "./components.jsx";
 import { Assets, AssetEditor, AssetDetail } from "./Assets.jsx";
 import { Knowledge } from "./Knowledge.jsx";
 import { Home, ICONS as PAGE_ICONS } from "./Home.jsx";
-import { PlannedPage, Inbox } from "./PlannedPage.jsx";
+import { Inbox } from "./PlannedPage.jsx";
+import { CalendarPage } from "./Calendar.jsx";
+import { Collab } from "./Collab.jsx";
 import { pendingItems } from "./pending.js";
 import { PartnerScreen } from "./PartnerScreen.jsx";
 import { Odometer } from "./Odometer.jsx";
@@ -40,6 +42,8 @@ import {
   Settings,
 } from "./WorkspacePages.jsx";
 import { ScrollDetail } from "./Scrolls.jsx";
+import { AiHot, Learning } from "./LifePages.jsx";
+import { Silver } from "./Silver.jsx";
 import { scrollsOf, createScroll } from "./scrolls.js";
 import { PAGES, ZONES, resolveRoute } from "./pages.js";
 import {
@@ -76,7 +80,15 @@ export default function App() {
     [versionBump, setVersionBump] = useState(null),
     [veil, setVeil] = useState(true),
     [season, setSeasonLabel] = useState("春 · 花开"),
-    [ruleInstalls, setRuleInstalls] = useState({ items: [], error: "", loaded: false });
+    [ruleInstalls, setRuleInstalls] = useState({ items: [], error: "", loaded: false }),
+    // 智能体群内容清单的最近一次只读结果（按 Agent），体检问题由此汇总进待处理；不写主库。
+    [agentContents, setAgentContents] = useState({});
+  // 在推进项目的只读状态与体检（路线 v3 切片 2.1/2.2）。不在主库里，由服务端现读项目文件与 Git。
+  const [projectStatus, setProjectStatus] = useState({
+    items: [],
+    error: "",
+    loaded: true,
+  });
   const { route, anchor } = target;
   const [saveError, setSaveError] = useState("");
   const partnerScreen = useRef();
@@ -108,6 +120,29 @@ export default function App() {
       setRuleInstalls({ items: [], error: e.message || "读取失败", loaded: true });
     }
   }, []);
+  const statusRun = useRef(0);
+  const refreshProjectStatus = useCallback(async () => {
+    // 只采用最后一次读取的结果，先发出的旧请求晚到时不覆盖新结果。
+    const run = ++statusRun.current;
+    setProjectStatus((prev) => ({ ...prev, error: "", loaded: false }));
+    try {
+      const result = await request("/project-status/inspect", {});
+      if (run === statusRun.current)
+        setProjectStatus({ ...result, error: "", loaded: true });
+    } catch (e) {
+      if (run === statusRun.current)
+        setProjectStatus({ items: [], error: e.message || "读取失败", loaded: true });
+    }
+  }, []);
+  // 只在“在推进”集合或停滞阈值变化时重读；没有在推进项目时不发请求。
+  const activeKey = state
+    ? JSON.stringify([
+        (state.connections?.projects || [])
+          .filter((p) => p.active)
+          .map((p) => p.id),
+        state.connections?.projectStallDays || 0,
+      ])
+    : "";
   const ready = !!state;
   // 跳到页内分区（如能力体检）：等页面渲染出分区后滚动到位并移交焦点，然后清除锚点。
   useEffect(() => {
@@ -128,6 +163,14 @@ export default function App() {
   useEffect(() => {
     if (ready) refreshRuleInstalls();
   }, [ready, refreshRuleInstalls]);
+  useEffect(() => {
+    if (!ready) return;
+    if (activeKey.startsWith("[[]")) {
+      statusRun.current++;
+      setProjectStatus({ items: [], error: "", loaded: true });
+    }
+    else refreshProjectStatus();
+  }, [ready, activeKey, refreshProjectStatus]);
   useEffect(() => {
     if (!state || !veil) return;
     const t = setTimeout(() => setVeil(false), 900);
@@ -209,6 +252,9 @@ export default function App() {
     adoptState,
     ruleInstalls,
     refreshRuleInstalls,
+    projectStatus,
+    refreshProjectStatus,
+    agentContents,
   };
   const asset = state?.assets.find((a) => a.id === selected);
   // 卷被删除（进回收区）后抽屉自动关闭。
@@ -239,7 +285,7 @@ export default function App() {
       </div>
     );
   const partner = partnerOf(state);
-  const pending = pendingItems(state, ruleInstalls);
+  const pending = pendingItems(state, ruleInstalls, projectStatus, agentContents);
   const currentPage = PAGES.find((p) => p.id === route);
   return (
     <div className="app-shell">
@@ -443,6 +489,7 @@ export default function App() {
           {route === "agents" && (
             <Agents
               {...common}
+              setAgentContents={setAgentContents}
               navigate={navigate}
               onSelect={(id) => {
                 navigate("assets");
@@ -451,7 +498,7 @@ export default function App() {
             />
           )}
           {route === "projects" && <Projects {...common} />}
-          {route === "knowledge" && <Knowledge {...common} />}
+          {route === "knowledge" && <Knowledge {...common} navigate={navigate} />}
           {route === "notes" && <Notes {...common} navigate={navigate} />}
           {route === "night" && <Night {...common} />}
           {route === "history" && (
@@ -462,9 +509,11 @@ export default function App() {
           {route === "inbox" && (
             <Inbox {...common} navigate={navigate} select={setSelected} />
           )}
-          {["collab", "calendar", "aihot", "learning", "silver"].includes(route) && (
-            <PlannedPage id={route} navigate={navigate} />
-          )}
+          {route === "collab" && <Collab {...common} navigate={navigate} />}
+          {route === "aihot" && <AiHot {...common} navigate={navigate} />}
+          {route === "learning" && <Learning {...common} navigate={navigate} />}
+          {route === "silver" && <Silver {...common} />}
+          {route === "calendar" && <CalendarPage {...common} />}
         </main>
       </div>
       {asset && !editing && (

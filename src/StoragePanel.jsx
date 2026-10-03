@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Download, Upload, HardDrive } from "lucide-react";
+import { Download, Upload, HardDrive, Archive } from "lucide-react";
 import { Button, Dialog } from "./components.jsx";
 import { session, request } from "./api.js";
 import { parse, stringify } from "./serialization.js";
@@ -49,7 +49,7 @@ export function StoragePanel({ state, adoptState, notify }) {
           <p>导出资产、连接与整理任务；恢复前预览合并，不覆盖现有历史。</p>
           <p>
             候选写回的恢复全文与操作记录独立保存在 knowledge-writes
-            目录，不在此备份中。迁移本机时请保留整个数据目录。
+            目录，不在此备份中；需要时用下面的“完整备份”。
           </p>
         </div>
         <div className="heading-actions">
@@ -99,6 +99,7 @@ export function StoragePanel({ state, adoptState, notify }) {
           </label>
         </div>
       </div>
+      <FullBackup busy={busy} notify={notify} />
       <div className="setting-row">
         <div>
           <strong>旧版浏览器数据</strong>
@@ -133,6 +134,7 @@ export function StoragePanel({ state, adoptState, notify }) {
                 references: "参考",
                 knowledgeTasks: "整理任务",
                 scrolls: "焚决卷",
+                reverseRecords: "逆向记录",
               }).map(([key, label]) => (
                 <div key={key}>
                   <span>新增{label}</span>
@@ -152,6 +154,8 @@ export function StoragePanel({ state, adoptState, notify }) {
                 <strong>{preview.summary.scrollEntriesAdded ?? 0}</strong>
               </div>
               <div><span>新增使用与反馈</span><strong>{preview.summary.activityAdded ?? 0}</strong></div>
+              <div><span>新增协同留痕</span><strong>{preview.summary.collabAdded ?? 0}</strong></div>
+              <div><span>新增改版候选</span><strong>{preview.summary.candidatesAdded ?? 0}</strong></div>
             </div>
             <p className="body-copy">
               保留当前设置、连接与兼容历史。整理任务恢复后仍需核对来源，不恢复读取授权。确认后写入本机主库，不修改原备份文件。
@@ -196,5 +200,186 @@ export function StoragePanel({ state, adoptState, notify }) {
         </Dialog>
       )}
     </section>
+  );
+}
+
+const LIST_LIMIT = 12;
+function PathList({ label, items }) {
+  if (!items.length) return null;
+  return (
+    <details className="full-backup-paths">
+      <summary>
+        {label} {items.length} 个文件
+      </summary>
+      <ul>
+        {items.slice(0, LIST_LIMIT).map((p) => (
+          <li key={p}>
+            <code>{p}</code>
+          </li>
+        ))}
+        {items.length > LIST_LIMIT && <li>另有 {items.length - LIST_LIMIT} 个未列出</li>}
+      </ul>
+    </details>
+  );
+}
+
+// 完整备份（路线 v3 5.1）：整个数据目录打包为一个 zip（含清单与每个文件 SHA256）。
+// 恢复只写到新的数据目录副本并校验，不覆盖当前目录；切换由用户手动完成。
+function FullBackup({ busy: outerBusy, notify }) {
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [preview, setPreview] = useState(null),
+    [done, setDone] = useState(null);
+  const disabled = busy || outerBusy;
+  return (
+    <div className="setting-row full-backup">
+      <div>
+        <strong>完整备份（整个数据目录）</strong>
+        <p>
+          打包主库快照、配置操作日志、知识写入日志、各集合与上传的图片，附清单与每个文件的
+          SHA256。恢复前先预览新增、冲突与缺失；确认后恢复到一个新的数据目录并校验，不覆盖当前目录，切换由你手动完成。
+        </p>
+        {error && (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        )}
+        {done && (
+          <div className="full-backup-done" role="status">
+            <p>
+              已恢复到新目录并逐个校验 {done.verified} 个文件
+              {done.mainDatabase ? `，主库修订 ${done.mainDatabase.revision} 可读` : ""}：
+            </p>
+            <code className="storage-path">{done.target}</code>
+            <p>
+              当前工作台仍在使用原目录。要切换：先停止工作台，再用 WORKBENCH_DATA_DIR
+              指向上面的目录启动；确认无误后再自行处理旧目录。
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="heading-actions">
+        <Button
+          secondary
+          disabled={disabled}
+          onClick={async () => {
+            setBusy(true);
+            setError("");
+            try {
+              const result = await request("/full-backup/create", {});
+              download(result.filename, result.bytes, "application/zip");
+              notify(`完整备份已导出：${result.manifest.files.length} 个文件`);
+            } catch (e) {
+              setError(e.message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <Archive size={16} />
+          {busy && !preview ? "正在处理…" : "导出完整备份"}
+        </Button>
+        <label className="button secondary import-backup">
+          <Upload size={16} />
+          从完整备份恢复
+          <input
+            type="file"
+            aria-label="选择完整备份文件"
+            accept=".zip,application/zip"
+            disabled={disabled}
+            onChange={async (e) => {
+              const file = e.target.files[0];
+              e.target.value = "";
+              if (!file) return;
+              setError("");
+              setDone(null);
+              if (file.size > 75 * 1024 * 1024) {
+                setError("完整备份文件超过 75 MB，当前页面上传不了；请在本机直接处理该文件");
+                return;
+              }
+              setBusy(true);
+              try {
+                const bytes = new Uint8Array(await file.arrayBuffer());
+                setPreview(await request("/full-backup/preview", { bytes }));
+              } catch (err) {
+                setError(err.message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          />
+        </label>
+      </div>
+      {preview && (
+        <Dialog title="完整备份恢复预览" onClose={() => !busy && setPreview(null)}>
+          <div className="asset-form">
+            <h2>恢复前预览</h2>
+            <p className="body-copy">
+              备份时间 {new Date(preview.backup.createdAt).toLocaleString("zh-CN")} · {preview.backup.files}{" "}
+              个文件 · 校验通过
+              {preview.mainDatabase ? ` · 主库修订 ${preview.mainDatabase.revision}` : " · 不含主库"}
+              {preview.current.revision !== null ? `（当前主库修订 ${preview.current.revision}）` : ""}
+            </p>
+            <div className="backup-summary">
+              <div>
+                <span>新增（当前目录没有）</span>
+                <strong>{preview.summary.added.length}</strong>
+              </div>
+              <div>
+                <span>冲突（内容不同）</span>
+                <strong>{preview.summary.conflict.length}</strong>
+              </div>
+              <div>
+                <span>缺失（备份里没有）</span>
+                <strong>{preview.summary.missing.length}</strong>
+              </div>
+              <div>
+                <span>相同</span>
+                <strong>{preview.summary.same}</strong>
+              </div>
+            </div>
+            <PathList label="新增" items={preview.summary.added} />
+            <PathList label="冲突" items={preview.summary.conflict} />
+            <PathList label="缺失" items={preview.summary.missing} />
+            <p className="body-copy">
+              确认后按备份原样写到新目录（冲突与缺失不影响当前目录）：
+            </p>
+            <code className="storage-path">{preview.target}</code>
+            <p className="body-copy">
+              当前目录 {preview.current.directory} 不会被修改。恢复完成后由你手动切换。
+            </p>
+            {error && (
+              <p className="inline-error" role="alert">
+                {error}
+              </p>
+            )}
+            <div className="form-actions">
+              <Button secondary disabled={busy} onClick={() => setPreview(null)}>
+                取消
+              </Button>
+              <Button
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setError("");
+                  try {
+                    const result = await request("/full-backup/restore", { token: preview.token });
+                    setDone(result);
+                    setPreview(null);
+                    notify("已恢复到新目录并校验");
+                  } catch (e) {
+                    setError(e.message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? "正在恢复…" : "恢复到新目录"}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
+    </div>
   );
 }

@@ -1,0 +1,374 @@
+# 第 1 次：模块尚不存在
+node:internal/modules/esm/resolve:272
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/user/personal-ai-workbench/server/project-status.mjs' imported from /home/user/personal-ai-workbench/tests/project-status.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+    at #resolve (node:internal/modules/esm/loader:687:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///home/user/personal-ai-workbench/server/project-status.mjs'
+}
+
+Node.js v24.21.0
+✖ tests/project-status.test.mjs (134.886554ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 204.740424
+
+✖ failing tests:
+
+test at tests/project-status.test.mjs:1:1
+✖ tests/project-status.test.mjs (134.886554ms)
+  'test failed'
+exit=1
+
+# 第 2 次：放入只抛“未实现”的空桩后逐条首跑
+✖ 解析协作状态表：状态编号、当前写入者、唯一下一步、最新交接链接 (1.878458ms)
+✖ 规则模板的“状态编号”与本项目的 state_id 同样识别；单元格里的转义竖线不拆列 (0.242232ms)
+✖ 缺字段：如实列出缺的项，不补造 (0.186071ms)
+✖ 没有协作状态表或空值：判为无法解析 (0.202007ms)
+✖ 超大值截断显示，不整段搬进工作台 (0.178778ms)
+✖ 非 UTF-8 内容不解析；读取上限处截断的多字节字符不误判为非 UTF-8 (1.658585ms)
+✖ readCurrentFile：缺失、超大、非 UTF-8、符号链接各有明确结果 (18.541962ms)
+✖ 停滞：取 CURRENT 修改时间与最近提交中较新者；恰好 N 天不算超过 (0.593553ms)
+✖ 停滞：读不到就是未知，不当作停滞 (0.566887ms)
+✖ 敏感文件按 git ls-files 路径判定 (0.554327ms)
+✖ schema：active 是可选布尔字段；旧库缺失即未标记；停滞阈值为 1–365 的整数天 (4.056786ms)
+✖ 合并备份：active 与其他项目连接字段一样，不从备份导入也不覆盖当前主库 (0.914717ms)
+✖ 重新扫描保留在推进标记，即使远端换了；消失的项目标记随项目保留 (182.320196ms)
+✖ 待处理：体检问题与停滞各进一条，只汇总与跳转；读取失败单列 (2.428413ms)
+✖ HTTP：标记在推进需要当前 revision，严格校验输入；超过 7 个只提示不阻止 (356.44689ms)
+✖ HTTP：停滞阈值可保存，非法值拒绝 (237.420537ms)
+✖ HTTP：只读状态卡、停滞雷达与安全体检覆盖合成仓库，且不改任何项目文件 (276.68475ms)
+✖ HTTP：不能借体检读任意路径；目录不在扫描范围或已更换时如实报告 (161.108715ms)
+✖ HTTP：gh 查询失败或抛错时远程私有性为未知，不报错 (157.249482ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 0
+ℹ fail 19
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2692.255128
+
+✖ failing tests:
+
+test at tests/project-status.test.mjs:32:1
+✖ 解析协作状态表：状态编号、当前写入者、唯一下一步、最新交接链接 (1.878458ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:33:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17)
+
+test at tests/project-status.test.mjs:45:1
+✖ 规则模板的“状态编号”与本项目的 state_id 同样识别；单元格里的转义竖线不拆列 (0.242232ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:46:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+
+test at tests/project-status.test.mjs:63:1
+✖ 缺字段：如实列出缺的项，不补造 (0.186071ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:64:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-status.test.mjs:73:1
+✖ 没有协作状态表或空值：判为无法解析 (0.202007ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:74:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-status.test.mjs:83:1
+✖ 超大值截断显示，不整段搬进工作台 (0.178778ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:85:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-status.test.mjs:92:1
+✖ 非 UTF-8 内容不解析；读取上限处截断的多字节字符不误判为非 UTF-8 (1.658585ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /UTF-8/. Input:
+  
+  'Error: 未实现'
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:93:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: 未实现
+        at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+        at file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:94:11
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:93:10)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1402:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+        at Test.postRun (node:internal/test_runner/test:1542:19)
+        at Test.run (node:internal/test_runner/test:1467:12),
+    expected: /UTF-8/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at tests/project-status.test.mjs:104:1
+✖ readCurrentFile：缺失、超大、非 UTF-8、符号链接各有明确结果 (18.541962ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:107:25)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-status.test.mjs:148:1
+✖ 停滞：取 CURRENT 修改时间与最近提交中较新者；恰好 N 天不算超过 (0.593553ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+      at v (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:152:5)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:153:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-status.test.mjs:166:1
+✖ 停滞：读不到就是未知，不当作停滞 (0.566887ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:170:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-status.test.mjs:198:1
+✖ 敏感文件按 git ls-files 路径判定 (0.554327ms)
+  Error: 未实现
+      at todo (file:///home/user/personal-ai-workbench/server/project-status.mjs:1:28)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:199:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+
+test at tests/project-status.test.mjs:262:1
+✖ schema：active 是可选布尔字段；旧库缺失即未标记；停滞阈值为 1–365 的整数天 (4.056786ms)
+  Error: 数据校验失败：包含不支持的字段
+      at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+      at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+      at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:535:7)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:264:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    status: 400
+  }
+
+test at tests/project-status.test.mjs:275:1
+✖ 合并备份：active 与其他项目连接字段一样，不从备份导入也不覆盖当前主库 (0.914717ms)
+  Error: 数据校验失败：包含不支持的字段
+      at invalid (file:///home/user/personal-ai-workbench/server/schema.mjs:10:23)
+      at keys (file:///home/user/personal-ai-workbench/server/schema.mjs:38:5)
+      at validateState (file:///home/user/personal-ai-workbench/server/schema.mjs:535:7)
+      at backupState (file:///home/user/personal-ai-workbench/server/merge.mjs:8:10)
+      at mergeBackup (file:///home/user/personal-ai-workbench/server/merge.mjs:11:17)
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:278:21)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19) {
+    status: 400
+  }
+
+test at tests/project-status.test.mjs:285:1
+✖ 重新扫描保留在推进标记，即使远端换了；消失的项目标记随项目保留 (182.320196ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - true
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:296:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/project-status.test.mjs:303:1
+✖ 待处理：体检问题与停滞各进一条，只汇总与跳转；读取失败单列 (2.428413ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'project-safety-p1',
+  -   'project-stall-p2'
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:325:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ 'project-safety-p1', 'project-stall-p2' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/project-status.test.mjs:357:1
+✖ HTTP：标记在推进需要当前 revision，严格校验输入；超过 7 个只提示不阻止 (356.44689ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  404 !== 400
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:364:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/project-status.test.mjs:410:1
+✖ HTTP：停滞阈值可保存，非法值拒绝 (237.420537ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  404 !== 400
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:414:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/project-status.test.mjs:425:1
+✖ HTTP：只读状态卡、停滞雷达与安全体检覆盖合成仓库，且不改任何项目文件 (276.68475ms)
+  AssertionError [ERR_ASSERTION]: 协同项目 {"error":"接口不存在"}
+  
+  404 !== 200
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:436:14)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/project-status.test.mjs:490:1
+✖ HTTP：不能借体检读任意路径；目录不在扫描范围或已更换时如实报告 (161.108715ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  404 !== 400
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:493:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/project-status.test.mjs:519:1
+✖ HTTP：gh 查询失败或抛错时远程私有性为未知，不报错 (157.249482ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  404 !== 200
+  
+      at TestContext.<anonymous> (file:///home/user/personal-ai-workbench/tests/project-status.test.mjs:529:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+exit=1

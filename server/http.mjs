@@ -8,9 +8,14 @@ import { createAssetActivity } from "./asset-activity.mjs";
 import { createDeliveries } from "./delivery.mjs";
 import { createProjectContext } from "./project-context.mjs";
 import { createProjectIdentity } from "./project-identity.mjs";
+import { createProjectStatus, ghVisibility } from "./project-status.mjs";
+import { createCollabBoard } from "./collab-board.mjs";
+import { createProjectGithub, createGhRunner } from "./project-github.mjs";
+import { createProjectBrief } from "./project-brief.mjs";
 import { inspectProjectLocation } from "./project-scan.mjs";
 import { createSkillSources } from "./skill-sources.mjs";
 import { inspectAgentInventory } from "./agent-inventory.mjs";
+import { createAgentContents, readAgentContents } from "./agent-contents.mjs";
 import { inspectAgentPrograms } from "./agent-programs.mjs";
 import { createAgentTargets } from "./agent-targets.mjs";
 import { createSkillCopies } from "./skill-copies.mjs";
@@ -21,6 +26,14 @@ import { createKnowledgeConnections } from "./knowledge-connections.mjs";
 import { createKnowledgeCompilation } from "./knowledge-compilation.mjs";
 import { createKnowledgeMaintenance } from "./knowledge-maintenance.mjs";
 import { createKnowledgeWriteback } from "./knowledge-writeback.mjs";
+import { createAiHot } from "./aihot.mjs";
+import { createLearning } from "./learning.mjs";
+import { createKnowledgeProfile } from "./knowledge-profile.mjs";
+import { startProfileMcp } from "./profile-mcp.mjs";
+import { createSilverImages } from "./silver.mjs";
+import { createCutout } from "./silver-cutout.mjs";
+import { createFullBackup } from "./full-backup.mjs";
+import { createCalendar, createCalendarHelper } from "./calendar.mjs";
 import packageInfo from "../package.json" with { type: "json" };
 import {
   scanLocalProjects,
@@ -81,6 +94,7 @@ export async function startServer({
   staticRoot,
   discovery,
   clock,
+  mcpPort,
 } = {}) {
   const repository = await openRepository(directory);
   const deliveries = createDeliveries(repository, clock);
@@ -94,10 +108,40 @@ export async function startServer({
     detectAgents,
     defaultRoots,
     inspectAgentInventory,
+    readAgentContents,
     inspectAgentPrograms,
     inspectProjectLocation,
+    repoVisibility: ghVisibility,
+    // GitHub 面板的只读 gh 运行器（测试注入桩脚本）。
+    githubCli: createGhRunner(),
+    silverCutout: createCutout(),
     ...discovery,
   };
+  const projectStatus = createProjectStatus(repository, {
+    clock,
+    visibility: adapters.repoVisibility,
+  });
+  const collabBoard = createCollabBoard(repository, { clock });
+  const projectGithub = createProjectGithub(repository, {
+    clock,
+    gh: adapters.githubCli,
+  });
+  const projectBrief = createProjectBrief(repository, {
+    clock,
+    projectStatus,
+    github: projectGithub,
+  });
+  // 银饰图片只存在数据目录 silver/ 下；抠图器可替换（测试注入桩）。
+  const silver = await createSilverImages(directory, {
+    cutout: adapters.silverCutout,
+  });
+  const agentContents = createAgentContents(repository, adapters);
+  // 完整备份（切片 5.1）：整个数据目录打包；恢复只写到新的目录副本。
+  const fullBackup = createFullBackup(repository, { clock });
+  // 日历与 todo（切片 5.2）：本机小助手可由测试注入桩 run；非 macOS 如实返回不可用。
+  const calendar = createCalendar({
+    helper: createCalendarHelper(adapters.calendarHelper || {}),
+  });
   const agentTargets = createAgentTargets(repository, adapters, clock);
   const skillCopies = createSkillCopies(repository, adapters, clock);
   const agentConfig = createAgentConfig(repository, adapters, { clock });
@@ -127,6 +171,29 @@ export async function startServer({
     files: knowledgeFiles,
     clock,
   });
+  // AI HOT（切片 5.3）：拉取函数可由测试注入桩；未在页面确认“开始拉取”前不会访问网络。
+  const aihot = createAiHot({
+    directory,
+    fetch: adapters.aihotFetch || globalThis.fetch,
+    clock,
+  });
+  const learning = createLearning(repository, { clock });
+  const knowledgeProfile = createKnowledgeProfile(repository, {
+    files: knowledgeFiles,
+    clock,
+  });
+  // 个人说明 MCP 服务：单独端口、只监听 127.0.0.1；启动失败不影响工作台本身，页面如实显示未启动。
+  let mcp = null,
+    mcpError = "";
+  if (mcpPort !== undefined)
+    try {
+      mcp = await startProfileMcp({ profile: knowledgeProfile, port: mcpPort });
+    } catch (error) {
+      mcpError =
+        error.code === "EADDRINUSE"
+          ? `端口 ${mcpPort} 已被占用，MCP 服务未启动`
+          : "MCP 服务未能启动";
+    }
   const scans = new Map();
   function singleScan(key, operation) {
     if (scans.has(key)) throw failure("已有扫描正在进行，请稍候", 409);
@@ -189,10 +256,81 @@ export async function startServer({
           throw failure("需要 JSON 请求", 415);
         if (url.pathname === "/api/workspace" && request.method === "GET")
           return send(response, 200, await repository.read());
+        if (url.pathname === "/api/aihot" && request.method === "GET")
+          return send(response, 200, await aihot.status());
+        if (url.pathname === "/api/aihot/refresh" && request.method === "POST") {
+          await body(request);
+          return send(response, 200, await aihot.refresh());
+        }
+        if (url.pathname === "/api/aihot/settings" && request.method === "POST")
+          return send(response, 200, await aihot.saveSettings(await body(request)));
+        if (url.pathname === "/api/learning/shelf" && request.method === "GET")
+          return send(response, 200, await learning.shelf());
+        const folderAction = url.pathname.match(/^\/api\/learning\/folders\/(add|remove)$/)?.[1];
+        if (folderAction && request.method === "POST") {
+          const input = await body(request);
+          if (!input || typeof input !== "object" || Array.isArray(input))
+            throw failure("请求格式无效");
+          return send(
+            response,
+            200,
+            folderAction === "add"
+              ? await learning.addFolder({ path: input.path, expectedRevision: input.expectedRevision })
+              : await learning.removeFolder({ id: input.id, expectedRevision: input.expectedRevision }),
+          );
+        }
         if (url.pathname === "/api/asset-activity") {
           if (request.method === "GET") return send(response, 200, await activity.query(url.searchParams.get("id")));
           if (request.method === "POST") return send(response, 200, await activity.append(await body(request)));
         }
+        const zonesAction = url.pathname.match(
+          /^\/api\/knowledge\/zones\/(rules|stats|summary)$/,
+        )?.[1];
+        if (zonesAction && request.method === "POST") {
+          const input = await body(request);
+          if (zonesAction === "summary")
+            return send(response, 200, {
+              ...(await knowledgeProfile.summary(input)),
+              mcp: { url: mcp?.url || null, error: mcp ? "" : mcpError || "MCP 服务未启用" },
+            });
+          return send(
+            response,
+            200,
+            await knowledgeProfile[zonesAction === "rules" ? "saveRules" : "stats"](input),
+          );
+        }
+        const profileAction = url.pathname.match(
+          /^\/api\/knowledge\/profile\/(sharing|proposals\/preview|proposals\/confirm|proposals\/reject)$/,
+        )?.[1];
+        if (profileAction && request.method === "POST")
+          return send(
+            response,
+            200,
+            await knowledgeProfile[
+              {
+                sharing: "setSharing",
+                "proposals/preview": "preview",
+                "proposals/confirm": "confirm",
+                "proposals/reject": "reject",
+              }[profileAction]
+            ](await body(request)),
+          );
+        if (url.pathname === "/api/silver/images" && request.method === "POST")
+          return send(response, 200, await silver.store(await body(request)));
+        const silverFile = url.pathname.match(/^\/api\/silver\/images\/([^/]+)$/)?.[1];
+        if (silverFile && request.method === "GET") {
+          let file;
+          try {
+            file = decodeURIComponent(silverFile);
+          } catch {
+            throw failure("图片文件名无效");
+          }
+          return send(response, 200, await silver.read(file));
+        }
+        if (url.pathname === "/api/silver/cutout" && request.method === "POST")
+          return send(response, 200, await silver.cutout((await body(request)).file));
+        if (url.pathname === "/api/silver/status" && request.method === "GET")
+          return send(response, 200, await silver.status());
         const compilationAction = url.pathname.match(
           /^\/api\/knowledge\/tasks\/(create|packet|receive|check|archive)$/,
         )?.[1];
@@ -262,6 +400,35 @@ export async function startServer({
             200,
             await projectIdentity[projectIdentityAction](await body(request)),
           );
+        const statusAction = url.pathname.match(
+          /^\/api\/project-status\/(inspect|mark|settings)$/,
+        )?.[1];
+        if (statusAction && request.method === "POST")
+          return send(
+            response,
+            200,
+            await projectStatus[statusAction](await body(request)),
+          );
+        if (url.pathname === "/api/project-github/panel" && request.method === "POST")
+          return send(response, 200, await projectGithub.panel(await body(request)));
+        const briefAction = url.pathname.match(
+          /^\/api\/project-brief\/(today|read)$/,
+        )?.[1];
+        if (briefAction && request.method === "POST")
+          return send(
+            response,
+            200,
+            await projectBrief[briefAction](await body(request)),
+          );
+        const collabAction = url.pathname.match(
+          /^\/api\/collab\/(board|record)$/,
+        )?.[1];
+        if (collabAction && request.method === "POST")
+          return send(
+            response,
+            200,
+            await collabBoard[collabAction](await body(request)),
+          );
         const configAction = url.pathname.match(
           /^\/api\/agent-config\/(inspect|preview|apply|check|history|restore-preview)$/,
         )?.[1];
@@ -305,6 +472,15 @@ export async function startServer({
             await adapters.inspectAgentInventory(data.agentId),
           );
         }
+        if (
+          url.pathname === "/api/agent-contents" &&
+          request.method === "POST"
+        )
+          return send(
+            response,
+            200,
+            await agentContents.inspect(await body(request)),
+          );
         if (url.pathname === "/api/skill-sources" && request.method === "GET")
           return send(response, 200, skillSources.defaults());
         const skillAction = url.pathname.match(
@@ -399,6 +575,38 @@ export async function startServer({
             exportedAt: new Date().toISOString(),
             state: await repository.read(),
           });
+        const fullBackupAction = url.pathname.match(
+          /^\/api\/full-backup\/(create|preview|restore)$/,
+        )?.[1];
+        if (fullBackupAction && request.method === "POST") {
+          const input = await body(request);
+          return send(response, 200, await fullBackup[fullBackupAction](input));
+        }
+        if (url.pathname === "/api/calendar/status" && request.method === "GET")
+          return send(response, 200, await calendar.status());
+        const calendarAction = url.pathname.match(
+          /^\/api\/calendar\/(access|week|todos|blocks\/create|blocks\/update|todos\/create|todos\/update)$/,
+        )?.[1];
+        if (calendarAction && request.method === "POST") {
+          const input = await body(request);
+          if (!input || typeof input !== "object" || Array.isArray(input))
+            throw failure("请求格式无效");
+          return send(
+            response,
+            200,
+            await calendar[
+              {
+                access: "requestAccess",
+                week: "week",
+                todos: "todos",
+                "blocks/create": "createBlock",
+                "blocks/update": "updateBlock",
+                "todos/create": "createTodo",
+                "todos/update": "updateTodo",
+              }[calendarAction]
+            ](input),
+          );
+        }
         if (url.pathname === "/api/import/preview" && request.method === "POST")
           return send(
             response,
@@ -542,6 +750,7 @@ export async function startServer({
           ...(error.operationNotStarted === true
             ? { operationNotStarted: true }
             : {}),
+          ...(error.unknownResult === true ? { unknownResult: true } : {}),
         });
       else response.end();
     }
@@ -554,15 +763,21 @@ export async function startServer({
       server.listen(port, "127.0.0.1", resolve);
     });
   } catch (error) {
+    await mcp?.close();
     deliveries.close();
     await repository.close();
     throw error;
   }
+  aihot.start();
   return {
     url: `http://127.0.0.1:${server.address().port}`,
     repository,
+    mcpUrl: mcp?.url || null,
     async close() {
+      aihot.close();
+      fullBackup.close();
       await new Promise((resolve) => server.close(resolve));
+      await mcp?.close();
       deliveries.close();
       await repository.close();
     },

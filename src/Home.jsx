@@ -24,6 +24,7 @@ import { page, LAYERS, ZONES } from "./pages.js";
 import { Maturity, TypeIcon, typeLabel } from "./components.jsx";
 import { pendingItems, rulePendingReady } from "./pending.js";
 import { PendingList } from "./PlannedPage.jsx";
+import { useZoneSummary } from "./KnowledgeZones.jsx";
 import {
   Pixel,
   DigiviceArt,
@@ -34,6 +35,9 @@ import {
   glyphOf,
 } from "./pixel.jsx";
 import { PartnerScreen } from "./PartnerScreen.jsx";
+import { HomeHot } from "./LifePages.jsx";
+import { HomeSchedule } from "./Calendar.jsx";
+import { HomeBrief } from "./ProjectBrief.jsx";
 
 export const ICONS = {
   inbox: Inbox,
@@ -55,7 +59,7 @@ export const ICONS = {
 };
 
 // 每个页面一条真实数据，读不到就如实写“尚未扫描 / 尚未检测 / 尚未开发”。
-function facts(state) {
+function facts(state, zoneLatest) {
   const c = state.connections || {};
   const live = state.assets.filter((a) => !a.archived);
   const detected = (c.agents || []).filter((a) => a.status === "detected");
@@ -69,13 +73,16 @@ function facts(state) {
     projects: c.projectScannedAt ? `${(c.projects || []).length} 个项目` : "尚未扫描",
     health: "尚未开发",
     collab: "尚未开发",
-    calendar: "尚未开发",
+    calendar: "本机日历与提醒事项 · 需授权",
     night: "计划草稿 · 未启用",
-    knowledge: `${(c.knowledgeSources || []).length} 个知识源 · ${(state.knowledgeTasks || []).length} 个任务`,
+    // 知识仓库的主要指标（切片 3.2）：“我的知识”本周新增或更新篇数，来自最近一次三区统计。
+    knowledge: `${(c.knowledgeSources || []).length} 个知识源 · ${(state.knowledgeTasks || []).length} 个任务 · ${
+      zoneLatest ? `我的知识本周 +${zoneLatest.zones.mine.changedThisWeek}` : "三区尚未统计"
+    }`,
     notes: `${state.notes.length} 条本机草稿`,
-    aihot: "尚未开发",
-    learning: "尚未开发",
-    silver: "尚未开发",
+    aihot: "精选 · 热点 · 日报 · 本机缓存",
+    learning: `${(state.learning?.books || []).length} 本已标记 · ${(state.learning?.links || []).filter((l) => !l.deletedAt).length} 条链接`,
+    silver: silverSummary(state.silver),
     settings: state.model?.provider ? `意向：${state.model.provider}` : "模型未连接",
   };
 }
@@ -119,15 +126,16 @@ function DayRuler({ night }) {
   );
 }
 
-export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
+export function Home({ state, navigate, select, openCreate, ruleInstalls, projectStatus, agentContents, adoptState, notify }) {
   const partner = partnerOf(state);
   const stageScreen = useRef();
   // UI v13.2：暴龙机 A 键在数码蛋与待处理条数之间切换，B 键开关背光，C 键戳一下
   const [dvView, setDvView] = useState("egg"),
     [lit, setLit] = useState(false);
   const live = state.assets.filter((a) => !a.archived);
-  const f = facts(state);
-  const pending = pendingItems(state, ruleInstalls);
+  const [zoneSummary] = useZoneSummary();
+  const f = facts(state, zoneSummary.latest);
+  const pending = pendingItems(state, ruleInstalls, projectStatus, agentContents);
   // 显示数字时跟随待处理条数（加载完成、读取失败等来源变化都会更新）
   useEffect(() => {
     if (dvView === "number") stageScreen.current?.showNumber(pending.length);
@@ -258,12 +266,10 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
               <Moon size={14} />
               夜间窗口 {state.night.time}–{state.night.end} · 草稿，未启用
             </p>
-            <p className="schedule-note">
-              日历尚未接入。接入后这里会显示你提前写下的规划块，以及会议、项目里程碑和提醒，数据来自
-              macOS 日历（路线 3.2）。
-            </p>
+            {/* 路线 v3 5.2：今天的规划块与 todo，来自 macOS 日历与提醒事项；不可用 / 未授权时如实说明。 */}
+            <HomeSchedule />
             <button className="plan-link" onClick={() => navigate("calendar")}>
-              <span>查看日历规划</span>
+              <span>打开日历与 todo</span>
               <ArrowUpRight size={15} />
             </button>
           </div>
@@ -297,11 +303,14 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
         </section>
       </div>
 
+      {/* 今日项目简报：在推进项目各一段（项目空间第二批，本机数据规则生成） */}
+      <HomeBrief state={state} adoptState={adoptState} notify={notify} navigate={navigate} />
+
       {/* 结构：两区能力地图（工作区 / 生活区，产品定义 v1.2 §2）+ 最近迭代 */}
       <div className="home-row">
         <section className="home-section structure-map">
           <div className="section-title">
-            <span className="section-index">C</span>
+            <span className="section-index">D</span>
             <h2>能力地图</h2>
             <p>工作区：资产被目标使用，运行层让它跑起来，结果回到知识与资产。生活区：自己的日子。</p>
           </div>
@@ -356,7 +365,7 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
         </section>
         <section className="home-section side">
           <div className="section-title">
-            <span className="section-index">D</span>
+            <span className="section-index">E</span>
             <h2>最近迭代</h2>
             <p>按最后保存时间</p>
           </div>
@@ -386,6 +395,20 @@ export function Home({ state, navigate, select, openCreate, ruleInstalls }) {
           </div>
         </section>
       </div>
+
+      {/* 生活区：今日热点（AI HOT 本机缓存，路线 v3 切片 5.3） */}
+      <HomeHot navigate={navigate} />
     </div>
   );
+}
+
+// 银饰计划（路线 v3 5.5）：欣赏图张数与收藏格填充进度，只数未删除的记录。
+function silverSummary(silver) {
+  if (!silver) return "还没有收录";
+  const live = (list) => list.filter((r) => !r.deletedAt);
+  const categories = live(silver.categories);
+  const ids = new Set(categories.map((c) => c.id));
+  const target = categories.reduce((n, c) => n + c.target, 0);
+  const filled = live(silver.items).filter((i) => ids.has(i.categoryId)).length;
+  return `${live(silver.wall).length} 张欣赏图 · 已填 ${filled}/${target} 格`;
 }

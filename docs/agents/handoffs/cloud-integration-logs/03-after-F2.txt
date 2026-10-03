@@ -1,0 +1,25 @@
+✓ built in 2.63s
+== unit aihot learning digital-world-ui collab-board project-status
+ℹ tests 75
+ℹ pass 75
+ℹ fail 0
+== browser aihot-learning
+exit=0
+PASS 关闭网络访问后不再拉取，页面说明“网络访问已关闭”，仍显示本机缓存
+PASS 390 宽：AI HOT 三个标签、学习成长、世界总览、设置均无横向溢出；按钮 44px；axe 通过
+aihot-learning-browser: all passed
+== browser nav-zones
+exit=0
+PASS 键盘可逐项到达侧栏最底部的版本归档
+PASS 390 宽：抽屉导航四段可用、条目 44px、无横向溢出、axe 通过
+nav-zones-browser: all passed
+== browser collab-board
+exit=0
+PASS 390 宽无横向溢出、44px、axe 无违规
+PASS 全过程未修改任何项目文件
+PASS 无页面脚本错误
+== browser project-status
+exit=0
+PASS 390 宽无横向溢出、44px、axe 无违规
+PASS 全过程未修改任何项目文件
+PASS 无页面脚本错误

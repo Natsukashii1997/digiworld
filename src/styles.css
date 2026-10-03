@@ -4990,6 +4990,31 @@ details.scan-notice {
 .backup-summary strong {
   font-family: var(--mono);
 }
+/* 完整备份（切片 5.1）：预览里的路径列表与恢复结果 */
+.full-backup-paths summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.full-backup-paths ul {
+  display: grid;
+  gap: 4px;
+  padding-left: 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.full-backup-paths code {
+  overflow-wrap: anywhere;
+}
+.full-backup-done {
+  margin-top: 10px;
+}
+.full-backup-done .storage-path {
+  margin: 6px 0;
+}
 .settings-form > .button,
 .night-form > .button {
   justify-self: start;
@@ -6133,3 +6158,390 @@ input[type="file"]::file-selector-button {
   color: var(--text);
   background: rgba(255, 106, 61, 0.07);
 }
+
+/* ── AI HOT 与学习成长（路线 v3 切片 5.3、5.4）：沿用现有令牌、卡片与分段按钮，不引入新视觉方向 ── */
+.aihot-first {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px dashed var(--line-2);
+  color: var(--text-2);
+  font-size: 13px;
+}
+.aihot-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 18px 0 14px;
+}
+.aihot-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.aihot-status.failed,
+.aihot-error {
+  color: var(--orange-2);
+}
+.aihot-error,
+.aihot-date {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.aihot-date {
+  font-family: var(--mono);
+  color: var(--text-2);
+}
+.hot-list,
+.shelf-list,
+.learn-list,
+.hot-card-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hot-item,
+.shelf-book,
+.learn-link {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+}
+.hot-item h3,
+.shelf-book h3,
+.learn-link h3 {
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.hot-item h3 a,
+.learn-link h3 a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 3px;
+}
+.hot-item h3 a:hover,
+.learn-link h3 a:hover {
+  color: var(--cyan);
+}
+.hot-item h3 svg,
+.learn-link h3 svg {
+  margin-left: 4px;
+  vertical-align: -1px;
+  color: var(--muted);
+}
+.hot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  font: 11.5px var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.hot-summary {
+  color: var(--text-2);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.hot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.shelf-book {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.shelf-main {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+}
+.shelf-main > svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--muted);
+}
+.shelf-main small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.status-picker button {
+  padding: 0 12px;
+}
+.learning-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.learning-later {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--text-2);
+  font-size: 13px;
+}
+.home-hot {
+  display: grid;
+  gap: 12px;
+}
+.hot-card-list li {
+  display: grid;
+  border-bottom: 1px solid var(--line);
+}
+.hot-card-list small {
+  padding-bottom: 8px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.hot-card-link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 4px 2px;
+  color: var(--text);
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.hot-card-link:hover {
+  color: var(--cyan);
+}
+.hot-card-status {
+  color: var(--muted);
+  font-size: 12px;
+}
+.home-hot .plan-link {
+  justify-self: start;
+}
+.check-row {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.check-row input {
+  width: 20px;
+  height: 20px;
+}
+.folder-row strong {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .shelf-book {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 逆向工程第一层（支线 B2）：投素材、任务包、回复、报告与候选、记录列表。沿用面板、表单、徽标与回收区样式。 */
+.reverse-workbench {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  margin-bottom: 22px;
+  padding: 22px 24px;
+  border-radius: var(--r-l);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    var(--shadow);
+  min-width: 0;
+}
+.reverse-record {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.reverse-title {
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.reverse-record h3 {
+  margin-top: 6px;
+  font-size: 15px;
+}
+.reverse-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.reverse-record-head > div {
+  min-width: 0;
+  flex: 1 1 220px;
+}
+.reverse-link {
+  font-size: 13px;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.reverse-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  color: var(--cyan);
+}
+.reverse-pack {
+  font: 12.5px/1.6 var(--mono);
+}
+.reverse-issues ul,
+.reverse-section ul,
+.reverse-results ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.reverse-report {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(77, 227, 255, 0.03);
+  min-width: 0;
+}
+.reverse-summary,
+.reverse-section li span,
+.candidate-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.reverse-section h4 {
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.reverse-section li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  min-width: 0;
+}
+.reverse-section li .badge {
+  flex: none;
+}
+.reverse-candidates {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.candidate-pick {
+  min-height: 44px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  cursor: pointer;
+}
+.candidate-pick input {
+  margin-top: 3px;
+}
+.candidate-pick.imported {
+  cursor: default;
+  opacity: 0.78;
+}
+.candidate-body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+.candidate-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font: 11.5px var(--mono);
+  color: var(--muted);
+}
+.candidate-text {
+  font-size: 13.5px;
+  color: var(--text);
+}
+.candidate-tags {
+  font-size: 12px;
+  color: var(--orange);
+}
+.reverse-results {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(166, 227, 110, 0.25);
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+.reverse-list .record-row.active {
+  background: rgba(77, 227, 255, 0.05);
+}
+.reverse-list .record-row strong {
+  overflow-wrap: anywhere;
+}
+.reverse-empty {
+  margin-bottom: 16px;
+}
+@media (max-width: 640px) {
+  .reverse-workbench {
+    padding: 16px 14px;
+  }
+  .reverse-list .record-row {
+    flex-wrap: wrap;
+    padding: 12px 14px;
+  }
+  .reverse-list .record-row > div {
+    flex: 1 1 calc(100% - 40px);
+  }
+}
+/* 进化回路 v1：资产详情“改版进化”，沿用 asset-usage 的表面与令牌，不引入新视觉方向。 */
+.asset-evolution { margin: 20px 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 12px; min-width: 0; }
+.asset-evolution header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.asset-evolution h3, .asset-evolution h4 { margin: 0; font-size: 15px; }
+.asset-evolution p, .asset-evolution li { overflow-wrap: anywhere; }
+.asset-evolution pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; font: inherit; }
+.evolution-packet pre { max-height: 320px; overflow: auto; padding: 12px; border: 1px solid var(--line); border-radius: 8px; font-family: var(--mono, ui-monospace, monospace); font-size: 13px; }
+.evolution-reply label, .evolution-return label { display: grid; gap: 8px; }
+.evolution-reply textarea, .evolution-return textarea { width: 100%; box-sizing: border-box; }
+.evolution-candidate { display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--line); min-width: 0; }
+.evolution-candidate .text-difference { min-width: 0; }
+/* 候选比较随抽屉整体滚动，差异区不再单独滚动（axe scrollable-region-focusable），长行在窄屏换行。 */
+.evolution-candidate .diff-lines { max-height: none; overflow: visible; }
+.evolution-candidate .diff-line pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.evolution-note { display: grid; gap: 4px; }
+.evolution-side summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+.evolution-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.evolution-columns > div { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.evolution-columns pre { padding: 10px; border: 1px solid var(--line); border-radius: 8px; max-height: 360px; overflow: auto; }
+.evolution-evidence ul, .evolution-decided ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.evolution-evidence li { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.evolution-decided li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

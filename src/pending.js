@@ -1,5 +1,5 @@
 // 待处理线索：只从已加载的本机主库读出真实事项，不编造、不执行动作。
-// 体检、夜间结果、改版候选等来源会随对应功能上线再接入（产品定义 v1.1 §4.6）。
+// 体检、夜间结果等来源会随对应功能上线再接入（产品定义 v1.1 §4.6）。
 import { current } from "./store.js";
 import { usageOf } from "./asset-usage.js";
 
@@ -9,7 +9,17 @@ export function rulePendingReady(ruleInstalls) {
 }
 // ruleInstalls 来自规则模板的本机操作记录（不在主库里），由 App 读取后传入：
 // { items, error }。读取失败单列一条，不当作“没有可升级”。
-export function pendingItems(state, ruleInstalls = { items: [], error: "" }) {
+// projectStatus 来自项目空间的只读状态与体检（路线 v3 切片 2.1/2.2），由 App 读取后传入：
+// { items, error, loaded }。只汇总和跳转，不执行任何动作；读取失败单列一条。
+// agentHealth 来自智能体群的内容清单体检（只在本次打开页面后明确读取过的 Agent 才有），
+// { [agentId]: { name, health: { brokenLinks, drift, unreadable } } }。未体检不下结论。
+export function pendingItems(
+  state,
+  ruleInstalls = { items: [], error: "" },
+  projectStatus = { items: [], error: "" },
+  agentHealth = {},
+) {
+  ruleInstalls ||= { items: [], error: "" };
   const items = [];
   const c = state.connections || {};
   if (ruleInstalls.error)
@@ -47,6 +57,31 @@ export function pendingItems(state, ruleInstalls = { items: [], error: "" }) {
         assetId: asset.id,
       });
   }
+  // 改版候选（进化回路 v1）：用户粘贴回来的 Agent 回复，等待并排比较后采用或退回。
+  for (const c of state.revisionCandidates || []) {
+    if (c.status !== "pending") continue;
+    const asset = state.assets.find((a) => a.id === c.assetId);
+    if (!asset || asset.archived) continue;
+    items.push({
+      id: `candidate-${c.id}`,
+      kind: "资产",
+      title: `「${current(asset).title}」有改版候选待比较`,
+      detail: "在资产详情里与当前版本并排比较，决定采用或退回。",
+      to: "assets",
+      assetId: asset.id,
+    });
+  }
+  // 个人说明修改建议（切片 3.3）：Agent 通过本机 MCP 提交，在待处理页预览采纳或拒绝。
+  for (const p of state.profileProposals || []) {
+    if (p.status !== "pending") continue;
+    items.push({
+      id: `profile-${p.id}`,
+      kind: "知识",
+      title: `个人说明修改建议 · ${p.path}`,
+      detail: `来自 ${p.proposer}：${p.reason.length > 60 ? p.reason.slice(0, 60) + "…" : p.reason}`,
+      to: "inbox",
+    });
+  }
   const tasks = (state.knowledgeTasks || []).filter((t) => !t.archived);
   if (tasks.length)
     items.push({
@@ -64,6 +99,33 @@ export function pendingItems(state, ruleInstalls = { items: [], error: "" }) {
       detail: "尚未写入 Obsidian，可以整理后手动归位。",
       to: "notes",
     });
+  if (projectStatus?.error)
+    items.push({
+      id: "project-status-error",
+      kind: "项目",
+      title: "在推进项目的状态与体检读取失败",
+      detail: "停滞与安全提示暂时不可用；在项目空间可以重新读取。",
+      to: "projects",
+    });
+  for (const p of projectStatus?.items || []) {
+    const issues = p.safety?.issues || [];
+    if (issues.length)
+      items.push({
+        id: `project-safety-${p.projectId}`,
+        kind: "项目",
+        title: `项目「${p.name}」安全体检发现 ${issues.length} 项问题`,
+        detail: issues.map((i) => i.text).join("；"),
+        to: "projects",
+      });
+    if (p.activity?.state === "stalled")
+      items.push({
+        id: `project-stall-${p.projectId}`,
+        kind: "项目",
+        title: `项目「${p.name}」已 ${p.activity.idleDays} 天没有状态更新或提交`,
+        detail: "在推进项目超过停滞阈值；到项目空间查看状态卡，决定继续推进还是取消在推进。",
+        to: "projects",
+      });
+  }
   const targeted = new Set((c.agentTargets || []).map((t) => t.agentId));
   const untargeted = (c.agents || []).filter(
     (a) => a.status === "detected" && !targeted.has(a.id),
@@ -76,5 +138,22 @@ export function pendingItems(state, ruleInstalls = { items: [], error: "" }) {
       detail: "设置管理目标后，才能查看目录、关联 Skill 和受控修改配置。",
       to: "agents",
     });
+  for (const [agentId, entry] of Object.entries(agentHealth || {})) {
+    const h = entry?.health;
+    if (!h) continue;
+    const parts = [
+      h.brokenLinks && `${h.brokenLinks} 条失效链接`,
+      h.drift && `${h.drift} 个副本与仓库版本不一致`,
+      h.unreadable && `${h.unreadable} 项无法读取`,
+    ].filter(Boolean);
+    if (parts.length)
+      items.push({
+        id: `agent-health-${agentId}`,
+        kind: "智能体",
+        title: `${entry.name}：${parts.join("、")}`,
+        detail: "体检只读；清理、重建或同步需要你在本机单独授权后执行。",
+        to: "agents",
+      });
+  }
   return items;
 }
