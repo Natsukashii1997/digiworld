@@ -284,7 +284,7 @@ function RecordPanel({ record, state, save, notify, onNew }) {
                     </span>
                     {c.type === "prompt" && <strong>{c.title}</strong>}
                     {c.type === "prompt" && c.description && <span className="helper">{c.description}</span>}
-                    <span className="candidate-text">{c.type === "prompt" ? c.content : c.text}</span>
+                    <CandidateText text={c.type === "prompt" ? c.content : c.text} />
                     {c.tags.length > 0 && (
                       <span className="candidate-tags">{c.tags.map((t) => `#${t}`).join(" ")}</span>
                     )}
@@ -325,6 +325,36 @@ function RecordPanel({ record, state, save, notify, onNew }) {
       )}
       {locked && <ImportResults record={record} state={state} />}
     </div>
+  );
+}
+
+// 长候选默认折叠：只显示前 6 行（且不超过 360 字），可展开全文（用户 2026-10-03）。
+const FOLD_LINES = 6;
+const FOLD_CHARS = 360;
+function CandidateText({ text }) {
+  const [open, setOpen] = useState(false);
+  const lines = text.split("\n");
+  const long = lines.length > FOLD_LINES || text.length > FOLD_CHARS;
+  const shown = !long || open ? text : lines.slice(0, FOLD_LINES).join("\n").slice(0, FOLD_CHARS) + "…";
+  return (
+    <>
+      <span className="candidate-text">{shown}</span>
+      {long && (
+        <Button
+          type="button"
+          secondary
+          className="candidate-fold"
+          aria-expanded={open}
+          onClick={(e) => {
+            // 按钮在 label 里，阻止默认行为，避免顺带勾选候选。
+            e.preventDefault();
+            setOpen(!open);
+          }}
+        >
+          {open ? "收起" : `展开全文（共 ${lines.length} 行）`}
+        </Button>
+      )}
+    </>
   );
 }
 

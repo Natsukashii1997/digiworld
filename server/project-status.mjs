@@ -212,7 +212,8 @@ export function sensitivePaths(paths) {
     const lower = name.toLowerCase();
     return (
       name === ".env" ||
-      name.startsWith(".env.") ||
+      // 用户 2026-10-03：.env.example 是给人看的样例，不算敏感文件。
+      (name.startsWith(".env.") && name !== ".env.example") ||
       /\.(pem|key|p12|sqlite|db)$/.test(lower) ||
       lower.startsWith("id_rsa") ||
       parts.slice(0, -1).includes("data")
@@ -267,6 +268,30 @@ export const noCommits = (e) =>
     String(e.stderr || ""),
   );
 
+// 未提交改动的路径（重命名/复制取新路径），用于读最早的修改时间。
+function porcelainPaths(output) {
+  const tokens = output.split("\0");
+  const paths = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const entry = tokens[i];
+    if (!entry) continue;
+    paths.push(entry.slice(3));
+    if (/^[RC]/.test(entry) || /^.[RC]/.test(entry)) i++;
+  }
+  return paths;
+}
+// 最早的未提交改动时间：只 lstat 前 200 个仍存在的路径；全部读不到（例如只有删除）返回 null。
+async function oldestChange(root, paths) {
+  let oldest = null;
+  for (const path of paths.slice(0, 200)) {
+    try {
+      const t = (await lstat(join(root, path))).mtimeMs;
+      if (oldest === null || t < oldest) oldest = t;
+    } catch {}
+  }
+  return oldest === null ? null : new Date(oldest).toISOString();
+}
+
 function porcelainCount(output) {
   const tokens = output.split("\0");
   let count = 0;
@@ -317,11 +342,11 @@ async function inspectGit(root) {
     checks.remote = { state: "unknown", message: "远程读取失败" };
   }
   try {
+    const status = await git(["status", "--porcelain=v1", "-z", "--untracked-files=normal"]);
     checks.dirty = {
       state: "ok",
-      count: porcelainCount(
-        await git(["status", "--porcelain=v1", "-z", "--untracked-files=normal"]),
-      ),
+      count: porcelainCount(status),
+      oldestAt: await oldestChange(root, porcelainPaths(status)),
     };
   } catch {
     checks.dirty = { state: "unknown", message: "改动读取失败" };
@@ -392,13 +417,19 @@ async function inspectVisibility(project, remote, visibility) {
   return { state: "unknown", message: live?.message || "GitHub 查询失败" };
 }
 
-function safetyIssues(checks) {
+export function safetyIssues(checks, now = Date.now()) {
   const issues = [];
   if (checks.git.state === "none")
     issues.push({ id: "git", text: "项目目录不是 Git 仓库，没有版本记录与远程备份" });
   if (checks.remote.state === "none")
     issues.push({ id: "remote", text: "没有 Git 远程备份" });
-  if (checks.dirty.state === "ok" && checks.dirty.count > 0)
+  // 未提交改动超过 1 天才算问题（用户 2026-10-03）；时长读不到时如实算问题。
+  const dirtyAt = Date.parse(checks.dirty.oldestAt ?? "");
+  if (
+    checks.dirty.state === "ok" &&
+    checks.dirty.count > 0 &&
+    !(Number.isFinite(dirtyAt) && now - dirtyAt < DAY)
+  )
     issues.push({ id: "dirty", text: `有 ${checks.dirty.count} 个未提交改动` });
   if (checks.sensitive.state === "ok" && checks.sensitive.total > 0)
     issues.push({
@@ -515,7 +546,7 @@ export function createProjectStatus(
       ...item,
       current,
       activity,
-      safety: { checks, issues: safetyIssues(checks) },
+      safety: { checks, issues: safetyIssues(checks, clock()) },
     };
   }
   return {

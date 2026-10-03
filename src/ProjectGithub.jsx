@@ -6,7 +6,8 @@ import { Badge, Button } from "./components.jsx";
 import { request } from "./api.js";
 import "./project-github.css";
 
-const SHOW = { open: 3, merged: 2, issues: 3 };
+// 每类最多列 3 条，其余写“等 N 条”（用户 2026-10-03）。
+const SHOW = { open: 3, merged: 3, issues: 3 };
 export const CI_TEXT = {
   success: ["success", "成功"],
   failure: ["danger", "失败"],
@@ -68,6 +69,12 @@ function Rows({ label, section, items, render, empty }) {
           {items.map((item) => (
             <li key={item.number}>{render(item)}</li>
           ))}
+          {section.items.length > items.length && (
+            <li className="gh-muted">
+              等 {section.items.length - items.length}
+              {section.truncated ? "+" : ""} 条
+            </li>
+          )}
         </ul>
       ) : (
         <span className="gh-muted">{empty}</span>

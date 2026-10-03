@@ -26,6 +26,7 @@ import {
   redactSecrets,
   timelineOf,
   sha256Hex,
+  linkText,
 } from "../src/collab.js";
 import { seed } from "../src/store.js";
 import {
@@ -581,4 +582,13 @@ test("留痕接口：复制成功后追加一条；同 ID 重放不重复；字�
   } finally {
     await app.close();
   }
+});
+
+test("页面显示的唯一下一步：Markdown 链接只留文字；派发与开工口令保留原文（用户 2026-10-03）", () => {
+  const next = "新会话 Claude 读 [会话交接](docs/agents/handoffs/x.md)，认领后执行";
+  assert.equal(linkText(next), "新会话 Claude 读 会话交接，认领后执行");
+  assert.equal(linkText("没有链接"), "没有链接");
+  assert.equal(linkText(undefined), "");
+  const item = { ...boardItem, current: { ...boardItem.current, fields: { ...boardItem.current.fields, next } } };
+  assert.match(startPrompt(item, "codex"), /\[会话交接\]\(docs\/agents\/handoffs\/x\.md\)/);
 });

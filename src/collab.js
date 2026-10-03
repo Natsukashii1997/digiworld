@@ -30,6 +30,9 @@ const REDACTED = "（含疑似凭据，已省略；请到项目原文查看）";
 const SECRET =
   /\b(?:sk-|ghp_|gho_|ghs_|github_pat_|xox[baprs]-|AKIA)[A-Za-z0-9_-]+|-----BEGIN[A-Z ]*-----|(?:api[_ -]?key|secret|password|passwd|token|access[_ -]?key|密钥|密码)\s*[:=：]\s*\S+/i;
 // 字段里只要出现疑似凭据，整段替换，不尝试只抹掉一部分。
+// 页面显示用：Markdown 链接 [文字](地址) 只留文字（用户 2026-10-03）。口令仍用原文，Agent 需要路径。
+export const linkText = (value) => String(value ?? "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+
 export function redactSecrets(value) {
   const text = String(value ?? "");
   return SECRET.test(text) ? REDACTED : text;

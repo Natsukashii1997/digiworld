@@ -102,6 +102,8 @@ export async function buildProjects(base, now = Date.now()) {
   await git(leaky, ["add", "-A"]);
   await git(leaky, ["commit", "-q", "-m", "init"], now - DAY);
   await writeFile(join(leaky, "notes.md"), "普通文件（未提交的修改）\n");
+  // 未提交改动超过 1 天才算安全体检问题（用户 2026-10-03），这里设为 2 天前。
+  await utimes(join(leaky, "notes.md"), new Date(now - 2 * DAY), new Date(now - 2 * DAY));
 
   await writeFile(join(docs, "package.json"), "{}\n");
   return { projects, collab, bare, leaky, docs };

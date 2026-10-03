@@ -11,6 +11,7 @@ import {
   readCurrentFile,
   stallVerdict,
   sensitivePaths,
+  safetyIssues,
   CURRENT_READ_LIMIT,
   DEFAULT_STALL_DAYS,
   ACTIVE_SOFT_LIMIT,
@@ -193,6 +194,23 @@ test("停滞：读不到就是未知，不当作停滞", () => {
   assert.equal(ACTIVE_SOFT_LIMIT, 7);
 });
 
+// ---------- 未提交改动的时长门槛（用户 2026-10-03） ----------
+
+test("未提交改动：最早的改动超过 1 天才算安全体检问题；时长未知时如实算问题", () => {
+  const now = Date.parse("2026-10-03T12:00:00Z");
+  const base = {
+    git: { state: "repo" },
+    remote: { state: "present" },
+    sensitive: { state: "ok", total: 0, files: [] },
+    visibility: { state: "private" },
+  };
+  const ids = (dirty) => safetyIssues({ ...base, dirty }, now).map((i) => i.id);
+  assert.deepEqual(ids({ state: "ok", count: 2, oldestAt: new Date(now - 3600000).toISOString() }), []);
+  assert.deepEqual(ids({ state: "ok", count: 2, oldestAt: new Date(now - DAY - 1).toISOString() }), ["dirty"]);
+  assert.deepEqual(ids({ state: "ok", count: 1, oldestAt: null }), ["dirty"]);
+  assert.deepEqual(ids({ state: "ok", count: 0, oldestAt: null }), []);
+});
+
 // ---------- 敏感文件判定 ----------
 
 test("敏感文件按 git ls-files 路径判定", () => {
@@ -217,10 +235,10 @@ test("敏感文件按 git ls-files 路径判定", () => {
     "keyboard.md",
     "notes.pem.md",
   ]);
+  // 用户 2026-10-03：.env.example 是给人看的样例，不算敏感文件。
   assert.deepEqual(hits, [
     ".env",
     "config/.env.local",
-    ".env.example",
     "certs/server.pem",
     "keys/deploy.KEY",
     "home/.ssh/id_rsa",

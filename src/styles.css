@@ -6495,6 +6495,10 @@ input[type="file"]::file-selector-button {
   font-size: 12px;
   color: var(--orange);
 }
+.candidate-fold {
+  justify-self: start;
+  min-height: 44px;
+}
 .reverse-results {
   padding: 14px 16px;
   border-radius: 12px;

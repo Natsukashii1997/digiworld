@@ -40,6 +40,10 @@
   font-size: 15px;
   overflow-wrap: anywhere;
 }
+.brief-since {
+  font-size: 12px;
+  color: var(--text-2);
+}
 .brief-text {
   margin: 0;
   font-size: 13.5px;

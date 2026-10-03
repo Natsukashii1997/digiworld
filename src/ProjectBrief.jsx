@@ -8,6 +8,13 @@ import { request } from "./api.js";
 import { StartWork } from "./ProjectStatus.jsx";
 import "./project-brief.css";
 
+// 简报条目的统计起点（本机时区，月/日 时:分）。
+const since = (iso) => {
+  const d = new Date(iso);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
 const READ = {
   read: ["success", "已读"],
   changed: ["warning", "有更新"],
@@ -47,6 +54,7 @@ function BriefParagraph({ item, onRead, busy, adoptState, notify }) {
         <h3>{item.name}</h3>
         <Badge tone={tone}>{label}</Badge>
       </header>
+      {item.since && <small className="brief-since">统计自 {since(item.since)} 起</small>}
       {/* 用户 2026-10-03：每个小标题及其内容单独一行。 */}
       <div className="brief-text">
         <p>
@@ -110,7 +118,7 @@ export function HomeBrief({ state, adoptState, notify, navigate }) {
         <h2 id="home-brief-title">今日项目简报</h2>
         <p>
           {brief.date
-            ? `统计区间：昨天 0:00 至今 · 由本机数据按规则生成，不调用模型`
+            ? `统计区间：从上次标为已读起，没标过从昨天 0:00 起 · 由本机数据按规则生成，不调用模型`
             : "由本机数据按规则生成，不调用模型"}
         </p>
       </div>

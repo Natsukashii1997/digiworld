@@ -40,6 +40,19 @@ export function briefWindow(now) {
 }
 
 // 简报是给人读的一段话：Markdown 链接 [文字](地址) 只保留文字（用户 2026-10-03）。
+// 项目的统计区间（用户 2026-10-03）：从该项目上次标为已读起（只看今天以前的已读，
+// 今天标为已读不会改变今天的简报）；没有标过就用昨天 0 点起的默认区间。
+export function projectWindow(base, reads, projectId) {
+  const last = reads
+    .filter((r) => r.projectId === projectId && r.date < base.date)
+    .map((r) => r.at)
+    .sort()
+    .at(-1);
+  if (!last) return base;
+  const start = new Date(last);
+  return { ...base, since: localDay(start), start: start.toISOString() };
+}
+
 const line = (value, limit = 300) => {
   const s = redactSecrets(
     String(value ?? "")
@@ -237,9 +250,10 @@ export function createProjectBrief(
       for (const item of status.items) {
         const project = connections?.projects.find((p) => p.id === item.projectId);
         if (!project) continue;
+        const own = projectWindow(window, reads, item.projectId);
         const brief = composeBrief(
-          await facts(item, project, connections, window, input.refresh === true),
-          window,
+          await facts(item, project, connections, own, input.refresh === true),
+          own,
         );
         const mark = reads.find(
           (r) => r.date === window.date && r.projectId === item.projectId,
@@ -253,6 +267,7 @@ export function createProjectBrief(
           ...brief,
           read: !mark ? "unread" : mark.digest === brief.digest ? "read" : "changed",
           readAt: mark?.at || "",
+          since: own.start,
         });
       }
       return { at: new Date(clock()).toISOString(), ...window, window, items };

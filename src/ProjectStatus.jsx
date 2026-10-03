@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { RefreshCw, Flag, Play } from "lucide-react";
 import { Button, Badge } from "./components.jsx";
 import { request } from "./api.js";
-import { startPrompt } from "./collab.js";
+import { startPrompt, linkText } from "./collab.js";
 import { usePromptCopy, PromptDialog, AgentPicker } from "./Collab.jsx";
 import { GithubBlock, useGithubPanel } from "./ProjectGithub.jsx";
 import "./project-status.css";
@@ -113,7 +113,7 @@ function CurrentBlock({ current }) {
   const rows = [
     ["状态编号", f.stateId],
     ["当前写入者", f.writer],
-    ["唯一下一步", f.next],
+    ["唯一下一步", f.next && linkText(f.next)],
     [
       "最新交接",
       f.handoff && (

@@ -20,7 +20,7 @@ import {
   fetchGithubPanel,
   createProjectGithub,
 } from "../server/project-github.mjs";
-import { briefWindow, composeBrief } from "../server/project-brief.mjs";
+import { briefWindow, composeBrief, projectWindow } from "../server/project-brief.mjs";
 import { validateState, validateHistory } from "../server/schema.mjs";
 import { mergeBackup } from "../server/merge.mjs";
 import { seed } from "../src/store.js";
@@ -390,6 +390,19 @@ test("统计区间是昨天 0 点（本机时区）到现在；日期按本机�
   const jan1 = briefWindow(new Date(2027, 0, 1, 0, 5).getTime());
   assert.equal(jan1.since, "2026-12-31");
   assert.equal(jan1.date, "2027-01-01");
+});
+
+test("项目统计区间：从该项目上次（今天以前）标为已读起；没标过从昨天 0 点起；今天的已读不改变今天的区间（用户 2026-10-03）", () => {
+  const base = windowOf();
+  const read = (date, at, projectId = "p1") => ({ schema: 1, date, projectId, digest: "x", at });
+  assert.deepEqual(projectWindow(base, [], "p1"), base);
+  assert.deepEqual(projectWindow(base, [read("2026-09-30", iso(NOW - HOUR))], "p1"), base);
+  assert.deepEqual(projectWindow(base, [read("2026-09-28", "2026-09-28T10:00:00.000Z", "p2")], "p1"), base);
+  const late = new Date(2026, 8, 29, 22, 15).toISOString();
+  const w = projectWindow(base, [read("2026-09-27", "2026-09-27T01:00:00.000Z"), read("2026-09-29", late)], "p1");
+  assert.deepEqual(w, { ...base, since: "2026-09-29", start: late });
+  const away = new Date(2026, 8, 26, 9, 0).toISOString();
+  assert.deepEqual(projectWindow(base, [read("2026-09-26", away)], "p1"), { ...base, since: "2026-09-26", start: away });
 });
 
 function fullFacts(overrides = {}) {

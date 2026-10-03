@@ -166,7 +166,9 @@ try {
   const bareText = await brief(page, "无协议项目").locator(".brief-text").innerText();
   assert.match(bareText, /昨天到今天：没有记录到新的变化/);
   assert.match(bareText, /已 30 天没有状态更新或提交/);
-  await card.getByText("统计区间：昨天 0:00 至今", { exact: false }).waitFor();
+  // 用户 2026-10-03：区间改为从上次标为已读起，没标过从昨天 0:00 起；每条写明统计起点。
+  await card.getByText("统计区间：从上次标为已读起，没标过从昨天 0:00 起", { exact: false }).waitFor();
+  await collabBrief.getByText(/^统计自 \d\d\/\d\d 00:00 起$/).waitFor();
   for (const name of ["刷新简报", "全部标为已读"]) await atLeast44(button(card, name), name);
   await atLeast44(button(collabBrief, "标为已读"), "标为已读");
   await atLeast44(button(collabBrief, "一键开工"), "一键开工");

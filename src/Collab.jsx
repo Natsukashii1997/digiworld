@@ -11,6 +11,7 @@ import {
   dispatchPrompt,
   timelineOf,
   sha256Hex,
+  linkText,
 } from "./collab.js";
 import "./collab.css";
 
@@ -273,7 +274,7 @@ function BoardCard({ item, adoptState, notify, onRecorded }) {
         </div>
         <div>
           <dt>唯一下一步</dt>
-          <dd>{f.next || <span className="status-missing">未知</span>}</dd>
+          <dd>{f.next ? linkText(f.next) : <span className="status-missing">未知</span>}</dd>
         </div>
       </dl>
       <div className="collab-dispatch">
