@@ -5,7 +5,7 @@ import { RefreshCw, Flag, Play } from "lucide-react";
 import { Button, Badge } from "./components.jsx";
 import { request } from "./api.js";
 import { startPrompt, linkText } from "./collab.js";
-import { usePromptCopy, PromptDialog, AgentPicker } from "./Collab.jsx";
+import { usePromptCopy, PromptDialog, AgentPicker, staleNote } from "./Collab.jsx";
 import { GithubBlock, useGithubPanel } from "./ProjectGithub.jsx";
 import "./project-status.css";
 
@@ -215,7 +215,13 @@ export function StartWork({ item, adoptState, notify, label = "生成开工口�
   function open() {
     try {
       copier.reset();
-      setPrompt({ text: startPrompt(item, agent), agent });
+      // 口令与留痕字段在生成时一起定下（C5-F2）。
+      setPrompt({
+        text: startPrompt(item, agent),
+        agent,
+        projectId: item.projectId,
+        stateId: item.current.fields?.stateId,
+      });
     } catch (e) {
       notify(e.message, "error");
     }
@@ -235,6 +241,7 @@ export function StartWork({ item, adoptState, notify, label = "生成开工口�
       {prompt && (
         <PromptDialog
           title={`开工口令：${item.name}`}
+          stale={staleNote(prompt, item.current.fields?.stateId)}
           lead="确认后复制到剪贴板，并计入这个项目的协同留痕；把口令粘贴给所选 Agent 即可开工，工作台不会替你打开或执行。"
           text={prompt.text}
           copier={copier}
@@ -243,9 +250,9 @@ export function StartWork({ item, adoptState, notify, label = "生成开工口�
             const done = await copier.copy({
               text: prompt.text,
               kind: "start",
-              projectId: item.projectId,
+              projectId: prompt.projectId,
               agent: prompt.agent,
-              stateId: item.current.fields?.stateId,
+              stateId: prompt.stateId,
             });
             if (done) setPrompt(null);
           }}

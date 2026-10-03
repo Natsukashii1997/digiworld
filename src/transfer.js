@@ -1,6 +1,7 @@
 // 复制 = 传送（UI v13.2，用户 2026-09-29 确认）：复制成功后，按钮里跑一条数据光带，
 // 随后整块变成液晶屏，点阵对勾弹出、“TRANSFER OK”逐字打出、光标闪烁，四周迸出数据火花。
 // 纯装饰：任何异常都吞掉，不影响复制与使用记录；减少动态效果时只静态显示结果。
+// 演出途中开启减少动态效果也立即响应：停打字与火花，直接显示完整的静态结果（R87-F1）。
 const FONT = {
   T: ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
   R: ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
@@ -17,11 +18,11 @@ const CHECK = ["0000001", "0000011", "1000110", "1101100", "0111000", "0010000"]
 const TEXT = "TRANSFER OK";
 const running = new WeakSet();
 
-function reducedMotion() {
+function motionQuery() {
   try {
-    return matchMedia("(prefers-reduced-motion: reduce)").matches;
+    return matchMedia("(prefers-reduced-motion: reduce)");
   } catch {
-    return true;
+    return null;
   }
 }
 
@@ -36,7 +37,11 @@ export function transferFeedback(button) {
 function play(button) {
   if (!(button instanceof HTMLButtonElement) || !button.isConnected || running.has(button)) return;
   running.add(button);
-  const reduced = reducedMotion();
+  const query = motionQuery();
+  let reduced = query ? query.matches : true;
+  // reveal 之后由它设置：停打字与火花、画出静态结果
+  let calm = null,
+    flying = [];
   const overlay = document.createElement("span");
   overlay.className = "transfer-lcd";
   overlay.setAttribute("aria-hidden", "true");
@@ -51,6 +56,12 @@ function play(button) {
     ended = true;
     clearInterval(typing);
     clearTimeout(timer);
+    try {
+      query?.removeEventListener("change", onChange);
+    } catch {
+      /* 监听移除失败不影响收尾 */
+    }
+    flying.forEach((spark) => spark.remove());
     overlay.remove();
     button.classList.remove("is-transferring", "is-transferred");
     running.delete(button);
@@ -95,17 +106,40 @@ function play(button) {
       frame++;
       if (frame > 2 && shown < TEXT.length) shown++;
     };
+    calm = () => {
+      clearInterval(typing);
+      flying.forEach((spark) => spark.remove());
+      flying = [];
+      shown = TEXT.length;
+      frame = 4;
+      draw();
+    };
     draw();
     if (!reduced) {
       typing = setInterval(guard(draw), 45);
       try {
-        sparks(button.getBoundingClientRect());
+        flying = sparks(button.getBoundingClientRect());
       } catch {
         /* 火花失败不影响液晶屏 */
       }
     }
     timer = setTimeout(finish, reduced ? 1400 : 1300);
   };
+  // 演出途中切到减少动态效果：光带阶段直接显示静态结果；打字阶段停下并补全。
+  function onChange() {
+    if (ended || reduced || !query?.matches) return;
+    reduced = true;
+    if (calm) guard(calm)();
+    else {
+      clearTimeout(timer);
+      guard(reveal)();
+    }
+  }
+  try {
+    query?.addEventListener("change", onChange);
+  } catch {
+    /* 旧浏览器不支持监听时，退回只在开始时判断 */
+  }
   if (reduced) guard(reveal)();
   else {
     button.classList.add("is-transferring");
@@ -113,10 +147,11 @@ function play(button) {
   }
 }
 
+// 返回放出的火花节点，演出途中切到减少动态效果时可立即收回。
 function sparks(rect) {
-  if (typeof document.body.animate !== "function" || !rect.width) return;
+  if (typeof document.body.animate !== "function" || !rect.width) return [];
   const tones = ["c", "o", "g", "", "c", "o", "g", "", "c", "o"];
-  tones.forEach((tone, i) => {
+  return tones.map((tone, i) => {
     const spark = document.createElement("i");
     spark.className = `transfer-spark ${tone}`;
     spark.setAttribute("aria-hidden", "true");
@@ -140,5 +175,6 @@ function sparks(rect) {
     } catch {
       spark.remove();
     }
+    return spark;
   });
 }

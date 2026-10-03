@@ -103,7 +103,9 @@ export function usePromptCopy({ adoptState, notify, onRecorded }) {
 }
 
 // 预览口令 → 用户确认 → 复制。口令只展示，不在这里编辑，保证复制的就是看到的。
-export function PromptDialog({ title, lead, text, onClose, copier, onConfirm }) {
+// stale：口令生成后看板已刷新到新状态时的说明；此时不能再确认复制，需关闭后重新生成（C5-F2）。
+// 已复制、只差补记时不受影响：补记的是当时真实复制的那份口令。
+export function PromptDialog({ title, lead, text, onClose, copier, onConfirm, stale = "" }) {
   return (
     <Dialog title={title} onClose={onClose}>
       <div className="prompt-dialog">
@@ -116,6 +118,11 @@ export function PromptDialog({ title, lead, text, onClose, copier, onConfirm }) 
             {copier.error}
           </p>
         )}
+        {stale && !copier.pending && (
+          <p className="inline-error" role="alert">
+            {stale}
+          </p>
+        )}
         <div className="prompt-actions">
           <Button secondary onClick={onClose}>
             {copier.pending ? "关闭" : "取消"}
@@ -125,7 +132,7 @@ export function PromptDialog({ title, lead, text, onClose, copier, onConfirm }) 
               补记留痕
             </Button>
           ) : (
-            <Button disabled={copier.busy} onClick={onConfirm}>
+            <Button disabled={copier.busy || !!stale} onClick={onConfirm}>
               <Copy size={16} />
               {copier.busy ? "复制中…" : "确认并复制"}
             </Button>
@@ -233,6 +240,13 @@ function Timeline({ item }) {
   );
 }
 
+// 口令生成后，看板读到的状态编号或阶段变了：这份口令已过期。
+export function staleNote(prompt, stateId, stage) {
+  if (!prompt) return "";
+  if ((prompt.stateId || "") === (stateId || "") && (stage === undefined || prompt.stage === stage)) return "";
+  return `看板已刷新到 ${stateId || "未知状态"}，这份口令基于 ${prompt.stateId || "未知状态"}，已过期。请关闭后重新生成。`;
+}
+
 function BoardCard({ item, adoptState, notify, onRecorded }) {
   const [agent, setAgent] = useState("codex");
   const [prompt, setPrompt] = useState(null);
@@ -242,7 +256,14 @@ function BoardCard({ item, adoptState, notify, onRecorded }) {
   function open() {
     try {
       copier.reset();
-      setPrompt({ text: dispatchPrompt(item, agent), agent });
+      // 口令与留痕字段在生成时一起定下，确认时不再读刷新后的看板（C5-F2）。
+      setPrompt({
+        text: dispatchPrompt(item, agent),
+        agent,
+        projectId: item.projectId,
+        stateId: f.stateId,
+        stage: item.stage.id,
+      });
     } catch (e) {
       notify(e.message, "error");
     }
@@ -296,15 +317,16 @@ function BoardCard({ item, adoptState, notify, onRecorded }) {
           lead="按模板 #1 生成的下一棒口令。确认后复制到剪贴板，并计入本项目的操作留痕；工作台不会替你发送或执行。"
           text={prompt.text}
           copier={copier}
+          stale={staleNote(prompt, f.stateId, item.stage.id)}
           onClose={() => setPrompt(null)}
           onConfirm={async () => {
             const done = await copier.copy({
               text: prompt.text,
               kind: "dispatch",
-              projectId: item.projectId,
+              projectId: prompt.projectId,
               agent: prompt.agent,
-              stateId: f.stateId,
-              stage: item.stage.id,
+              stateId: prompt.stateId,
+              stage: prompt.stage,
             });
             if (done) setPrompt(null);
           }}

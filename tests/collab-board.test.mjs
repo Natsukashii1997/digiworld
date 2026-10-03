@@ -114,6 +114,16 @@ test("笔在谁手上：从当前写入者读出 Agent；“无”为空闲；�
   assert.equal(other.text, "小王");
   assert.equal(penHolder(undefined).state, "unknown");
   assert.equal(penHolder("").state, "unknown");
+  // C5-F1（Codex 复核115）：“无”后接释放说明仍是空闲；以 Agent 开头、或“无”只是词的一部分，不能误判为空闲。
+  for (const idle of ["无；Claude 交接113后释放", "无（Codex 复核后释放）", "无，Claude 已释放", "**无**；释放于 113", "none; released"])
+    assert.deepEqual([idle, penHolder(idle).state, penHolder(idle).agent], [idle, "idle", ""]);
+  for (const [held, agent] of [
+    ["Claude（认领116：返修，未释放）", "Claude"],
+    ["Codex；无人复核", "Codex"],
+    ["无法确定，Claude 在查", "Claude"],
+  ])
+    assert.deepEqual([held, penHolder(held).state, penHolder(held).agent], [held, "held", agent]);
+  assert.equal(inferStage({ writer: "无；Claude 认领113后释放", heading: "Codex 复核（WB-20261003-115）" }).basis, "最新状态标题");
 });
 
 test("状态链：只取标题里带 state_id 的节，按编号取最新；与表头编号一致者优先", () => {
