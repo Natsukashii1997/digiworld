@@ -1,5 +1,5 @@
 // 待处理线索：只从已加载的本机主库读出真实事项，不编造、不执行动作。
-// 体检、夜间结果、改版候选等来源会随对应功能上线再接入（产品定义 v1.1 §4.6）。
+// 体检、夜间结果等来源会随对应功能上线再接入（产品定义 v1.1 §4.6）。
 import { current } from "./store.js";
 import { usageOf } from "./asset-usage.js";
 
@@ -56,6 +56,20 @@ export function pendingItems(
         to: "assets",
         assetId: asset.id,
       });
+  }
+  // 改版候选（进化回路 v1）：用户粘贴回来的 Agent 回复，等待并排比较后采用或退回。
+  for (const c of state.revisionCandidates || []) {
+    if (c.status !== "pending") continue;
+    const asset = state.assets.find((a) => a.id === c.assetId);
+    if (!asset || asset.archived) continue;
+    items.push({
+      id: `candidate-${c.id}`,
+      kind: "资产",
+      title: `「${current(asset).title}」有改版候选待比较`,
+      detail: "在资产详情里与当前版本并排比较，决定采用或退回。",
+      to: "assets",
+      assetId: asset.id,
+    });
   }
   // 个人说明修改建议（切片 3.3）：Agent 通过本机 MCP 提交，在待处理页预览采纳或拒绝。
   for (const p of state.profileProposals || []) {

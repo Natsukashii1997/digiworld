@@ -27,6 +27,7 @@ export function mergeBackup(current, incoming) {
     agentRolesAdded: 0,
     activityAdded: 0,
     collabAdded: 0,
+    candidatesAdded: 0,
     newVersions: 0,
     knowledgeVersions: 0,
     kept: 0,
@@ -37,6 +38,7 @@ export function mergeBackup(current, incoming) {
       summary.added[name] = (input[name] || []).length;
     summary.activityAdded = (input.assetActivity || []).length;
     summary.collabAdded = (input.collabLog || []).length;
+    summary.candidatesAdded = (input.revisionCandidates || []).length;
     for (const name of Object.keys(summary.silverAdded))
       summary.silverAdded[name] = (input.silver?.[name] || []).length;
     summary.agentRolesAdded = (input.agentRoles || []).length;
@@ -192,8 +194,39 @@ export function mergeBackup(current, incoming) {
       }
     }
   }
+  if (input.revisionCandidates?.length)
+    mergeCandidates(next, input.revisionCandidates, summary);
   validateState(next);
   return { state: next, summary };
+}
+
+// 改版候选（进化回路 v1）：按 ID 并集。同 ID 的正文等身份字段必须一致；
+// 当前仍待处理而备份已决定时采用备份的决定（对应新版本随资产版本一起并入）；
+// 当前已决定时保留当前；两边决定不同视为冲突，整次不导入。
+function mergeCandidates(next, incoming, summary) {
+  next.revisionCandidates ||= [];
+  const conflict = () =>
+    Object.assign(new Error("改版候选存在冲突，本次不会导入任何记录"), {
+      status: 409,
+    });
+  const identity = ({ status, decidedAt, adoptedVersionId, returnReason, ...rest }) =>
+    rest;
+  for (const candidate of incoming) {
+    const index = next.revisionCandidates.findIndex((c) => c.id === candidate.id);
+    if (index === -1) {
+      next.revisionCandidates.push(structuredClone(candidate));
+      summary.candidatesAdded++;
+      continue;
+    }
+    const existing = next.revisionCandidates[index];
+    if (!equivalent(identity(existing), identity(candidate))) throw conflict();
+    if (existing.status === "pending") {
+      if (candidate.status !== "pending")
+        next.revisionCandidates[index] = structuredClone(candidate);
+    } else if (candidate.status !== "pending" && !equivalent(existing, candidate))
+      throw conflict();
+    summary.kept++;
+  }
 }
 
 // 焚决（切片 1.3）：卷与条目是可变记录，没有版本。合并只做加法：

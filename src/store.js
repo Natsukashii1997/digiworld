@@ -43,7 +43,10 @@ export function current(asset) {
   return asset.versions.at(-1);
 }
 export function revise(asset, values) {
-  const next = { ...current(asset), ...values, id: uid(), at: now() };
+  // 候选来源只属于采用时生成的那个版本，之后的编辑或恢复都不继承（进化回路 v1）。
+  const { candidateId: _base, ...base } = current(asset);
+  const { candidateId: _value, ...rest } = values;
+  const next = { ...base, ...rest, id: uid(), at: now() };
   if (!next.title.trim()) throw new Error("请填写资产名称");
   return { ...asset, versions: [...asset.versions, next] };
 }

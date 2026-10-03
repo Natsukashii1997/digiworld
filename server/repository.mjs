@@ -309,6 +309,7 @@ export async function openRepository(directory) {
           allowActivity: true,
           allowCollab: true,
           allowProfile: true,
+          allowCandidateImport: true,
         });
         const result = await commit({
           ...state,

@@ -40,6 +40,7 @@ import {
   typeLabel,
 } from "./components.jsx";
 import { AssetUsage, useAssetActivity } from "./AssetUsage.jsx";
+import { AssetEvolution } from "./AssetEvolution.jsx";
 import { RuleInstall } from "./RuleInstall.jsx";
 import { Odometer } from "./Odometer.jsx";
 import { usageByAsset } from "./asset-usage.js";
@@ -914,6 +915,13 @@ export function AssetDetail({
           />
         )}
         <AssetUsage asset={asset} state={state} activity={activity} />
+        <AssetEvolution
+          asset={asset}
+          state={state}
+          save={save}
+          notify={notify}
+          copyText={(text) => copy(text, notify)}
+        />
         <dl className="detail-facts">
           <div>
             <dt>来源</dt>

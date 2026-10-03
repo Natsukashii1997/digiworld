@@ -1,0 +1,17 @@
+PASS 没有需改进反馈时不显示“生成改版任务包”；Skill 不提供
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('dialog', { name: '资产详情' }).getByRole('region', { name: '改版进化' }) to be visible[22m
+
+    at /home/user/personal-ai-workbench/tests/evolution-loop-browser.mjs:118:19 {
+  log: [
+    "  - waiting for getByRole('dialog', { name: '资产详情' }).getByRole('region', { name: '改版进化' }) to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.21.0
