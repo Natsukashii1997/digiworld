@@ -30,6 +30,8 @@ import { createKnowledgeProfile } from "./knowledge-profile.mjs";
 import { startProfileMcp } from "./profile-mcp.mjs";
 import { createSilverImages } from "./silver.mjs";
 import { createCutout } from "./silver-cutout.mjs";
+import { createFullBackup } from "./full-backup.mjs";
+import { createCalendar, createCalendarHelper } from "./calendar.mjs";
 import packageInfo from "../package.json" with { type: "json" };
 import {
   scanLocalProjects,
@@ -121,6 +123,12 @@ export async function startServer({
     cutout: adapters.silverCutout,
   });
   const agentContents = createAgentContents(repository, adapters);
+  // 完整备份（切片 5.1）：整个数据目录打包；恢复只写到新的目录副本。
+  const fullBackup = createFullBackup(repository, { clock });
+  // 日历与 todo（切片 5.2）：本机小助手可由测试注入桩 run；非 macOS 如实返回不可用。
+  const calendar = createCalendar({
+    helper: createCalendarHelper(adapters.calendarHelper || {}),
+  });
   const agentTargets = createAgentTargets(repository, adapters, clock);
   const skillCopies = createSkillCopies(repository, adapters, clock);
   const agentConfig = createAgentConfig(repository, adapters, { clock });
@@ -543,6 +551,38 @@ export async function startServer({
             exportedAt: new Date().toISOString(),
             state: await repository.read(),
           });
+        const fullBackupAction = url.pathname.match(
+          /^\/api\/full-backup\/(create|preview|restore)$/,
+        )?.[1];
+        if (fullBackupAction && request.method === "POST") {
+          const input = await body(request);
+          return send(response, 200, await fullBackup[fullBackupAction](input));
+        }
+        if (url.pathname === "/api/calendar/status" && request.method === "GET")
+          return send(response, 200, await calendar.status());
+        const calendarAction = url.pathname.match(
+          /^\/api\/calendar\/(access|week|todos|blocks\/create|blocks\/update|todos\/create|todos\/update)$/,
+        )?.[1];
+        if (calendarAction && request.method === "POST") {
+          const input = await body(request);
+          if (!input || typeof input !== "object" || Array.isArray(input))
+            throw failure("请求格式无效");
+          return send(
+            response,
+            200,
+            await calendar[
+              {
+                access: "requestAccess",
+                week: "week",
+                todos: "todos",
+                "blocks/create": "createBlock",
+                "blocks/update": "updateBlock",
+                "todos/create": "createTodo",
+                "todos/update": "updateTodo",
+              }[calendarAction]
+            ](input),
+          );
+        }
         if (url.pathname === "/api/import/preview" && request.method === "POST")
           return send(
             response,
@@ -686,6 +726,7 @@ export async function startServer({
           ...(error.operationNotStarted === true
             ? { operationNotStarted: true }
             : {}),
+          ...(error.unknownResult === true ? { unknownResult: true } : {}),
         });
       else response.end();
     }
@@ -710,6 +751,7 @@ export async function startServer({
     mcpUrl: mcp?.url || null,
     async close() {
       aihot.close();
+      fullBackup.close();
       await new Promise((resolve) => server.close(resolve));
       await mcp?.close();
       deliveries.close();
