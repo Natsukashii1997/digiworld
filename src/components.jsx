@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { X, Layers, Quote, Workflow, Flame } from "lucide-react";
 import { Pixel, StageBar } from "./pixel.jsx";
 import { Odometer } from "./Odometer.jsx";
+import { LcdText } from "./v14.jsx";
 
 // 各页标题区的背景纹样
 const MARKS = {
@@ -141,7 +142,12 @@ export function PageHeading({ page, eyebrow, title, description, action }) {
       <div className="page-heading-main">
         <div className="page-eyebrow">
           {meta && <span className="page-code">{meta.code}</span>}
-          <span>{eyebrow || meta?.eyebrow}</span>
+          {/* UI v14e：眉题用液晶点阵字开机扫亮；银饰页保持原样。 */}
+          {page === "silver" ? (
+            <span>{eyebrow || meta?.eyebrow}</span>
+          ) : (
+            <LcdText text={eyebrow || meta?.eyebrow} px={2} boot />
+          )}
           {meta?.maturity && <Maturity level={meta.maturity} />}
         </div>
         <h1>{title || meta?.title}</h1>

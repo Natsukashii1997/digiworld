@@ -2,7 +2,8 @@
 // 三区只是按文件夹规则划分的视图：统计只读元数据，不移动、不改写任何 Vault 文件。
 import React, { useEffect, useRef, useState } from "react";
 import { BarChart3, Plus, RotateCcw, Save, Trash2, ArrowUpRight } from "lucide-react";
-import { Badge, Button } from "./components.jsx";
+import { Badge, Button, Dialog } from "./components.jsx";
+import { DeviceShell, LcdCount, ResultChip, useFlash, useReducedMotion } from "./v14.jsx";
 import { request } from "./api.js";
 import {
   ZONES,
@@ -54,7 +55,11 @@ export function ZoneMetric({ latest }) {
   );
 }
 
-export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, navigate, blocked }) {
+// 三区视图（UI v14e：ZONE MONITOR 设备屏）。统计成功时液晶窗翻转一次、旁边出现一次“已重新统计”；
+// 失败用稳定提示。近 7 天按天趋势现有接口没有数据（只有本周合计），先显示“待接入”，不编造。
+const ZONE_KEYS = { input: "INPUT", mine: "MINE", profile: "PROFILE" };
+const ZONE_COLORS = { input: "#2fb3d1", mine: "var(--orange)", profile: "var(--lcd)" };
+export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, navigate, blocked, rulesOpen, onRules }) {
   const sources = state.connections?.knowledgeSources || [];
   const config = zonesConfig(state);
   const vault = vaultOf(state);
@@ -62,12 +67,22 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
   const [zone, setZone] = useState("mine");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [runs, setRuns] = useState(0);
   const lock = useRef(false);
+  const flash = useFlash();
+  const reduced = useReducedMotion();
+  // 读数开机扫亮后再翻转一次。
+  useEffect(() => {
+    if (!runs) return;
+    const timer = setTimeout(flash.fire, reduced ? 0 : 560);
+    return () => clearTimeout(timer);
+  }, [runs]);
   async function run(kind, operation) {
     if (lock.current) return;
     lock.current = true;
     setBusy(kind);
     setError("");
+    flash.reset();
     try {
       await operation();
     } catch (failure) {
@@ -83,6 +98,7 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
       setStats(result);
       const { files, ...latest } = result;
       onSummary((current) => ({ ...current, latest }));
+      setRuns((n) => n + 1);
     });
   const shown = stats?.sourceId === vault?.id ? stats : null;
   // 目录读取顺序随文件系统而异（APFS 与 ext4 不同），显示前按路径排序，让列表在各平台一致。
@@ -92,51 +108,115 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
         .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
     : [];
   const label = ZONES.find((z) => z.id === zone).label;
+  const total = shown ? ZONES.reduce((n, z) => n + shown.zones[z.id].total, 0) : 0;
+  const share = (id) => (total ? `${((shown.zones[id].total / total) * 100).toFixed(1)}%` : "—");
   return (
     <section id="k-zones" className="knowledge-zones knowledge-anchor" aria-labelledby="k-zones-title">
-      <header className="zones-heading">
-        <div>
+      <DeviceShell plate="ZONE MONITOR" className="zone-shell reveal">
+        <header className="zones-head">
           <h2 id="k-zones-title">三区视图</h2>
-          <p>
-            按文件夹规则把 {vault ? `“${vault.name}”` : "Vault"} 分成三区，只读统计，不移动、不改写任何文件。
+          <span className="zones-when">
+            {shown
+              ? `统计于 ${time(shown.at)} · 本周自 ${new Date(shown.weekStart).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" })}（周一）`
+              : vault
+                ? `“${vault.name}” · 尚未统计`
+                : "尚未连接知识源"}
+          </span>
+          <ResultChip flash={flash}>已重新统计</ResultChip>
+          <div className="zones-actions">
+            <Button secondary disabled={!vault || !!busy || blocked} onClick={count}>
+              <BarChart3 size={16} />
+              {busy === "stats" ? "统计中…" : "统计三区"}
+            </Button>
+            <Button secondary className="ghost" onClick={() => onRules(true)}>
+              划分规则
+            </Button>
+          </div>
+        </header>
+        <p className="zones-note">
+          按文件夹规则把 {vault ? `“${vault.name}”` : "Vault"} 分成三区，只读统计，不移动、不改写任何文件。
+          {!vault && " 先连接一个 Obsidian 知识源，再统计三区。"}
+          {shown && (
+            <span role="status">
+              {" "}
+              按修改时间统计，新增与更新合计
+              {shown.status === "partial" ? ` · 部分扫描，${shown.issues} 处未计入` : ""}。
+            </span>
+          )}
+        </p>
+        {error && (
+          <p className="inline-error" role="alert">
+            {error}
           </p>
+        )}
+        <div className="zone-board" role="group" aria-label="知识分区" ref={flash.ref}>
+          {ZONES.map((z) => {
+            const value = shown?.zones[z.id];
+            return (
+              <button
+                key={z.id}
+                type="button"
+                className={`zone-unit zone-${z.id}`}
+                aria-pressed={zone === z.id}
+                onClick={() => setZone(z.id)}
+              >
+                <span className="zone-cell" aria-hidden="true">
+                  <span className="zk">
+                    <span>{ZONE_KEYS[z.id]}</span>
+                    {z.id === "mine" && <span className="mk" />}
+                  </span>
+                  <span className="num">
+                    <LcdCount key={runs} value={value ? value.total : "---"} px={6} pad={4} label={null} />
+                    <small>篇</small>
+                  </span>
+                </span>
+                <span className="zone-col">
+                  <strong>
+                    <i style={{ background: ZONE_COLORS[z.id] }} aria-hidden="true" />
+                    {z.label}
+                    {z.id === "mine" && <Badge>主要指标</Badge>}
+                  </strong>
+                  <span className="sr-only">{value ? value.total : "—"} 篇</span>
+                  <small className={`zone-week${value?.changedThisWeek ? "" : " flat"}`}>
+                    本周 +{value ? value.changedThisWeek : "—"}（新增或更新）
+                  </small>
+                  <span className="zone-trend">
+                    <span className="bars" aria-hidden="true">
+                      {Array.from({ length: 7 }, (_, i) => (
+                        <i key={i} />
+                      ))}
+                    </span>
+                    <small>近 7 天按天趋势 · 待接入数据</small>
+                  </span>
+                  <em>{z.hint}</em>
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <Button disabled={!vault || !!busy || blocked} onClick={count}>
-          <BarChart3 size={16} />
-          {busy === "stats" ? "统计中…" : "统计三区"}
-        </Button>
-      </header>
-      {!vault && <p className="zones-note">先连接一个 Obsidian 知识源，再统计三区。</p>}
-      {error && (
-        <p className="inline-error" role="alert">
-          {error}
-        </p>
-      )}
-      {shown && (
-        <p className="zones-note" role="status">
-          统计于 {time(shown.at)} · 本周自 {new Date(shown.weekStart).toLocaleDateString("zh-CN")}（周一）起 · 按修改时间，新增与更新合计
-          {shown.status === "partial" ? ` · 部分扫描，${shown.issues} 处未计入` : ""}
-        </p>
-      )}
-      <div className="zone-tabs" role="group" aria-label="知识分区">
-        {ZONES.map((z) => {
-          const value = shown?.zones[z.id];
-          return (
-            <button
-              key={z.id}
-              type="button"
-              className={`zone-tab zone-${z.id}`}
-              aria-pressed={zone === z.id}
-              onClick={() => setZone(z.id)}
-            >
-              <strong>{z.label}</strong>
-              <span className="zone-count">{value ? value.total : "—"} 篇</span>
-              <small>本周 +{value ? value.changedThisWeek : "—"}</small>
-              <em>{z.hint}</em>
-            </button>
-          );
-        })}
-      </div>
+        <div className="zone-share">
+          <div className="k">
+            <span>三区占比（同一刻度{shown ? `，共 ${total} 篇` : ""}）</span>
+            {shown && <span>统计于 {time(shown.at)}</span>}
+          </div>
+          <div className="bar" aria-hidden="true">
+            {shown && total ? (
+              ZONES.map((z) => (
+                <i key={z.id} style={{ flex: shown.zones[z.id].total, background: ZONE_COLORS[z.id] }} />
+              ))
+            ) : (
+              <i className="empty" />
+            )}
+          </div>
+          <div className="legend">
+            {ZONES.map((z) => (
+              <span key={z.id} style={{ "--c": ZONE_COLORS[z.id] }}>
+                {z.label} {shown ? `${shown.zones[z.id].total} 篇 · ${share(z.id)}` : "—"}
+              </span>
+            ))}
+          </div>
+        </div>
+      </DeviceShell>
       {shown && (
         <div className="zone-files">
           {zoneFiles.length ? (
@@ -157,24 +237,30 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
           {zoneFiles.length > 50 && <p className="zones-note">只列出前 50 篇，共 {zoneFiles.length} 篇。</p>}
         </div>
       )}
-      <ZoneRules
-        state={state}
-        sources={sources}
-        vault={vault}
-        adoptState={adoptState}
-        notify={notify}
-        blocked={blocked}
-      />
-      <ProfilePanel
-        state={state}
-        config={config}
-        vault={vault}
-        mcp={summary.mcp}
-        adoptState={adoptState}
-        notify={notify}
-        navigate={navigate}
-        blocked={blocked}
-      />
+      {rulesOpen && (
+        <Dialog drawer title="规则与 MCP" onClose={() => onRules(false)}>
+          <div className="zone-drawer">
+            <ZoneRules
+              state={state}
+              sources={sources}
+              vault={vault}
+              adoptState={adoptState}
+              notify={notify}
+              blocked={blocked}
+            />
+            <ProfilePanel
+              state={state}
+              config={config}
+              vault={vault}
+              mcp={summary.mcp}
+              adoptState={adoptState}
+              notify={notify}
+              navigate={navigate}
+              blocked={blocked}
+            />
+          </div>
+        </Dialog>
+      )}
     </section>
   );
 }

@@ -749,19 +749,21 @@ function runs(rows, palette, dots = false) {
   return out;
 }
 
-export function Pixel({ sprite, size = 48, fit, className = "", palette, title, dots = false }) {
+export function Pixel({ sprite, size = 48, fit, scale, crop, className = "", palette, title, dots = false }) {
   const art = SPRITES[sprite];
   if (!art) return null;
   const colors = { ...art.palette, ...palette };
   const rows = art.frames[0];
-  const width = Math.max(...rows.map((r) => r.length)),
-    height = rows.length;
+  const fullWidth = Math.max(...rows.map((r) => r.length));
+  // crop：[x, y, w, h] 只显示一块（角色头像）；scale：按整数倍原色显示，不做缩放插值。
+  const [x0, y0, width, height] = crop || [0, 0, fullWidth, rows.length];
   // fit：让长边等于 fit 像素，不同比例的精灵放进同样大小的方框里。
-  if (fit) size = (fit * width) / Math.max(width, height);
+  if (scale) size = width * scale;
+  else if (fit) size = (fit * width) / Math.max(width, height);
   return (
     <svg
       className={`pixel ${art.mode || (art.frames.length > 1 ? "animated" : "")} ${className}`}
-      viewBox={`0 0 ${width} ${height}`}
+      viewBox={`${x0} ${y0} ${width} ${height}`}
       width={size}
       height={(size * height) / width}
       shapeRendering={dots && width <= 20 ? "geometricPrecision" : "crispEdges"}

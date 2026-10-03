@@ -107,6 +107,16 @@ async function until(check, label) {
 const zonesSection = (page) => page.getByRole("region", { name: "三区视图" });
 const zoneTab = (page, label) => zonesSection(page).getByRole("group", { name: "知识分区" }).getByRole("button", { name: new RegExp(`^${label}`) });
 const metric = (page) => page.locator(".page-heading .zone-metric");
+// UI v14e：划分规则与个人说明 MCP 收进页头“规则与 MCP”抽屉；抽屉是模态，操作页面前先关上。
+const rulesDrawer = (page) => page.getByRole("dialog", { name: "规则与 MCP" });
+async function openRules(page) {
+  await button(page, "规则与 MCP").click();
+  await rulesDrawer(page).waitFor();
+}
+async function closeRules(page) {
+  await button(rulesDrawer(page), "关闭").click();
+  await rulesDrawer(page).waitFor({ state: "detached" });
+}
 async function mcpCall(url, name, args) {
   const response = await fetch(url, {
     method: "POST",
@@ -138,6 +148,7 @@ try {
   ok("页头指标：统计三区后显示我的知识本周 +2；三区篇数与本周新增或更新正确；个人说明文件清单；Vault 不变");
 
   // 2. 划分规则可见可改：新增“项目/** → 输入区”，保存到主库后重新统计生效；恢复默认。
+  await openRules(page);
   const rules = page.getByRole("form", { name: "划分规则" });
   assert.equal(await rules.getByLabel("规则 1 文件夹").inputValue(), "GET NOTES");
   assert.equal(await rules.getByLabel("规则 2 文件夹").inputValue(), "个人上下文");
@@ -148,10 +159,12 @@ try {
   await button(rules, "保存规则").click();
   await until(async () => (await stored()).knowledgeZones?.rules.length === 3, "规则保存到主库");
   assert.deepEqual((await stored()).knowledgeZones.rules[2], { pattern: "项目/**", zone: "input" });
+  await closeRules(page);
   await button(zonesSection(page), "统计三区").click();
   await until(async () => /3\s*篇/.test(await zoneTab(page, "输入区").innerText()), "新规则生效");
   assert.match(await zoneTab(page, "我的知识").innerText(), /2\s*篇/);
   // 越界规则在页面上被拦下，不提交。
+  await openRules(page);
   await rules.getByLabel("规则 3 文件夹").fill("../外部");
   await button(rules, "保存规则").click();
   await rules.getByRole("alert").waitFor();
@@ -159,8 +172,10 @@ try {
   await button(rules, "恢复默认").click();
   await button(rules, "保存规则").click();
   await until(async () => (await stored()).knowledgeZones.rules.length === 2, "恢复默认规则");
+  await closeRules(page);
   await button(zonesSection(page), "统计三区").click();
   await until(async () => /3\s*篇/.test(await zoneTab(page, "我的知识").innerText()), "默认规则统计");
+  await openRules(page);
   await atLeast44(button(rules, "保存规则"), "保存规则");
   await atLeast44(rules.getByLabel("规则 1 文件夹"), "规则输入框");
   await unchanged("规则");
@@ -268,7 +283,10 @@ try {
   await until(async () => /\+2/.test(await metric(narrow).innerText()), "390 指标");
   await noOverflow(narrow, "390 知识仓库");
   await atLeast44(button(zonesSection(narrow), "统计三区"), "390 统计三区");
+  await openRules(narrow);
   await atLeast44(button(narrow.getByRole("form", { name: "划分规则" }), "添加规则"), "390 添加规则");
+  await noOverflow(narrow, "390 规则与 MCP 抽屉");
+  await closeRules(narrow);
   await axe(narrow, "knowledge-390");
   await narrow.screenshot({ path: join(output, "knowledge-zones-390.png"), fullPage: false });
   await narrow.goto(`${app.url}/#inbox`);

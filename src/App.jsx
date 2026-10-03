@@ -34,6 +34,7 @@ import { Collab } from "./Collab.jsx";
 import { pendingItems } from "./pending.js";
 import { PartnerScreen } from "./PartnerScreen.jsx";
 import { Odometer } from "./Odometer.jsx";
+import { Motes, useV14Interactions } from "./v14.jsx";
 import {
   Notes,
   Night,
@@ -92,6 +93,9 @@ export default function App() {
   const { route, anchor } = target;
   const [saveError, setSaveError] = useState("");
   const partnerScreen = useRef();
+  // UI v14e 全站手感：主区（银饰页除外）的涟漪、微光、倾斜与阶梯浮现。
+  const mainRef = useRef();
+  useV14Interactions(mainRef, `${route}:${state ? 1 : 0}`);
   const setSeason = useCallback((s) => setSeasonLabel(s.label), []);
   const toastTimer = useRef(),
     saveLock = useRef(false);
@@ -291,6 +295,7 @@ export default function App() {
     <div className="app-shell">
       {veil && <div className="boot-veil" aria-hidden="true" />}
       <WorldDeco />
+      {route !== "silver" && <Motes />}
       <a
         href="#main-content"
         className="skip-link"
@@ -461,11 +466,14 @@ export default function App() {
             {saveError}
           </div>
         )}
+        {/* UI v14e 换台：固定在内容区上的一道光线收成一条线再展开；不变形真实内容，布局与点击区域始终稳定。 */}
+        {route !== "silver" && <div className="v14-channel" key={`channel-${route}`} aria-hidden="true" />}
         <main
           id="main-content"
           tabIndex={-1}
-          className={`main-content page-${route}`}
+          className={`main-content page-${route}${route === "silver" ? "" : " v14"}`}
           key={route}
+          ref={mainRef}
         >
           {route === "home" && (
             <Home

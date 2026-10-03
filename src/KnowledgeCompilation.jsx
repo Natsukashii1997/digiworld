@@ -9,6 +9,9 @@ import "./knowledge-compilation.css";
 const date = (value) => new Date(value).toLocaleString("zh-CN");
 const taskStatus = (task) =>
   task.archived ? "已归档" : task.candidates.length ? "候选待审" : "待整理";
+// 任务卡上的四段进度（UI v14e“任务像关卡”），与详情里的整理流程同一判断：有候选进入确认，归档即走完。
+const QUEST = ["选资料", "交给 Codex", "确认候选", "落到 00 待整理"];
+const questStep = (task) => (task.archived ? QUEST.length : task.candidates.length ? 2 : 1);
 
 export function KnowledgeCompilation({
   state,
@@ -130,9 +133,12 @@ export function KnowledgeCompilation({
   const disabled = blocked || !!busy || pending;
   return (
     <section className="knowledge-compilation" aria-label="知识整理">
-      <header className="knowledge-compilation-heading">
-        <h2>整理</h2>
-        <span>仅限本人 Codex</span>
+      <header className="v14-sh">
+        <span className="v14-idx" aria-hidden="true">
+          B
+        </span>
+        <h2>整理任务</h2>
+        <span className="v14-sub">仅限本人 Codex</span>
       </header>
       <div className="knowledge-basket">
         <div className="knowledge-compilation-heading">
@@ -271,7 +277,7 @@ export function KnowledgeCompilation({
           .reverse()
           .map((entry) => (
             <button
-              className="knowledge-task-card"
+              className="knowledge-task-card m-panel sheen"
               key={entry.id}
               aria-label={`打开整理任务：${entry.question}${entry.basedOn ? ` · 重新整理 ${entry.id.slice(0, 8)}` : ""}`}
               onClick={() => setOpenedId(entry.id)}
@@ -284,7 +290,17 @@ export function KnowledgeCompilation({
                   {entry.basedOn ? " · 重新整理" : ""}
                 </small>
               </span>
-              <Badge tone="muted">{taskStatus(entry)}</Badge>
+              <Badge tone={entry.archived ? "muted" : entry.candidates.length ? "warning" : ""}>
+                {taskStatus(entry)}
+              </Badge>
+              <span className="quest-steps" aria-hidden="true">
+                {QUEST.map((name, i) => (
+                  <span key={name} className={i < questStep(entry) ? "done" : i === questStep(entry) ? "now" : ""}>
+                    <i />
+                    {name}
+                  </span>
+                ))}
+              </span>
             </button>
           ))}
       </div>

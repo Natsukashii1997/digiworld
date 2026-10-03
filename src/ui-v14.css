@@ -1,0 +1,524 @@
+/* ==========================================================================
+   UI v14e 公共层 · 掌机里的数码世界（docs/design/ui-v14/v14e-preview.html）
+   以 v14b 为底：每页是掌机里的一块屏幕。材质（面板 / 屏幕 / 液晶）、点阵读数、
+   一次局部反馈、换台、涟漪、微光与倾斜、阶梯浮现、背景微尘。
+   作用域：主区 .v14（银饰页不加，保持原样）。系统“减少动态效果”时全部停止。
+   ========================================================================== */
+
+/* ---------- 背景微尘（画布，JS 控制） ---------- */
+.v14-motes {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+/* ---------- 换台：屏幕先收成一条亮线再展开，像 CRT 换台（420ms） ----------
+   光线画在固定覆盖层上；真实内容沿用原有淡入（page-in），不缩放，换台期间布局与点击区域稳定。 */
+.v14-channel {
+  position: fixed;
+  z-index: 20;
+  top: 56px;
+  left: 216px;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  /* 播完即隐藏，不留透明层盖在内容上。 */
+  visibility: hidden;
+  background: linear-gradient(180deg, rgba(160, 240, 255, 0.55), rgba(220, 250, 255, 0.95) 50%, rgba(160, 240, 255, 0.55));
+  box-shadow: 0 0 24px rgba(77, 227, 255, 0.8);
+  animation: v14-channel var(--t-slow) var(--ease);
+}
+@keyframes v14-channel {
+  0% {
+    visibility: visible;
+    opacity: 1;
+    transform: scaleY(0.004);
+  }
+  35% {
+    opacity: 1;
+    transform: scaleY(0.004);
+  }
+  70% {
+    opacity: 0.28;
+    transform: scaleY(1);
+  }
+  100% {
+    visibility: visible;
+    opacity: 0;
+    transform: scaleY(1);
+  }
+}
+@media (max-width: 960px) {
+  .v14-channel {
+    left: 0;
+  }
+}
+
+/* ---------- 材质 ---------- */
+.v14 .m-panel {
+  position: relative;
+  background: var(--m-panel);
+  box-shadow: var(--m-panel-edge);
+  border-radius: var(--r-l);
+}
+.v14 .m-screen {
+  position: relative;
+  background: var(--m-screen);
+  box-shadow: var(--m-screen-edge);
+  border-radius: var(--r-l);
+  overflow: hidden;
+  isolation: isolate;
+}
+.v14 .m-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: repeating-linear-gradient(0deg, rgba(77, 227, 255, 0.028) 0 1px, transparent 1px 4px);
+}
+/* 扫描光带：慢慢扫过主屏 */
+.v14 .sweep::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 120px;
+  top: -140px;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(180deg, transparent, rgba(77, 227, 255, 0.06), transparent);
+  animation: v14-sweep 7s linear infinite;
+}
+@keyframes v14-sweep {
+  to {
+    transform: translateY(1200px);
+  }
+}
+/* 像素角标 */
+.v14 .corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 2;
+  --b: rgba(77, 227, 255, 0.55);
+}
+.v14 .corner.tl {
+  top: 10px;
+  left: 10px;
+  border-top: 2px solid var(--b);
+  border-left: 2px solid var(--b);
+}
+.v14 .corner.tr {
+  top: 10px;
+  right: 10px;
+  border-top: 2px solid var(--b);
+  border-right: 2px solid var(--b);
+}
+.v14 .corner.bl {
+  bottom: 10px;
+  left: 10px;
+  border-bottom: 2px solid var(--b);
+  border-left: 2px solid var(--b);
+}
+.v14 .corner.br {
+  bottom: 10px;
+  right: 10px;
+  border-bottom: 2px solid var(--b);
+  border-right: 2px solid var(--b);
+}
+.v14 .m-lcd,
+.v14 .lcd2 {
+  position: relative;
+  color: var(--lcd-ink);
+  background: radial-gradient(circle at 50% 30%, var(--lcd-screen), var(--lcd-screen-2));
+}
+.v14 .m-lcd {
+  border-radius: var(--r);
+  box-shadow: 0 0 0 3px #1b2540, inset 0 2px 7px rgba(0, 0, 0, 0.32);
+}
+.v14 .lcd2 {
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 2px #1b2540, inset 0 3px 6px rgba(0, 0, 0, 0.28);
+}
+.v14 .m-lcd::before,
+.v14 .lcd2::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(28, 38, 22, 0.16) 0.8px, transparent 1px);
+  background-size: 4px 4px;
+}
+.v14 .m-lcd > *,
+.v14 .lcd2 > * {
+  position: relative;
+}
+
+/* ---------- 点阵读数 ---------- */
+.lcd-num {
+  display: inline-block;
+  line-height: 0;
+  vertical-align: middle;
+}
+.lcd-num svg {
+  display: block;
+  shape-rendering: crispEdges;
+  overflow: visible;
+}
+.lcd-num .on rect {
+  animation: v14-pxon 0.26s steps(2) both;
+  animation-delay: calc(var(--c) * 14ms);
+}
+@keyframes v14-pxon {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- 指针微光与倾斜 ---------- */
+.v14 .sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t-mid) var(--ease);
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(255, 255, 255, 0.075), transparent 65%);
+}
+.v14 .sheen:hover::after {
+  opacity: 1;
+}
+.v14 [data-tilt] {
+  transition:
+    transform var(--t-mid) var(--ease),
+    box-shadow var(--t-mid) var(--ease);
+  transform-style: preserve-3d;
+}
+
+/* ---------- 阶梯浮现 ---------- */
+.v14 .reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity var(--t-slow) var(--ease),
+    transform var(--t-slow) var(--ease);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+.v14 .reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- 按钮像素涟漪：按下下沉，方形涟漪分 5 帧散开 ---------- */
+.v14-ripple {
+  position: absolute;
+  z-index: 2;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+  animation: v14-ripple 0.45s steps(5) forwards;
+}
+@keyframes v14-ripple {
+  to {
+    transform: scale(14);
+    opacity: 0;
+  }
+}
+
+/* ---------- 一次局部反馈：液晶窗翻转一次 + 旁边出现一次“已更新” ---------- */
+.flash {
+  animation: v14-flash 0.6s steps(3) 1;
+}
+@keyframes v14-flash {
+  33% {
+    filter: invert(1) hue-rotate(180deg);
+  }
+}
+.v14-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-meta);
+  color: var(--lcd);
+  animation: v14-pop 0.6s var(--ease) 1;
+}
+@keyframes v14-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  20% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- 掌机外壳（ZONE MONITOR 等设备屏） ---------- */
+.v14-shell {
+  position: relative;
+  padding: 12px;
+  border-radius: 22px;
+  background: linear-gradient(160deg, #1d2b4a 0%, #121d35 45%, #0c1427 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.35),
+    0 3px 0 #050913,
+    0 18px 30px -22px rgba(0, 0, 0, 0.95);
+}
+.v14-shell::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 18px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035), inset 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+.v14-shell .screw {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #4a5a7d, #1a2337);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+.v14-shell .screw::after {
+  content: "";
+  position: absolute;
+  left: 1.5px;
+  right: 1.5px;
+  top: 3.5px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.6);
+  transform: rotate(35deg);
+}
+.v14-shell .screw.tl {
+  left: 9px;
+  top: 9px;
+}
+.v14-shell .screw.tr {
+  right: 9px;
+  top: 9px;
+}
+.v14-shell .screw.bl {
+  left: 9px;
+  bottom: 9px;
+}
+.v14-shell .screw.br {
+  right: 9px;
+  bottom: 9px;
+}
+.v14-shell .plate {
+  position: absolute;
+  right: 26px;
+  top: 0;
+  z-index: 2;
+  transform: translateY(-50%);
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: #0b1222;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  font: 700 10px var(--mono);
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+.v14-zscreen {
+  position: relative;
+  background: #0b1324;
+  border-radius: 13px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5), inset 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+/* ---------- Agent 形象：原色、整数倍；素材未到时字母牌 ---------- */
+.agent-sprite {
+  display: block;
+  image-rendering: pixelated;
+  flex: none;
+}
+.agent-letter {
+  display: grid;
+  place-items: center;
+  flex: none;
+  font-family: var(--mono);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.v14 .bob {
+  display: inline-block;
+  animation: v14-bob 1.4s steps(2) infinite;
+}
+@keyframes v14-bob {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* ---------- 页头：编号 + 点阵眉题 + 成熟度；渐变大标题 ---------- */
+.v14 .page-mark {
+  display: none;
+}
+.v14 .page-heading {
+  align-items: flex-end;
+  gap: var(--s-3) var(--s-5);
+  margin-bottom: var(--s-6);
+}
+.v14 .page-eyebrow {
+  gap: var(--s-3);
+  letter-spacing: 0.04em;
+}
+.v14 .page-eyebrow .lcd-num {
+  color: var(--cyan);
+}
+.v14 .page-code {
+  font: 700 var(--fs-label) var(--mono);
+  color: var(--orange);
+  border-color: rgba(255, 138, 36, 0.5);
+  background: rgba(255, 138, 36, 0.06);
+  box-shadow: none;
+}
+.v14 .page-heading h1 {
+  font-size: var(--fs-page);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  background: linear-gradient(180deg, #ffffff, #c9d7ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.v14 .page-lead {
+  margin-top: var(--s-2);
+  font-size: var(--fs-body);
+  max-width: 640px;
+}
+
+/* ---------- 徽标：方形状态灯 ---------- */
+.v14 .badge::before,
+.v14 .maturity i {
+  width: 6px;
+  height: 6px;
+  border-radius: 0;
+  flex: none;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+.v14 .badge::before {
+  content: "";
+}
+.v14 .maturity {
+  border-radius: 7px;
+  font: 700 var(--fs-label) / 1.9 var(--mono);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- 区块标题编号块 ---------- */
+.v14 .v14-idx {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font: 800 var(--fs-label) var(--mono);
+  color: var(--bg);
+  background: var(--cyan);
+  box-shadow: 0 0 12px rgba(77, 227, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- 抽屉：像素阶梯擦入，内容错峰浮起 ---------- */
+.v14 .drawer {
+  animation: v14-wipe var(--t-slow) steps(7) both;
+}
+@keyframes v14-wipe {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ---------- 减少动态效果：全部停 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .v14-motes,
+  .v14-ripple,
+  .v14-channel {
+    display: none;
+  }
+  .v14 .sweep::after,
+  .lcd-num .on rect,
+  .flash,
+  .v14-result,
+  .v14 .bob,
+  .v14 .drawer {
+    animation: none !important;
+  }
+  .v14 .sweep::after {
+    display: none;
+  }
+  .v14 .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .v14 .sheen::after {
+    display: none;
+  }
+  .v14 [data-tilt] {
+    transform: none !important;
+    transition: none;
+  }
+}
+
+/* ---------- 区块标题：编号块 + 标题 + 说明 + 右侧操作 ---------- */
+.v14-sh {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  min-height: 40px;
+  margin: 0 0 var(--s-4);
+}
+.v14-sh h2 {
+  margin: 0;
+  font-size: var(--fs-section);
+  font-weight: 650;
+}
+.v14-sub {
+  color: var(--muted);
+  font-size: var(--fs-meta);
+}
+.v14-sh > .button:last-child,
+.v14-sh > .v14-end {
+  margin-left: auto;
+}
+/* 幽灵按钮：次要动作，只在悬停时出底 */
+.v14 .button.secondary.ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--text-2);
+}
+.v14 .button.secondary.ghost:hover:not(:disabled) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+@media (max-width: 640px) {
+  .v14 .page-heading-action {
+    justify-content: flex-start;
+  }
+  .v14 .page-heading h1 {
+    font-size: 30px;
+  }
+}

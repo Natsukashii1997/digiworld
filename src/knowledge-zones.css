@@ -18,6 +18,18 @@
   font: 600 20px var(--mono);
   color: var(--lcd);
 }
+.v14 .zone-metric {
+  border: 0;
+  color: var(--lcd-ink);
+  background: radial-gradient(circle at 50% 30%, var(--lcd-screen), var(--lcd-screen-2));
+  box-shadow: 0 0 0 3px #1b2540, inset 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.v14 .zone-metric small {
+  color: #2e3a24;
+}
+.v14 .zone-metric strong {
+  color: var(--lcd-ink);
+}
 .page-heading-action:has(.zone-metric) {
   display: flex;
   flex-wrap: wrap;
@@ -25,15 +37,40 @@
   justify-content: flex-end;
   gap: 12px;
 }
+/* UI v14e：三区视图装进 ZONE MONITOR 设备屏——同一读数窗、同一字号、同一刻度的占比条。 */
 .knowledge-zones {
   display: grid;
-  gap: 16px;
-  margin: 0 0 24px;
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  gap: var(--s-4);
+  margin: 0 0 var(--s-6);
   min-width: 0;
+}
+.zone-shell {
+  margin-top: 10px;
+  min-width: 0;
+}
+.zones-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid rgba(140, 178, 255, 0.1);
+}
+.zones-head h2 {
+  margin: 0;
+  font-size: var(--fs-title);
+}
+.zones-when {
+  font: var(--fs-meta) var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.zones-actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
 }
 .zones-heading {
   display: flex;
@@ -61,42 +98,208 @@
   line-height: 1.7;
   overflow-wrap: anywhere;
 }
-.zone-tabs {
+.zone-shell .zones-note,
+.zone-shell .inline-error {
+  margin: var(--s-3) var(--s-5) 0;
+}
+.zone-shell .zones-note {
+  color: var(--muted);
+}
+/* 三个分区：上半是连成一条的液晶读数窗，下半是说明列；整列可点，查看该区文件 */
+.zone-board {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  margin: var(--s-4) var(--s-5) 0;
 }
-.zone-tab {
+.zone-unit {
   display: grid;
-  gap: 3px;
-  min-height: 44px;
-  padding: 13px 15px;
-  text-align: left;
-  border-radius: 13px;
-  border: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  grid-template-rows: auto 1fr;
+  align-content: start;
   min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.zone-tab[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+.zone-cell {
+  display: grid;
+  gap: 6px;
+  padding: 12px 18px 10px;
+  color: var(--lcd-ink);
+  background: radial-gradient(circle at 50% 30%, var(--lcd-screen), var(--lcd-screen-2));
+  box-shadow: inset 0 2px 0 #1b2540, inset 0 -2px 0 #1b2540, inset 0 3px 6px rgba(0, 0, 0, 0.22);
+  position: relative;
 }
-.zone-tab strong {
-  font-size: 15px;
+.zone-cell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(28, 38, 22, 0.15) 0.8px, transparent 1px);
+  background-size: 4px 4px;
 }
-.zone-tab .zone-count {
-  font: 600 18px var(--mono);
-  color: var(--text);
+.zone-unit:first-child .zone-cell {
+  border-radius: 8px 0 0 8px;
+  box-shadow: inset 2px 0 0 #1b2540, inset 0 2px 0 #1b2540, inset 0 -2px 0 #1b2540, inset 0 3px 6px rgba(0, 0, 0, 0.22);
 }
-.zone-tab small {
-  font-size: 12px;
+.zone-unit:last-child .zone-cell {
+  border-radius: 0 8px 8px 0;
+  box-shadow: inset -2px 0 0 #1b2540, inset 0 2px 0 #1b2540, inset 0 -2px 0 #1b2540, inset 0 3px 6px rgba(0, 0, 0, 0.22);
+}
+.zone-unit + .zone-unit .zone-cell {
+  border-left: 1px solid rgba(28, 38, 22, 0.25);
+}
+.zone-cell .zk {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 700 10.5px var(--mono);
+  letter-spacing: 0.16em;
+}
+.zone-cell .mk {
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+}
+.zone-cell .num {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 48px;
+}
+.zone-cell .num small {
+  font: 700 11px var(--sans);
+  margin-bottom: 2px;
+}
+.zone-board.flash {
+  animation: none;
+}
+.zone-board.flash .zone-cell {
+  animation: v14-flash 0.6s steps(3) 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .zone-board.flash .zone-cell {
+    animation: none;
+  }
+}
+.zone-col {
+  display: grid;
+  gap: var(--s-2);
+  align-content: start;
+  padding: var(--s-4) 18px;
+  border-radius: 0 0 12px 12px;
+  transition: background var(--t-fast);
+}
+.zone-unit + .zone-unit .zone-col {
+  box-shadow: -1px 0 0 rgba(140, 178, 255, 0.1);
+}
+.zone-unit:hover .zone-col {
+  background: rgba(255, 255, 255, 0.025);
+}
+.zone-unit[aria-pressed="true"] .zone-col {
+  background: rgba(255, 138, 36, 0.06);
+  box-shadow: inset 0 2px 0 var(--orange);
+}
+.zone-col strong {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-title);
+}
+.zone-mine .zone-col strong {
+  font-size: 17px;
+}
+.zone-col strong > i {
+  width: 8px;
+  height: 8px;
+  flex: none;
+}
+.zone-week {
+  font: 600 var(--fs-meta) var(--mono);
   color: var(--lcd);
 }
-.zone-tab em {
+.zone-week.flat {
+  color: var(--muted);
+}
+/* 近 7 天按天趋势：现有接口没有按天数据，只画虚线空柱并标明“待接入” */
+.zone-trend {
+  display: grid;
+  gap: 4px;
+}
+.zone-trend .bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 26px;
+}
+.zone-trend .bars i {
+  width: 10px;
+  height: 100%;
+  border: 1px dashed rgba(140, 178, 255, 0.22);
+}
+.zone-trend small {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.zone-col em {
   font-style: normal;
-  font-size: 11.5px;
+  font-size: var(--fs-meta);
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+.zone-share {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+  padding: var(--s-3) var(--s-5) var(--s-5);
+  border-top: 1px solid rgba(140, 178, 255, 0.1);
+}
+.zone-share .k {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px var(--s-3);
+  font-size: var(--fs-meta);
+  color: var(--muted);
+}
+.zone-share .bar {
+  display: flex;
+  height: 10px;
+  gap: 2px;
+}
+.zone-share .bar i {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+}
+.zone-share .bar i.empty {
+  flex: 1;
+  border: 1px dashed rgba(140, 178, 255, 0.22);
+}
+.zone-share .legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--s-4);
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+}
+.zone-share .legend span::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  background: var(--c);
+}
+.zone-drawer {
+  display: grid;
+  gap: var(--s-5);
 }
 .zone-files ul {
   display: grid;
@@ -364,16 +567,45 @@
 }
 
 @media (max-width: 900px) {
-  .zone-tabs,
   .mcp-example-grid,
   .proposal-paragraphs {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 560px) {
-  .knowledge-zones {
-    padding: 16px;
+@media (max-width: 640px) {
+  .zone-board {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-3);
   }
+  .zone-unit .zone-cell,
+  .zone-unit:first-child .zone-cell,
+  .zone-unit:last-child .zone-cell {
+    border-left: 0;
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 2px #1b2540, inset 0 3px 6px rgba(0, 0, 0, 0.22);
+  }
+  .zone-unit + .zone-unit .zone-col {
+    box-shadow: none;
+  }
+  .zone-unit[aria-pressed="true"] .zone-col {
+    box-shadow: inset 0 2px 0 var(--orange);
+  }
+  .zones-head,
+  .zone-share {
+    padding-inline: var(--s-4);
+  }
+  .zone-board {
+    margin-inline: var(--s-4);
+  }
+  .zone-shell .zones-note,
+  .zone-shell .inline-error {
+    margin-inline: var(--s-4);
+  }
+  .zones-actions {
+    margin-left: 0;
+  }
+}
+@media (max-width: 560px) {
   .zone-rule {
     grid-template-columns: minmax(0, 1fr) 44px;
   }

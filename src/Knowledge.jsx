@@ -5,14 +5,16 @@ import {
   FileText,
   Link2,
   Plus,
+  Lock,
   RefreshCw,
   Search,
+  Settings2,
   Unplug,
 } from "lucide-react";
 import { Badge, Button, Dialog, Empty, PageHeading } from "./components.jsx";
 import { request } from "./api.js";
 import { KnowledgeCompilation } from "./KnowledgeCompilation.jsx";
-import { KnowledgeZones, ZoneMetric, useZoneSummary } from "./KnowledgeZones.jsx";
+import { KnowledgeZones, ZoneMetric, useZoneSummary, zonesConfig } from "./KnowledgeZones.jsx";
 import "./knowledge.css";
 
 const date = (value) => new Date(value).toLocaleString("zh-CN");
@@ -29,6 +31,7 @@ export function Knowledge({ state, adoptState, notify, navigate }) {
   const [epoch, setEpoch] = useState(0);
   const [selections, setSelections] = useState([]);
   const [zoneSummary, setZoneSummary] = useZoneSummary();
+  const [rulesOpen, setRulesOpen] = useState(false);
   const previousSources = useRef(sources);
   useEffect(() => {
     const previous = previousSources.current;
@@ -159,6 +162,9 @@ export function Knowledge({ state, adoptState, notify, navigate }) {
     setSelections((current) => [...current, selection]);
     notify("已加入整理资料");
   }
+  const zones = zonesConfig(state);
+  const mcp = zoneSummary.mcp;
+  const proposals = (state.profileProposals || []).filter((p) => p.status === "pending").length;
   return (
     <>
       <PageHeading
@@ -166,6 +172,10 @@ export function Knowledge({ state, adoptState, notify, navigate }) {
         action={
           <>
             <ZoneMetric latest={zoneSummary.latest} />
+            <Button secondary onClick={() => setRulesOpen(true)}>
+              <Settings2 size={16} />
+              规则与 MCP
+            </Button>
             <Button disabled={!!busy || pending} onClick={() => open("connect")}>
               <Plus size={16} />
               连接知识源
@@ -173,14 +183,6 @@ export function Knowledge({ state, adoptState, notify, navigate }) {
           </>
         }
       />
-      <div className="knowledge-meta">
-        <Badge tone="muted">仅限本机</Badge>
-        <span>飞书知识库 · 未接入</span>
-        <Button secondary disabled={!!busy} onClick={refresh}>
-          <RefreshCw size={16} />
-          {busy === "refresh" ? "核对中…" : "刷新连接核对"}
-        </Button>
-      </div>
       {pending && (
         <p className="inline-error" role="status">
           操作结果待核对。请刷新连接核对后再操作，不要重复提交。
@@ -191,10 +193,6 @@ export function Knowledge({ state, adoptState, notify, navigate }) {
           {error}
         </p>
       )}
-      <KnowledgeSteps
-        sources={sources.length}
-        tasks={(state.knowledgeTasks || []).filter((t) => !t.archived).length}
-      />
       <KnowledgeZones
         state={state}
         adoptState={adoptState}
@@ -203,56 +201,112 @@ export function Knowledge({ state, adoptState, notify, navigate }) {
         onSummary={setZoneSummary}
         navigate={navigate}
         blocked={!!busy || pending}
+        rulesOpen={rulesOpen}
+        onRules={setRulesOpen}
       />
-      <div id="k-sources" className="knowledge-anchor" />
-      {!sources.length ? (
-        <Empty icon={BookOpen} title="尚未连接知识源">
-          选择一个具体的 Obsidian 或 Markdown 目录，只读连接。工作台只保存位置指针，不复制正文。
-        </Empty>
-      ) : (
-        <div className="knowledge-layout">
-          <nav className="knowledge-sources" aria-label="知识源">
-            {sources.map((source) => (
-              <button
-                key={source.id}
-                className="knowledge-source"
-                aria-pressed={source.id === selected?.id}
-                onClick={() => setSelectedId(source.id)}
-              >
-                <BookOpen size={18} />
-                <span>
-                  <strong>{source.name}</strong>
-                  <small>
-                    {source.kind === "obsidian" ? "Obsidian" : "Markdown"}
-                  </small>
-                  <span className="knowledge-path">{source.root}</span>
-                </span>
-              </button>
-            ))}
-          </nav>
-          {selected && (
-            <KnowledgeSource
-              key={`${selected.id}:${selected.generation}:${epoch}`}
-              source={selected}
-              blocked={!!busy || pending}
-              notify={notify}
-              onManage={(mode) => open(mode, selected)}
-              selections={selections}
-              onAddSelection={addSelection}
-            />
-          )}
+      <div className="kn-body">
+        <div className="kn-main">
+          <div id="k-compile" className="knowledge-anchor" />
+          <KnowledgeCompilation
+            state={state}
+            adoptState={adoptState}
+            notify={notify}
+            selections={selections}
+            setSelections={setSelections}
+            epoch={epoch}
+            blocked={!!busy || pending}
+          />
         </div>
+        <section className="kn-side" aria-labelledby="k-links-title">
+          <div className="v14-sh">
+            <span className="v14-idx" aria-hidden="true">C</span>
+            <h2 id="k-links-title">连接状态</h2>
+            <span className="v14-sub">仅限本机</span>
+            <Button secondary className="ghost" disabled={!!busy} onClick={refresh}>
+              <RefreshCw size={16} />
+              {busy === "refresh" ? "核对中…" : "刷新连接核对"}
+            </Button>
+          </div>
+          <article className="m-panel kn-link sheen reveal" style={{ "--i": 1 }}>
+            <div className="kn-link-head">
+              <span className="kn-glyph" style={{ color: "var(--violet)" }} aria-hidden="true">
+                ◎
+              </span>
+              <h3>个人说明 MCP</h3>
+              <Badge tone={mcp?.url ? "success" : "muted"}>{mcp?.url ? "运行中" : mcp ? "未启动" : "读取中"}</Badge>
+            </div>
+            <dl className="kn-kv">
+              <dt>地址</dt>
+              <dd className="mono">{mcp?.url || mcp?.error || "读取中…"}</dd>
+              <dt>读取授权</dt>
+              <dd>{zones.profileSharing ? "已允许" : "未开启"}</dd>
+              <dt>待处理建议</dt>
+              <dd>{proposals} 条</dd>
+            </dl>
+            <Button secondary className="ghost kn-link-more" onClick={() => setRulesOpen(true)}>
+              接入配置与授权 →
+            </Button>
+          </article>
+          <div id="k-sources" className="knowledge-anchor" />
+          {!sources.length ? (
+            <Empty icon={BookOpen} title="尚未连接知识源">
+              选择一个具体的 Obsidian 或 Markdown 目录，只读连接。工作台只保存位置指针，不复制正文。
+            </Empty>
+          ) : (
+            <nav className="knowledge-sources" aria-label="知识源">
+              {sources.map((source, i) => (
+                <button
+                  key={source.id}
+                  className="knowledge-source m-panel sheen reveal"
+                  style={{ "--i": i + 2 }}
+                  aria-pressed={source.id === selected?.id}
+                  onClick={() => setSelectedId(source.id)}
+                >
+                  <span className="kn-glyph" style={{ color: "var(--cyan)" }} aria-hidden="true">
+                    <BookOpen size={16} />
+                  </span>
+                  <span>
+                    <strong>{source.name}</strong>
+                    <small>
+                      {source.kind === "obsidian" ? "Obsidian" : "Markdown"} · 本机 · 只读 · 只存位置指针
+                    </small>
+                    <span className="knowledge-path">{source.root}</span>
+                  </span>
+                  <Badge tone="success">已连接</Badge>
+                </button>
+              ))}
+            </nav>
+          )}
+          <div className="m-panel kn-link kn-locked">
+            <div className="kn-link-head">
+              <span className="kn-glyph" aria-hidden="true">
+                <Lock size={15} />
+              </span>
+              <h3>飞书知识库</h3>
+              <Badge tone="muted">未解锁</Badge>
+            </div>
+            <small>未接入 · 第六阶段 · 需要你单独授权</small>
+          </div>
+        </section>
+      </div>
+      {selected && (
+        <section className="kn-query" aria-labelledby="k-query-title">
+          <div className="v14-sh">
+            <span className="v14-idx" aria-hidden="true">D</span>
+            <h2 id="k-query-title">查询原文</h2>
+            <span className="v14-sub">{selected.name} · 按文件名或正文短语，只读，不复制正文</span>
+          </div>
+          <KnowledgeSource
+            key={`${selected.id}:${selected.generation}:${epoch}`}
+            source={selected}
+            blocked={!!busy || pending}
+            notify={notify}
+            onManage={(mode) => open(mode, selected)}
+            selections={selections}
+            onAddSelection={addSelection}
+          />
+        </section>
       )}
-      <div id="k-compile" className="knowledge-anchor" />
-      <KnowledgeCompilation
-        state={state}
-        adoptState={adoptState}
-        notify={notify}
-        selections={selections}
-        setSelections={setSelections}
-        epoch={epoch}
-        blocked={!!busy || pending}
-      />
       {dialog && (
         <Dialog
           title={
@@ -953,36 +1007,5 @@ function KnowledgeMatches({ matches, busy, selectedPath, onContinue, onRead }) {
         </Button>
       )}
     </div>
-  );
-}
-
-// 知识工作流总览：四个阶段、各自的权限边界与真实计数；点击跳到对应区域。
-function KnowledgeSteps({ sources, tasks }) {
-  const steps = [
-    ["k-sources", "连接", `${sources} 个知识源`, "只读 · 只存位置指针"],
-    ["k-sources", "查询", sources ? "按文件名或正文短语" : "连接后可用", "只读 · 不复制正文"],
-    ["k-compile", "整理", `${tasks} 个进行中任务`, "交给本人 Codex · 手动回传候选"],
-    ["k-maintain", "维护", "检查来源是否变化", "确认后才写入“00 待整理”"],
-  ];
-  return (
-    <ol className="knowledge-steps" aria-label="知识工作流">
-      {steps.map(([anchor, name, fact, rule], i) => (
-        <li key={name}>
-          <button
-            type="button"
-            onClick={() =>
-              document
-                .getElementById(anchor)
-                ?.scrollIntoView({ behavior: "smooth", block: "start" })
-            }
-          >
-            <span className="knowledge-step-index">{String(i + 1).padStart(2, "0")}</span>
-            <strong>{name}</strong>
-            <span>{fact}</span>
-            <small>{rule}</small>
-          </button>
-        </li>
-      ))}
-    </ol>
   );
 }

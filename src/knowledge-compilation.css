@@ -1,7 +1,6 @@
 .knowledge-compilation {
   display: grid;
   gap: 18px;
-  margin-top: 32px;
   min-width: 0;
 }
 .knowledge-compilation-heading {
@@ -285,5 +284,81 @@
   }
   .knowledge-task-detail {
     padding: 20px 16px;
+  }
+}
+
+/* UI v14e：整理任务像关卡——四段进度：选资料 → 交给 Codex → 确认候选 → 落盘 */
+.v14 .knowledge-basket {
+  border: 0;
+  background: var(--m-panel);
+  box-shadow: var(--m-panel-edge);
+  border-radius: var(--r-l);
+}
+.v14 .knowledge-task-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 0;
+}
+.v14 .knowledge-task-card > svg {
+  color: var(--orange);
+}
+.v14 .knowledge-task-card > .quest-steps {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.quest-steps > span {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font: var(--fs-label) var(--mono);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.quest-steps i {
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(140, 178, 255, 0.12);
+}
+.quest-steps .done {
+  color: var(--text-2);
+}
+.quest-steps .done i {
+  background: rgba(166, 227, 110, 0.6);
+}
+.quest-steps .now {
+  color: var(--orange);
+}
+.quest-steps .now i {
+  background: var(--orange);
+  box-shadow: 0 0 10px rgba(255, 138, 36, 0.7);
+  animation: v14-pulse 1.4s steps(2) infinite;
+}
+@keyframes v14-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quest-steps .now i {
+    animation: none;
+  }
+}
+@media (max-width: 540px) {
+  .v14 .knowledge-task-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: var(--s-4);
+  }
+  .v14 .knowledge-task-card > .badge {
+    grid-column: 2;
+    margin-left: 0;
+    justify-self: start;
+  }
+  .v14 .knowledge-task-card > .quest-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
