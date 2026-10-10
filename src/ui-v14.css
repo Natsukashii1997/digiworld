@@ -5,6 +5,55 @@
    作用域：主区 .v14（银饰页不加，保持原样）。系统“减少动态效果”时全部停止。
    ========================================================================== */
 
+/* ---------- 令牌补全（Claude 165 设计评审 P0）----------
+   styles.css 是受保护的根令牌（资产卡墙与银饰页逐像素不变），这里只补它没有的档位与硬件色，不覆盖已有值。
+   其他样式层不写圆角 / 字号 / 颜色字面值，一律引用令牌（tests/design-tokens.test.mjs 守护）。
+   圆角：--r-xs 4 · --r-s 8 · --r 12 · --r-l 16 · --r-xl 20 · --r-pill；2–3px 只用于像素级小件。
+   字号：--fs-micro 10（只给等宽大写小标）· label 11 · small 12 · meta 12.5 · caption 13 · body 14 · read 15（正文阅读）· title 16 · section 20 · display-s 28 · page-narrow 30（窄屏页标题）· display 34 · page 38。 */
+:root {
+  --r-xs: 4px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+  --fs-micro: 10px;
+  --fs-small: 12px;
+  --fs-caption: 13px;
+  --fs-read: 15px;
+  --fs-display-s: 28px;
+  --fs-display: 34px;
+  --fs-page-narrow: 30px;
+  /* 补充色：在已有色相上的浅一档与蓝色 */
+  --cyan-2: #9beeff;
+  --violet-2: #c8b6ff;
+  --red-2: #ff9a9a;
+  --blue: #6fb0ff;
+  --orange-deep: #b8560a;
+  --text-hi: #c9d7ff;
+  --chip-light: #f3f6ff;
+  --collection-paper-ink: #17191d;
+  --collection-title-ink: #25282d;
+  --collection-category-ink: #344c66;
+  --collection-category-fill: #edf3f8;
+  /* 硬件材质：暴龙机外壳、按键、连线 */
+  --hw-bezel: #1b2540;
+  --hw-bezel-hi: #24345c;
+  --hw-deep: #0b172a;
+  --hw-pit: #050913;
+  --hw-wire: #152b40;
+  --hw-dim: #58748b;
+  --hw-key: #4a5a7d;
+  --hw-key-2: #1a2337;
+  --hw-key-blue: #286ebe;
+  --hw-key-blue-2: #3c8cdc;
+  --hw-key-blue-3: #143c78;
+  /* 液晶与数码蛋的像素色 */
+  --mint: #d9fbe9;
+  --mint-2: #8fe3c4;
+  --lcd-hi: #d6e8b4;
+  --lcd-mid: #6f7d58;
+  --lcd-shade: #3d4a2c;
+  --lcd-shade-2: #2e3a24;
+}
+
 /* ---------- 背景微尘（画布，JS 控制） ---------- */
 .v14-motes {
   position: fixed;
@@ -15,47 +64,7 @@
   pointer-events: none;
 }
 
-/* ---------- 换台：屏幕先收成一条亮线再展开，像 CRT 换台（420ms） ----------
-   光线画在固定覆盖层上；真实内容沿用原有淡入（page-in），不缩放，换台期间布局与点击区域稳定。 */
-.v14-channel {
-  position: fixed;
-  z-index: 20;
-  top: 56px;
-  left: 216px;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  /* 播完即隐藏，不留透明层盖在内容上。 */
-  visibility: hidden;
-  background: linear-gradient(180deg, rgba(160, 240, 255, 0.55), rgba(220, 250, 255, 0.95) 50%, rgba(160, 240, 255, 0.55));
-  box-shadow: 0 0 24px rgba(77, 227, 255, 0.8);
-  animation: v14-channel var(--t-slow) var(--ease);
-}
-@keyframes v14-channel {
-  0% {
-    visibility: visible;
-    opacity: 1;
-    transform: scaleY(0.004);
-  }
-  35% {
-    opacity: 1;
-    transform: scaleY(0.004);
-  }
-  70% {
-    opacity: 0.28;
-    transform: scaleY(1);
-  }
-  100% {
-    visibility: visible;
-    opacity: 0;
-    transform: scaleY(1);
-  }
-}
-@media (max-width: 960px) {
-  .v14-channel {
-    left: 0;
-  }
-}
+/* 换页：用户 2026-10-04 决定不要任何换页特效（整屏亮光与扫描线都已删除），内容沿用原有淡入。 */
 
 /* ---------- 材质 ---------- */
 .v14 .m-panel {
@@ -139,11 +148,11 @@
 }
 .v14 .m-lcd {
   border-radius: var(--r);
-  box-shadow: 0 0 0 3px #1b2540, inset 0 2px 7px rgba(0, 0, 0, 0.32);
+  box-shadow: 0 0 0 3px var(--hw-bezel), inset 0 2px 7px rgba(0, 0, 0, 0.32);
 }
 .v14 .lcd2 {
-  border-radius: 8px;
-  box-shadow: inset 0 0 0 2px #1b2540, inset 0 3px 6px rgba(0, 0, 0, 0.28);
+  border-radius: var(--r-s);
+  box-shadow: inset 0 0 0 2px var(--hw-bezel), inset 0 3px 6px rgba(0, 0, 0, 0.28);
 }
 .v14 .m-lcd::before,
 .v14 .lcd2::before {
@@ -172,12 +181,19 @@
   overflow: visible;
 }
 .lcd-num .on rect {
-  animation: v14-pxon 0.26s steps(2) both;
+  animation: v14-pxon var(--t-mid) steps(2) both;
   animation-delay: calc(var(--c) * 14ms);
 }
 @keyframes v14-pxon {
   from {
     opacity: 0;
+  }
+}
+
+/* 状态灯闪烁（当前关卡、选中角色标记等） */
+@keyframes v14-pulse {
+  50% {
+    opacity: 0.35;
   }
 }
 
@@ -225,7 +241,7 @@
   margin: -5px 0 0 -5px;
   pointer-events: none;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
-  animation: v14-ripple 0.45s steps(5) forwards;
+  animation: v14-ripple var(--t-slow) steps(5) forwards;
 }
 @keyframes v14-ripple {
   to {
@@ -266,19 +282,19 @@
 .v14-shell {
   position: relative;
   padding: 12px;
-  border-radius: 22px;
-  background: linear-gradient(160deg, #1d2b4a 0%, #121d35 45%, #0c1427 100%);
+  border-radius: var(--r-xl);
+  background: linear-gradient(160deg, var(--hw-bezel) 0%, var(--panel-2) 45%, var(--hw-deep) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09),
     inset 0 -2px 0 rgba(0, 0, 0, 0.35),
-    0 3px 0 #050913,
+    0 3px 0 var(--hw-pit),
     0 18px 30px -22px rgba(0, 0, 0, 0.95);
 }
 .v14-shell::before {
   content: "";
   position: absolute;
   inset: 5px;
-  border-radius: 18px;
+  border-radius: var(--r-l);
   pointer-events: none;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035), inset 0 1px 0 rgba(0, 0, 0, 0.4);
 }
@@ -287,7 +303,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #4a5a7d, #1a2337);
+  background: radial-gradient(circle at 35% 35%, var(--hw-key), var(--hw-key-2));
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
 .v14-shell .screw::after {
@@ -323,17 +339,17 @@
   z-index: 2;
   transform: translateY(-50%);
   padding: 2px 8px;
-  border-radius: 5px;
-  background: #0b1222;
+  border-radius: var(--r-xs);
+  background: var(--hw-deep);
   box-shadow: inset 0 0 0 1px var(--line-2);
-  font: 700 10px var(--mono);
+  font: 700 var(--fs-micro) var(--mono);
   letter-spacing: 0.18em;
   color: var(--muted);
 }
 .v14-zscreen {
   position: relative;
-  background: #0b1324;
-  border-radius: 13px;
+  background: var(--hw-deep);
+  border-radius: var(--r);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5), inset 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
@@ -350,7 +366,7 @@
   font-family: var(--mono);
   font-weight: 800;
   letter-spacing: 0.02em;
-  border-radius: 9px;
+  border-radius: var(--r-s);
   background: rgba(255, 255, 255, 0.03);
   box-shadow: inset 0 0 0 1px currentColor;
 }
@@ -391,7 +407,7 @@
   font-size: var(--fs-page);
   line-height: 1.1;
   letter-spacing: 0.01em;
-  background: linear-gradient(180deg, #ffffff, #c9d7ff);
+  background: linear-gradient(180deg, #fff, var(--text-hi));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -400,6 +416,23 @@
   margin-top: var(--s-2);
   font-size: var(--fs-body);
   max-width: 640px;
+}
+/* 页内访问 / 隐私说明（Claude 165 页头减负）：边界已进页头标签，这里降为一行灰色注释；全文保留、不截断、不折叠。 */
+:is(.v14, .page-silver) .subtle-notice:not(.reverse-issues) {
+  max-width: 80ch;
+  margin: calc(var(--s-3) * -1) 0 var(--s-5);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: var(--fs-small);
+  line-height: 1.6;
+}
+:is(.v14, .page-silver) .subtle-notice:not(.reverse-issues) svg {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  color: var(--muted);
 }
 
 /* ---------- 徽标：方形状态灯 ---------- */
@@ -416,23 +449,10 @@
   content: "";
 }
 .v14 .maturity {
-  border-radius: 7px;
+  /* 原值 7px：成熟度标签出现在资产仓库页头，保持该页逐像素不变。 */
+  border-radius: calc(var(--r-s) - 1px);
   font: 700 var(--fs-label) / 1.9 var(--mono);
   letter-spacing: 0.04em;
-}
-
-/* ---------- 区块标题编号块 ---------- */
-.v14 .v14-idx {
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  font: 800 var(--fs-label) var(--mono);
-  color: var(--bg);
-  background: var(--cyan);
-  box-shadow: 0 0 12px rgba(77, 227, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.25);
 }
 
 /* ---------- 抽屉：像素阶梯擦入，内容错峰浮起 ---------- */
@@ -451,8 +471,7 @@
 /* ---------- 减少动态效果：全部停 ---------- */
 @media (prefers-reduced-motion: reduce) {
   .v14-motes,
-  .v14-ripple,
-  .v14-channel {
+  .v14-ripple {
     display: none;
   }
   .v14 .sweep::after,
@@ -519,6 +538,198 @@
     justify-content: flex-start;
   }
   .v14 .page-heading h1 {
-    font-size: 30px;
+    font-size: var(--fs-page-narrow);
   }
+}
+
+/* 派单155：共享导航的命中区统一为44px；原生导航滚动保留。 */
+.sidebar .nav-item { min-height: 44px; }
+/* Claude 165：矮窗口里导航被伙伴屏截断时没有任何提示。底部加一段渐隐，并留出同高的内边距，
+   滚到底时最后一项完整露出。伙伴屏尺寸不动（1000px 高每点 4px，由 partner-browser 守护）。 */
+@media (min-width: 961px) {
+  .sidebar .nav {
+    padding-bottom: 28px;
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  }
+}
+
+/* ---------- 页头边界标签（UI v15）：把“只读 / 只存本机 / 需授权”收成一行小标签 ---------- */
+.page-bounds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: calc(var(--s-4) * -1) 0 var(--s-6);
+  padding: 0;
+  list-style: none;
+}
+.page-bounds li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-label);
+  color: var(--text-2);
+  background: rgba(140, 178, 255, 0.06);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.page-bounds li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--lcd);
+  box-shadow: 0 0 6px var(--lcd);
+}
+.page-bounds li.gate::before {
+  background: var(--muted);
+  box-shadow: none;
+}
+
+/* ---------- 全站细节（Claude 165，按 Awwwards / FWA 级产品界面的细节要求自检后补齐） ----------
+   排版：标题防孤字换行，段落避免末行只剩一两个字；计数、时间、徽标用等宽数字，数字变化时不跳动。
+   资产仓库是品质标杆页，不参与会改变排版的规则。 */
+.main-content:not(.page-assets) :is(h1, h2, h3) {
+  text-wrap: balance;
+}
+.main-content:not(.page-assets) :is(p, li, dd) {
+  text-wrap: pretty;
+}
+.main-content:not(.page-assets) :is(small, time, .count, .badge, [role="radio"] span),
+.nav-count {
+  font-variant-numeric: tabular-nums;
+}
+.main-content a {
+  text-underline-offset: 3px;
+}
+.main-content :is(input, textarea) {
+  caret-color: var(--cyan);
+}
+:root {
+  scrollbar-color: var(--line-3) transparent;
+}
+.main-content [role="radio"],
+.main-content [role="tab"] {
+  transition: color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+
+/* ---------- 排版（Claude 165 获奖级自检第 1 批，依据全站测量 audit.mjs） ----------
+   1. 中英文混排自动留出间距（已手动加空格处不重复）；不支持的浏览器照常显示。
+   2. 正文段落行宽不超过约 44 个汉字（测量时有段落一行 80–92 字）。
+   3. 可读文字不小于 12px：测量列出的 11–11.67px 非等宽文字逐一提到 --fs-small；等宽液晶读数不在此列。 */
+html {
+  text-autospace: normal;
+}
+.main-content p {
+  max-width: 44em;
+}
+.page-bounds li,
+.main-content .badge,
+.page-silver .maturity,
+.reverse-card-select small,
+.m-panel.sheen small,
+.recent-main small,
+.zone-trend small,
+.zone-metric small,
+.card-tags span,
+.card-type {
+  font-size: var(--fs-small);
+}
+
+/* ---------- 微交互（Claude 165 获奖级自检第 1 批）：同类元素同一手感 ----------
+   容器卡片：悬停或键盘聚焦其中元素时边框提亮（用 outline，不动原有材质阴影）。
+   整张可点的卡片：再上浮 2px；系统“减少动态效果”时不位移。 */
+.v14 :is(.note-card, .triage-row, .archive-node, .learn-link, .hot-list > li.news-story) {
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+  transition: outline-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease);
+}
+.v14 :is(.note-card, .triage-row, .archive-node, .learn-link):is(:hover, :focus-within) {
+  outline-color: var(--line-3);
+}
+.v14 .hot-list > li.news-story:is(:hover, :focus-within) {
+  background-color: color-mix(in srgb, var(--text) 2%, transparent);
+}
+.v14 .reverse-card-select {
+  transition: transform var(--t-mid) var(--ease), box-shadow var(--t-mid) var(--ease);
+}
+.v14 .reverse-card-select:hover {
+  transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .v14 .reverse-card-select:hover {
+    transform: none;
+  }
+}
+.archive-assets small {
+  font-size: var(--fs-small);
+}
+
+/* ---------- 留白节奏（Claude 165 获奖级自检第 2 批，依据 audit.mjs 区块间距测量） ----------
+   页面里的大区块之间统一 48（--s-7）：此前同类间距在 28 / 36 / 48 之间不一。 */
+.v14 .inbox-section {
+  margin-bottom: var(--s-7);
+}
+.v14 .reverse-workbench {
+  margin-bottom: var(--s-7);
+}
+.v14 .section-title h2 {
+  font-size: var(--fs-section);
+}
+
+/* ---------- 悬停反馈补齐（Claude 165 获奖级自检第 3 批，依据 audit.mjs 的“悬停无反馈”清单） ----------
+   原则：每个可交互元素悬停都有可见变化；“减少动态效果”时用颜色 / 描边代替位移，反馈不消失。 */
+.main-content :is([role="radio"][aria-checked="false"], [aria-pressed="false"]):hover {
+  color: var(--text);
+  background-color: color-mix(in srgb, var(--text) 5%, transparent);
+}
+.main-content summary {
+  transition: color var(--t-fast) var(--ease);
+}
+.main-content summary:hover,
+.main-content .archive-asset:hover,
+.main-content .reverse-add:hover {
+  color: var(--text);
+}
+.main-content .archive-asset:hover {
+  background-color: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.main-content:not(.page-assets) a[href]:not(.button):hover {
+  text-decoration-color: currentColor;
+}
+.v14 .reverse-card-select {
+  border-radius: var(--r-s);
+  outline: 1px solid transparent;
+  outline-offset: 4px;
+}
+.v14 .reverse-card-select[aria-checked="false"]:hover {
+  outline-color: var(--line-3);
+  background-color: transparent;
+}
+.v14 .dv-key:hover {
+  background: radial-gradient(circle, color-mix(in srgb, var(--cyan) 28%, transparent), transparent 70%);
+}
+.calendar-v14 .cal-marker-hit:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.calendar-v14 .cal-toggle button:hover:not([aria-checked="true"]) {
+  color: var(--text);
+}
+.v14 .manage-row.pin:hover,
+.v14 .manage-row.pin.fog:hover,
+.v14 .manage-row.system-row:hover {
+  background-color: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.v14 .digivice-poke:hover {
+  background: radial-gradient(circle, color-mix(in srgb, var(--cyan) 18%, transparent), transparent 70%);
+}
+.main-content:not(.page-assets) a[href]:not(.button):hover {
+  color: var(--cyan);
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+}
+.calendar-v14 .cal-selected :is(.cal-block, .cal-meeting, .cal-allday):hover,
+.calendar-v14 .cal-allday-chip:hover {
+  background-color: color-mix(in srgb, var(--text) 5%, transparent);
 }

@@ -1,3 +1,4 @@
+import {authorizeCapability} from './capability-fixture.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, writeFile, chmod, stat } from "node:fs/promises";
@@ -9,6 +10,7 @@ const original = `# 合成配置，保留注释\nmodel = "${sentinel}"\n[tui]\na
 
 async function fixture(t) {
   const app = await copyFixture();
+  await authorizeCapability(app,'agent');
   t.after(() => app.close());
   const path = join(app.home, "config.toml");
   await writeFile(path, original);

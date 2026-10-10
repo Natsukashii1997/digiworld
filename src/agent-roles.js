@@ -93,32 +93,3 @@ export function inferProjects(state, agentId) {
     .map((p) => p.name);
 }
 
-// 派活推荐：擅长关键词在任务描述中出现（英文不区分大小写）即命中，按命中数排序，
-// 同分按成本从低到高，再按卡片顺序；最多 2 个，无命中不推荐。
-export function recommendAgents(description, cards, limit = 2) {
-  const text = String(description || "").toLowerCase();
-  if (!text.trim()) return [];
-  return cards
-    .map((card, order) => {
-      const matched = card.strengths.filter((s) => text.includes(s.toLowerCase()));
-      return {
-        agentId: card.agentId,
-        name: card.name,
-        tier: card.tier,
-        cost: card.cost,
-        matched,
-        score: matched.length,
-        order,
-        reason: `命中擅长：${matched.join("、")}；成本${COST_LABEL[card.cost] || "未知"}`,
-      };
-    })
-    .filter((r) => r.score > 0)
-    .sort(
-      (a, b) =>
-        b.score - a.score ||
-        (COST_RANK[a.cost] ?? 3) - (COST_RANK[b.cost] ?? 3) ||
-        a.order - b.order,
-    )
-    .slice(0, limit)
-    .map(({ order, ...rest }) => rest);
-}

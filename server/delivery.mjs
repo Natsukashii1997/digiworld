@@ -5,9 +5,15 @@ import {
   inspectSkill,
   fileBytes,
 } from "../src/skill-package.js";
+import { materializeSkillVersion } from "../src/skill-version.js";
+import { skillMediaReader } from "./skill-version-media.mjs";
 import { digest, failure } from "./repository.mjs";
 
-export function createDeliveries(repository, clock = Date.now) {
+export function createDeliveries(
+  repository,
+  clock = Date.now,
+  { readMedia = skillMediaReader(repository) } = {},
+) {
   const records = new Map();
   const prune = () => {
     for (const [id, record] of records)
@@ -33,16 +39,18 @@ export function createDeliveries(repository, clock = Date.now) {
       const asset = await availableAsset(assetId);
       const version = asset.versions.find((v) => v.id === versionId);
       if (!version) throw failure("版本不存在，请刷新资产", 404);
-      let bytes, info;
+      let bytes, info, files;
       try {
-        bytes = buildSkillZip(version.files);
-        info = inspectSkill(version.files);
+        const value = await materializeSkillVersion(version, { readMedia });
+        files = value.files;
+        bytes = buildSkillZip(files);
+        info = inspectSkill(files);
       } catch (error) {
         throw failure(error.message);
       }
       // Verify the produced ZIP against the immutable source, not a UI preview.
       const unpacked = unzipSync(bytes);
-      const manifest = version.files
+      const manifest = files
         .map((f) => {
           const path = f.path + (f.directory ? "/" : ""),
             data = fileBytes(f);
@@ -84,7 +92,7 @@ export function createDeliveries(repository, clock = Date.now) {
         deadline,
         zipHash: digest(bytes),
         packageHash: digest(JSON.stringify(manifest)),
-        fileCount: version.files.length,
+        fileCount: files.length,
         size: bytes.length,
         copiedAt: null,
         downloads: 0,

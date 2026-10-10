@@ -1,3 +1,6 @@
+import {enterNew175,replace175,visible175} from "./notes-editor-helpers175.mjs";
+import {openLegacyInput,openReferenceTools} from './reverse-v16-helpers.mjs';
+import {openManualRelay} from "./agents-v16-helpers.mjs";
 import { fixture } from "./fixture.mjs";
 const app = await fixture();
 import { createRequire } from "node:module";
@@ -55,7 +58,7 @@ try {
   assert.equal(await page.locator(".asset-card").count(), 2);
   await page.getByLabel("在资产中搜索").fill("");
   ok("分类、置顶和搜索过滤");
-  await page.getByRole("button", { name: "新建资产", exact: true }).click();
+  await page.getByRole("button", { name: "新建", exact: true }).click();
   await page.getByRole("button", { name: "Prompt", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("测试：我的提示词");
   await page.getByLabel("一句话说明").fill("验证创建、版本和持久化");
@@ -96,20 +99,17 @@ try {
     fullPage: false,
   });
   ok("编辑追加版本，历史恢复生成第三版");
-  await page.getByRole("button", { name: "归档资产", exact: true }).click();
-  await page.getByRole("button", { name: "版本归档", exact: true }).click();
-  await page.getByRole("button", { name: "恢复资产", exact: true }).click();
-  await page.getByRole("button", { name: /^资产仓库/ }).click();
-  await page
-    .getByRole("button", { name: "查看 测试：我的提示词", exact: true })
-    .waitFor();
-  ok("归档与恢复保留内容和版本");
+  await page.keyboard.press("Escape");
+  await page.getByRole("dialog", { name: "资产详情" }).waitFor({ state: "detached" });
+  await page.getByRole('button',{name:'删除 测试：我的提示词',exact:true}).waitFor();
+  await page.getByRole('button',{name:'查看 测试：我的提示词',exact:true}).waitFor();
+  ok("资产卡提供直接删除入口，历史版本仍可查看");
   const packageBytes = zipSync({
     "sample/SKILL.md": strToU8("# Sample\n完整包测试"),
     "sample/references/中文.md": strToU8("参考文件"),
     "sample/assets/binary.bin": new Uint8Array([0, 1, 2, 255]),
   });
-  await page.getByRole("button", { name: "新建资产", exact: true }).click();
+  await page.getByRole("button", { name: "新建", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("测试完整 Skill");
   await page.locator("input[type=file]").setInputFiles({
     name: "sample.zip",
@@ -136,7 +136,7 @@ try {
   );
   await close();
   ok("ZIP 导入导出：中文路径与二进制文件完整往返");
-  await page.getByRole("button", { name: "新建资产", exact: true }).click();
+  await page.getByRole("button", { name: "新建", exact: true }).click();
   const invalid = zipSync({ "README.md": strToU8("no skill") });
   await page.locator("input[type=file]").setInputFiles({
     name: "bad.zip",
@@ -150,8 +150,9 @@ try {
   await close();
   ok("缺少 SKILL.md 的包明确拒绝");
   await go("notes");
-  await page.getByLabel("随手记内容").fill("一个值得保留的想法。");
-  await page.getByRole("button", { name: "留下这个想法" }).click();
+  await enterNew175(page);
+  await replace175(page,"一个值得保留的想法。");
+  await page.getByRole("button", { name: "贴上" }).click();
   await page
     .getByRole("status")
     .filter({ hasText: "已保存本地随手记" })
@@ -159,27 +160,28 @@ try {
   await page.getByText("一个值得保留的想法。", { exact: true }).waitFor();
   await page.reload();
   await page.getByText("一个值得保留的想法。", { exact: true }).waitFor();
-  await page.getByRole("button", { name: "编辑", exact: true }).click();
-  await page.getByLabel("随手记内容").fill("修改后的想法。");
+  const savedNote = (await app.repository.read()).notes.find((n) => n.text === "一个值得保留的想法。");
+  await page.locator(`[data-note-id="${savedNote.id}"] .sn-body`).click();
+  await replace175(page,"修改后的想法。");
   await page.getByRole("button", { name: "保存修改", exact: true }).click();
   await page.getByText("修改后的想法。", { exact: true }).waitFor();
   ok("随手记创建、编辑、刷新持久化");
   await go("projects");
 
-  await page.getByRole("button", { name: /已关联 1/ }).waitFor();
+  await page.getByRole("radio", { name: /^已关联\s*1$/ }).waitFor();
   assert.equal(await page.locator(".project-discovery-row").count(), 3);
   assert.equal(app.calls.projects, 1);
-  await page.getByRole("button", { name: /已关联 1/ }).click();
+  await page.getByRole("radio", { name: /^已关联\s*1$/ }).click();
   assert.equal(await page.locator(".project-discovery-row").count(), 1);
-  await page.getByRole("button", { name: /全部 3/ }).click();
+  await page.getByRole("radio", { name: /^全部\s*3$/ }).click();
   await page.screenshot({
     path: "test-results/03-projects.png",
     fullPage: true,
   });
   await page.reload();
-  await page.getByRole("button", { name: /已关联 1/ }).waitFor();
+  await page.getByRole("radio", { name: /^已关联\s*1$/ }).waitFor();
   assert.equal(app.calls.projects, 1);
-  await page.getByRole("button", { name: "扫描目录", exact: true }).click();
+  await page.getByRole("button", { name: "项目空间设置", exact: true }).click();
   await page.getByLabel("本地项目目录（每行一个绝对路径）").waitFor();
   assert.match(
     await page.getByLabel("本地项目目录（每行一个绝对路径）").inputValue(),
@@ -188,13 +190,16 @@ try {
   await close();
   ok("项目首次自动扫描、同源关联、筛选、持久化；刷新不重复扫描");
   await go("agents");
+  await page.getByRole("button", {name:"这页怎么用",exact:true}).click();
+  await page.getByRole("button", {name:"全部本机入口",exact:true}).click();
   await page.getByRole("button", { name: /已检测 2/ }).waitFor();
   assert.equal(await page.locator(".agent-discovery-card").count(), 2);
   assert.equal(app.calls.agents, 1);
   await page.getByRole("button", { name: /配置痕迹 1/ }).click();
   assert.equal(await page.locator(".agent-discovery-card").count(), 1);
   await page.getByRole("button", { name: /已检测 2/ }).click();
-  await page.getByRole("button", { name: "上下文接力" }).click();
+  await close();
+  await openManualRelay(page);
   await page.getByLabel("当前目标").fill("接续测试");
   await page.getByLabel("已确认事实与成果指针").fill("测试通过");
   await page.getByLabel("唯一下一步").fill("检查报告");
@@ -207,23 +212,17 @@ try {
   await page.screenshot({ path: "test-results/04-agents.png", fullPage: true });
   ok("Agent 自动检测、配置痕迹区分与人工编写接力包");
   await go("night");
-  await page.getByLabel("允许处理的内容").fill("只读检查指定资料");
-  await page.getByRole("button", { name: "保存计划草稿" }).click();
-  await page
-    .getByRole("status")
-    .filter({ hasText: "夜间计划已保存为草稿" })
-    .waitFor();
-  await page.reload();
-  await page.getByLabel("允许处理的内容").waitFor();
-  assert.equal(
-    await page.getByLabel("允许处理的内容").inputValue(),
-    "只读检查指定资料",
-  );
+  await page.locator('[data-testid="night-v2"]').waitFor();
+  await page.locator('[data-testid="night-loading"]').waitFor({ state: "hidden" });
+  assert.equal(await page.locator('[data-testid="night-library"] [data-chip-id]').count(), 7);
+  assert.equal(await page.locator('[data-testid^="night-slot-"]').count(), 4);
+  assert.equal(await page.locator('.night-v1-legacy, .night-v14, .nv-legacy').count(), 0);
+  assert.equal(await page.getByRole("button", { name: "编辑夜巡草稿", exact: true }).count(), 0);
   await page.screenshot({ path: "test-results/05-night.png", fullPage: true });
-  ok("夜间计划只保存草稿，刷新保留");
+  ok("夜巡新版芯片与四槽可见，旧版草稿入口已移除");
   await go("knowledge");
-  await page.getByRole("heading", { name: "尚未连接知识源" }).waitFor();
-  await page.getByRole("button", { name: "连接知识源", exact: true }).click();
+  await page.getByRole("button", { name: "接入第一个知识库", exact: true }).waitFor();
+  await page.getByRole("button", { name: "接入知识库", exact: true }).first().click();
   await page.getByLabel("目录绝对路径", { exact: true }).waitFor();
   assert.equal(
     await page
@@ -244,6 +243,7 @@ try {
   });
   ok("知识库未连接状态、明确目录与未勾选的只读确认");
   await go("references");
+  await openReferenceTools(page);
   await page.getByRole("button", { name: "保存参考", exact: true }).click();
   await page.getByLabel("参考名称").fill("Apple 设计参考");
   await page.getByLabel("来源链接").fill("https://www.apple.com/");
@@ -265,25 +265,22 @@ try {
   assert.equal(await page.getByRole("dialog").count(), 0);
   ok("全局搜索快捷键、详情跳转、Escape 关闭");
   await go("settings");
-  await page.getByLabel("提供商").fill("测试提供商");
-  await page.getByLabel("模型 ID").fill("test-model");
-  await page.getByRole("button", { name: "保存配置草稿" }).click();
-  await page
-    .getByRole("status")
-    .filter({ hasText: "模型配置草稿已保存" })
-    .waitFor();
+  assert.equal(await page.getByRole("radio",{name:"授权与安全",exact:true}).getAttribute("aria-checked"),"true");
+  await page.getByRole("button",{name:"配置模型连接",exact:true}).click();
+  assert.equal(await page.getByText("模型连接意向草稿",{exact:true}).count(),0);
+  await page.getByRole("region",{name:"真实模型连接",exact:true}).waitFor();
   await page.reload();
-  await page.getByLabel("模型 ID").waitFor();
-  assert.equal(await page.getByLabel("模型 ID").inputValue(), "test-model");
-  await page.getByRole("button", { name: "移除示例", exact: true }).click();
-  await page.getByRole("button", { name: "确认移除", exact: true }).click();
-  await page
-    .getByRole("status")
-    .filter({ hasText: "已移除未被引用的示例" })
-    .waitFor();
+  await page.getByRole("button",{name:"配置模型连接",exact:true}).click();
+  await page.getByRole("region",{name:"真实模型连接",exact:true}).waitFor();
+  await page.getByRole("dialog").getByRole("button",{name:"关闭",exact:true}).click();
+  await page.getByRole("radiogroup",{name:"设置分类"}).getByRole("radio",{name:"数据与备份",exact:true}).click();
+  assert.equal(await page.getByRole("button", { name: "移除示例", exact: true }).count(), 0);
+  const beforeHideDemos = await app.repository.read();
+  await app.repository.write({ ...beforeHideDemos, assets: beforeHideDemos.assets.map(asset => asset.demo ? { ...asset, archived: true } : asset) });
   await go("assets");
+  await page.reload();
   assert.equal(await page.locator(".asset-card").count(), 2);
-  ok("配置草稿保存；清除演示保留用户资产");
+  ok("授权默认分类与真实模型入口；旧示例归档数据不进入仓库列表");
   const fresh = await browser.newContext({
     viewport: { width: 390, height: 844 },
     reducedMotion: "reduce",
@@ -294,7 +291,7 @@ try {
   const mobile = await fresh.newPage();
   mobile.on("pageerror", (e) => errors.push(e.message));
   await mobile.goto(app.url + "/#assets");
-  await mobile.getByRole("heading", { name: "资产仓库", exact: true }).waitFor();
+  await mobile.getByRole("heading", { name: /^资产仓库/ }).waitFor();
   await mobile.screenshot({
     path: "test-results/07-assets-mobile.png",
     fullPage: true,
@@ -322,7 +319,7 @@ try {
   }
   await mobile.getByRole("button", { name: "打开导航" }).click();
   await mobile.getByRole("button", { name: /^资产仓库/ }).click();
-  await mobile.getByRole("button", { name: "新建资产", exact: true }).click();
+  await mobile.getByRole("button", { name: "新建", exact: true }).click();
   assert.equal(
     await mobile.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -336,7 +333,7 @@ try {
   await mobile.keyboard.press("Escape");
   ok("390px 窄屏：九个页面无横向溢出，移动导航与弹窗可用");
   await go("assets");
-  await page.getByRole("button", { name: "新建资产", exact: true }).click();
+  await page.getByRole("button", { name: "新建", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("未保存的草稿");
   await page.keyboard.press("Meta+k");
   assert.equal(await page.getByRole("dialog").count(), 1);
@@ -357,31 +354,34 @@ try {
   const stale = await context.newPage();
   stale.on("pageerror", (e) => errors.push(e.message));
   await stale.goto(app.url + "/#notes");
-  await stale.getByLabel("随手记内容").waitFor();
-  await page.getByLabel("随手记内容").fill("主标签新增：必须保留");
-  await page.getByRole("button", { name: "留下这个想法" }).click();
+  await enterNew175(stale);
+  await enterNew175(page);
+  await replace175(page,"主标签新增：必须保留");
+  await page.getByRole("button", { name: "贴上" }).click();
   await page
     .getByRole("status")
     .filter({ hasText: "已保存本地随手记" })
     .waitFor();
-  await stale.getByLabel("随手记内容").fill("旧标签未保存：不能覆盖");
-  await stale.getByRole("button", { name: "留下这个想法" }).click();
+  await replace175(stale,"旧标签未保存：不能覆盖");
+  await stale.getByRole("button", { name: "贴上" }).click();
   await stale
     .getByRole("alert")
     .filter({ hasText: "另一个页面已更新" })
     .waitFor();
+  await stale.getByRole("button",{name:"返回失败输入",exact:true}).click();
   assert.equal(
-    await stale.getByLabel("随手记内容").inputValue(),
+    await visible175(stale),
     "旧标签未保存：不能覆盖",
   );
   await page.reload();
   await page
-    .locator(".note-card")
+    .locator(".sn[data-note-id]")
     .filter({ hasText: "主标签新增：必须保留" })
     .waitFor();
   await stale.close();
   ok("多标签冲突阻止覆盖，失败时保留表单，已保存数据不丢失");
   await go("references");
+  await openReferenceTools(page);
   await page.getByRole("button", { name: "保存参考", exact: true }).click();
   await page.getByLabel("参考名称").fill("存储失败验证");
   await page.getByLabel("来源链接").fill("https://example.com");

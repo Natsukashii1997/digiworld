@@ -3,18 +3,18 @@
 /* 1. 实体按键：底边厚度 + 按下沉 3px、底边消失，松开回弹 */
 .button {
   box-shadow:
-    0 3px 0 #b8560a,
+    0 3px 0 var(--orange-deep),
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
     inset 0 -1px 0 rgba(0, 0, 0, 0.15),
     var(--glow-orange);
   transition:
-    transform 0.08s var(--ease),
-    box-shadow 0.08s var(--ease),
-    filter 0.2s;
+    transform var(--t-instant) var(--ease),
+    box-shadow var(--t-instant) var(--ease),
+    filter var(--t-mid);
 }
 .button:hover:not(:disabled) {
   box-shadow:
-    0 3px 0 #b8560a,
+    0 3px 0 var(--orange-deep),
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
     inset 0 -1px 0 rgba(0, 0, 0, 0.15),
     0 10px 30px -8px rgba(255, 138, 36, 0.95);
@@ -22,7 +22,7 @@
 .button:active:not(:disabled) {
   transform: translateY(3px);
   box-shadow:
-    0 0 0 #b8560a,
+    0 0 0 var(--orange-deep),
     inset 0 1px 0 rgba(255, 255, 255, 0.3),
     0 4px 12px -6px rgba(255, 138, 36, 0.8);
 }
@@ -55,7 +55,7 @@
   background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.55) 0 4px, transparent 4px 8px);
   mix-blend-mode: soft-light;
   transform: translateX(-101%);
-  animation: transfer-band 0.5s steps(10) forwards;
+  animation: transfer-band var(--t-slow) steps(10) forwards;
   pointer-events: none;
 }
 @keyframes transfer-band {
@@ -65,8 +65,8 @@
 }
 .button.is-transferred {
   box-shadow:
-    0 3px 0 #6f7d58,
-    0 0 0 2px #1b2540,
+    0 3px 0 var(--lcd-mid),
+    0 0 0 2px var(--hw-bezel),
     0 0 18px rgba(166, 227, 110, 0.55);
 }
 .transfer-lcd {
@@ -75,9 +75,9 @@
   z-index: 2;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 50% 30%, #d6e8b4, #aebc93);
+  background: radial-gradient(circle at 50% 30%, var(--lcd-hi), var(--lcd-screen));
   pointer-events: none;
-  animation: transfer-lcd-in 0.3s steps(3);
+  animation: transfer-lcd-in var(--t-mid) steps(3);
 }
 .transfer-lcd canvas {
   display: block;
@@ -141,8 +141,8 @@
   bottom: 10px;
   z-index: 3;
   padding: 2px 6px;
-  border-radius: 4px;
-  font: 700 10px var(--mono);
+  border-radius: var(--r-xs);
+  font: 700 var(--fs-micro) var(--mono);
   letter-spacing: 0.14em;
   color: var(--orange-ink);
   background: var(--orange);
@@ -178,7 +178,7 @@
 .odo-digit.roll .odo-old,
 .odo-digit.roll .odo-new {
   display: block;
-  animation: odo-in 0.45s var(--ease-back) both;
+  animation: odo-in var(--t-slow) var(--ease-back) both;
 }
 .odo-digit.roll .odo-old {
   position: absolute;
@@ -197,7 +197,7 @@
 }
 .nav-count .odometer.is-rolling,
 .topbar .nav-count:has(.is-rolling) {
-  animation: count-bump 0.45s var(--ease-back);
+  animation: count-bump var(--t-slow) var(--ease-back);
 }
 @keyframes count-bump {
   40% {
@@ -209,9 +209,9 @@
 .toast.tone-success {
   color: var(--lcd-ink);
   border-color: rgba(166, 227, 110, 0.6);
-  background: radial-gradient(circle at 50% 30%, #d6e8b4, #aebc93);
+  background: radial-gradient(circle at 50% 30%, var(--lcd-hi), var(--lcd-screen));
   box-shadow:
-    0 0 0 3px #1b2540,
+    0 0 0 3px var(--hw-bezel),
     0 18px 44px -12px rgba(0, 0, 0, 0.8);
 }
 .toast.tone-success .toast-text {
@@ -219,13 +219,13 @@
   letter-spacing: 0.02em;
 }
 .toast.tone-success .toast-text small {
-  color: #3d4a2c;
+  color: var(--lcd-shade);
 }
 .toast.tone-success .toast-mark {
   background: transparent;
 }
 .toast.tone-success > button {
-  color: #3d4a2c;
+  color: var(--lcd-shade);
 }
 .pixel-check {
   display: block;
@@ -255,7 +255,7 @@
   left: 100%;
   top: 50%;
   transform: translateY(-50%);
-  font: 600 10px var(--mono);
+  font: 600 var(--fs-micro) var(--mono);
   color: var(--muted);
 }
 .dv-key:active {
@@ -282,7 +282,7 @@
   right: 100%;
 }
 .digivice-art.lit .digivice-lcd {
-  background: radial-gradient(circle at 50% 40%, #d9fbe9, #8fe3c4);
+  background: radial-gradient(circle at 50% 40%, var(--mint), var(--mint-2));
   box-shadow:
     inset 0 2px 6px rgba(0, 0, 0, 0.2),
     0 0 26px rgba(77, 227, 255, 0.55);
@@ -292,7 +292,7 @@
   right: 6%;
   bottom: 5%;
   z-index: 3;
-  font: 600 9px -apple-system, "PingFang SC", sans-serif;
+  font: 600 var(--fs-micro) -apple-system, "PingFang SC", sans-serif;
   color: var(--lcd-ink);
   opacity: 0.85;
 }

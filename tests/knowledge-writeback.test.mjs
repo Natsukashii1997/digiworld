@@ -1,3 +1,4 @@
+import {authorizeCapability} from './capability-fixture.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -21,6 +22,7 @@ async function fixture(run) {
       })
     ).body;
     const source = state.connections.knowledgeSources[0];
+    await authorizeCapability(f,'vault',{sourceId:source.id,notesFolder:'00 待整理',profileFolders:[]});
     const scan = (await f.call("/knowledge/scan", { sourceId: source.id }))
       .body;
     const selected = {

@@ -53,6 +53,8 @@ test("助手输出解析：只接受约定形状，异常输出一律拒绝", ()
   assert.equal(ok.ok, true);
   assert.deepEqual(ok.events, [event]);
   assert.equal(ok.access.reminders, "denied");
+  const longNotes = parseHelperOutput(JSON.stringify({ ok: true, events: [{ ...event, notesOverflow: true }] }));
+  assert.equal(longNotes.events[0].notesOverflow, true);
   const todo = { id: "rm-1", title: "交报告", completed: false, due: null, modified: at(8) };
   assert.deepEqual(parseHelperOutput(JSON.stringify({ ok: true, reminders: [todo], list: "工作台" })).reminders, [todo]);
   const conflict = parseHelperOutput(JSON.stringify({ ok: false, error: "conflict", message: "已被修改", current: event }));
@@ -71,6 +73,8 @@ test("助手输出解析：只接受约定形状，异常输出一律拒绝", ()
     JSON.stringify({ ok: true, events: [{ ...event, title: "x".repeat(2001) }] }),
     JSON.stringify({ ok: true, events: "none" }),
     JSON.stringify({ ok: true, reminders: [{ ...todo, completed: "no" }] }),
+    JSON.stringify({ ok: true, deleted: true }),
+    JSON.stringify({ ok: true, found: true }),
     JSON.stringify({ ok: false, error: "boom" }),
   ])
     assert.throws(() => parseHelperOutput(bad), /助手输出/, bad);
@@ -84,6 +88,19 @@ test("回读核对：逐字段比较写入值与回读值", () => {
   assert.deepEqual(reconcile(want, { ...want, title: "别的" }).differences, ["title"]);
   assert.deepEqual(reconcile({ completed: true }, { completed: false }).differences, ["completed"]);
   assert.deepEqual(reconcile({ due: null }, { due: at(9) }).differences, ["due"]);
+});
+
+test("系统日历已有超长备注不拖垮整周读取，改标题也不覆盖备注", async () => {
+  const original = "长备注".repeat(1000);
+  const stub = createStubHelper({ events: [{ id: "long", calendar: "工作台", workbench: true,
+    title: "原计划", start: at(9), end: at(10), allDay: false, modified: at(8), notes: original }] });
+  const cal = service(stub);
+  const week = await cal.week({ from: at(0), to: at(0, 0, 31) });
+  assert.equal(week.events[0].notesOverflow, true);
+  assert.equal(week.events[0].notes, undefined);
+  const changed = await cal.updateBlock({ id: "long", expectedModified: at(8), title: "新计划", start: at(9), end: at(10) });
+  assert.equal(changed.check.matches, true);
+  assert.equal(stub.store.events[0].notes, original);
 });
 
 test("未授权：读取返回需要授权，写入被拒绝；申请权限只在显式调用时发生", async () => {
@@ -104,6 +121,16 @@ test("未授权：读取返回需要授权，写入被拒绝；申请权限只�
   const granted = await cal.requestAccess();
   assert.equal(granted.access.calendar, "authorized");
   assert.equal(stub.calls.filter((c) => c.command === "request-access").length, 1);
+});
+
+test("系统拒绝完全访问时申请权限不能虚报成功", async () => {
+  const helper = createCalendarHelper({ platform: "darwin", run: async command => ({ stdout: JSON.stringify(
+    command === "request-access"
+      ? { ok: false, error: "failed", message: "日历授权未完成：系统没有授予完全访问", access: { calendar: "notDetermined", reminders: "authorized" } }
+      : { ok: true, access: { calendar: "notDetermined", reminders: "authorized" } },
+  ) + "\n" }) });
+  await assert.rejects(createCalendar({ helper }).requestAccess(), error =>
+    error.status === 409 && /日历授权未完成/.test(error.message));
 });
 
 test("规划块：输入校验，写入“工作台”日历后回读核对", async () => {
@@ -164,6 +191,49 @@ test("修改规划块：冲突以回读为准并提示；其他日历只读", as
     cal.updateBlock({ id: block.id, title: "缺少版本", start: at(2), end: at(3) }),
     (e) => e.status === 400,
   );
+});
+
+test("规划块备注与受控删除：旧请求保留备注，删除须确认/版本/归属且独立回读", async () => {
+  const stub = createStubHelper({ events: [
+    { id: "outside", calendar: "公司", workbench: false, title: "公司会议", start: at(9), end: at(10), allDay: false, modified: at(8) },
+  ] });
+  const cal = service(stub);
+  const created = await cal.createBlock({ title: "写方案", start: at(11), end: at(12), notes: "第一行\n第二行" });
+  assert.equal(created.block.notes, "第一行\n第二行");
+  assert.equal(created.check.matches, true);
+  const oldUpdate = await cal.updateBlock({ id: created.block.id, expectedModified: created.block.modified, title: "改期", start: at(13), end: at(14) });
+  assert.equal(oldUpdate.block.notes, "第一行\n第二行", "旧调用未提交备注时保留原值");
+  const cleared = await cal.updateBlock({ id: created.block.id, expectedModified: oldUpdate.block.modified, title: "改期", start: at(13), end: at(14), notes: "" });
+  assert.equal(cleared.block.notes, "");
+  assert.equal(cleared.check.matches, true);
+  assert.deepEqual((await cal.checkBlock({ id: cleared.block.id })).state, "present");
+  const writes = stub.writes().length;
+  await assert.rejects(cal.deleteBlock({ id: cleared.block.id, expectedModified: cleared.block.modified }), /二次确认/);
+  await assert.rejects(cal.deleteBlock({ id: cleared.block.id, expectedModified: null, confirmed: true }), /缺少可核对/);
+  await assert.rejects(cal.deleteBlock({ id: "outside", expectedModified: at(8), confirmed: true }), /工作台/);
+  assert.equal(stub.writes().length, writes + 1, "仅直打非工作台 API 到达助手，未实际删除");
+  stub.external.editEvent(cleared.block.id, { title: "外部已改" });
+  const clash = await cal.deleteBlock({ id: cleared.block.id, expectedModified: cleared.block.modified, confirmed: true });
+  assert.equal(clash.conflict, true);
+  assert.equal(clash.block.title, "外部已改");
+  assert.equal((await cal.checkBlock({ id: cleared.block.id })).state, "present");
+  const current = stub.store.events.find(e => e.id === cleared.block.id);
+  const deleted = await cal.deleteBlock({ id: current.id, expectedModified: current.modified, confirmed: true });
+  assert.equal(deleted.deleted, true);
+  assert.equal(deleted.verified, true);
+  assert.equal((await cal.checkBlock({ id: current.id })).state, "absent");
+  await assert.rejects(cal.deleteBlock({ id: current.id, expectedModified: current.modified, confirmed: true }), /找不到/);
+  assert.equal(stub.store.events.some(e => e.id === "outside"), true);
+});
+
+test("删除提交后回读失败保持未知，按 id 查重后不重放", async () => {
+  const stub = createStubHelper();
+  const cal = service(stub);
+  const { block } = await cal.createBlock({ title: "待删", start: at(9), end: at(10) });
+  stub.external.deleteReadbackFailsOnce();
+  await assert.rejects(cal.deleteBlock({ id: block.id, expectedModified: block.modified, confirmed: true }), e => e.unknownResult === true && /结果未知/.test(e.message));
+  assert.equal((await cal.checkBlock({ id: block.id })).state, "absent");
+  assert.equal(stub.writes().filter(c => c.command === "delete-event").length, 1);
 });
 
 test("todo：新建、勾选完成、设提醒时间，写后回读；冲突以回读为准", async () => {
@@ -230,7 +300,7 @@ test("本机小助手脚本存在，使用 EventKit，命令与服务端一致",
   assert.ok(existsSync(HELPER_SCRIPT), HELPER_SCRIPT);
   const source = readFileSync(HELPER_SCRIPT, "utf8");
   assert.match(source, /import EventKit/);
-  for (const command of ["status", "request-access", "events", "create-event", "update-event", "reminders", "create-reminder", "update-reminder"])
+  for (const command of ["status", "request-access", "events", "create-event", "update-event", "lookup-event", "delete-event", "reminders", "create-reminder", "update-reminder"])
     assert.match(source, new RegExp(`"${command}"`), command);
   // 只在“工作台”日历 / 列表里新建和修改。
   assert.match(source, /"工作台"/);
@@ -241,8 +311,8 @@ test("日历页纯函数：周一为周起点、夜巡窗口分段、重叠并�
   const { startOfWeek, ymd, nightSegments, eventsOfDay, snap, localIso, fromLocalInput, toLocalInput } = await import("../src/calendar.js");
   assert.equal(ymd(startOfWeek(new Date(2026, 8, 30))), "2026-09-28", "周三 → 周一");
   assert.equal(ymd(startOfWeek(new Date(2026, 9, 4))), "2026-09-28", "周日仍属本周");
-  assert.deepEqual(nightSegments({ time: "23:00", end: "07:00" }), [[0, 420], [1380, 1440]]);
-  assert.deepEqual(nightSegments({ time: "01:00", end: "05:00" }), [[60, 300]]);
+  assert.deepEqual(nightSegments({ start: "23:00", end: "07:00" }), [[0, 420], [1380, 1440]]);
+  assert.deepEqual(nightSegments({ start: "01:00", end: "05:00" }), [[60, 300]]);
   assert.equal(snap(10 * 60 + 5), 600);
   assert.equal(snap(10 * 60 + 8), 615);
   const day = new Date(2026, 8, 30);

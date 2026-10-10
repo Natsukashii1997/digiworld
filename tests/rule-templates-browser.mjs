@@ -41,7 +41,7 @@ async function confirmWrite(label) {
 try {
   const original = await readFile(agents, "utf8");
   await page.goto(app.url + "/#assets");
-  await page.getByRole("button", { name: "新建资产", exact: true }).click();
+  await page.getByRole("button", { name: "新建", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "规则", exact: true })
@@ -141,7 +141,7 @@ try {
 
   await page.keyboard.press("Escape");
   await page.goto(app.url + "/#inbox");
-  await page
+  await page.getByRole("dialog", {name:"待处理",exact:true})
     .getByText("规则「项目协同协议」有 1 个项目可升级", { exact: true })
     .waitFor();
   await axe();

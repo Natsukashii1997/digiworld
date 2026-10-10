@@ -1,4 +1,5 @@
-// G3 · 智能体群内容清单：展开清单、存入资产仓库（走收录本机 Skill 的预览 → 确认 → 回读）、
+import {agentContentCard} from "./agents-v16-helpers.mjs";
+// G3 · 智能体群内容清单：展开清单；本机 Skill 收录入口已移除，
 // 开关预览不写入、体检摘要与待处理、44px、axe、390 宽无横溢。只用合成 Agent 家目录。
 import { createRequire } from "node:module";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -29,7 +30,7 @@ const detected = (id, name) => ({
 const app = await startServer({
   directory: database,
   port: 0,
-  staticRoot: join(import.meta.dirname, "../dist"),
+  staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
   discovery: {
     defaultRoots: () => [],
     detectAgents: async () => ({
@@ -115,10 +116,8 @@ async function open(width, hash = "agents") {
   await page.locator("main h1").first().waitFor();
   return page;
 }
-const card = (page, name) =>
-  page.locator(".agent-contents-card", {
-    has: page.getByRole("heading", { name, exact: true }),
-  });
+const card = (page) => page.locator(".agent-contents-card").first();
+const chooseGroup = (contents, name) => contents.getByRole("group", { name: "内容分组" }).getByRole("button", { name: new RegExp(`^${name}`) }).click();
 const pendingCount = async (page) =>
   Number(
     (await page.locator(".topbar-inbox").getAttribute("aria-label")).match(/\d+/)[0],
@@ -138,12 +137,16 @@ try {
   // 1. 每个已检测、支持清单的 Agent 一张卡；未展开前不读取、不下结论
   const page = await open(1280);
   const section = page.locator("#agent-contents");
-  await section.getByRole("heading", { name: "内容清单" }).waitFor();
-  assert.equal(await section.locator(".agent-contents-card").count(), 4);
-  assert.match(await card(page, "Claude Code").innerText(), /尚未体检/);
-  assert.equal(reads.length, 0, "未展开前不得读取 Agent 目录");
-  const pendingBefore = await pendingCount(page);
-  ok("四张内容卡；未展开前不读取目录，显示“尚未体检”");
+  for(const [id,name] of [["claude-code","Claude Code"],["codex","Codex"],["hermes","Hermes"],["openclaw","OpenClaw"]]) {
+    const currentCard=await agentContentCard(page,id,name);
+    await section.getByRole("heading",{name:"内容清单",exact:true}).waitFor();
+    assert.equal(await section.locator(".agent-contents-card").count(),1);
+    assert.match(await page.locator(".role-check").innerText(),/未检查/);
+    assert.equal(reads.length,0,`${name} 未展开前不得读取目录`);
+  }
+  await agentContentCard(page,"claude-code","Claude Code");
+  const pendingBefore=await pendingCount(page);
+  ok("四位伙伴分别一张内容卡；未展开零读取");
 
   // 2. 展开 Claude Code：Skill / 配置文件 / 插件 / MCP 分组，来源与仓库比对
   const claude = card(page, "Claude Code");
@@ -160,8 +163,10 @@ try {
     skills.locator(".agent-content-item", {
       has: page.locator(`strong:text-is("${name}")`),
     });
+  await row("shared-writer").locator("summary").click();
   assert.match(await row("shared-writer").innerText(), /共享池链接[\s\S]*当前版本同内容/);
   assert.match(await row("gone-helper").innerText(), /失效链接/);
+  await row("local-notes").locator("summary").click();
   assert.match(await row("local-notes").innerText(), /独立副本[\s\S]*未收录同内容/);
   assert.match(await row("outside-link").innerText(), /外部链接/);
   assert.equal(
@@ -169,14 +174,17 @@ try {
     0,
     "已同内容收录的 Skill 不再提供存入",
   );
+  await chooseGroup(claude,"配置");
   const configs = claude.getByRole("region", { name: "Claude Code · 配置文件" });
   assert.match(await configs.innerText(), /settings\.json[\s\S]*字节/);
   assert.match(await configs.innerText(), /settings\.local\.json[\s\S]*未发现/);
   assert.doesNotMatch(await claude.innerText(), /哨兵/, "不显示配置正文");
+  await chooseGroup(claude,"插件");
   assert.match(
     await claude.getByRole("region", { name: "Claude Code · 插件" }).innerText(),
     /marketplaces/,
   );
+  await chooseGroup(claude,"MCP");
   assert.match(
     await claude.getByRole("region", { name: "Claude Code · MCP" }).innerText(),
     /未读取 · .*配置正文/,
@@ -184,40 +192,46 @@ try {
   ok("展开清单按 Skill/配置文件/插件/MCP 分组；链接分类与仓库比对正确，不显示配置正文");
 
   // 3. 体检摘要与待处理
-  assert.match(await claude.locator(".agent-contents-health").innerText(), /失效链接 1/);
+  assert.match(await page.locator(".role-check").innerText(), /失效链接 1/);
+  await agentContentCard(page,"hermes","Hermes");
   const hermes = card(page, "Hermes");
   await hermes.getByRole("button", { name: "展开清单" }).click();
+  await chooseGroup(hermes,"插件");
   await hermes.getByRole("region", { name: "Hermes · 插件" }).waitFor();
   assert.match(
     await hermes.getByRole("region", { name: "Hermes · 插件" }).innerText(),
     /无法读取 · 没有读取权限/,
   );
+  await chooseGroup(hermes,"Skill");
   assert.match(
     await hermes.locator(".agent-content-item", { has: page.locator('strong:text-is("locked-skill")') }).innerText(),
     /无法读取/,
   );
-  assert.match(await hermes.locator(".agent-contents-health").innerText(), /无法读取 2/);
+  assert.match(await page.locator(".role-check").innerText(), /无法读取 2/);
+  await agentContentCard(page,"codex","Codex");
   const codex = card(page, "Codex");
   await codex.getByRole("button", { name: "展开清单" }).click();
   await codex.getByRole("region", { name: "Codex · Skill" }).locator(".agent-content-item").first().waitFor();
+  const oldSkill=codex.locator(".agent-content-item", { has: page.locator('strong:text-is("codex-old")') });
+  await oldSkill.locator("summary").click();
   assert.match(
-    await codex.locator(".agent-content-item", { has: page.locator('strong:text-is("codex-old")') }).innerText(),
+    await oldSkill.innerText(),
     /第 1 版同内容，落后于第 2 版/,
   );
-  assert.match(await codex.locator(".agent-contents-health").innerText(), /与仓库不一致 1/);
+  assert.match(await page.locator(".role-check").innerText(), /与仓库不一致 1/);
   await page.waitForFunction(
     (n) => Number(document.querySelector(".topbar-inbox").getAttribute("aria-label").match(/\d+/)[0]) === n,
     pendingBefore + 3,
   );
   await page.locator(".topbar-inbox").click();
-  await page.locator("main h1", { hasText: "待处理" }).waitFor();
-  const item = page.locator(".pending-item", { hasText: "Claude Code：1 条失效链接" });
+  await page.getByRole("dialog",{name:"待处理",exact:true}).waitFor();
+  const item = page.locator(".ib-card", { hasText: "Claude Code：1 条失效链接" });
   await item.waitFor();
-  assert.match(await page.locator(".pending-item", { hasText: "Hermes：" }).innerText(), /2 项无法读取/);
-  assert.match(await page.locator(".pending-item", { hasText: "Codex：" }).innerText(), /1 个副本与仓库版本不一致/);
-  await item.click();
+  assert.match(await page.locator(".ib-card", { hasText: "Hermes：" }).innerText(), /2 项无法读取/);
+  assert.match(await page.locator(".ib-card", { hasText: "Codex：" }).innerText(), /1 个副本与仓库版本不一致/);
+  await item.locator(".ib-card-btn").click();
   await page.locator("#agent-contents").waitFor();
-  assert.match(await card(page, "Claude Code").locator(".agent-contents-health").innerText(), /失效链接 1/);
+  assert.match(await page.locator(".role-check").innerText(), /失效链接 1/);
   ok("卡片体检摘要正确；三条问题汇总进顶栏待处理，点击回到智能体群且保留上次结果");
 
   // 4. 开关预览：说明将移动哪条链接，标注需单独授权；不写入任何文件
@@ -246,43 +260,21 @@ try {
   await axe(page, "内容清单展开");
   ok("内容清单控件不小于 44px；展开状态 axe 通过");
 
-  // 6. 存入资产仓库：限定范围 → 扫描 → 预览 → 确认 → 资产详情回读
-  await claude2.getByRole("button", { name: "存入资产仓库：local-notes" }).click();
-  const importer = page.getByRole("dialog", { name: "收录本机 Skill", exact: true });
-  await importer.waitFor();
+  // 6. 展开内容清单只读展示来源，不再从此处进入本机 Skill 收录。
+  assert.equal(await claude2.getByRole("button", { name: /存入资产仓库/ }).count(), 0);
+  assert.equal(await page.getByRole("dialog", { name: "收录本机 Skill", exact: true }).count(), 0);
   assert.equal(
-    await importer.getByLabel("扫描目录").inputValue(),
-    join(fixture.claude, "skills"),
+    (await call("/workspace", undefined, "GET")).assets.some(
+      (a) => a.origin?.location === join(fixture.claude, "skills", "local-notes"),
+    ),
+    false,
   );
-  assert.equal(await importer.getByRole("button", { name: "确认收录" }).isDisabled(), true);
-  await importer.getByRole("button", { name: "扫描目录" }).click();
-  await importer.getByLabel("搜索扫描结果").waitFor();
-  assert.equal(await importer.getByLabel("搜索扫描结果").inputValue(), "local-notes");
-  await importer.getByRole("button", { name: "预览 local-notes" }).click();
-  await importer.getByLabel("完整包预览").waitFor();
-  assert.equal(await importer.getByLabel("收录名称").inputValue(), "local-notes");
-  await importer.getByRole("button", { name: "确认收录" }).click();
-  const detail = page.getByRole("dialog", { name: "资产详情", exact: true });
-  await detail.waitFor();
-  assert.match(await detail.innerText(), /local-notes/);
-  const stored = (await call("/workspace", undefined, "GET")).assets.find(
-    (a) => a.origin?.location === join(fixture.claude, "skills", "local-notes"),
-  );
-  assert.ok(stored, "资产应以本机来源收录");
-  await page.keyboard.press("Escape");
-  await page.goto(`${app.url}/#agents`);
-  const claude3 = card(page, "Claude Code");
-  await claude3.getByRole("button", { name: "展开清单" }).click();
-  await claude3.getByRole("region", { name: "Claude Code · Skill" }).locator(".agent-content-item").first().waitFor();
-  assert.match(
-    await claude3.locator(".agent-content-item", { has: page.locator('strong:text-is("local-notes")') }).innerText(),
-    /当前版本同内容/,
-  );
-  assert.equal(await fixture.snapshot(), before, "收录只写主库，不改 Agent 目录");
-  ok("存入资产仓库走收录本机 Skill：限定范围、预览后确认、打开资产详情；重读后显示同内容");
+  assert.equal(await fixture.snapshot(), before, "查看清单不改 Agent 目录");
+  ok("Agent 内容清单无本机 Skill 收录入口；查看保持只读");
 
   // 7. 390 宽：展开后无横向溢出，控件仍不小于 44px
   const narrow = await open(390);
+  await agentContentCard(narrow,"claude-code","Claude Code");
   const narrowCard = card(narrow, "Claude Code");
   await narrowCard.getByRole("button", { name: "展开清单" }).click();
   await narrowCard.getByRole("region", { name: "Claude Code · Skill" }).locator(".agent-content-item").first().waitFor();

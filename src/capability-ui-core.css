@@ -1,0 +1,23 @@
+.capability-console,.capability-form,.capability-preview,.capability-history,.capability-operation,.capability-result { display:grid; gap:var(--s-3); min-width:0; }
+.capability-console { padding-block:var(--s-3); }
+.capability-console * { min-width:0; }
+.capability-console p,.capability-console small,.capability-console strong,.capability-console code,.capability-console dd,.capability-console dt { overflow-wrap:anywhere; }
+.capability-console p { margin:0; line-height:1.65; }
+.capability-console small { color:var(--muted); }
+.capability-console input,.capability-console select,.capability-console textarea,.capability-console button,.capability-console summary { min-height:44px; min-width:44px; max-width:100%; }
+.capability-console input,.capability-console select,.capability-console textarea { width:100%; }
+.capability-console label { display:grid; gap:var(--s-2); }
+.capability-console [role=radiogroup] { display:flex; flex-wrap:wrap; gap:var(--s-2); }
+.capability-console [role=radio] { min-width:44px; color:var(--muted); background:var(--field); border:1px solid var(--line); border-radius:var(--r); padding:var(--s-2) var(--s-3); }
+.capability-console [role=radio][aria-checked=true] { color:var(--text); border-color:var(--cyan); }
+.capability-preview { padding:var(--s-3); border:1px solid var(--line); background:var(--field); border-radius:var(--r); }
+.capability-console ul { display:grid; gap:var(--s-3); margin:0; padding:0; list-style:none; }
+.capability-console li { display:grid; gap:var(--s-2); }
+.capability-console pre { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:var(--fs-meta); line-height:1.6; }
+.capability-console details > summary { cursor:pointer; align-content:center; }
+.capability-history { border-top:1px solid var(--line); padding-top:var(--s-4); }
+.capability-result { padding:var(--s-3); border-left:3px solid var(--cyan); }
+
+.capability-console dd { margin-inline:0; }
+
+.capability-console textarea{field-sizing:content;white-space:pre-wrap;overflow-wrap:anywhere;resize:vertical}

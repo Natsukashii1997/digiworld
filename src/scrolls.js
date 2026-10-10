@@ -59,6 +59,18 @@ export const pinScroll = (scrolls, id, pinned) =>
   mapScroll(scrolls, id, (s) => ({ ...s, pinned, updatedAt: now() }));
 export const deleteScroll = (scrolls, id) =>
   mapScroll(scrolls, id, (s) => ({ ...s, deletedAt: now() }));
+export function scrollDeleteBlockers(state, id) {
+  const blockers = [];
+  for (const record of state.reverseRecords || []) {
+    if (record.imports?.some(item => item.kind === "scroll" && item.scrollId === id))
+      blockers.push({ kind: "reverse", ownerId: record.id, label: `逆向记录：${record.title}` });
+  }
+  for (const note of state.notes || []) {
+    if (note.refined?.scrollId === id)
+      blockers.push({ kind: "note", ownerId: note.id, label: `已炼入的随手记：${note.text?.split("\n").find(line => line.trim())?.slice(0, 40) || "未命名念头"}` });
+  }
+  return blockers;
+}
 export const restoreScroll = (scrolls, id) =>
   mapScroll(scrolls, id, ({ deletedAt, ...s }) => ({ ...s, updatedAt: now() }));
 

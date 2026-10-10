@@ -1,3 +1,4 @@
+import {openLegacyInput,openReferenceTools} from './reverse-v16-helpers.mjs';
 // 支线 B2 逆向工程第一层：投素材 → 生成并复制拆解任务包 → 粘贴 Agent 回复（失败如实提示、恶意 HTML 当文字）→
 // 预览报告与候选 → 勾选入库到焚决卷与 Prompt → 逆向记录删除进回收区与恢复；44px、axe、390 无横溢。
 import { createRequire } from "node:module";
@@ -103,6 +104,7 @@ const pick = (page, n) => checkbox(page, n).locator("xpath=ancestor::label[1]");
 try {
   const page = await open(1440);
   await page.getByRole("heading", { name: "逆向工程", level: 1 }).waitFor();
+  await openLegacyInput(page);
   const wb = workbench(page);
   await wb.waitFor();
   // 1. 投入素材：原文、链接（只记录）、好在哪里。两者都空不能生成。
@@ -132,13 +134,16 @@ try {
   assert.equal(await packBox.getAttribute("readonly"), "");
   ok("投入素材（原文 + 链接只记录 + 好在哪里）生成任务包并写入主库；空素材与非 http 链接如实拒绝");
 
-  // 2. 一键复制任务包。
+  // 2. 明确选择 Agent，复制并写实际成功回执。
+  await wb.getByRole("radiogroup", {name:/^任务包接收 Agent：/}).getByRole("radio",{name:"Codex",exact:true}).click();
   await button(wb, "复制任务包").click();
   await until(
     async () => (await page.evaluate(() => navigator.clipboard.readText())) === pack,
     "剪贴板内容为完整任务包",
   );
-  ok("一键复制完整任务包");
+  await until(async()=> (await app.repository.read()).reverseRecords[0].copies?.at(-1)?.agentId === "codex", "复制成功回执已持久保存");
+  assert.equal((await app.repository.read()).reverseRecords[0].copies.at(-1).agentId, "codex");
+  ok("选择Agent后复制完整任务包，保存成功时间回执，不称派发");
 
   // 3. 粘贴回复：解析失败如实提示，不猜。
   const replyBox = wb.getByLabel("Agent 回复");
@@ -208,18 +213,17 @@ try {
   ok("勾选的焚决条目写入所选卷（计次 0、保留来源），Prompt 生成第一个版本；未勾选不写；已入库候选不能重复勾选");
 
   // 6. 记录列表：状态、删除进回收区、恢复。
-  const list = page.getByRole("region", { name: "逆向记录" });
-  const row = list.locator(".record-row").filter({ hasText: record.title });
-  await row.getByText("已入库 2 项").waitFor();
-  await atLeast44(button(row, `删除逆向记录 ${record.title}`), "删除记录");
-  await button(row, `删除逆向记录 ${record.title}`).click();
+  const list = page.getByRole("complementary", { name: "标本架" });
+  await page.getByText('回收回复与产物',{exact:true}).click();
+  await atLeast44(button(page, '移入回收区'), "删除记录");
+  await button(page, '移入回收区').click();
   await until(async () => !!(await records())[0].deletedAt, "记录删除写入 deletedAt");
-  assert.equal(await list.locator(".record-row").filter({ hasText: record.title }).count(), 0);
+  assert.equal(await list.getByRole("radio",{name:`打开逆向记录 ${record.title}`,exact:true}).count(), 0);
   assert.equal(await workbench(page).getByLabel("拆解任务包", { exact: true }).count(), 0, "删除后关闭该记录");
-  await button(list, "回收区 1").click();
-  await button(list, `恢复逆向记录 ${record.title}`).click();
+  await openReferenceTools(page);
+  await button(list, `${record.title} · 恢复`).click();
   await until(async () => !(await records())[0].deletedAt, "记录恢复");
-  await button(list, `打开逆向记录 ${record.title}`).click();
+  await list.getByRole("radio", { name: `打开逆向记录 ${record.title}`, exact: true }).click();
   await workbench(page).getByLabel("Agent 回复").waitFor();
   assert.equal(await checkbox(page, 1).isDisabled(), true, "重开后仍显示已入库");
   ok("逆向记录显示状态；删除进回收区，可恢复并重新打开");
@@ -238,8 +242,8 @@ try {
   await page.getByRole("dialog", { name: "焚决详情" }).waitFor({ state: "detached" });
   await page.goto(`${app.url}/#references`);
   await workbench(page).waitFor();
-  for (const name of ["生成拆解任务包"]) await atLeast44(button(workbench(page), name), name);
-  await button(page.getByRole("region", { name: "逆向记录" }), `打开逆向记录 ${record.title}`).click();
+  await atLeast44(button(page,"投入参照物"),"投入参照物");
+  await page.getByRole("complementary", { name: "标本架" }).getByRole("radio", { name: `打开逆向记录 ${record.title}`, exact: true }).click();
   await workbench(page).getByLabel("Agent 回复").waitFor();
   for (const name of ["复制任务包", "解析回复"]) await atLeast44(button(workbench(page), name), name);
   await atLeast44(pick(page, 3), "候选勾选");
@@ -252,7 +256,7 @@ try {
   const narrow = await open(390, 844);
   await workbench(narrow).waitFor();
   await noOverflow(narrow, "390 空表单");
-  await button(narrow.getByRole("region", { name: "逆向记录" }), `打开逆向记录 ${record.title}`).click();
+  await narrow.getByRole("complementary", { name: "标本架" }).getByRole("radio", { name: `打开逆向记录 ${record.title}`, exact: true }).click();
   await candidates(narrow).waitFor();
   await noOverflow(narrow, "390 报告与候选");
   await atLeast44(button(workbench(narrow), "复制任务包"), "390 复制任务包");

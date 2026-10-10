@@ -7,8 +7,9 @@ export const MATURITY = {
   planned: "规划中",
 };
 
-// 分区按产品定义 v1.2 §2.1：今日 → 工作区（资产、目标、运行、知识）→ 生活区 → 系统（版本归档在最下方）。
+// 分区按产品定义 v1.2 §2.1：今日 → 工作区（资产、目标、运行、知识）→ 生活区 → 系统（存档点在最下方）。
 // 数组顺序就是侧栏顺序。
+// lead 只写一句；只读 / 本机 / 需授权等边界放 bounds，由 PageHeading 渲染成页头下方的小标签（“!”开头为授权门禁）。
 export const PAGES = [
   {
     id: "home",
@@ -17,7 +18,8 @@ export const PAGES = [
     label: "世界总览",
     title: "世界总览",
     eyebrow: "TODAY · BASE",
-    lead: "今天的安排、待处理事项和常用入口都在这里。这是你每天打开的那一个入口。",
+    maturity: "ready",
+    lead: "今天的安排、待处理和常用入口，每天从这里开始。",
   },
   {
     id: "inbox",
@@ -28,8 +30,9 @@ export const PAGES = [
     label: "待处理",
     title: "待处理",
     eyebrow: "INBOX",
-    maturity: "draft",
-    lead: "需要你判断的事项集中在这里，只做汇总和跳转，动作在对应页面完成。目前只汇总能从本机数据直接读出的线索。",
+    maturity: "ready",
+    lead: "需要你判断的事项汇总在这里，到对应页面处理。",
+    bounds: ["只汇总与跳转", "仅本机可读线索"],
     stage: "汇总 · 跳转",
     plan: {
       will: [
@@ -58,9 +61,10 @@ export const PAGES = [
     label: "逆向工程",
     title: "逆向工程",
     eyebrow: "REVERSE ENGINEERING",
-    maturity: "draft",
-    lead: "把你认为好的内容（文章、帖子、prompt）生成拆解任务包交给 Agent，回收报告后由你确认，沉淀为焚决条目或 Prompt。",
-    stage: "投素材 · 拆解 · 入库",
+    maturity: "ready",
+    lead: "把参照物逆推成配方，验证能 1:1 复刻，再举一反三。",
+    bounds: ["只逆向你提供或公开的材料", "配方经复刻验证才算数"],
+    stage: "投入 · 逆推配方 · 复刻验证 · 举一反三 · 炼成 Skill",
   },
   {
     id: "agents",
@@ -68,9 +72,10 @@ export const PAGES = [
     code: "03",
     label: "智能体群",
     title: "智能体群",
-    eyebrow: "AGENT CENTER",
+    eyebrow: "SELECT AGENT",
     maturity: "partial",
-    lead: "发现本机 Agent，确认要管理的目标，受控修改少量配置，并为换手准备上下文。",
+    lead: "选一位伙伴，接着做没做完的事。",
+    bounds: ["会话只在本机读取", "复制前先预览"],
     stage: "发现 · 管理 · 接力",
   },
   {
@@ -79,9 +84,10 @@ export const PAGES = [
     code: "04",
     label: "项目空间",
     title: "项目空间",
-    eyebrow: "PROJECT SPACE",
+    eyebrow: "PROJECTS",
     maturity: "ready",
-    lead: "自动发现本地与 GitHub 项目；只保存 Current 与规则的指针，换 Agent 也能接着做。",
+    lead: "挑一个存档接着干，或从库里开新档。",
+    bounds: ["本地与 GitHub 自动发现", "只读 CURRENT 与 Git"],
     stage: "识别 · 对齐 · 交接",
   },
   {
@@ -96,8 +102,9 @@ export const PAGES = [
     label: "能力体检",
     title: "能力体检",
     eyebrow: "HEALTH CHECK",
-    maturity: "planned",
-    lead: "检查各 Agent 的 Skill 链接、挂载与副本是否一致，发现问题进入待处理，由你确认后才修复。",
+    maturity: "partial",
+    lead: "检查各 Agent 的 Skill 链接、挂载与副本。",
+    bounds: ["问题进入待处理", "!修复需你确认"],
     stage: "检查 · 报告 · 修复",
     plan: {
       will: [
@@ -115,9 +122,10 @@ export const PAGES = [
     code: "05",
     label: "协同",
     title: "协同",
-    eyebrow: "COLLABORATION",
+    eyebrow: "WORKFLOW RUNS",
     maturity: "partial",
-    lead: "在推进项目的协同看板：模板 #1 走到哪一步、笔在谁手上、认领与交接的时间线；到交接点一键生成下一棒口令，你确认后复制。",
+    lead: "多 Agent 工作流的全过程：谁做了什么、交给了谁、过没过关。",
+    bounds: ["以项目协议文件为准", "口令由你发送"],
     stage: "看板 · 派发",
     plan: {
       will: [
@@ -137,7 +145,8 @@ export const PAGES = [
     title: "夜巡",
     eyebrow: "NIGHT SHIFT",
     maturity: "planned",
-    lead: "为夜间无人值守的任务做准备。当前只保存一份计划草稿，不会自动运行任何任务。",
+    lead: "登记、预览并批准夜巡任务，在指定窗口接力。",
+    bounds: ["默认关闭", "!授权后服务可在指定窗口自动执行", "人民币草稿与 USD 计划分开"],
     stage: "规划",
   },
   {
@@ -148,8 +157,9 @@ export const PAGES = [
     title: "知识仓库",
     eyebrow: "KNOWLEDGE",
     maturity: "partial",
-    lead: "只读连接 Obsidian，按原文查询；交给本人 Codex 整理，候选经确认才落到“00 待整理”。",
-    stage: "连接 · 查询 · 整理 · 维护",
+    lead: "所有知识库与个人说明的统一源头。",
+    bounds: ["只读", "开放给 Agent 需授权"],
+    stage: "接入 · 检索 · MCP 授权",
   },
   {
     // 路线 v3 切片 5.2：周视图 + 今天、拖出规划块写入“工作台”日历、todo 读写“工作台”提醒事项；
@@ -161,7 +171,7 @@ export const PAGES = [
     title: "日历",
     eyebrow: "CALENDAR",
     maturity: "partial",
-    lead: "你的时间规划本：在时间轴上拖出规划块写一句话，旁边是防止遗忘的 todo。数据在 macOS 日历与提醒事项，手机也能收到提醒。",
+    lead: "在时间轴上拖出规划，旁边别忘了 TodoList。",
     stage: "规划 · 安排",
   },
   {
@@ -171,8 +181,9 @@ export const PAGES = [
     label: "随手记",
     title: "随手记",
     eyebrow: "QUICK NOTES",
-    maturity: "draft",
-    lead: "先把念头记下来，支持列表、任务和五种字色。只保存在本应用；值得反复用的，炼入焚决。",
+    maturity: "ready",
+    lead: "先把念头记下来；值得反复用的，炼入焚决。",
+    bounds: ["只存本机"],
     stage: "捕捉",
   },
   {
@@ -184,20 +195,22 @@ export const PAGES = [
     title: "AI HOT",
     eyebrow: "AI HOT · DAILY",
     maturity: "partial",
-    lead: "每日 AI 资讯：精选、热点、日报，从 aihot.news 公开接口拉取后缓存在本机。看到值得学的，收藏到学习成长。",
+    lead: "今天 AI 圈的精选与热点，细节去原站看。",
+    bounds: ["aihot.news 公开接口"],
     stage: "浏览 · 收藏",
   },
   {
-    // 路线 v3 切片 5.4：书架只读索引、学习状态、链接收藏；内容解析以后再做，标“部分可用”。
+    // 收藏画布沿用旧地址；旧书架已按用户要求撤下。
     id: "learning",
     group: "生活",
     code: "11",
-    label: "学习成长",
-    title: "学习成长",
-    eyebrow: "LEARNING",
+    label: "收藏",
+    title: "收藏",
+    eyebrow: "COLLECTION",
     maturity: "partial",
-    lead: "电子书和链接集中在一处，记下想学、在学、学完。原件留在原处，工作台只建索引。",
-    stage: "索引 · 学习",
+    lead: "",
+    bounds: ["收藏保存在本机"],
+    stage: "收录 · 整理",
   },
   {
     id: "silver",
@@ -209,30 +222,33 @@ export const PAGES = [
     // 路线 v3 5.5（云端提前开发）：欣赏墙、收藏格、白色描边剪影；自动抠图只在 macOS 上可用，需本机验证。
     // 用户 2026-10-03：视觉待改版，先标“部分可用”。
     maturity: "partial",
-    lead: "银饰的欣赏墙和个人收藏格，只给自己看。图片只存在本机；收藏格用白色描边剪影展示，可以手动替换。",
+    lead: "银饰的欣赏墙和个人收藏格，只给自己看。",
+    bounds: ["图片只存本机", "不进备份，也不上传"],
     stage: "欣赏 · 收藏",
   },
   {
     id: "settings",
     group: "系统",
     code: "13",
-    label: "模型设置",
-    title: "模型设置",
+    label: "设置",
+    title: "设置",
     eyebrow: "SETTINGS",
     maturity: "partial",
-    lead: "本地数据的位置、备份与合并，AI HOT 网络访问与学习成长书架文件夹；模型连接目前只记录意向，不发起请求。",
+    lead: "所有设置与授权都在这里；开启前先预览。",
+    bounds: ["默认关闭", "开启前预览"],
     stage: "数据 · 模型",
   },
   {
-    // 产品定义 v1.2 §2.2：版本归档下移到系统分组最下方；单个资产的版本在资产详情的“历史”标签里查看。
+    // 产品定义 v1.2 §2.2：存档点下移到系统分组最下方；单个资产的版本在资产详情的“历史”标签里查看。
     id: "history",
     group: "系统",
     code: "14",
-    label: "版本归档",
-    title: "版本归档",
-    eyebrow: "VERSIONS & ARCHIVE",
+    label: "存档点",
+    title: "存档点",
+    eyebrow: "SAVE POINTS",
     maturity: "ready",
-    lead: "每次修改都是一个新版本。恢复旧版同样是追加，历史不会被改写。",
+    lead: "每个项目的存档点：改来改去也能找回。",
+    bounds: ["只提交，不推送", "回退交给 Agent"],
     stage: "追溯 · 恢复",
   },
 ];
@@ -245,7 +261,7 @@ export const ZONES = [
   { id: "today", label: "今日", groups: ["今日"] },
   { id: "work", label: "工作区", en: "WORK", groups: ["资产", "目标", "运行", "知识"] },
   { id: "life", label: "生活区", en: "LIFE", groups: ["生活"] },
-  { id: "system", label: "系统", groups: ["系统"] },
+  { id: "system", label: "系统", en: "SYSTEM", groups: ["系统"] },
 ];
 
 // 已撤销的独立页面：旧链接落到哪个页面的哪个类型标签。
@@ -256,6 +272,17 @@ const RETIRED = {
 
 // 并入其他页面的旧路由（如 #health）落到哪里：返回实际页面、页内锚点，以及要选中的资产类型标签（如有）。
 export function resolveRoute(id) {
+  const nightMorning = /^night\/morning\/([^/]+)$/.exec(id || "");
+  if (nightMorning) {
+    try { return { route: "night", anchor: null, nightRunId: decodeURIComponent(nightMorning[1]) }; }
+    catch { return { route: "night", anchor: null }; }
+  }
+  const nightReport = /^night\/report\/([^/]+)\/([^/]+)$/.exec(id || "");
+  if (nightReport) {
+    try { return { route: "night", anchor: null,
+      reportTarget: { runId: decodeURIComponent(nightReport[1]), slotId: decodeURIComponent(nightReport[2]) } }; }
+    catch { return { route: "night", anchor: null }; }
+  }
   if (Object.hasOwn(RETIRED, id)) return { ...RETIRED[id] };
   const p = page(id);
   if (!p) return { route: "home", anchor: null };

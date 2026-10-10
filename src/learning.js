@@ -72,7 +72,8 @@ export const restoreLink = (state, id) =>
 // 书的状态：按书架索引给出的 id 写入或更新一条记录（只存位置、文件名与状态）。
 export function setBookStatus(state, book, status) {
   const books = learningOf(state).books;
-  const record = { id: book.id, root: book.root, path: book.path, name: book.name, status, updatedAt: now() };
+  const previous = books.find(b => b.id === book.id);
+  const record = { ...previous, id: book.id, root: book.root, path: book.path, name: book.name, status, updatedAt: now() };
   return withLearning(state, {
     books: books.some((b) => b.id === book.id)
       ? books.map((b) => (b.id === book.id ? record : b))
@@ -80,3 +81,22 @@ export function setBookStatus(state, book, status) {
   });
 }
 export const bookStatus = (state, id) => learningOf(state).books.find((b) => b.id === id)?.status || "";
+
+// 阅读进度只来自用户输入；不推导学习状态，也不从文件大小/章节数估计完成率。
+export function setBookProgress(state, book, {unit, value}) {
+  if (unit === "percent") {
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 100)
+      throw new Error("阅读百分比应为 0 到 100 的数值");
+  } else if (unit === "chapter") {
+    if (typeof value !== "string" || !value.trim() || value.length > 100 || /[\x00-\x1f\x7f]/.test(value))
+      throw new Error("请填写 100 字以内、没有控制字符的阅读位置");
+    value = value.trim();
+  } else throw new Error("阅读进度单位无效");
+  const books = learningOf(state).books, previous = books.find(b => b.id === book.id), at = now();
+  const record = {...previous, id:book.id, root:book.root, path:book.path, name:book.name,
+    progress:{unit,value,updatedAt:at}, updatedAt:at};
+  return withLearning(state, {books:previous ? books.map(b => b.id === book.id ? record : b) : [...books,record]});
+}
+export const bookProgress = (state, id) => learningOf(state).books.find(b => b.id === id)?.progress;
+export const progressLabel = progress => !progress ? "尚未记录阅读进度" :
+  progress.unit === "percent" ? `已读 ${progress.value}%（手动记录）` : `读到 ${progress.value}（手动记录）`;

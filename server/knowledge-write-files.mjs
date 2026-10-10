@@ -118,7 +118,7 @@ export function createKnowledgeWriteFiles({ filesystem = fs } = {}) {
   return {
     inspect,
     preview,
-    async create(source, target, content) {
+    async create(source, target, content,{guard=async()=>{}}={}) {
       if (
         typeof content !== "string" ||
         Buffer.byteLength(content) > 256 * 1024
@@ -130,6 +130,7 @@ export function createKnowledgeWriteFiles({ filesystem = fs } = {}) {
         const current = await preview(source, target.path);
         if (current.parentIdentity !== target.parentIdentity)
           throw failure("保存目录已变化，请重新预览", 409);
+        await guard();
         // Any ambiguity after exclusive creation must be resolved from the journal.
         const handle = await filesystem.open(
           join(source.root, target.path),
@@ -144,6 +145,7 @@ export function createKnowledgeWriteFiles({ filesystem = fs } = {}) {
           owned = await handle.stat();
           if ((await chain(source, target.path)) !== target.parentIdentity)
             throw failure("保存目录已变化", 409);
+          await guard();
           await handle.writeFile(content, "utf8");
           await handle.sync();
         } finally {
@@ -170,7 +172,7 @@ export function createKnowledgeWriteFiles({ filesystem = fs } = {}) {
         throw safe(error);
       }
     },
-    async remove(source, expected) {
+    async remove(source, expected,{guard=async()=>{}}={}) {
       let attempted = false;
       try {
         const current = await inspect(source, expected.path);
@@ -180,6 +182,9 @@ export function createKnowledgeWriteFiles({ filesystem = fs } = {}) {
           current.sha256 !== expected.sha256
         )
           throw failure("文件已变化或缺失，不能撤回", 409);
+        await guard();
+        const afterGuard=await inspect(source,expected.path);
+        if(!afterGuard||afterGuard.fingerprint!==expected.fingerprint||afterGuard.sha256!==expected.sha256)throw failure('核验期间文件归属已变化，不能撤回',409);
         attempted = true;
         await filesystem.unlink(join(source.root, expected.path));
         await syncDirectory(source, expected.path);

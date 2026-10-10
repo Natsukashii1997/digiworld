@@ -107,7 +107,7 @@ try {
   await page.keyboard.press("Escape");
   console.log("PASS ⌘K 正文、文件、标签、多词命中并打开详情");
 
-  // 随手记、参考、项目分组；已归档只计数。
+  // 随手记、参考、项目分组；归档资产不展示。
   await search(page, "周报");
   for (const heading of ["资产 · 1", "随手记 · 1", "参考 · 1", "项目 · 1"])
     await palette(page).getByText(heading, { exact: true }).waitFor();
@@ -116,7 +116,7 @@ try {
     0,
   );
   const scope = palette(page).getByRole("note", { name: "搜索范围" });
-  await scope.getByText("另有 1 个已归档资产匹配，不在此列出。").waitFor();
+  assert.equal(await scope.getByText(/已归档/).count(), 0);
   assert.equal(await palette(page).locator(".search-empty").count(), 0);
   for (const [name, route] of [
     [/明天把周报流程/, "notes"],
@@ -128,9 +128,10 @@ try {
     await page.waitForFunction((r) => location.hash === "#" + r, route);
   }
   await search(page, "周报");
-  await scope.getByRole("button", { name: "去版本归档" }).click();
-  await page.waitForFunction(() => location.hash === "#history");
-  console.log("PASS 随手记/参考/项目分组跳转，已归档只计数并可跳转");
+  assert.equal(await scope.getByRole("button", { name: "查看已归档" }).count(), 0);
+  await page.goto(app.url + "/#assets");
+  await page.locator('.asset-card').first().waitFor();
+  console.log("PASS 随手记/参考/项目分组跳转，归档资产不显示入口");
 
   // 没有结果与范围说明分开。
   await search(page, "完全不存在的词");
@@ -145,6 +146,7 @@ try {
 
   // 资产库：正文搜索、标签筛选组合、清除筛选、已归档提示。
   await page.goto(app.url + "/#assets");
+  await page.getByRole('group',{name:'资产类型',exact:true}).getByRole('button',{name:/^全部/}).click();
   await page.locator(".asset-card").first().waitFor();
   // 访问项目页会触发既有的自动扫描；只读断言从这里开始，只覆盖搜索与筛选。
   const before = (await app.repository.read()).revision;
@@ -158,7 +160,8 @@ try {
   await inline.fill("求助");
   await cards(1);
   await inline.fill("周报");
-  await page.getByRole("note").getByText("另有 1 个已归档资产匹配，不在资产库列出。").waitFor();
+  await cards(1);
+  assert.equal(await page.getByRole("note").getByText(/已归档/).count(), 0);
   await inline.fill("");
   const tagSelect = page.getByLabel("按标签筛选");
   assert.deepEqual(
@@ -171,7 +174,7 @@ try {
   await cards(1);
   await inline.fill("不存在的内容");
   await page.getByRole("heading", { name: "没有匹配的资产" }).waitFor();
-  assert.equal(await page.getByRole("button", { name: "新建资产", exact: true }).count(), 1);
+  assert.equal(await page.getByRole("button", { name: "新建", exact: true }).count(), 1);
   await page.getByRole("button", { name: "清除筛选" }).click();
   assert.equal(await inline.inputValue(), "");
   assert.equal(await tagSelect.inputValue(), "");
@@ -185,7 +188,7 @@ try {
   const emptyState = page.locator(".empty");
   await emptyState.getByRole("heading", { name: "没有匹配的资产" }).waitFor();
   assert.match(await emptyState.innerText(), /当前类型还没有资产/);
-  assert.equal(await emptyState.getByRole("button", { name: "新建资产" }).count(), 0);
+  assert.equal(await emptyState.getByRole("button", { name: "新建" }).count(), 0);
   await emptyState.getByRole("button", { name: "清除筛选" }).waitFor();
   await emptyState.getByRole("button", { name: "查看全部类型" }).click();
   await cards(1);

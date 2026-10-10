@@ -1,3 +1,4 @@
+import {authorizeCapability} from './capability-fixture.mjs';
 import { createRequire } from "node:module";
 import fs from "node:fs/promises";
 import { join } from "node:path";
@@ -44,6 +45,7 @@ try {
     })
   ).body;
   const source = state.connections.knowledgeSources[0];
+  await authorizeCapability(app,'vault',{sourceId:source.id,notesFolder:'00 待整理',profileFolders:[]});
   const scan = (await app.call("/knowledge/scan", { sourceId: source.id }))
     .body;
   const selected = {

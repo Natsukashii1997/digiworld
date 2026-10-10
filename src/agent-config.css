@@ -24,7 +24,7 @@
 }
 .config-heading h4 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .config-panel small {
   color: var(--muted);
@@ -32,7 +32,7 @@
 }
 .config-panel p {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fs-small);
   line-height: 1.8;
 }
 .config-panel code {
@@ -50,11 +50,11 @@
   display: grid;
   gap: 6px;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--fs-caption);
 }
 .config-block {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r);
   padding: 16px;
   scroll-margin-top: 75px;
 }
@@ -72,10 +72,10 @@
 .config-diff > span {
   display: grid;
   gap: 4px;
-  font-size: 16px;
+  font-size: var(--fs-title);
 }
 .config-diff small {
-  font-size: 11px;
+  font-size: var(--fs-label);
 }
 .config-panel label.config-confirm {
   display: flex;
@@ -83,7 +83,7 @@
   align-items: flex-start;
   gap: 10px;
   min-height: 44px;
-  font-size: 12px;
+  font-size: var(--fs-small);
   line-height: 1.8;
   cursor: pointer;
   color: var(--ink);

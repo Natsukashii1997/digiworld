@@ -1,5 +1,15 @@
+import { planSkillVersion, materializeSkillVersion } from "./skill-version.js";
+import { request } from "./api.js";
+const browserMediaReader =
+  typeof window === "undefined"
+    ? undefined
+    : (m) => request("/reverse/media/read", m);
 import { zipSync, strToU8 } from "fflate";
-import { buildSkillZip, fileBytes } from "./skill-package.js";
+import {
+  buildSkillZip,
+  fileBytes,
+  validateSkillFiles,
+} from "./skill-package.js";
 
 export function resolveReferences(version, assets) {
   return (version.references || []).map(({ assetId, versionId }) => {
@@ -125,16 +135,19 @@ function boundedReferences(version, assets) {
       inputBytes += strToU8(reference.version.content).length;
       checkBudget();
     } else {
-      for (const file of reference.version.files) {
-        inputBytes += fileBytes(file).length;
-        checkBudget();
-      }
+      inputBytes += planSkillVersion(reference.version).byteLength;
+      checkBudget();
     }
   }
   return references;
 }
 
-export async function buildWorkflowBundle(asset, version, assets) {
+export async function buildWorkflowBundle(
+  asset,
+  version,
+  assets,
+  { readMedia = browserMediaReader } = {},
+) {
   if (asset.type !== "Workflow") throw new Error("仅支持导出工作流引用包");
   if (asset.archived) throw new Error("工作流已归档，请先取消归档");
   assertId(asset.id);
@@ -152,7 +165,10 @@ export async function buildWorkflowBundle(asset, version, assets) {
     paths.add(file.toLowerCase());
     const bytes =
       reference.asset.type === "Skill"
-        ? buildSkillZip(reference.version.files)
+        ? buildSkillZip(
+            (await materializeSkillVersion(reference.version, { readMedia }))
+              .files,
+          )
         : strToU8(reference.version.content);
     entries[file] = bytes;
     records.push({
@@ -190,4 +206,135 @@ export async function buildWorkflowBundle(asset, version, assets) {
     ),
   );
   return zipSync(entries, { level: 6, mtime: new Date(1980, 0, 1) });
+}
+
+// 工作流 B：下载部署包只产生文件夹结构，固定版本不漂移，不安装、不执行。
+export async function buildWorkflowDeploymentBundle(
+  asset,
+  version,
+  assets,
+  { readMedia = browserMediaReader } = {},
+) {
+  if (asset.type !== "Workflow") throw new Error("仅支持导出工作流部署包");
+  if (asset.archived) throw new Error("工作流已归档，请先取消归档");
+  assertId(asset.id);
+  assertId(version.id);
+  version = asset.versions.find((candidate) => candidate.id === version.id);
+  if (!version) throw new Error("工作流版本已缺失，请刷新后重试");
+  const references = boundedReferences(version, assets);
+  const root = `workflow-${asset.id}-${version.id}`,
+    entries = Object.create(null),
+    files = [],
+    canonical = new Map(),
+    kinds = new Map();
+  async function add(
+    path,
+    bytes,
+    { type = "generated", directory = false, mode } = {},
+  ) {
+    const parts = path.split("/");
+    for (let n = 1; n <= parts.length; n++) {
+      const prefix = parts.slice(0, n).join("/"),
+        key = prefix.normalize("NFC").toLowerCase(),
+        previous = canonical.get(key);
+      if (previous && previous !== prefix)
+        throw new Error("部署包路径存在大小写或 Unicode 冲突");
+      canonical.set(key, prefix);
+      if (n < parts.length && kinds.get(key) === false)
+        throw new Error("部署包含文件与目录冲突");
+    }
+    const key = path.normalize("NFC").toLowerCase();
+    if (kinds.has(key)) throw new Error("部署包含重复路径");
+    if (
+      !directory &&
+      [...kinds.keys()].some((existing) => existing.startsWith(key + "/"))
+    )
+      throw new Error("部署包含文件与目录冲突");
+    kinds.set(key, directory);
+    const options = { level: 6, mtime: new Date(1980, 0, 1) };
+    if (mode !== undefined) {
+      options.os = 3;
+      options.attrs = ((directory ? 0o40000 : 0o100000) | mode) << 16;
+    }
+    if (directory) options.attrs = (options.attrs || 0) | 16;
+    entries[`${root}/${path}${directory ? "/" : ""}`] = [bytes, options];
+    files.push({
+      path,
+      type,
+      directory,
+      size: bytes.length,
+      sha256: directory ? null : await checksum(bytes),
+      mode: mode ?? null,
+    });
+  }
+  const records = [];
+  for (const reference of references) {
+    const {
+      assetId,
+      versionId,
+      asset: dependency,
+      version: selected,
+      number,
+    } = reference;
+    const base =
+      dependency.type === "Skill"
+        ? `assets/skills/${assetId}/${versionId}`
+        : `assets/prompts/${assetId}/${versionId}.md`;
+    if (dependency.type === "Skill") {
+      const complete = (await materializeSkillVersion(selected, { readMedia }))
+        .files;
+      for (const file of [...complete].sort((a, b) =>
+        a.path < b.path ? -1 : a.path > b.path ? 1 : 0,
+      ))
+        await add(`${base}/${file.path}`, fileBytes(file), {
+          type: "Skill",
+          directory: file.directory === true,
+          mode: file.mode,
+        });
+    } else await add(base, strToU8(selected.content), { type: "Prompt" });
+    records.push({
+      type: dependency.type,
+      assetId,
+      versionId,
+      number,
+      title: selected.title,
+      path: base,
+    });
+  }
+  const explanation = records.length
+    ? `\n\n---\n\n## 固定版本依赖\n\n${records.map((r, i) => `### ${i + 1}. ${r.title} · ${r.type} · v${r.number}.0\n\n资产 ID：${r.assetId}\n版本 ID：${r.versionId}\n配套路径：${r.path}`).join("\n\n")}`
+    : "";
+  await add("workflow.md", strToU8(version.content + explanation), {
+    type: "Workflow",
+  });
+  await add(
+    "README.md",
+    strToU8(
+      `部署包：${version.title}\n\n1. 解压后保留整个 ${root} 文件夹。\n2. 将整个文件夹复制到目标 Agent 的工作区，打开 workflow.md 查看流程和固定版本依赖路径。\n3. 本包未安装、未执行任何 Agent；采用与执行结果需在目标环境确认。\n\nmanifest.json 记录每个内容文件的 SHA256、固定版本与原始文件权限。权限为 null 表示来源未记录，不能由本包推断。清单不包含自身哈希。\n`,
+    ),
+  );
+  entries[`${root}/manifest.json`] = [
+    strToU8(
+      JSON.stringify(
+        {
+          schemaVersion: 1,
+          kind: "workflow-deployment",
+          root,
+          workflow: {
+            assetId: asset.id,
+            versionId: version.id,
+            number: asset.versions.findIndex((v) => v.id === version.id) + 1,
+            title: version.title,
+            path: "workflow.md",
+          },
+          references: records,
+          files,
+        },
+        null,
+        2,
+      ),
+    ),
+    { level: 6, mtime: new Date(1980, 0, 1) },
+  ];
+  return zipSync(entries);
 }

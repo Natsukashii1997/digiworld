@@ -207,7 +207,7 @@ test("文件或来源目录变化必须重扫/重新确认；并发连接不会�
   assert.equal((await f.call("scan", { sourceId: source.id })).status, 409);
   const renewed = await f.call("reconfirm", {
     sourceId: source.id,
-    expectedRevision: connected.revision,
+    expectedRevision: (await f.app.repository.read()).revision,
     confirmed: true,
   });
   assert.equal(renewed.status, 200, renewed.body.error);

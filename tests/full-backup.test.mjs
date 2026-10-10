@@ -46,6 +46,8 @@ async function dataDir() {
   await writeFile(join(directory, "knowledge-writes", "w1", "prepared.json"), '{"id":"w1"}');
   await mkdir(join(directory, "silver"), { mode: 0o700 });
   await writeFile(join(directory, "silver", `${sha(PNG)}.png`), PNG);
+  await mkdir(join(directory, "reverse-media"), {mode:0o700});
+  await writeFile(join(directory, "reverse-media", `${sha(PNG)}.png`), PNG);
   await mkdir(join(directory, "aihot"), { mode: 0o700 });
   await writeFile(join(directory, "aihot", "cache.json"), '{"items":[]}');
   // 临时文件与锁不进入备份；符号链接不跟随。
@@ -55,7 +57,7 @@ async function dataDir() {
 }
 const clock = () => Date.parse("2026-09-30T08:00:00.000Z");
 
-test("打包：整个数据目录（主库快照、配置日志、知识写入日志、各集合、图片），清单含每个文件 SHA256", async () => {
+test("打包：主库快照、配置日志、知识写入日志、各集合；175排银饰图片实体，清单含每个文件 SHA256", async () => {
   const { directory, repository } = await dataDir();
   try {
     const { bytes, manifest } = await packDirectory(directory, { clock });
@@ -68,14 +70,16 @@ test("打包：整个数据目录（主库快照、配置日志、知识写入�
       "CURRENT.json",
       "config-operations/op-1.json",
       "knowledge-writes/w1/prepared.json",
-      `silver/${sha(PNG)}.png`,
+      `reverse-media/${sha(PNG)}.png`,
+      
       "aihot/cache.json",
     ])
       assert.ok(paths.includes(expected), expected);
     assert.ok(paths.some((p) => /^snapshots\/1-[a-f0-9-]+\.json$/.test(p)), "主库快照");
     assert.ok(!paths.some((p) => p.includes("writer-lock") || p.endsWith(".tmp")), "不含锁与临时文件");
     assert.ok(!paths.includes("outside-link"));
-    assert.deepEqual(manifest.skipped, [{ path: "outside-link", reason: "符号链接不跟随" }]);
+    assert.deepEqual(manifest.skipped, [{ path: "outside-link", reason: "符号链接不跟随" }, {path:"silver",reason:"银饰图片只存本机，不进入新完整备份"}]);
+    assert.equal(paths.some(p=>p.startsWith("silver/")),false,"175批准：新完整ZIP排银饰实体");
     assert.deepEqual([...paths].sort(), paths, "清单按路径排序，便于比对");
     const entries = unzipSync(bytes);
     assert.deepEqual(Object.keys(entries).sort(), ["manifest.json", ...paths.map((p) => `data/${p}`)].sort());

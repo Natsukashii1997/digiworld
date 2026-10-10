@@ -51,6 +51,10 @@ async function open(width, route = "home", height = 1000) {
 }
 const button = (scope, name) => scope.getByRole("button", { name, exact: true });
 const briefCard = (page) => page.getByRole("region", { name: "今日项目简报" });
+async function openBrief(page) {
+  await page.getByRole('button', {name:'今日项目简报'}).click();
+  await page.getByRole('dialog', {name:'今日项目简报'}).waitFor();
+}
 const brief = (page, name) =>
   page.getByRole("article", { name: `项目简报：${name}`, exact: true });
 const statusCard = (page, name) =>
@@ -87,14 +91,14 @@ async function ghCallsReadOnly() {
 }
 
 try {
-  // 1. 没有在推进项目：简报卡只给提示，不请求简报与 GitHub 面板，gh 一次都不调用。
+  // 1. 没有在推进项目：D 卡给空态，不请求简报与 GitHub 面板。
   const page = await open(1440);
   const requests = [];
   page.on("request", (r) => {
     if (/\/api\/(project-brief|project-github)\//.test(r.url())) requests.push(r.url());
   });
-  await briefCard(page).getByRole("heading", { name: "今日项目简报" }).waitFor();
-  await briefCard(page).getByText("还没有在推进项目", { exact: false }).waitFor();
+  await page.locator('.hx-mod-d').getByText("还没有在推进的项目", { exact: false }).waitFor();
+  assert.equal(await page.getByRole('button', {name:'今日项目简报'}).count(),0);
   await page.goto(`${app.url}/#projects`);
   await page.getByRole("region", { name: "在推进项目" }).getByText("在推进 · 0").waitFor();
   assert.deepEqual(requests, []);
@@ -107,7 +111,8 @@ try {
   await page.reload();
   const collab = statusCard(page, "协同项目");
   await collab.waitFor();
-  const gh = collab.getByLabel("GitHub");
+  await button(collab,"详情").click();const cd=page.getByRole("dialog",{name:"协同项目",exact:true});
+  const gh = cd.getByLabel("GitHub");
   await gh.getByText("tester/collab", { exact: true }).waitFor();
   await gh.getByText("打开的 PR · 2", { exact: true }).waitFor();
   const pr7 = gh.getByRole("link", { name: "#7 状态卡返修" });
@@ -123,24 +128,17 @@ try {
   await gh.getByText("失败", { exact: true }).waitFor();
   await gh.getByRole("link", { name: /^CI · main · / }).waitFor();
   await gh.getByText(/^更新于 .+ · 本机 gh 只读查询$/).waitFor();
-  await statusCard(page, "泄露项目")
-    .getByLabel("GitHub")
-    .getByText("未知 · 没有权限或仓库不存在", { exact: false })
-    .waitFor();
-  await statusCard(page, "无协议项目")
-    .getByLabel("GitHub")
-    .getByText("没有 GitHub 远程，不查询 GitHub。")
-    .waitFor();
-  await atLeast44(button(page, "刷新 GitHub"), "刷新 GitHub");
-  await atLeast44(pr7, "PR 链接");
-  await axe(page, "projects-github-1440");
-  await collab.screenshot({ path: join(output, "projects-brief-github-card.png") });
+  await atLeast44(pr7,"PR 链接");await axe(page,"projects-github-1440");await cd.screenshot({path:join(output,"projects-brief-github-card.png")});await page.keyboard.press("Escape");
+  await button(statusCard(page,"泄露项目"),"详情").click();await page.getByRole("dialog",{name:"泄露项目",exact:true}).getByLabel("GitHub").getByText("未知 · 没有权限或仓库不存在",{exact:false}).waitFor();await page.keyboard.press("Escape");
+  await button(statusCard(page,"无协议项目"),"详情").click();await page.getByRole("dialog",{name:"无协议项目",exact:true}).getByLabel("GitHub").getByText("没有 GitHub 远程，不查询 GitHub。").waitFor();await page.keyboard.press("Escape");
+  await atLeast44(button(page.getByRole("region",{name:"在推进项目"}),"刷新"),"刷新 GitHub");
   const calls = await ghCallsReadOnly();
   assert.ok(calls.length >= 6, `gh 调用 ${calls.length} 次`);
   ok("GitHub 面板显示打开的 PR、最近合并、Issue 与默认分支 CI，无权限显示未知，无远程不查询");
 
   // 3. 世界总览“今日项目简报”：每个在推进项目一段话。
   await page.goto(`${app.url}/#home`);
+  await openBrief(page);
   const card = briefCard(page);
   const collabBrief = brief(page, "协同项目");
   await collabBrief.waitFor();
@@ -185,6 +183,7 @@ try {
   assert.equal(reads.length, 1);
   assert.equal(reads[0].projectId, await app.projectId("协同项目"));
   await page.reload();
+  await openBrief(page);
   await brief(page, "协同项目").waitFor();
   await button(brief(page, "协同项目"), "已读").waitFor();
   await brief(page, "泄露项目").getByText("未读", { exact: true }).waitFor();
@@ -243,16 +242,17 @@ try {
   await app.gh.mode("auth");
   await page.goto(`${app.url}/#projects`);
   await statusCard(page, "协同项目").waitFor();
-  await button(page, "刷新 GitHub").click();
-  const unknown = statusCard(page, "协同项目").getByLabel("GitHub");
+  await button(page.getByRole("region",{name:"在推进项目"}),"刷新").click();await button(statusCard(page,"协同项目"),"详情").click();
+  const unknown = page.getByRole("dialog",{name:"协同项目",exact:true}).getByLabel("GitHub");
   await unknown.getByText(/^未知 · gh 未登录（上次成功查询：.+）$/).waitFor();
   assert.equal(await page.getByRole("alert").count(), 0);
   assert.doesNotMatch(
-    await page.getByRole("region", { name: "在推进项目" }).innerText(),
+    await page.getByRole("dialog", { name: "协同项目", exact:true }).innerText(),
     /请.{0,6}登录|gh auth login/,
   );
   await unknown.screenshot({ path: join(output, "projects-brief-github-unknown.png") });
-  await page.goto(`${app.url}/#home`);
+  await page.keyboard.press("Escape");await page.goto(`${app.url}/#home`);
+  await openBrief(page);
   await button(briefCard(page), "刷新简报").click();
   await brief(page, "协同项目")
     .getByText(/GitHub 情况未知（gh 未登录）/)
@@ -262,16 +262,18 @@ try {
 
   // 10. 390 宽：无横向溢出、控件不小于 44px、axe 无违规。
   const narrow = await open(390, "home", 844);
+  await openBrief(narrow);
   await brief(narrow, "协同项目").waitFor();
   await noOverflow(narrow, "390 世界总览");
   await atLeast44(button(brief(narrow, "协同项目"), "一键开工"), "390 一键开工");
   await atLeast44(button(briefCard(narrow), "刷新简报"), "390 刷新简报");
   await axe(narrow, "home-brief-390");
   await briefCard(narrow).screenshot({ path: join(output, "projects-brief-home-390.png") });
-  await narrow.goto(`${app.url}/#projects`);
-  await statusCard(narrow, "协同项目").getByLabel("GitHub").waitFor();
+  await app.gh.mode("ok");await narrow.goto(`${app.url}/#projects`);await button(narrow.getByRole("region",{name:"在推进项目"}),"刷新").click();
+  await atLeast44(button(narrow.getByRole("region",{name:"在推进项目"}),"刷新"),"390 刷新 GitHub");await button(statusCard(narrow,"协同项目"),"详情").click();
+  const ng=narrow.getByRole("dialog",{name:"协同项目",exact:true}).getByLabel("GitHub");await ng.waitFor();await atLeast44(ng.getByRole("link",{name:"#7 状态卡返修"}),"390 PR 链接");
   await noOverflow(narrow, "390 项目空间");
-  await atLeast44(button(narrow, "刷新 GitHub"), "390 刷新 GitHub");
+
   await axe(narrow, "projects-github-390");
   ok("390 宽无横向溢出、44px、axe 无违规");
 

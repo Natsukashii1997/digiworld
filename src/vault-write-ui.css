@@ -1,0 +1,7 @@
+.vault-write-entry { display:inline-flex; max-width:100%; min-width:0; }
+.vault-write-entry > button { min-height:44px; min-width:44px; max-width:100%; white-space:normal; overflow-wrap:anywhere; }
+.vault-write-console .text-difference { min-width:0; }
+.vault-write-console .diff-line { grid-template-columns:20px minmax(0,1fr) auto; }
+.vault-write-console .diff-line pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+.vault-write-console .vault-write-off { display:grid; gap:var(--s-3); }
+.vault-write-console .capability-form label { color:var(--muted); }

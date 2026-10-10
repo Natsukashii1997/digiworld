@@ -1,3 +1,4 @@
+import {openManualRelay} from "./agents-v16-helpers.mjs";
 import { createRequire } from "node:module";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -22,7 +23,7 @@ page.on("pageerror", (e) => errors.push(e.message));
 page.setDefaultTimeout(5000);
 try {
   await page.goto(app.url + "/#projects");
-  await page.getByRole("button", { name: /作品集/ }).click();
+  await page.getByRole("button", { name: "项目：作品集", exact:true }).click();
   await page.getByLabel("共同规则文件（可选）").fill("AGENTS.md");
   await page.getByRole("button", { name: "预览文件", exact: true }).click();
   await page.getByText("已读取 2 份来源", { exact: true }).waitFor();
@@ -52,7 +53,7 @@ try {
   console.log("PASS 预览→连接→真实复制；正文不进入交接包；axe");
 
   await page.reload();
-  await page.getByRole("button", { name: /作品集/ }).click();
+  await page.getByRole("button", { name: "项目：作品集", exact:true }).click();
   assert.equal(
     await page.getByLabel("共同规则文件（可选）").inputValue(),
     "AGENTS.md",
@@ -121,7 +122,7 @@ try {
     [],
   );
   for (const width of [320, 375, 393, 430]) {
-    await page.setViewportSize({ width, height: 900 });
+    await page.setViewportSize({ width, height: 900 });await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     assert.equal(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -191,7 +192,7 @@ try {
   await page.unroute("**/api/project-context/bind");
   console.log("PASS 缺失与保存失败保留输入，不沿用旧包");
   await page.goto(app.url + "/#agents");
-  await page.getByRole("button", { name: "上下文接力", exact: true }).click();
+  await openManualRelay(page);
   await page
     .getByRole("button", { name: "从项目来源生成", exact: true })
     .click();
@@ -208,7 +209,7 @@ try {
     .waitFor();
   await page.reload();
   await page.goto(app.url + "/#projects");
-  await page.getByRole("button", { name: /作品集/ }).click();
+  await page.getByRole("button", { name: "项目：作品集", exact:true }).click();
   assert.equal(await page.getByLabel("共同规则文件（可选）").inputValue(), "");
   assert.equal(
     (await app.call("/workspace")).body.connections.contextBindings.length,

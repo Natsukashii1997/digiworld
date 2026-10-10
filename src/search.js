@@ -25,6 +25,8 @@ function indexVersion(v) {
       field("说明", v.description),
       field("标签", v.tags.join(" ")),
       field("正文", v.content, true),
+      ...(v.mcpConfig ? [field("MCP 服务标识", v.mcpConfig.serverId),
+        field("MCP 公开地址", v.mcpConfig.origin + v.mcpConfig.path)] : []),
       ...v.files
         .filter((f) => f.text && !f.directory)
         .flatMap((f) => [

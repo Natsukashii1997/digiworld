@@ -1,17 +1,20 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer } from "../server/http.mjs";
 
-export async function fixture({ discovery = {} } = {}) {
-  const directory = await mkdtemp(join(tmpdir(), "guiji-ui-"));
+export async function fixture({ discovery = {}, nightV2 = {}, controlledExecution = {} } = {}) {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), "guiji-ui-")));
   const calls = { projects: 0, agents: 0 };
   const stamp = () => new Date().toISOString();
   const app = await startServer({
     directory,
     port: 0,
-    staticRoot: join(import.meta.dirname, "../dist"),
+    staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
+    nightV2,
+    controlledExecution,
     discovery: {
+      calendarHelper: { platform: "linux", run: async () => { throw new Error("合成测试禁止宿主日历"); } },
       inspectAgentInventory: async (agentId) => ({
         agentId,
         at: stamp(),
@@ -106,10 +109,11 @@ export async function fixture({ discovery = {} } = {}) {
   });
   return {
     ...app,
+    directory,
     calls,
     async close() {
       await app.close();
-      await rm(directory, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     },
   };
 }

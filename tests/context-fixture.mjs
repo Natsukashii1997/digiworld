@@ -21,7 +21,7 @@ export async function contextFixture() {
   const app = await startServer({
     directory: join(dir, "data"),
     port: 0,
-    staticRoot: join(import.meta.dirname, "../dist"),
+    staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
     discovery: {
       defaultRoots: () => [join(dir, "projects")],
       scanLocalProjects: async () => ({

@@ -145,6 +145,8 @@ try {
   assert.match(await readFile(join(app.root, "CLAUDE.md"), "utf8"), /协同 v2/);
   // 先刷新、再解除拦截：若先解除，被扣住的请求会被放行、响应先到，锁按设计被正常解除（WB-20260930-83 定位的首败原因）
   await page.reload();
+  // 新文档完成启动后再撤销Fetch拦截；原apply仍先经刷新作废，未知锁断言不变。
+  await page.getByRole("button", { name: "查看 项目协同协议", exact: true }).waitFor();
   await page.unrouteAll({ behavior: "ignoreErrors" }); // 被扣住的旧请求随刷新作废，不再等待它
   await page.getByRole("button", { name: "查看 项目协同协议", exact: true }).click();
   await panel().getByRole("button", { name: "核对写入结果", exact: true }).waitFor();
@@ -205,13 +207,13 @@ try {
     await route.continue();
   });
   await page.goto(`${app.url}/?t=${Date.now()}#home`);
-  await page.getByText(/规则装入记录还在读取/).waitFor();
-  assert.equal(await page.getByText(/已接入的来源里没有待处理事项/).count(), 0);
+  await page.locator('.hx-mod-b').getByText(/部分来源仍在读取，待处理可能不完整/).waitFor();
+  assert.equal(await page.locator('.hx-mod-b').getByText(/已读取的来源里没有要你处理的事/).count(), 0);
   await page.goto(`${app.url}/?t=${Date.now()}#inbox`);
   await page.getByText(/规则模板装入记录还在读取/).waitFor();
-  assert.equal(await page.getByText("目前没有可读出的待处理事项").count(), 0);
+  assert.equal(await page.getByText("没有要你处理的事").count(), 0);
   releaseHome();
-  await page.getByText(/规则「项目协同协议」有 1 个项目可升级/).waitFor();
+  await page.getByRole("dialog", {name:"待处理",exact:true}).getByText(/规则「项目协同协议」有 1 个项目可升级/).waitFor();
   await page.unroute("**/api/rule-templates/installs");
   console.log("PASS D-R3 首页与待处理页读取中不给空结论，读完出现可升级");
 

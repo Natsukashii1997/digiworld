@@ -1,337 +1,247 @@
-/* 路线 v3 5.5 银饰计划 + 4.3 智能体角色卡。只用 styles.css 里已有的设计令牌，不引入新视觉方向。 */
-
-/* ---------- 银饰计划 ---------- */
-.silver-section {
-  display: grid;
-  gap: 16px;
-  margin-bottom: 32px;
-  min-width: 0;
-}
-.silver-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
-  align-items: end;
-  padding: 16px 18px;
-  border-radius: var(--r);
-  border: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--panel-2), var(--panel));
-}
-.silver-form .silver-note,
-.silver-form .silver-form-error,
-.silver-form .form-actions {
-  grid-column: 1 / -1;
-}
-.silver-category-form .form-actions {
-  grid-column: auto;
-  padding-top: 0;
-}
-.silver-category-form .silver-form-error {
-  grid-column: 1 / -1;
-}
-.silver-file-input {
-  padding: 9px 10px;
-  cursor: pointer;
-}
-.silver-file-input::file-selector-button {
-  min-height: 24px;
-  margin-right: 10px;
-  padding: 2px 10px;
-  border-radius: 7px;
-  border: 1px solid var(--line-2);
-  background: var(--panel-3);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-}
-.silver-wall {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.silver-wall-card {
-  display: grid;
-  gap: 10px;
-  height: 100%;
-  padding: 12px;
-  border-radius: var(--r);
-  border: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--panel-2), var(--panel));
-  box-shadow: var(--shadow);
-  align-content: start;
-}
-.silver-wall-image {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: var(--r-s);
-  background: var(--field);
-}
-.silver-wall-meta {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--text-2);
-  overflow-wrap: anywhere;
-}
-.silver-wall-meta strong {
-  color: var(--text);
-  font-size: 14px;
-}
-.silver-wall-meta a {
-  color: var(--cyan);
-  justify-self: start;
-}
-.silver-wall-meta p {
-  white-space: pre-wrap;
-  color: var(--muted);
-}
-.silver-wall-card .text-button {
-  justify-self: start;
-}
-.silver-missing,
-.silver-loading {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: var(--r-s);
-  border: 1px dashed var(--line-2);
-  background: var(--field);
-  color: var(--muted);
-  font-size: 12px;
-}
-.silver-category {
-  display: grid;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: var(--r);
-  border: 1px solid var(--line);
-  background: var(--panel);
-}
-.silver-category-head {
-  display: flex;
-  align-items: center;
-  gap: 10px 14px;
-  flex-wrap: wrap;
-}
-.silver-category-head h3 {
-  font-size: 16px;
-}
-.silver-count {
-  font: 600 12.5px var(--mono);
-  color: var(--lcd);
-}
-.silver-category-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  flex-wrap: wrap;
-}
-.silver-cells {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.silver-cell {
-  position: relative;
-  display: grid;
-  place-items: center;
-  gap: 4px;
-  width: 100%;
-  min-height: 44px;
-  aspect-ratio: 1;
-  padding: 8px;
-  border-radius: var(--r-s);
-  background: #05080f;
-  color: var(--muted);
-  overflow: hidden;
-}
-.silver-cell.empty {
-  border: 1px dashed var(--line-3);
-}
-.silver-cell.empty:hover {
-  border-color: rgba(77, 227, 255, 0.5);
-  color: var(--cyan);
-}
-.silver-cell.filled {
-  border: 1px solid var(--line-2);
-  grid-template-rows: minmax(0, 1fr) auto;
-}
-.silver-cell.filled:hover {
-  border-color: rgba(233, 238, 255, 0.5);
-}
-.silver-cell .silver-outline,
-.silver-cell-photo {
-  max-width: 100%;
-  max-height: 100%;
-  min-height: 0;
-  object-fit: contain;
-}
-.silver-cell-photo {
-  width: 100%;
-  height: 100%;
-  border-radius: 6px;
-  opacity: 0.75;
-}
-.silver-cell-tag {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  padding: 1px 6px;
-  border-radius: 5px;
-  background: rgba(7, 11, 22, 0.85);
-  color: var(--yellow);
-  font-size: 11px;
-}
-.silver-cell-name {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text);
-  font-size: 12px;
-}
-.silver-detail h2 {
-  font-size: 18px;
-}
-.silver-detail-images {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-}
-.silver-detail-images figure {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 10px;
-  border-radius: var(--r-s);
-  background: #05080f;
-  justify-items: center;
-}
-.silver-detail-images figcaption {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  color: var(--muted);
-  font-size: 12px;
-}
-.silver-detail-photo {
-  width: 100%;
-  max-height: 220px;
-  object-fit: contain;
-}
-.silver-detail .silver-outline {
-  max-width: 100%;
-}
-.silver-facts {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 14px;
-  margin: 0;
-  font-size: 13px;
-}
-.silver-facts dt {
-  color: var(--muted);
-}
-.silver-facts dd {
-  margin: 0;
-  color: var(--text);
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
-.silver-recycle details {
-  padding: 4px 16px;
-  border-radius: var(--r);
-  border: 1px solid var(--line);
-  background: var(--panel);
-}
-.silver-recycle summary {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  cursor: pointer;
-}
-.silver-recycle summary h2 {
-  font-size: 15px;
-}
-.silver-recycle summary span {
-  color: var(--muted);
-  font-size: 12.5px;
-}
-.silver-recycle ul {
-  margin: 0 0 8px;
-  padding: 0;
-  list-style: none;
-}
-.silver-recycle li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border-top: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--text-2);
-  overflow-wrap: anywhere;
-}
-
-/* ---------- 智能体角色卡 ---------- */
+/* ---------- 智能体角色卡（UI v14e：上方选角色，下方档案） ---------- */
 .agent-roles {
   display: grid;
-  gap: 16px;
-  margin: 28px 0;
+  gap: var(--s-4);
+  margin: 0 0 var(--s-7);
   min-width: 0;
 }
-.role-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.agent-roles > .v14-sh {
+  margin-bottom: 0;
 }
+.role-roster {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--s-3);
+  padding-top: 18px;
+}
+.role-slot {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: var(--s-2);
+  min-width: 0;
+  min-height: 44px;
+  padding: var(--s-4) var(--s-2) var(--s-3);
+  border: 0;
+  border-radius: var(--r-l);
+  color: var(--text-2);
+  background: var(--m-panel);
+  box-shadow: var(--m-panel-edge);
+  cursor: pointer;
+  transition:
+    transform var(--t-mid) var(--spring),
+    box-shadow var(--t-mid);
+}
+.role-slot:hover {
+  transform: translateY(-4px);
+}
+.role-slot[aria-checked="true"] {
+  color: var(--text);
+  transform: translateY(-6px);
+  box-shadow:
+    inset 0 0 0 2px var(--orange),
+    0 0 30px -8px rgba(255, 138, 36, 0.75),
+    var(--m-panel-edge);
+}
+.role-marker {
+  position: absolute;
+  top: -20px;
+  font: 800 var(--fs-body) var(--mono);
+  color: var(--orange);
+  animation: v14-pulse 0.9s steps(2) infinite;
+}
+.role-portrait {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  overflow: hidden;
+  border-radius: var(--r-l);
+  background: radial-gradient(circle at 50% 70%, rgba(var(--hue), 0.28), transparent 70%), var(--hw-pit);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.role-portrait .agent-letter {
+  width: 52px !important;
+  height: 52px !important;
+  font-size: var(--fs-title) !important;
+}
+.role-slot.only-detect .role-portrait {
+  filter: grayscale(1);
+}
+.role-slot b {
+  font-size: var(--fs-body);
+  color: var(--text);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.role-chip {
+  font: 700 var(--fs-label) var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.role-chip.ok {
+  color: var(--lcd);
+}
+.role-chip.danger {
+  color: var(--red-2);
+}
+/* 档案：左角色舞台，右擅长/成本/常驻 + 内容检查 */
 .role-card {
   display: grid;
-  gap: 10px;
-  height: 100%;
-  padding: 14px 16px;
-  border-radius: var(--r);
-  border: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--panel-2), var(--panel));
-  box-shadow: var(--shadow);
+  grid-template-columns: 330px minmax(0, 1fr);
+  overflow: hidden;
+  min-width: 0;
+}
+.role-art {
+  display: grid;
+  gap: var(--s-4);
   align-content: start;
+  padding: var(--s-5);
+  border-right: 1px solid var(--line);
+  min-width: 0;
 }
-.role-card header {
+.role-stage {
+  height: 290px;
+  display: grid;
+  place-items: end center;
+  padding-bottom: 36px;
+}
+.role-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  width: 220px;
+  height: 120px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 100%, rgba(var(--hue), 0.28), transparent 70%);
+  pointer-events: none;
+}
+.role-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  border-top: 1px solid rgba(var(--hue), 0.55);
+  background:
+    linear-gradient(180deg, rgba(var(--hue), 0.12), transparent 80%),
+    repeating-linear-gradient(90deg, rgba(140, 178, 255, 0.09) 0 1px, transparent 1px 14px);
+  box-shadow: 0 -1px 12px -2px rgba(var(--hue), 0.5);
+}
+.role-fig {
+  position: relative;
+  z-index: 2;
+}
+/* 角色从脚底逐行像素载入，扫描光带同步上行 */
+.role-fig.in {
+  animation: v14-materialize 0.52s steps(8) both;
+}
+@keyframes v14-materialize {
+  from {
+    clip-path: inset(100% 0 0 0);
+    filter: brightness(2.4) saturate(0);
+  }
+  75% {
+    filter: brightness(1.5) saturate(0.6);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    filter: none;
+  }
+}
+.role-scan {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 36px;
+  height: 3px;
+  z-index: 3;
+  background: rgba(var(--hue), 1);
+  box-shadow: 0 0 14px rgba(var(--hue), 1);
+  opacity: 0;
+  pointer-events: none;
+}
+.role-scan.go {
+  animation: v14-scanup 0.52s steps(8) both;
+}
+@keyframes v14-scanup {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-180px);
+    opacity: 0;
+  }
+}
+/* 地面倒影 */
+.role-refl {
+  position: absolute;
+  top: calc(100% - 36px);
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%) scaleY(-1);
+  opacity: 0.17;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 45%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 45%);
+}
+.role-plate {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 0;
+}
+.role-plate header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: var(--s-2);
 }
-.role-card h3 {
-  font-size: 16px;
+.role-plate h3 {
+  font-size: var(--fs-section);
+}
+.role-plate small {
+  font-size: var(--fs-meta);
+  color: var(--muted);
+}
+.role-main {
+  display: grid;
+  gap: var(--s-5);
+  align-content: start;
+  padding: var(--s-5) var(--s-6);
+  min-width: 0;
+  animation: v14-rise var(--t-slow) var(--ease) both;
+}
+@keyframes v14-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 }
 .role-draft {
   color: var(--yellow);
-  font-size: 12px;
+  font-size: var(--fs-small);
 }
 .role-card dl {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4) var(--s-6);
   margin: 0;
-  font-size: 13px;
+}
+.role-card dl > div {
+  display: grid;
+  gap: var(--s-2);
+  align-content: start;
+  min-width: 0;
 }
 .role-card dt {
+  font: 700 var(--fs-label) var(--mono);
+  letter-spacing: 0.14em;
   color: var(--muted);
 }
 .role-card dd {
@@ -343,65 +253,280 @@
 .role-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
 }
 .role-tags span {
-  padding: 1px 7px;
-  border-radius: 6px;
-  border: 1px solid rgba(77, 227, 255, 0.3);
-  color: var(--cyan);
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: var(--r-s);
+  font-size: var(--fs-meta);
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
-.role-card .button {
-  justify-self: start;
+.role-cost {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
+.role-energy {
+  display: inline-flex;
+  gap: 3px;
+}
+.role-energy i {
+  width: 16px;
+  height: 10px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.role-energy i.on {
+  background: var(--orange);
+  box-shadow: 0 0 6px rgba(255, 138, 36, 0.6);
+}
+/* 内容检查：液晶读数条 */
+.role-check {
+  display: grid;
+  gap: var(--s-3);
+  padding-bottom: var(--s-3);
+  border-radius: var(--r);
+  box-shadow: inset 0 0 0 1px var(--line);
+  min-width: 0;
+}
+.role-check-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4) 0;
+}
+.role-check-when {
+  margin-left: auto;
+  font-size: var(--fs-meta);
+  color: var(--muted);
+}
+.role-check-band {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 var(--s-4);
+  border-radius: var(--r-s);
+  color: var(--lcd-ink);
+  background: radial-gradient(circle at 50% 30%, var(--lcd-screen), var(--lcd-screen-2));
+  box-shadow: inset 0 0 0 2px var(--hw-bezel), inset 0 3px 6px rgba(0, 0, 0, 0.28);
+}
+.role-check-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(28, 38, 22, 0.15) 0.8px, transparent 1px);
+  background-size: 4px 4px;
+}
+.role-cell {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 10px 14px 8px;
+  min-width: 0;
+}
+.role-cell + .role-cell {
+  box-shadow: -1px 0 0 rgba(28, 38, 22, 0.25);
+}
+.role-cell .zk {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 700 var(--fs-label) var(--mono);
+  letter-spacing: 0.14em;
+}
+.role-cell .mk {
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+}
+.role-cell .num {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 34px;
+  align-items: flex-end;
+}
+.role-check-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--s-4);
+  margin: 0;
+  padding: 0 var(--s-4);
+  font-size: var(--fs-meta);
+}
+.role-check-legend .danger {
+  color: var(--red-2);
+}
+.role-check-legend .warn {
+  color: var(--yellow);
+}
+.role-check-legend .ok {
+  color: var(--lcd);
+}
+.role-check-scope {
+  margin: 0;
+  padding: 0 var(--s-4);
+  font-size: var(--fs-meta);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.role-check > .v14-result {
+  padding: 0 var(--s-4);
+}
+.role-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line);
+}
+/* 派活推荐：一条输入栏，结果用头像卡 */
 .role-recommend {
   display: grid;
-  gap: 10px;
-  padding: 14px 16px;
-  border-radius: var(--r);
-  border: 1px solid var(--line);
-  background: var(--panel);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-3) var(--s-3) var(--s-3) var(--s-5);
 }
 .role-recommend h3 {
-  font-size: 15px;
+  font: 700 var(--fs-label) var(--mono);
+  letter-spacing: 0.16em;
+  color: var(--cyan);
 }
 .role-recommend-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: end;
+  gap: var(--s-3);
+  align-items: center;
 }
-.role-recommend-form .form-actions {
-  padding-top: 0;
+.role-recommend-form input {
+  min-height: 44px;
+  width: 100%;
+}
+.role-recommend .helper {
+  grid-column: 2;
+  margin: 0;
+  font-size: var(--fs-meta);
+  color: var(--muted);
+}
+.role-result {
+  grid-column: 1 / -1;
 }
 .role-picks {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
   margin: 0;
-  padding: 0;
+  padding: var(--s-2) 0 var(--s-1);
   list-style: none;
+  animation: v14-rise var(--t-slow) var(--ease);
 }
 .role-pick {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
-  padding: 10px 12px;
-  border-radius: var(--r-s);
-  border: 1px solid rgba(166, 227, 110, 0.3);
-  background: rgba(166, 227, 110, 0.06);
-  font-size: 13px;
+  gap: var(--s-3);
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--s-2) var(--s-4) var(--s-2) var(--s-2);
+  border-radius: var(--r);
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  font-size: var(--fs-meta);
   color: var(--text-2);
   overflow-wrap: anywhere;
+}
+.role-face {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: var(--r-s);
+  background: var(--hw-pit);
+}
+.role-face .agent-sprite {
+  width: 40px;
+  height: 40px;
+}
+.role-face .agent-letter {
+  width: 36px !important;
+  height: 36px !important;
+}
+.role-pick-text {
+  display: grid;
+  min-width: 0;
 }
 .role-pick strong {
   color: var(--text);
 }
-@media (max-width: 600px) {
-  .role-recommend-form {
+@media (max-width: 1080px) {
+  .role-roster {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .role-card {
     grid-template-columns: minmax(0, 1fr);
   }
+  .role-art {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+@media (max-width: 640px) {
+  .role-roster {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .role-main {
+    padding: var(--s-4);
+  }
+  .role-art {
+    padding: var(--s-4);
+  }
+  .role-card dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .role-check-band {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .role-cell:nth-child(4) {
+    box-shadow: none;
+  }
+  .role-check-when {
+    margin-left: 0;
+  }
+  .role-recommend {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--s-3) var(--s-4);
+  }
+  .role-recommend .helper {
+    grid-column: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .role-fig.in,
+  .role-scan.go,
+  .role-main,
+  .role-picks,
+  .role-marker {
+    animation: none !important;
+  }
+  .role-slot,
+  .role-slot:hover,
+  .role-slot[aria-checked="true"] {
+    transition: none;
+  }
+}
+@media (max-width: 600px) {
   .silver-cells {
     grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
   }

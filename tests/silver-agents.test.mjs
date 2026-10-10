@@ -18,7 +18,6 @@ import { seed } from "../src/store.js";
 import {
   ROLE_AGENTS,
   rolesOf,
-  recommendAgents,
   inferProjects,
   parseList,
 } from "../src/agent-roles.js";
@@ -471,28 +470,11 @@ test("角色卡：用户编辑覆盖默认值；未编辑的 Agent 用草拟默�
   assert.deepEqual(parseList("重构, 测试，界面、 审查  重构"), ["重构", "测试", "界面", "审查"]);
 });
 
-test("派活推荐：按擅长关键词匹配，最多推荐 2 个并写明理由；无命中时不推荐", () => {
-  const cards = [
-    { agentId: "codex", name: "Codex", tier: "main", strengths: ["重构", "测试", "修复"], cost: "medium" },
-    { agentId: "claude-code", name: "Claude Code", tier: "main", strengths: ["界面", "文档", "测试"], cost: "high" },
-    { agentId: "hermes", name: "Hermes", tier: "main", strengths: ["夜巡", "监工"], cost: "low" },
-    { agentId: "openclaw", name: "OpenClaw", tier: "aux", strengths: ["UI"], cost: "unknown" },
-    { agentId: "doubao", name: "豆包工作", tier: "aux", strengths: ["测试"], cost: "low" },
-  ];
-  const r1 = recommendAgents("重构登录模块并补测试，顺便修复一个 bug", cards);
-  assert.equal(r1.length, 2);
-  assert.equal(r1[0].agentId, "codex");
-  assert.deepEqual(r1[0].matched, ["重构", "测试", "修复"]);
-  assert.match(r1[0].reason, /命中擅长：重构、测试、修复/);
-  assert.match(r1[0].reason, /成本中/);
-  // 同分按成本从低到高：豆包（低）先于 Claude Code（高）
-  assert.equal(r1[1].agentId, "doubao");
-  const r2 = recommendAgents("今晚安排夜巡", cards);
-  assert.deepEqual(r2.map((r) => r.agentId), ["hermes"]);
-  // 英文关键词不区分大小写
-  assert.equal(recommendAgents("调整 ui 间距", cards)[0].agentId, "openclaw");
-  assert.deepEqual(recommendAgents("写一首诗", cards), []);
-  assert.deepEqual(recommendAgents("   ", cards), []);
+test("UI v16取消派活推荐，角色编辑与常驻项目仍独立保留", async () => {
+  const {readFile}=await import("node:fs/promises");
+  const jsx=await readFile(new URL("../src/AgentRoles.jsx",import.meta.url),"utf8");
+  assert.doesNotMatch(jsx,/function Recommend|<Recommend|推荐人选|recommendAgents/);
+  assert.match(jsx,/RoleEditor/);assert.match(jsx,/inferProjects/);
 });
 
 test("常驻项目：只从已登记项目的交接字段推断，推断不了留空", () => {

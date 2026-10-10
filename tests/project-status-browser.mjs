@@ -113,6 +113,7 @@ try {
   await page.keyboard.press("Escape");
   const collab = card(page, "协同项目");
   await collab.waitFor();
+  await button(collab,"详情").click();const cd=page.getByRole("dialog",{name:"协同项目",exact:true});
   for (const text of [
     "P-20260930-12",
     "Codex（认领12：状态卡复核）",
@@ -120,15 +121,12 @@ try {
     "Codex 认领12",
     "docs/handoffs/12.md",
   ])
-    await collab.getByText(text, { exact: true }).waitFor();
-  await collab.getByText("7 天内有更新").waitFor();
-  await collab.getByText("未发现问题").waitFor();
-  await collab.getByText("私有", { exact: true }).waitFor();
-  await page
-    .locator(".project-discovery-row")
-    .filter({ hasText: "协同项目" })
-    .getByText("在推进", { exact: true })
-    .waitFor();
+    await cd.getByText(text, { exact: true }).waitFor();
+  await cd.getByText("7 天内有更新").waitFor();
+  await cd.getByText("未发现问题").waitFor();
+  await cd.getByText("私有", { exact: true }).waitFor();
+  await page.keyboard.press("Escape");
+  assert.equal(await page.locator(".pj-cs").filter({hasText:"协同项目"}).locator(".pj-cs-save .en").innerText(),await collab.locator(".pj-slot .en").innerText());
   ok("标为在推进后状态卡与 CURRENT 表头逐项一致");
 
   // 3. 另两个合成仓库：无 CURRENT 的停滞标红；跟踪 .env 的体检有问题。
@@ -137,43 +135,48 @@ try {
   await page.reload();
   const bare = card(page, "无协议项目");
   await bare.waitFor();
-  await bare.getByText("未装协同协议").waitFor();
-  await bare.getByText("停滞 30 天").waitFor();
-  assert.match(await bare.getAttribute("class"), /stalled/);
-  await bare.getByText("没有远程").waitFor();
+  await button(bare,"详情").click();const bd=page.getByRole("dialog",{name:"无协议项目",exact:true});
+  await bd.getByText("未装协同协议").waitFor();
+  await bare.getByText("读不到 CURRENT",{exact:false}).waitFor();assert.equal(await button(bare,"继续").isDisabled(),true);assert.doesNotMatch(await bare.getAttribute("class"), /stalled/);
+  await bd.getByText("没有远程").waitFor();await page.keyboard.press("Escape");
   const leaky = card(page, "泄露项目");
-  await leaky.getByText("3 项问题").waitFor();
-  await leaky.getByText("2 个被跟踪：.env、data/app.sqlite").waitFor();
-  await leaky.getByText("1 个", { exact: true }).waitFor();
-  await leaky.getByText("公开", { exact: true }).waitFor();
+  await button(leaky,"详情").click();const ld=page.getByRole("dialog",{name:"泄露项目",exact:true});
+  await ld.getByText("3 项问题").waitFor();
+  await ld.getByText("2 个被跟踪：.env、data/app.sqlite").waitFor();
+  await ld.getByText("1 个", { exact: true }).waitFor();
+  await ld.getByText("公开", { exact: true }).waitFor();
   assert.doesNotMatch(await leaky.getAttribute("class"), /stalled/);
-  ok("无 CURRENT 如实显示未装协同协议，30 天无提交标红，体检识别被跟踪的 .env 与公开远程");
+  await ld.screenshot({path:join(output,"project-status-safety-issues.png")});await page.keyboard.press("Escape");
+  ok("无 CURRENT 如实显示未装协同协议与未知，体检识别被跟踪的 .env 与公开远程");
 
   await page.getByRole("region", { name: "在推进项目" }).screenshot({
     path: join(output, "project-status-1440-active-list.png"),
   });
   await collab.screenshot({ path: join(output, "project-status-card.png") });
-  await leaky.screenshot({ path: join(output, "project-status-safety-issues.png") });
+
 
   // 4. 停滞阈值可在页面调整并保存；读回后不再标红，再改回 7。
-  const days = page.getByLabel("停滞阈值（天）");
+  await button(page,"项目空间设置").click();const settings=page.getByRole("dialog",{name:"项目空间设置",exact:true});
+  const days = settings.getByLabel("停滞阈值（天）");
   await atLeast44(days, "停滞阈值输入框");
-  await atLeast44(button(page, "重新体检"), "重新体检按钮");
+  await atLeast44(button(page.getByRole("region",{name:"在推进项目"}), "刷新"), "刷新按钮");
   await days.fill("40");
   await atLeast44(button(page, "保存阈值"), "保存阈值按钮");
   await button(page, "保存阈值").click();
-  await bare.getByText("40 天内有更新").waitFor();
+  await page.getByText("停滞阈值已保存为 40 天",{exact:true}).waitFor();
+  assert.equal((await app.call("/project-status/inspect",{})).body.items.find(i=>i.name==="无协议项目").activity.state,"active");
   assert.doesNotMatch(await bare.getAttribute("class"), /stalled/);
   assert.equal((await app.workspace()).connections.projectStallDays, 40);
   await days.fill("7");
   await button(page, "保存阈值").click();
-  await bare.getByText("停滞 30 天").waitFor();
+  await page.getByText("停滞阈值已保存为 7 天",{exact:true}).waitFor();
+  assert.equal((await app.call("/project-status/inspect",{})).body.items.find(i=>i.name==="无协议项目").activity.state,"stalled");assert.doesNotMatch(await bare.getAttribute("class"),/stalled/);await page.keyboard.press("Escape");
   ok("停滞阈值调整后保存并重新判断");
   await axe(page, "projects-1440");
   ok("axe 项目空间 1440 无违规");
 
   // 5. 待处理：体检问题与停滞各一条，只汇总和跳转。
-  const inbox = page.getByRole("button", { name: /^待处理 \d+ 项$/ });
+  const inbox = page.getByRole("button", { name: /^待处理 \d+ 项，主线 \d+，支线 \d+，情报 \d+$/ });
   const count = Number((await inbox.getAttribute("aria-label")).match(/\d+/)[0]);
   assert.ok(count >= 3, `待处理 ${count} 项`);
   await inbox.click();
@@ -192,7 +195,7 @@ try {
   );
   await atLeast44(safetyItem, "待处理事项");
   await axe(page, "inbox-1440");
-  await page.locator(".inbox-section").first().screenshot({
+  await page.locator(".ib-drawer").screenshot({
     path: join(output, "project-status-inbox.png"),
   });
   await safetyItem.click();
@@ -203,13 +206,13 @@ try {
   // 6. 390 宽：无横向溢出，控件不小于 44px。
   const narrow = await open(390, "projects", 844);
   await card(narrow, "协同项目").waitFor();
-  await card(narrow, "泄露项目").getByText("3 项问题").waitFor();
+  await button(card(narrow,"泄露项目"),"详情").click();await narrow.getByRole("dialog",{name:"泄露项目",exact:true}).getByText("3 项问题").waitFor();await noOverflow(narrow,"390 项目详情");await axe(narrow,"projects-detail-390");await narrow.keyboard.press("Escape");await button(narrow,"项目空间设置").click();
   await noOverflow(narrow, "390 项目空间");
   await atLeast44(button(narrow, "保存阈值"), "390 保存阈值");
-  await atLeast44(button(narrow, "重新体检"), "390 重新体检");
+  await atLeast44(button(narrow.getByRole("region",{name:"在推进项目"}), "刷新"), "390 刷新");
   await axe(narrow, "projects-390");
-  await narrow.goto(`${app.url}/#inbox`);
-  await narrow.getByRole("button", { name: /项目「泄露项目」安全体检/ }).waitFor();
+  await narrow.keyboard.press("Escape");await narrow.goto(`${app.url}/#inbox`);
+  await narrow.getByRole("dialog", {name:"待处理",exact:true}).getByRole("button", { name: /项目「泄露项目」安全体检/ }).waitFor();
   await noOverflow(narrow, "390 待处理");
   ok("390 宽无横向溢出、44px、axe 无违规");
 

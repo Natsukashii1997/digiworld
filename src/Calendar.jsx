@@ -1,9 +1,9 @@
 // 日历页（生活区，路线 v3 5.2）：周视图 + 今天；在时间轴上拖出规划块并写一句话，写入 macOS“工作台”日历；
-// 其他日历的会议只读；夜巡窗口（草稿）；旁边是“工作台”提醒事项列表的 todo。
+// 其他日历的会议只读；夜巡 v2 计划窗口只读展示；旁边是“工作台”提醒事项列表的 todo。
 // 权威在 macOS 日历与提醒事项：每次写入后以服务端回读结果为准，冲突时提示并显示回读内容。
 // 所有写入都来自用户点击；首次使用先说明需要的权限，点击后才申请。
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarPlus, ChevronLeft, ChevronRight, RefreshCw, ShieldCheck, BellRing, Plus } from "lucide-react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { CalendarPlus, ChevronLeft, ChevronRight, RefreshCw, ShieldCheck, BellRing, Plus, Check, Trash2 } from "lucide-react";
 import { request } from "./api.js";
 import { Button, Dialog, PageHeading } from "./components.jsx";
 import {
@@ -23,8 +23,13 @@ import {
   startOfWeek,
   toLocalInput,
   ymd,
+  todoIsDue,
 } from "./calendar.js";
 import "./calendar.css";
+import "./calendar-v14.css";
+import "./calendar-v16.css";
+import { PageChoices } from "./PageChoices.jsx";
+import { nightV2Of } from "./night-v2-model.js";
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 const dayLabel = (d) => `${WEEKDAYS[d.getDay()]} ${d.getMonth() + 1}/${d.getDate()}`;
@@ -34,32 +39,30 @@ const HOURS = Array.from({ length: 24 }, (_, h) => h);
 export function useCalendarData(range) {
   const [status, setStatus] = useState(null),
     [week, setWeek] = useState(null),
-    [todos, setTodos] = useState(null),
     [error, setError] = useState("");
+  const generation = useRef(0);
   const from = range?.from,
     to = range?.to;
   const load = useCallback(async () => {
+    const id = ++generation.current;
     try {
       const s = await request("/calendar/status");
+      if (id !== generation.current) return;
       setStatus(s);
       setError("");
-      if (!s.available) return;
-      const [w, t] = await Promise.all([
-        s.access.calendar === "authorized" && from
-          ? request("/calendar/week", { from, to })
-          : Promise.resolve(null),
-        s.access.reminders === "authorized" ? request("/calendar/todos", {}) : Promise.resolve(null),
-      ]);
+      if (!s.available) { setWeek(null); return; }
+      const w = s.access.calendar === "authorized" && from ? await request("/calendar/week", {from,to}) : null;
+      if (id !== generation.current) return;
       setWeek(w);
-      setTodos(t);
     } catch (e) {
-      setError(e.message || "读取失败");
+      if (id === generation.current) { setStatus(null); setWeek(null); setError(e.message || "读取失败"); }
     }
   }, [from, to]);
   useEffect(() => {
     load();
+    return () => { generation.current++; };
   }, [load]);
-  return { status, week, todos, error, reload: load, setWeek, setTodos };
+  return { status, week, error, reload: load };
 }
 
 function Unavailable({ reason }) {
@@ -82,7 +85,7 @@ const ACCESS_LABEL = {
   writeOnly: "只有写入权限",
 };
 
-function Permission({ access, onGranted, notify }) {
+export function Permission({ access, onGranted, notify }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const askable = access.calendar === "notDetermined" || access.reminders === "notDetermined";
@@ -92,7 +95,7 @@ function Permission({ access, onGranted, notify }) {
       <div>
         <h2>首次使用需要授权</h2>
         <p>
-          工作台需要读写 macOS 日历与提醒事项：只在“工作台”日历和“工作台”提醒事项列表中新建和修改（不存在时自动新建），其他日历只读显示，不会删除任何条目。
+          工作台需要读写 macOS 日历与提醒事项：只在“工作台”日历和“工作台”提醒事项列表中新建和修改（不存在时自动新建）；“工作台”规划块可经二次确认删除，其他日历只读显示，提醒事项不提供删除。
         </p>
         <p className="cal-muted">
           日历：{ACCESS_LABEL[access.calendar] || access.calendar} · 提醒事项：
@@ -134,20 +137,55 @@ function Permission({ access, onGranted, notify }) {
 // 新建 / 修改规划块的对话框。
 function BlockDialog({ draft, onClose, onSaved, notify, setNotice }) {
   const editing = !!draft.event;
+  const host = useRef(null);
+  useLayoutEffect(() => {
+    const anchor = draft.anchor, root = host.current;
+    if (!anchor || !root) return;
+    const card = root.querySelector(".modal");
+    anchor.classList.add("cal-editing");
+    const place = () => {
+      const a = anchor.getBoundingClientRect(), box = card.getBoundingClientRect();
+      const right = a.right + 12;
+      const left = right + box.width <= innerWidth - 12 ? right : a.left - box.width - 12;
+      root.style.setProperty("--edit-left", `${Math.max(12, Math.min(left, innerWidth - box.width - 12))}px`);
+      root.style.setProperty("--edit-top", `${Math.max(12, Math.min(a.top, innerHeight - box.height - 12))}px`);
+    };
+    const observer = new ResizeObserver(place);
+    observer.observe(card); observer.observe(anchor);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    place();
+    return () => {
+      anchor.classList.remove("cal-editing"); observer.disconnect();
+      window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true);
+    };
+  }, [draft.anchor]);
   const [title, setTitle] = useState(draft.event?.title || ""),
+    [notes, setNotes] = useState(draft.event?.notes || ""),
     [date, setDate] = useState(draft.date),
+    [endDate, setEndDate] = useState(draft.endDate || draft.date),
+    [allDay, setAllDay] = useState(draft.event?.allDay || false),
     [start, setStart] = useState(draft.start),
     [end, setEnd] = useState(draft.end),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [deleteConfirm, setDeleteConfirm] = useState(false),
+    [deleteUnknown, setDeleteUnknown] = useState(false);
   async function submit(e) {
     e.preventDefault();
     setError("");
     if (!title.trim()) return setError("请写一句话");
-    if (end <= start) return setError("结束时间需要晚于开始时间");
+    if (endDate < date || (!allDay && endDate === date && end <= start))
+      return setError("结束时间需要晚于开始时间");
     setBusy(true);
     try {
-      const payload = { title, start: localIso(date, start), end: localIso(date, end) };
+      const exclusiveEnd = allDay ? ymd(addDays(new Date(`${endDate}T12:00:00`), 1)) : endDate;
+      const payload = {
+        title, start: localIso(date, allDay ? "00:00" : start),
+        end: localIso(exclusiveEnd, allDay ? "00:00" : end),
+        ...(draft.event?.notesOverflow ? {} : { notes }),
+        ...(allDay || draft.event?.allDay ? { allDay } : {}),
+      };
       const result = editing
         ? await request("/calendar/blocks/update", {
             id: draft.event.id,
@@ -171,9 +209,44 @@ function BlockDialog({ draft, onClose, onSaved, notify, setNotice }) {
       setBusy(false);
     }
   }
+  async function checkDeleted() {
+    try {
+      const found = await request("/calendar/blocks/check", { id: draft.event.id });
+      const message = found.state === "absent"
+        ? "回读确认该规划块目前已不在日历；无法判定是否由本次操作造成。"
+        : "回读仍见该规划块，未再次删除。请刷新后重新打开并确认。";
+      setNotice(message);
+      notify(message, found.state === "absent" ? "info" : "warning");
+      onSaved(null);
+    } catch (e) {
+      setDeleteUnknown(true);
+      setError(`删除结果仍未知：${e.message}。先在系统日历核对，勿重复删除。`);
+    }
+  }
+  async function deleteBlock() {
+    if (!editing || !deleteConfirm || busy || deleteUnknown) return;
+    setError(""); setBusy(true);
+    try {
+      const result = await request("/calendar/blocks/delete", {
+        id: draft.event.id, expectedModified: draft.event.modified, confirmed: true,
+      });
+      setNotice(result.message);
+      notify(result.message, result.conflict ? "warning" : "info");
+      onSaved(null);
+    } catch (e) {
+      if (e.operationNotStarted || e.status === 400 || e.status === 409) {
+        setError(e.message);
+      } else {
+        setDeleteUnknown(true);
+        setError(`${e.message}。正在按条目标识独立核对，勿重复删除。`);
+        await checkDeleted();
+      }
+    } finally { setBusy(false); }
+  }
   return (
-    <Dialog title={editing ? "修改规划块" : "新建规划块"} onClose={() => !busy && onClose()}>
-      <form className="asset-form" onSubmit={submit}>
+    <div ref={host} className={draft.anchor ? "cal-anchored-editor" : "cal-new-editor"}><Dialog recoverFocus title={editing ? "修改规划块" : "新建规划块"} onClose={() => !busy && onClose()}>
+      <form className="asset-form calendar-block-form" onSubmit={submit}>
+        <p className="cal-editor-eyebrow">PLAN BLOCK · {draft.event?.calendar || "工作台"}</p>
         <p className="form-intro">
           {editing
             ? "保存前会核对日历应用里是否已被改过；已被改过时不写入，以回读为准。"
@@ -181,29 +254,52 @@ function BlockDialog({ draft, onClose, onSaved, notify, setNotice }) {
         </p>
         <label>
           一句话
-          <input
-            autoFocus
+          <textarea
+            rows={1}
+            ref={(el) => { if (el) { el.style.height = "auto"; el.style.height = `${el.scrollHeight + 2}px`; } }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) {
+                e.preventDefault();
+                if (!busy) e.currentTarget.form.requestSubmit();
+              }
+            }}
             required
             maxLength={200}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => setTitle(e.target.value.replace(/[\r\n]/g, ""))}
             placeholder="这段时间做什么"
           />
         </label>
+        <label>
+          备注（可留空）
+          <textarea rows={2} maxLength={2000} value={notes} disabled={draft.event?.notesOverflow === true} onChange={(e) => setNotes(e.target.value)} placeholder="补充这段规划的说明" />
+        </label>
+        {draft.event?.notesOverflow && <p className="form-intro" role="note">系统日历中的现有备注超过 2000 字。这里不读取或覆盖该备注；请在系统日历中缩短后再编辑。</p>}
+        <PageChoices label="规划块时段类型" className="cal-toggle"
+          choices={[["timed", "指定时间"], ["all-day", "全天"]]}
+          value={allDay ? "all-day" : "timed"} onChange={(value) => setAllDay(value === "all-day")} />
         <div className="form-row">
           <label>
             日期
-            <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+            <input type="date" required value={date} onChange={(e) => {
+              if (endDate === date) setEndDate(e.target.value);
+              setDate(e.target.value);
+            }} />
           </label>
           <label>
+            截止日
+            <input type="date" required min={date} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          </label>
+          {!allDay && <label>
             开始
             <input type="time" required step={900} value={start} onChange={(e) => setStart(e.target.value)} />
-          </label>
-          <label>
+          </label>}
+          {!allDay && <label>
             结束
             <input type="time" required step={900} value={end} onChange={(e) => setEnd(e.target.value)} />
-          </label>
+          </label>}
         </div>
+        {allDay && <p className="form-intro">截止日包含当天；写入日历时使用次日零点作为结束边界。</p>}
         {error && (
           <p className="inline-error" role="alert">
             {error}
@@ -217,155 +313,202 @@ function BlockDialog({ draft, onClose, onSaved, notify, setNotice }) {
             {busy ? "正在写入…" : editing ? "保存修改" : "写入“工作台”日历"}
           </Button>
         </div>
+        {editing && draft.event.modified === null && <p className="form-intro" role="note">系统日历没有提供这条规划块的修改版本，无法安全删除。请在系统日历中核对后处理。</p>}
+        {editing && draft.event.modified !== null && <div className="cal-delete-zone">
+          {deleteUnknown ? <Button type="button" secondary disabled={busy} onClick={checkDeleted}>核对删除结果</Button>
+            : deleteConfirm ? <>
+              <p role="note">将删除“工作台”规划块「{draft.event.title}」· {spanText(draft.event)}。此操作不能撤销，请再次确认。</p>
+              <div className="form-actions"><Button type="button" secondary disabled={busy} onClick={() => setDeleteConfirm(false)}>取消删除</Button><Button type="button" className="cal-delete-confirm" disabled={busy} onClick={deleteBlock}>确认删除规划块</Button></div>
+            </> : <Button type="button" secondary className="cal-delete-trigger" disabled={busy} onClick={() => setDeleteConfirm(true)}><Trash2 size={16} aria-hidden="true" />删除规划块</Button>}
+        </div>}
       </form>
-    </Dialog>
+    </Dialog></div>
   );
 }
 
-function DayColumn({ day, events, night, drag, onPointerDown, onEdit }) {
+// 只在完整内容实际放得下时显示：先试“标题 + 时间”，放不下再试只放标题，仍放不下就不显示文字；
+// 测量使用当前字体与块的真实尺寸。
+const TIME_FONT = '500 10px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+function EventMarker({ event, style }) {
+  const marker = useRef(null), [fit, setFit] = useState("none");
+  const time = `${spanText(event)}${event.calendar ? ` · ${event.calendar}` : ""}`;
+  useLayoutEffect(() => {
+    const el = marker.current;
+    let active = true;
+    const fits = (withTime) => {
+      const css = getComputedStyle(el.querySelector(".cal-event-title"));
+      const probe = document.createElement("span");
+      Object.assign(probe.style, {
+        position: "fixed", visibility: "hidden", pointerEvents: "none", display: "block",
+        left: "0", top: "0", width: `${Math.max(0, el.clientWidth - 11)}px`,
+        font: css.font, lineHeight: css.lineHeight, letterSpacing: css.letterSpacing,
+        textWrap: css.textWrap, whiteSpace: "normal", overflowWrap: "anywhere",
+      });
+      probe.textContent = event.title;
+      if (withTime) {
+        const small = document.createElement("small");
+        Object.assign(small.style, { display: "block", marginTop: "2px", font: TIME_FONT, lineHeight: "1.3", overflowWrap: "anywhere" });
+        small.textContent = time;
+        probe.append(small);
+      }
+      document.body.append(probe);
+      const height = probe.getBoundingClientRect().height;
+      const fitsWidth = probe.scrollWidth <= probe.clientWidth + 0.5;
+      probe.remove();
+      return el.clientWidth > 11 && fitsWidth && height <= el.clientHeight - 8;
+    };
+    const measure = () => {
+      if (!active) return;
+      setFit(fits(true) ? "full" : fits(false) ? "title" : "none");
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    measure();
+    document.fonts.ready.then(measure);
+    return () => { active = false; observer.disconnect(); };
+  }, [event.title, time]);
+  return <div ref={marker} data-event-id={event.id}
+    className={`cal-event-marker ${event.workbench ? "mine" : "readonly"}`}
+    aria-hidden="true" style={style}>
+    <span className="cal-event-title" hidden={fit === "none"}>{event.title}</span>
+    <small className="cal-event-time" hidden={fit !== "full"}>{time}</small>
+  </div>;
+}
+
+function DayColumn({ day, events, night, drag, now, onPointerDown, onEvent, onChoose }) {
   const { timed } = eventsOfDay(events, day);
-  const key = ymd(day);
-  const pct = (m) => `${(m / DAY_MINUTES) * 100}%`;
+  const key = ymd(day),
+    pct = (m) => `${(m / DAY_MINUTES) * 100}%`;
+  const lane = useRef(null), gesture = useRef(null), [laneHeight, setLaneHeight] = useState(0);
+  useLayoutEffect(() => {
+    const el = lane.current, observer = new ResizeObserver(() => setLaneHeight(el.clientHeight));
+    observer.observe(el);
+    setLaneHeight(el.clientHeight);
+    return () => observer.disconnect();
+  }, []);
+  // 相交的44px命中范围合并成一个入口，避免短块或多列重叠块的透明按钮互相遮盖。
+  const hits = [];
+  for (const entry of [...timed].sort((a, b) => a.top - b.top)) {
+    const center = (entry.top + entry.bottom) / 2 / DAY_MINUTES * laneHeight;
+    const size = Math.max(44, (entry.bottom - entry.top) / DAY_MINUTES * laneHeight);
+    const top = Math.max(0, Math.min(laneHeight - size, center - size / 2));
+    const last = hits.at(-1);
+    if (last && top <= last.bottom) {
+      last.bottom = Math.max(last.bottom, top + size);
+      last.entries.push(entry);
+    } else hits.push({ top, bottom: top + size, entries: [entry] });
+  }
+  const rects = (entries) => entries.map(({ event }) => ({
+    event, rect: [...lane.current.querySelectorAll(".cal-event-marker")]
+      .find((el) => el.dataset.eventId === event.id).getBoundingClientRect(),
+  }));
+  const contains = (r, x, y) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  function select(e, entries) {
+    if (gesture.current?.moved) { gesture.current = null; return; }
+    const positions = rects(entries);
+    const hit = positions.find(({ rect }) => contains(rect, e.clientX, e.clientY)) ||
+      positions.reduce((best, item) => {
+        const distance = ({ rect: r }) => Math.hypot(Math.max(r.left - e.clientX, 0, e.clientX - r.right), Math.max(r.top - e.clientY, 0, e.clientY - r.bottom));
+        return distance(item) < distance(best) ? item : best;
+      });
+    e.currentTarget.focus({ preventScroll: true });
+    gesture.current = null;
+    onEvent(hit.event, key);
+  }
   return (
-    <div className="cal-day" data-date={key} role="group" aria-label={dayLabel(day)}>
-      <div className="cal-lane" onPointerDown={(e) => onPointerDown(e, key)}>
+    <div className={`cal-day ${key === ymd(now) ? "today" : ""}`} data-date={key} role="group" aria-label={dayLabel(day)}>
+      <div ref={lane} className="cal-lane" onPointerDown={(e) => onPointerDown(e, key)}>
         {HOURS.map((h) => (
           <span key={h} className="cal-hour-line" style={{ top: pct(h * 60) }} aria-hidden="true" />
         ))}
         {nightSegments(night).map(([a, b]) => (
-          <div key={a} className="cal-night" style={{ top: pct(a), height: pct(b - a) }} aria-hidden="true">
-            {a > 0 && <span>夜巡窗口 · 草稿</span>}
-          </div>
+          <div
+            key={a}
+            className="cal-night"
+            style={{ top: pct(a), height: pct(b - a) }}
+            aria-hidden="true"
+          >{b-a>=60&&<span>夜巡窗口<small>{hmOf(a)}–{hmOf(b)}</small></span>}</div>
         ))}
-        {timed.map(({ event, top, bottom, column, columns }) => {
-          const style = {
-            top: pct(top),
-            height: pct(bottom - top),
-            left: `calc(${(column / columns) * 100}% + 2px)`,
-            width: `calc(${100 / columns}% - 4px)`,
-          };
-          return event.workbench ? (
-            <button
-              key={event.id}
-              type="button"
-              className="cal-block"
-              style={style}
-              aria-label={`规划块 ${event.title} ${spanText(event)}，点击修改`}
-              onClick={() => onEdit(event)}
-            >
-              <strong>{event.title}</strong>
-              <span>{spanText(event)}</span>
-            </button>
-          ) : (
-            <div
-              key={event.id}
-              className="cal-meeting"
-              style={style}
-              role="note"
-              aria-label={`会议 ${event.title} ${spanText(event)}（${event.calendar}，只读）`}
-            >
-              <strong>{event.title}</strong>
-              <span>
-                {spanText(event)} · {event.calendar}
-              </span>
-            </div>
-          );
-        })}
+        {timed.map(({ event, top, bottom, column, columns }) => (
+          <EventMarker key={event.id} event={event}
+            style={{
+              top: pct(top),
+              height: pct(bottom - top),
+              left: `calc(${(column / columns) * 100}% + 2px)`,
+              width: `max(1px, calc(${100 / columns}% - 4px))`,
+            }}
+          />
+        ))}
+        {laneHeight > 0 && hits.map((hit) => (
+          <button key={hit.entries.map(({ event }) => event.id).join("/")}
+            type="button" className="cal-marker-hit"
+            aria-label={`时间轴 ${dayLabel(day)}：${hit.entries.map(({ event }) => event.title).join("；")}`}
+            style={{ top: hit.top, height: hit.bottom - hit.top }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              if (e.button !== 0) return;
+              const onMarker = rects(hit.entries).some(({ rect }) => contains(rect, e.clientX, e.clientY));
+              gesture.current = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, onMarker, moved: false };
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+              const start = gesture.current;
+              if (!start || start.onMarker || start.moved || Math.hypot(e.clientX - start.x, e.clientY - start.y) < 4) return;
+              start.moved = true;
+              onPointerDown({ button: 0, target: lane.current, currentTarget: lane.current,
+                clientY: start.y, pointerId: start.pointerId }, key, e);
+            }}
+            onClick={(e) => e.detail === 0 ? (hit.entries.length === 1 ? onEvent(hit.entries[0].event, key) : onChoose({ events: hit.entries.map(x => x.event), date: key })) : select(e, hit.entries)}
+          ><span className="sr-only">打开时间轴事件；重叠事件可逐项选择</span></button>
+        ))}
+        {key === ymd(now) && (
+          <div
+            className="cal-current-line"
+            style={{ top: pct(now.getHours() * 60 + now.getMinutes()) }}
+            aria-hidden="true"
+          />
+        )}
         {drag?.date === key && (
           <div
             className="cal-ghost"
-            style={{ top: pct(Math.min(drag.from, drag.to)), height: pct(Math.max(Math.abs(drag.to - drag.from), 15)) }}
             aria-hidden="true"
-          >
-            {hmOf(Math.min(drag.from, drag.to))}–{hmOf(Math.max(drag.from, drag.to, Math.min(drag.from, drag.to) + 15))}
-          </div>
+            style={{
+              top: pct(Math.min(drag.from, drag.to)),
+              height: pct(Math.max(Math.abs(drag.to - drag.from), 15)),
+            }}
+          />
         )}
       </div>
     </div>
   );
 }
 
-function TodoItem({ item, onWrite }) {
-  const [editing, setEditing] = useState(false),
-    [due, setDue] = useState(toLocalInput(item.due)),
-    // 写入进行中先显示点击后的状态；回读结果到达后整条按回读替换（冲突时回到回读值）。
-    [pending, setPending] = useState(null);
-  const checked = pending ?? item.completed;
-  return (
-    <li className={`todo-item ${checked ? "done" : ""}`}>
-      <label className="todo-check">
-        <input
-          type="checkbox"
-          checked={checked}
-          disabled={pending !== null}
-          aria-label={`完成 ${item.title}`}
-          onChange={async (e) => {
-            const next = e.target.checked;
-            setPending(next);
-            await onWrite(item, { completed: next });
-            setPending(null);
-          }}
-        />
-        <span className="todo-title">{item.title}</span>
-      </label>
-      <div className="todo-meta">
-        {item.due && (
-          <span className="todo-due">
-            <BellRing size={13} aria-hidden="true" />
-            提醒 {dueText(item.due)}
-          </span>
-        )}
-        {!editing && (
-          <button type="button" className="todo-link" onClick={() => setEditing(true)} aria-label={`设提醒 ${item.title}`}>
-            {item.due ? "改提醒" : "设提醒"}
-          </button>
-        )}
-      </div>
-      {editing && (
-        <div className="todo-due-form">
-          <label>
-            <span className="sr-only">{item.title} 的提醒时间</span>
-            <input
-              type="datetime-local"
-              aria-label={`${item.title} 的提醒时间`}
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-            />
-          </label>
-          <Button
-            type="button"
-            disabled={!due}
-            onClick={async () => {
-              if (await onWrite(item, { due: fromLocalInput(due) })) setEditing(false);
-            }}
-          >
-            保存提醒
-          </Button>
-          {item.due && (
-            <Button
-              type="button"
-              secondary
-              onClick={async () => {
-                if (await onWrite(item, { due: null })) setEditing(false);
-              }}
-            >
-              清除提醒
-            </Button>
-          )}
-          <Button type="button" secondary onClick={() => setEditing(false)}>
-            取消
-          </Button>
-        </div>
-      )}
-    </li>
-  );
+
+function TodoItem({ item, onWrite, now, disabled }) {
+  const [editing, setEditing] = useState(false), [due, setDue] = useState(toLocalInput(item.due)), [pending, setPending] = useState(null);
+  const checked = pending ?? item.completed, isDue = todoIsDue(item, now);
+  return <li className={`todo-item ${checked ? "done" : ""} ${isDue ? "due" : ""}`}>
+    <label className="todo-check">
+      <input type="checkbox" checked={checked} disabled={disabled || pending !== null} aria-label={`完成 ${item.title}`} onChange={async e => {setPending(e.target.checked);await onWrite(item,{completed:e.target.checked});setPending(null);}}/>
+      <span className="cal-check-box" aria-hidden="true">{checked && <Check size={12}/>}</span>
+    </label>
+    <button className="todo-link todo-time-edit" type="button" disabled={disabled} aria-label={`设提醒 ${item.title}`} onClick={()=>{setDue(toLocalInput(item.due));setEditing({...item});}}>
+      <span className="todo-main"><span className="todo-title">{item.title}</span>{!checked&&<span className="todo-due-text">{isDue && <span className="cal-due-dot" aria-hidden="true"/>}{isDue&&"已到点 · "}<BellRing size={11}/>{item.due ? (item.dueHasTime === false ? dueText(item.due).split(" ")[0] : dueText(item.due)) : "未设时间"}</span>}</span>
+    </button>
+    {editing && <Dialog recoverFocus title={`提醒时间 · ${item.title}`} onClose={()=>!disabled&&setEditing(false)}>
+      <form className="todo-due-form" onSubmit={async e=>{e.preventDefault();if(await onWrite(editing,{due:fromLocalInput(due)}))setEditing(false);}}>
+        <label>提醒时间<input type="datetime-local" aria-label={`提醒时间 ${item.title}`} value={due} onChange={e=>setDue(e.target.value)} required/></label>
+        <p className="cal-muted">仅工作台到点标记；不新增系统闹钟。已有条目的旧闹钟保持原样。</p>
+        <div className="form-actions"><Button type="button" secondary disabled={disabled} onClick={()=>setEditing(false)}>取消</Button>{item.due&&<Button type="button" secondary disabled={disabled} onClick={async()=>{if(await onWrite(editing,{due:null}))setEditing(false);}}>清除提醒</Button>}<Button type="submit" disabled={disabled || !due}>保存提醒</Button></div>
+      </form>
+    </Dialog>}
+  </li>;
 }
 
-function TodoPanel({ todos, access, notify, setNotice, reload }) {
+function TodoPanel({ todos, access, notify, setNotice, reload, now, onRead }) {
   const [text, setText] = useState(""),
-    [busy, setBusy] = useState(false),
-    [items, setItems] = useState(todos?.reminders || null);
-  useEffect(() => setItems(todos?.reminders || null), [todos]);
+    [busy, setBusy] = useState(false);
+  const items = access?.reminders === "authorized" && todos?.loaded && !todos.error ? todos.reminders : null;
   // 写入后以回读为准替换这一条；冲突时同样以回读替换并提示。
   async function write(item, patch) {
     setBusy(true);
@@ -375,7 +518,7 @@ function TodoPanel({ todos, access, notify, setNotice, reload }) {
         expectedModified: item.modified,
         ...patch,
       });
-      setItems((list) => list.map((x) => (x.id === item.id ? result.reminder : x)));
+      onRead(result.reminder);
       if (result.conflict || !result.check.matches) {
         setNotice(result.message);
         notify(result.message, "warning");
@@ -394,8 +537,7 @@ function TodoPanel({ todos, access, notify, setNotice, reload }) {
   return (
     <section className="cal-todo" aria-labelledby="cal-todo-title">
       <div className="cal-todo-head">
-        <h2 id="cal-todo-title">todo · 工作台提醒事项</h2>
-        <p>读写 macOS 提醒事项里的“工作台”列表，手机也能收到提醒。</p>
+        <h2 id="cal-todo-title"><span className="cal-en">TODO</span>TodoList <b>{items ? items.filter(x=>!x.completed).length : "—"}</b><small className="cal-todo-count-label">未完成</small></h2>
       </div>
       {access?.reminders !== "authorized" ? (
         <p className="cal-muted" role="status">
@@ -403,14 +545,14 @@ function TodoPanel({ todos, access, notify, setNotice, reload }) {
         </p>
       ) : !items ? (
         <p className="cal-muted" role="status">
-          正在读取提醒事项…
+          {todos?.error ? "读取失败，点击刷新重试。" : todos?.reason || "正在读取提醒事项…"}
         </p>
       ) : (
         <>
           {items.length ? (
             <ul className="todo-list">
               {items.map((item) => (
-                <TodoItem key={`${item.id}-${item.modified}`} item={item} onWrite={write} />
+                <TodoItem key={item.id} item={item} onWrite={write} now={now} disabled={busy} />
               ))}
             </ul>
           ) : (
@@ -424,7 +566,7 @@ function TodoPanel({ todos, access, notify, setNotice, reload }) {
               setBusy(true);
               try {
                 const result = await request("/calendar/todos/create", { title: text });
-                setItems((list) => [...list, result.reminder]);
+                onRead(result.reminder);
                 setText("");
                 notify(result.message, result.check.matches ? "success" : "warning");
               } catch (err) {
@@ -442,12 +584,11 @@ function TodoPanel({ todos, access, notify, setNotice, reload }) {
                 maxLength={200}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="防止遗忘的一件事"
+                placeholder="别忘了的一件事……"
               />
             </label>
-            <Button type="submit" disabled={busy || !text.trim()}>
+            <Button type="submit" secondary aria-label="添加到提醒事项" disabled={busy || !text.trim()}>
               <Plus size={16} />
-              添加到提醒事项
             </Button>
           </form>
         </>
@@ -456,7 +597,23 @@ function TodoPanel({ todos, access, notify, setNotice, reload }) {
   );
 }
 
-export function CalendarPage({ state, notify }) {
+export function CalendarPage({ state, notify, calendarTodos, calendarNow, refreshCalendarTodos, publishCalendarTodos }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width:900px)").matches,
+  );
+  const [selectedDay, setSelectedDay] = useState(() => ymd(new Date())),
+    [eventDetail, setEventDetail] = useState(null), [eventChoices,setEventChoices] = useState(null), [help,setHelp] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width:900px)");
+    const change = () => setNarrow(media.matches);
+    media.addEventListener("change", change);
+    return () => media.removeEventListener("change", change);
+  }, []);
   const [mode, setMode] = useState("week"),
     [anchor, setAnchor] = useState(() => startOfDay(new Date())),
     [draft, setDraft] = useState(null),
@@ -468,14 +625,19 @@ export function CalendarPage({ state, notify }) {
     () => ({ from: days[0].toISOString(), to: addDays(days.at(-1), 1).toISOString() }),
     [days],
   );
-  const { status, week, todos, error, reload } = useCalendarData(range);
+  const { status, week, error, reload: reloadWeek } = useCalendarData(range);
+  const reload = () => { reloadWeek(); refreshCalendarTodos(); };
   const scroller = useRef(null);
   const dragRef = useRef(null);
-  const ready = status?.available && status.access.calendar === "authorized";
+  const access = status?.access;
+  const ready = status?.available && access?.calendar === "authorized";
   useEffect(() => {
     // 首次显示时滚到早上 8 点附近。
     if (ready && scroller.current && !scroller.current.dataset.scrolled) {
       scroller.current.scrollTop = scroller.current.scrollHeight * (8 / 24);
+      const label = scroller.current.querySelectorAll(".cal-hours span")[8];
+      const top = scroller.current.getBoundingClientRect().top + scroller.current.clientTop + 4;
+      if (label) scroller.current.scrollTop -= Math.max(0, top - label.getBoundingClientRect().top);
       scroller.current.dataset.scrolled = "1";
     }
   }, [ready, week]);
@@ -484,8 +646,8 @@ export function CalendarPage({ state, notify }) {
     const rect = e.currentTarget.getBoundingClientRect();
     return snap(((e.clientY - rect.top) / rect.height) * DAY_MINUTES);
   }
-  function onPointerDown(e, date) {
-    if (e.button !== 0 || e.target.closest(".cal-block, .cal-meeting")) return;
+  function onPointerDown(e, date, currentPointer) {
+    if (e.button !== 0 || e.target.closest(".cal-block, .cal-meeting, .cal-event-marker")) return;
     const lane = e.currentTarget;
     const at = minuteAt(e);
     dragRef.current = { date, from: at, to: at };
@@ -514,13 +676,44 @@ export function CalendarPage({ state, notify }) {
     lane.addEventListener("pointermove", move);
     lane.addEventListener("pointerup", up);
     lane.addEventListener("pointercancel", up);
+    if (currentPointer) move(currentPointer);
   }
 
   const step = mode === "week" ? 7 : 1;
-  const today = startOfDay(new Date());
+  const today = startOfDay(now);
+  // 选中的一天：优先用户选的；不在当前范围时落到今天，再落到范围第一天。
+  const activeKey = days.some((d) => ymd(d) === selectedDay)
+    ? selectedDay
+    : days.some((d) => ymd(d) === ymd(today))
+      ? ymd(today)
+      : ymd(days[0]);
+  const activeDay = days.find((d) => ymd(d) === activeKey);
+  const shownDays = narrow && mode === "week" ? [activeDay] : days;
+  const rangeText =
+    mode === "week"
+      ? `${days[0].getMonth() + 1}/${days[0].getDate()} – ${days[6].getMonth() + 1}/${days[6].getDate()}`
+      : dayLabel(days[0]);
+  const isoThursday = new Date(Date.UTC(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()));
+  isoThursday.setUTCDate(isoThursday.getUTCDate() + 4 - (isoThursday.getUTCDay() || 7));
+  const weekNumber = Math.ceil(
+    ((isoThursday - new Date(Date.UTC(isoThursday.getUTCFullYear(), 0, 1))) / 86400000 + 1) / 7,
+  );
+  function openEvent(event, date) {
+    setEventChoices(null);
+    if (event.workbench) editEvent(event, date); else setEventDetail(event);
+  }
+  const editEvent = (event, selectedDate) =>
+    setDraft({
+      event,
+      anchor: [...document.querySelectorAll(".calendar-v16 [data-event-id]")].find(el => el.dataset.eventId === event.id && (!selectedDate || el.closest("[data-date]")?.dataset.date === selectedDate)) || [...document.querySelectorAll(".calendar-v16 [data-event-id]")].find(el => el.dataset.eventId === event.id),
+      date: ymd(new Date(event.start)),
+      endDate: ymd(event.allDay ? addDays(new Date(event.end), -1) : new Date(event.end)),
+      start: hm(new Date(event.start)),
+      end: hm(new Date(event.end)),
+    });
   return (
-    <section className="cal-page">
-      <PageHeading page="calendar" />
+    <section className="cal-page calendar-v14 calendar-v16">
+      <PageHeading page="calendar" help={<button className="page-help" aria-label="这页怎么用" onClick={()=>setHelp(true)}>?</button>} />
       {error && (
         <p className="inline-error" role="alert">
           读取日历失败：{error}
@@ -532,10 +725,7 @@ export function CalendarPage({ state, notify }) {
         </p>
       )}
       {status && !status.available && <Unavailable reason={status.reason} />}
-      {status?.available &&
-        (status.access.calendar !== "authorized" || status.access.reminders !== "authorized") && (
-          <Permission access={status.access} onGranted={reload} notify={notify} />
-        )}
+
       {notice && (
         <div className="cal-notice" role="alert">
           <span>{notice}</span>
@@ -545,34 +735,39 @@ export function CalendarPage({ state, notify }) {
         </div>
       )}
       {status?.available && (
-        <div className="cal-layout">
-          <div className="cal-main">
-            <div className="cal-toolbar">
-              <div className="cal-toggle" role="group" aria-label="日历视图">
-                <Button secondary aria-pressed={mode === "week"} onClick={() => setMode("week")}>
-                  周
+        <>
+          <div className="cal-head">
+            <div className="cal-bar">
+              <div className="calendar-mast">
+                <p>WEEK {weekNumber} · {rangeText}</p>
+                <h2><b>{anchor.getFullYear()}</b> 年 <b>{anchor.getMonth() + 1}</b> 月</h2>
+              </div>
+              <div className="cal-tools"><PageChoices
+                label="日历视图"
+                className="cal-toggle"
+                choices={[
+                  ["week", "周"],
+                  ["day", "今天"],
+                ]}
+                value={mode}
+                onChange={(value) => {
+                  setMode(value);
+                  if (value === "day") setAnchor(today);
+                }}
+              />
+              <div className="cal-nav">
+                <Button
+                  secondary
+                  aria-label={mode === "week" ? "上一周" : "前一天"}
+                  onClick={() => setAnchor(addDays(anchor, -step))}
+                >
+                  <ChevronLeft size={16} />
                 </Button>
                 <Button
                   secondary
-                  aria-pressed={mode === "day"}
-                  onClick={() => {
-                    setMode("day");
-                    setAnchor(today);
-                  }}
+                  aria-label={mode === "week" ? "下一周" : "后一天"}
+                  onClick={() => setAnchor(addDays(anchor, step))}
                 >
-                  今天
-                </Button>
-              </div>
-              <div className="cal-nav">
-                <Button secondary aria-label={mode === "week" ? "上一周" : "前一天"} onClick={() => setAnchor(addDays(anchor, -step))}>
-                  <ChevronLeft size={16} />
-                </Button>
-                <strong className="cal-range">
-                  {mode === "week"
-                    ? `${days[0].getMonth() + 1}/${days[0].getDate()} – ${days[6].getMonth() + 1}/${days[6].getDate()}`
-                    : dayLabel(days[0])}
-                </strong>
-                <Button secondary aria-label={mode === "week" ? "下一周" : "后一天"} onClick={() => setAnchor(addDays(anchor, step))}>
                   <ChevronRight size={16} />
                 </Button>
               </div>
@@ -586,23 +781,25 @@ export function CalendarPage({ state, notify }) {
                       const now = new Date();
                       const at = snap(now.getHours() * 60 + now.getMinutes() + 30, 30);
                       const start = Math.min(at, DAY_MINUTES - 60);
-                      setDraft({ date: ymd(mode === "day" ? days[0] : today), start: hmOf(start), end: hmOf(start + 60) });
+                      setDraft({
+                        date: ymd(mode === "day" ? days[0] : today),
+                        start: hmOf(start),
+                        end: hmOf(start + 60),
+                      });
                     }}
                   >
                     <CalendarPlus size={16} />
                     新建规划块
                   </Button>
                 )}
-              </div>
+              </div></div>
             </div>
-            <ul className="cal-legend">
-              <li className="lg-block">规划块（“工作台”日历，可改）</li>
-              <li className="lg-meeting">其他日历的会议（只读）</li>
-              <li className="lg-night">
-                夜巡窗口 · 草稿 {state.night.time}–{state.night.end}
-              </li>
-              <li className="lg-milestone">项目里程碑：项目空间暂未提供里程碑数据（可选，尚未接入）</li>
-            </ul>
+          </div>
+          {(access?.calendar !== "authorized" || access?.reminders !== "authorized") && <Permission access={access} onGranted={reload} notify={notify}/>}
+          {(ready || access?.reminders === "authorized") && <TodoPanel todos={calendarTodos} access={access} notify={notify} setNotice={setNotice} reload={reload} now={calendarNow} onRead={publishCalendarTodos}/>}
+          {calendarTodos?.error && <p className="inline-error" role="alert">提醒事项读取失败：{calendarTodos.error}</p>}
+          <div className="cal-layout">
+          <div className="cal-main">
             {!ready ? (
               <p className="cal-muted" role="status">
                 {week?.reason || "日历授权后显示周视图。"}
@@ -616,65 +813,106 @@ export function CalendarPage({ state, notify }) {
                 {week.reason}
               </p>
             ) : (
-              <div className={`cal-grid ${mode}`} style={{ "--days": days.length }}>
-                <div className="cal-heads">
-                  <span className="cal-gutter" aria-hidden="true" />
-                  {days.map((d) => {
-                    const allDay = eventsOfDay(week.events, d).allDay;
-                    return (
-                      <div key={ymd(d)} className={`cal-day-head ${ymd(d) === ymd(today) ? "today" : ""}`}>
-                        <strong>{dayLabel(d)}</strong>
-                        {allDay.map((e) => (
-                          <span key={e.id} className={`cal-allday ${e.workbench ? "mine" : ""}`}>
-                            全天 · {e.title}
+              <>
+                {narrow && mode === "week" && <div className="cal-mobile-dates"><Button secondary aria-label="前一天" onClick={()=>{const d=addDays(activeDay,-1);setSelectedDay(ymd(d));if(!days.some(x=>ymd(x)===ymd(d)))setAnchor(d);}}><ChevronLeft size={16}/></Button><span>{dayLabel(activeDay)}</span><Button secondary aria-label="后一天" onClick={()=>{const d=addDays(activeDay,1);setSelectedDay(ymd(d));if(!days.some(x=>ymd(x)===ymd(d)))setAnchor(d);}}><ChevronRight size={16}/></Button></div>}
+                <div className={`cal-grid ${mode}`} style={{ "--days": shownDays.length }}>
+                  <div className="cal-heads">
+                    <span className="cal-gutter" aria-hidden="true" />
+                    {!narrow && mode === "week" ? (
+                      <PageChoices
+                        label="选择日历日期"
+                        className="cal-head-days"
+                        choices={shownDays.map((d) => [
+                          ymd(d),
+                          <>
+                            <span aria-hidden="true">{WEEKDAYS[d.getDay()]}</span>
+                            <strong aria-hidden="true" className={ymd(d) === ymd(today) ? "today" : ""}>
+                              {d.getDate()}
+                            </strong>
+                            <span className="sr-only">{dayLabel(d)}</span>
+                          </>,
+                        ])}
+                        value={activeKey}
+                        onChange={setSelectedDay}
+                      />
+                    ) : (
+                      shownDays.map((d) => (
+                        <div
+                          key={ymd(d)}
+                          className={`cal-day-head ${ymd(d) === ymd(today) ? "today" : ""}`}
+                        >
+                          <span>{WEEKDAYS[d.getDay()]}</span>
+                          <strong>{d.getDate()}</strong>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="cal-allday-row">
+                    <span className="cal-gutter cal-allday-label">全天</span>
+                    {shownDays.map((d) => (
+                      <div className="cal-allday-cell" key={ymd(d)}>
+                        {eventsOfDay(week.events, d).allDay.map((event) => (
+                          <button
+                            key={event.id}
+                            type="button"
+                            data-event-id={event.id}
+                            className={`cal-allday-chip ${event.workbench ? "mine" : ""}`}
+                            aria-label={`全天行 ${dayLabel(d)}：${event.title}`}
+                            onClick={() => openEvent(event, ymd(d))}
+                          >
+                            {event.title}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    className="cal-scroll"
+                    ref={scroller}
+                    tabIndex={0}
+                    role="region"
+                    aria-label="24小时时间轴"
+                  >
+                    <div className="cal-body">
+                      <div className="cal-hours" aria-hidden="true">
+                        {HOURS.map((h) => (
+                          <span key={h} style={{ top: `${(h / 24) * 100}%` }}>
+                            {String(h).padStart(2, "0")}:00
                           </span>
                         ))}
                       </div>
-                    );
-                  })}
-                </div>
-                <div className="cal-scroll" ref={scroller}>
-                  <div className="cal-body">
-                    <div className="cal-hours" aria-hidden="true">
-                      {HOURS.map((h) => (
-                        <span key={h} style={{ top: `${(h / 24) * 100}%` }}>
-                          {String(h).padStart(2, "0")}:00
-                        </span>
+                      {shownDays.map((d) => (
+                        <DayColumn
+                          key={ymd(d)}
+                          day={d}
+                          events={week.events}
+                          night={nightV2Of(state).window}
+                          drag={drag}
+                          now={now}
+                          onPointerDown={onPointerDown}
+                          onEvent={openEvent}
+                          onChoose={setEventChoices}
+                        />
                       ))}
                     </div>
-                    {days.map((d) => (
-                      <DayColumn
-                        key={ymd(d)}
-                        day={d}
-                        events={week.events}
-                        night={state.night}
-                        drag={drag}
-                        onPointerDown={onPointerDown}
-                        onEdit={(event) =>
-                          setDraft({
-                            event,
-                            date: ymd(new Date(event.start)),
-                            start: hm(new Date(event.start)),
-                            end: hm(new Date(event.end)),
-                          })
-                        }
-                      />
-                    ))}
                   </div>
                 </div>
-                <p className="cal-muted cal-hint">在时间轴上按住拖动，拖出一个规划块；也可以点“新建规划块”。</p>
-              </div>
+                {drag && (
+                  <p className="cal-muted" role="status">
+                    正在选择 {drag.date} · {hmOf(Math.min(drag.from, drag.to))}–
+                    {hmOf(Math.max(drag.from, drag.to, Math.min(drag.from, drag.to) + 15))}
+                  </p>
+                )}
+              </>
             )}
           </div>
-          <TodoPanel
-            todos={todos}
-            access={status.access}
-            notify={notify}
-            setNotice={setNotice}
-            reload={reload}
-          />
-        </div>
+
+          </div>
+        </>
       )}
+      {help && <Dialog recoverFocus title="日历怎么用" onClose={()=>setHelp(false)}><div className="cal-help"><p>拖动时间轴新建规划块；点块或键盘 Enter 打开详情，Esc 关闭。橙色规划块可编辑、写备注，并可二次确认删除；青色其他日历只读；紫色虚线是夜巡 v2 计划窗口；红线标记本机当前时间。</p><p>日历与 TodoList 的权威数据在 macOS 日历与提醒事项。只修改“工作台”条目，删除仅限“工作台”规划块，写后回读核对。到点未完成事项进入待处理主线，工作台打开或返回前台时补算；不弹提醒卡。</p><p>新建和改期只保存到期时间，不新增系统闹钟。旧条目已有的系统闹钟保持原样。没有具体时间的事项不判定已到点。</p></div></Dialog>}
+      {eventDetail && <Dialog recoverFocus title="日程详情" onClose={()=>setEventDetail(null)}><div className="cal-detail"><span className="cal-en">READ ONLY · 只读</span><h2>{eventDetail.title}</h2><p>{eventDetail.calendar} · {ymd(new Date(eventDetail.start))} · {spanText(eventDetail)}</p><p>{eventDetail.allDay ? `结束边界 ${ymd(new Date(eventDetail.end))}（不含）` : `结束 ${ymd(new Date(eventDetail.end))} ${hm(new Date(eventDetail.end))}`}</p></div></Dialog>}
+      {eventChoices && <Dialog recoverFocus title="选择重叠事件" onClose={()=>setEventChoices(null)}><div className="cal-choices">{eventChoices.events.map(event=><Button key={event.id} secondary onClick={()=>openEvent(event,eventChoices.date)}>{event.title} · {spanText(event)} · {event.calendar}{!event.workbench&&" · 只读"}</Button>)}</div></Dialog>}
       {draft && (
         <BlockDialog
           key={draft.event?.id || "new"}
@@ -689,63 +927,5 @@ export function CalendarPage({ state, notify }) {
         />
       )}
     </section>
-  );
-}
-
-// 世界总览“时间安排”：今天的规划块与未完成 todo；不可用 / 未授权时如实说明。
-export function HomeSchedule({ navigate }) {
-  const range = useMemo(() => {
-    const d = startOfDay(new Date());
-    return { from: d.toISOString(), to: addDays(d, 1).toISOString() };
-  }, []);
-  const { status, week, todos, error } = useCalendarData(range);
-  if (error) return <p className="schedule-note">读取日历失败：{error}</p>;
-  if (!status) return <p className="schedule-note">正在读取日历…</p>;
-  if (!status.available) return <p className="schedule-note">日历不可用：{status.reason}</p>;
-  const blocks = (week?.events || []).filter((e) => e.workbench);
-  const open = (todos?.reminders || []).filter((t) => !t.completed);
-  return (
-    <div className="home-plan">
-      {status.access.calendar !== "authorized" || status.access.reminders !== "authorized" ? (
-        <p className="schedule-note">
-          日历与提醒事项尚未全部授权（日历：{ACCESS_LABEL[status.access.calendar]}；提醒事项：
-          {ACCESS_LABEL[status.access.reminders]}），到日历页授权后这里显示今天的安排。
-        </p>
-      ) : null}
-      {week?.events && (
-        <div>
-          <h3>今天的规划</h3>
-          {blocks.length ? (
-            <ul>
-              {blocks.map((e) => (
-                <li key={e.id}>
-                  <span className="home-plan-time">{spanText(e)}</span>
-                  {e.title}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="schedule-note">今天还没有规划块。</p>
-          )}
-        </div>
-      )}
-      {todos?.reminders && (
-        <div>
-          <h3>todo · {open.length}</h3>
-          {open.length ? (
-            <ul>
-              {open.slice(0, 6).map((t) => (
-                <li key={t.id}>
-                  {t.due && <span className="home-plan-time">{dueText(t.due)}</span>}
-                  {t.title}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="schedule-note">没有未完成的 todo。</p>
-          )}
-        </div>
-      )}
-    </div>
   );
 }

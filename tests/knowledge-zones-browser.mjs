@@ -80,7 +80,7 @@ async function open(width, hash, height = 1000) {
   page.setDefaultTimeout(10000);
   page.on("pageerror", (e) => errors.push(`${width} ${e.message}`));
   await page.goto(`${app.url}/#${hash}`);
-  await page.locator(".page-heading, .home").first().waitFor();
+  await page.locator(".page-heading, .home, .hx").first().waitFor();
   return page;
 }
 const button = (scope, name) => scope.getByRole("button", { name, exact: true });
@@ -233,48 +233,54 @@ try {
   // 5. 待处理：两条建议显示在顶栏计数与待处理页；预览差异→确认采纳；另一条拒绝。
   await page.goto(`${app.url}/#inbox`);
   const proposals = page.getByRole("region", { name: "个人说明修改建议" });
-  await proposals.getByRole("heading", { name: "个人说明修改建议 · 2" }).waitFor();
-  await page.locator(".pending-list").getByText("个人说明修改建议 · 个人上下文/关于我.md").waitFor();
-  const card1 = proposals.getByRole("article", { name: "建议：个人上下文/关于我.md" });
-  await card1.getByText("Claude Code").waitFor();
-  await card1.getByText("多次会话中用户要求去掉寒暄").waitFor();
-  await atLeast44(button(card1, "预览差异"), "预览差异");
-  await atLeast44(button(card1, "拒绝"), "拒绝");
-  await button(card1, "预览差异").click();
-  const dialog = page.getByRole("dialog", { name: "预览个人说明修改" });
+  // 验收201批准：记录区在支线所有任务卡之后，已移出纯建议region。
+  const records = page.getByRole("dialog", { name: "待处理", exact: true }).locator(".ib-proposal-records");
+  assert.equal(await records.count(), 1, "建议记录区唯一");
+  await page.waitForFunction(()=>document.querySelectorAll(".ib-proposals .ib-card").length===2);
+  await proposals.getByText("个人上下文/关于我.md · 多次会话中用户要求去掉寒暄").waitFor();
+  const card1 = proposals.getByRole("listitem", { name: "建议：个人上下文/关于我.md" });
+  await card1.getByText("Claude Code 建议修改个人说明").waitFor();
+  await card1.getByText("个人上下文/关于我.md · 多次会话中用户要求去掉寒暄").waitFor();
+  await atLeast44(card1.getByRole("button").first(), "查看建议");
+  await card1.getByRole("button").first().click();
+  const dialog = page.getByRole("region", { name: "预览个人说明修改" });
   await dialog.getByLabel("逐行差异").waitFor();
-  await dialog.locator(".diff-lines").getByText("结论先行，零寒暄。").waitFor();
-  await dialog.getByText("需本机验证").first().waitFor();
-  assert.equal(await button(dialog, "确认采纳").isDisabled(), true);
+  await dialog.locator("pre").getByText("结论先行，零寒暄。").waitFor();
+  await dialog.getByText("采纳先保存记录；写入个人说明须从建议记录中另行预览、确认。",{exact:true}).waitFor();
+  assert.equal(await button(dialog, "采纳").isDisabled(), true);
   await axe(page, "inbox-preview-dialog");
   await page.screenshot({ path: join(output, "profile-preview-1440.png"), fullPage: false });
   await dialog.getByLabel("我已核对差异，确认采纳这条建议").check();
-  await atLeast44(button(dialog, "确认采纳"), "确认采纳");
-  await button(dialog, "确认采纳").click();
+  await atLeast44(button(dialog, "采纳"), "确认采纳");
+  await button(dialog, "采纳").click();
   await dialog.waitFor({ state: "detached" });
   await until(async () => (await stored()).profileProposals.find((p) => p.path === "个人上下文/关于我.md").status === "confirmed", "确认采纳");
-  await proposals.getByRole("heading", { name: "个人说明修改建议 · 1" }).waitFor();
-  await proposals.getByText("已确认 · 待写入 Vault").waitFor();
+  await page.waitForFunction(()=>document.querySelectorAll(".ib-proposals .ib-card").length===1);
+  await records.locator("summary").click();
+  await records.getByText("已确认采纳 · 写入结果以 Vault 操作回执为准",{exact:true}).waitFor();
+  assert.equal(await records.getByRole('button',{name:/预览写回个人说明/}).count(),1);
   await unchanged("确认采纳（写入需本机验证）");
 
-  const card2 = proposals.getByRole("article", { name: "建议：个人上下文/沟通.md" });
+  const card2 = proposals.getByRole("listitem", { name: "建议：个人上下文/沟通.md" });
+  await card2.getByRole("button").first().click();
   await button(card2, "拒绝").click();
-  const rejectDialog = page.getByRole("dialog", { name: "拒绝这条建议" });
+  const rejectDialog = page.getByRole("region", { name: "拒绝这条建议" });
   await button(rejectDialog, "确认拒绝").click();
   await rejectDialog.waitFor({ state: "detached" });
   await until(async () => (await stored()).profileProposals.find((p) => p.path === "个人上下文/沟通.md").status === "rejected", "拒绝");
-  await proposals.getByRole("heading", { name: "个人说明修改建议 · 0" }).waitFor();
-  await proposals.getByText("已拒绝").waitFor();
+  await page.waitForFunction(()=>document.querySelectorAll(".ib-proposals .ib-card").length===0);
+  if (!await records.getAttribute("open").then(v=>v!==null)) await records.locator("summary").click();
+  await records.getByText("已拒绝").waitFor();
   await axe(page, "inbox-1440");
   await page.screenshot({ path: join(output, "inbox-proposals-1440.png"), fullPage: true });
   await unchanged("拒绝");
   ok("待处理：建议进入顶栏与待处理页；预览差异→核对勾选→确认采纳（不写 Vault，标注需本机验证）；拒绝需二次确认");
 
-  // 6. 世界总览显示“我的知识”本周指标。
-  await page.goto(`${app.url}/#home`);
-  const knowledgeRow = page.locator(".manage-row", { hasText: "知识仓库" });
-  await until(async () => /我的知识本周 \+2/.test(await knowledgeRow.innerText()), "世界总览指标");
-  ok("世界总览：知识仓库一行显示“我的知识本周 +2”");
+  // 6. v16 世界总览保留“查知识”入口；本周指标已在知识仓库页头核验。
+  const home = await open(1440, "home");
+  await button(home, "查知识").click();
+  await zonesSection(home).waitFor();
+  ok("世界总览：查知识入口进入知识仓库");
 
   // 7. 390 宽：知识仓库与待处理无横向溢出，axe 无违规。
   const narrow = await open(390, "knowledge", 844);

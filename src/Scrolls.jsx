@@ -22,6 +22,7 @@ import {
   shortText,
   renameScroll,
   deleteScroll,
+  scrollDeleteBlockers,
   restoreScroll,
   addEntry,
   editEntry,
@@ -42,7 +43,9 @@ export function ScrollDetail({ scroll: selected, state, save, notify, onClose })
     [tagText, setTagText] = useState(""),
     [filter, setFilter] = useState(null),
     [editing, setEditing] = useState(null),
-    [renaming, setRenaming] = useState(false);
+    [renaming, setRenaming] = useState(false),
+    [deleting, setDeleting] = useState(false),
+    [deleteBlockers, setDeleteBlockers] = useState([]);
   const entries = liveEntries(selected);
   const tags = [...new Set(entries.flatMap((e) => e.tags))];
   const activeFilter = filter && tags.includes(filter) ? filter : null;
@@ -121,10 +124,17 @@ export function ScrollDetail({ scroll: selected, state, save, notify, onClose })
                 </button>
                 <button
                   className="text-button danger-text"
+                  disabled={deleting}
                   onClick={async () => {
-                    if (!(await persist(deleteScroll(all, selected.id)))) return;
-                    notify(`卷「${selected.name}」已移入回收区，可恢复`);
-                    onClose();
+                    if (deleting) return;
+                    setDeleting(true);
+                    try {
+                      const blockers = scrollDeleteBlockers(state, selected.id);
+                      if (blockers.length) { setDeleteBlockers(blockers); return; }
+                      if (!(await persist(deleteScroll(all, selected.id)))) return;
+                      notify(`卷「${selected.name}」已从仓库删除`);
+                      onClose();
+                    } finally { setDeleting(false); }
                   }}
                 >
                   <Trash2 size={15} />
@@ -134,6 +144,11 @@ export function ScrollDetail({ scroll: selected, state, save, notify, onClose })
             </>
           )}
         </header>
+        {!!deleteBlockers.length && <div className="asset-delete-notice" role="alert">
+          <b>卷仍被以下记录引用，当前无法删除：</b>
+          <ul className="asset-delete-blockers">{deleteBlockers.map((item, index) =>
+            <li key={`${item.kind}-${item.ownerId}-${index}`}>{item.label}</li>)}</ul>
+        </div>}
 
         <form className="entry-composer" onSubmit={add}>
           <textarea

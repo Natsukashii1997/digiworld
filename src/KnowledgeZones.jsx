@@ -1,6 +1,6 @@
 // 知识仓库三区视图与个人说明（路线 v3 切片 3.2 / 3.3；产品定义 v1.2 §4.4；D30、D32）。
 // 三区只是按文件夹规则划分的视图：统计只读元数据，不移动、不改写任何 Vault 文件。
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BarChart3, Plus, RotateCcw, Save, Trash2, ArrowUpRight } from "lucide-react";
 import { Badge, Button, Dialog } from "./components.jsx";
 import { DeviceShell, LcdCount, ResultChip, useFlash, useReducedMotion } from "./v14.jsx";
@@ -19,7 +19,7 @@ const time = (value) =>
 export const zonesConfig = (state) =>
   state.knowledgeZones || { rules: DEFAULT_ZONE_RULES, sourceId: null, profileSharing: false };
 export function vaultOf(state) {
-  const sources = state.connections?.knowledgeSources || [];
+  const sources = (state.connections?.knowledgeSources || []).filter((s) => s.kind !== "feishu");
   const { sourceId } = zonesConfig(state);
   if (sourceId) return sources.find((s) => s.id === sourceId) || null;
   return sources.find((s) => s.kind === "obsidian") || sources[0] || null;
@@ -28,16 +28,21 @@ export function vaultOf(state) {
 // 读取最近一次三区统计摘要与 MCP 服务地址（只在服务内存里，重启后需重新统计）。
 export function useZoneSummary() {
   const [summary, setSummary] = useState({ latest: null, mcp: null, loaded: false });
+  const sequence = useRef(0);
+  // A newer explicit refresh or stats update retires the initial in-flight load.
+  const updateSummary = useCallback((value) => {
+    sequence.current++;
+    setSummary(value);
+  }, []);
   useEffect(() => {
     let alive = true;
+    const ticket = ++sequence.current;
     request("/knowledge/zones/summary", {})
-      .then((value) => alive && setSummary({ ...value, loaded: true }))
-      .catch(() => alive && setSummary((current) => ({ ...current, loaded: true })));
-    return () => {
-      alive = false;
-    };
+      .then((value) => alive && ticket === sequence.current && setSummary({ ...value, loaded: true }))
+      .catch((error) => alive && ticket === sequence.current && setSummary({ latest: null, mcp: null, loaded: true, loadError: error.message }));
+    return () => { alive = false; };
   }, []);
-  return [summary, setSummary];
+  return [summary, updateSummary];
 }
 
 // 主要指标：“我的知识”本周新增或更新篇数（按修改时间）。
@@ -56,7 +61,7 @@ export function ZoneMetric({ latest }) {
 }
 
 // 三区视图（UI v14e：ZONE MONITOR 设备屏）。统计成功时液晶窗翻转一次、旁边出现一次“已重新统计”；
-// 失败用稳定提示。近 7 天按天趋势现有接口没有数据（只有本周合计），先显示“待接入”，不编造。
+// 失败用稳定提示。近 7 天趋势来自本机留存回执，起点之前无记录、读取失败未知，不编历史。
 const ZONE_KEYS = { input: "INPUT", mine: "MINE", profile: "PROFILE" };
 const ZONE_COLORS = { input: "#2fb3d1", mine: "var(--orange)", profile: "var(--lcd)" };
 export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, navigate, blocked, rulesOpen, onRules }) {
@@ -109,6 +114,7 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
     : [];
   const label = ZONES.find((z) => z.id === zone).label;
   const total = shown ? ZONES.reduce((n, z) => n + shown.zones[z.id].total, 0) : 0;
+  const trend = shown?.trend || (summary?.trend?.sourceId === vault?.id ? summary.trend : null);
   const share = (id) => (total ? `${((shown.zones[id].total / total) * 100).toFixed(1)}%` : "—");
   return (
     <section id="k-zones" className="knowledge-zones knowledge-anchor" aria-labelledby="k-zones-title">
@@ -182,11 +188,15 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
                   </small>
                   <span className="zone-trend">
                     <span className="bars" aria-hidden="true">
-                      {Array.from({ length: 7 }, (_, i) => (
-                        <i key={i} />
-                      ))}
+                      {(trend?.zones?.[z.id] || Array.from({length:7},(_,i) => ({date:i,status:"unrecorded",total:null}))).map((point) => {
+                        const max = Math.max(1,...(trend?.zones?.[z.id] || []).map((value) => value.total || 0));
+                        return <i key={point.date} data-status={point.status} title={`${point.date}：${point.total === null ? point.status === "unknown" ? "未知" : "无记录" : point.total}`}
+                          style={point.total === null ? undefined : {height:`${point.total / max * 100}%`,background:"var(--orange)",border:0}} />;
+                      })}
                     </span>
-                    <small>近 7 天按天趋势 · 待接入数据</small>
+                    <small>近 7 天本机写入 / 整理记录{!trend?.zones ? " · 待接入数据" : ""}</small>
+                    {trend?.zones?.[z.id] && <small>{trend.zones[z.id].map((point) => `${point.date.slice(5)}：${point.total === null ? point.status === "unknown" ? "未知" : "无记录" : point.total}`).join(" · ")}</small>}
+                    {trend?.zones?.[z.id] && <span className="sr-only">{trend.zones[z.id].map((point) => `${point.date}：${point.total === null ? point.status === "unknown" ? "未知" : "无记录" : `写入 ${point.written}，整理 ${point.organized}`}`).join("；")}</span>}
                   </span>
                   <em>{z.hint}</em>
                 </span>
@@ -194,6 +204,7 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
             );
           })}
         </div>
+        {trend && <p className="zones-note">{trend.meaning || trend.reason}{trend.state === "partial" ? " 写入回执不可读取，趋势按未知显示。" : ""}</p>}
         <div className="zone-share">
           <div className="k">
             <span>三区占比（同一刻度{shown ? `，共 ${total} 篇` : ""}）</span>
@@ -205,13 +216,14 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
                 <i key={z.id} style={{ flex: shown.zones[z.id].total, background: ZONE_COLORS[z.id] }} />
               ))
             ) : (
-              <i className="empty" />
+              <i className="zone-share-empty" />
             )}
           </div>
           <div className="legend">
             {ZONES.map((z) => (
-              <span key={z.id} style={{ "--c": ZONE_COLORS[z.id] }}>
-                {z.label} {shown ? `${shown.zones[z.id].total} 篇 · ${share(z.id)}` : "—"}
+              <span className="legend-item" key={z.id} style={{ "--c": ZONE_COLORS[z.id] }}>
+                <i className="legend-swatch" aria-hidden="true" />
+                <span className="legend-label">{z.label} {shown ? `${shown.zones[z.id].total} 篇 · ${share(z.id)}` : "—"}</span>
               </span>
             ))}
           </div>
@@ -266,7 +278,7 @@ export function KnowledgeZones({ state, adoptState, notify, summary, onSummary, 
 }
 
 const toDraft = (rules) => rules.map((r) => ({ folder: r.pattern.slice(0, -3), zone: r.zone }));
-function ZoneRules({ state, sources, vault, adoptState, notify, blocked }) {
+export function ZoneRules({ state, sources, vault, adoptState, notify, blocked }) {
   const config = zonesConfig(state);
   const [draft, setDraft] = useState(() => toDraft(config.rules));
   const [sourceId, setSourceId] = useState(vault?.id || "");
@@ -391,7 +403,7 @@ function ZoneRules({ state, sources, vault, adoptState, notify, blocked }) {
   );
 }
 
-function mcpExamples(url) {
+export function mcpExamples(url) {
   return [
     {
       agent: "Codex",
@@ -410,7 +422,7 @@ function mcpExamples(url) {
     },
   ];
 }
-function ProfilePanel({ state, config, vault, mcp, adoptState, notify, navigate, blocked }) {
+export function ProfilePanel({ state, config, vault, mcp, adoptState, notify, navigate, blocked }) {
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");

@@ -28,6 +28,7 @@ export function mergeBackup(current, incoming) {
     activityAdded: 0,
     collabAdded: 0,
     candidatesAdded: 0,
+    skillSourceAdoptionsAdded: 0,
     newVersions: 0,
     knowledgeVersions: 0,
     kept: 0,
@@ -39,6 +40,7 @@ export function mergeBackup(current, incoming) {
     summary.activityAdded = (input.assetActivity || []).length;
     summary.collabAdded = (input.collabLog || []).length;
     summary.candidatesAdded = (input.revisionCandidates || []).length;
+    summary.skillSourceAdoptionsAdded = (input.skillSourceAdoptions || []).length;
     for (const name of Object.keys(summary.silverAdded))
       summary.silverAdded[name] = (input.silver?.[name] || []).length;
     summary.agentRolesAdded = (input.agentRoles || []).length;
@@ -194,6 +196,14 @@ export function mergeBackup(current, incoming) {
       }
     }
   }
+  if(input.skillSourceAdoptions?.length) {
+    next.skillSourceAdoptions ||= [];const known=new Map(next.skillSourceAdoptions.map(r=>[r.id,r]));
+    for(const record of input.skillSourceAdoptions){
+      const old=known.get(record.id);
+      if(old&&!equivalent(old,record))throw Object.assign(new Error("Skill 采用记录存在冲突，本次不会导入任何记录"),{status:409});
+      if(!old){const copy=structuredClone(record);next.skillSourceAdoptions.push(copy);known.set(copy.id,copy);summary.skillSourceAdoptionsAdded++;}
+    }
+  }
   if (input.revisionCandidates?.length)
     mergeCandidates(next, input.revisionCandidates, summary);
   validateState(next);
@@ -308,7 +318,7 @@ function mergeSilver(next, incoming, summary) {
     for (const record of incoming[name]) {
       const old = existing.get(record.id);
       if (old) {
-        if (name === "items" && old.categoryId !== record.categoryId)
+        if (name === "items" && (old.categoryId !== record.categoryId || old.categoryKey !== record.categoryKey))
           throw Object.assign(new Error("银饰收藏存在冲突，本次不会导入任何记录"), {
             status: 409,
           });
@@ -318,6 +328,24 @@ function mergeSilver(next, incoming, summary) {
       target[name].push(structuredClone(record));
       existing.set(record.id, record);
       summary.silverAdded[name]++;
+    }
+  }
+
+  if(incoming.targets){
+    target.targets ||= {};
+    for(const [key,value] of Object.entries(incoming.targets))if(target.targets[key]===undefined)target.targets[key]=value;
+  }
+  if(incoming.wishes?.length){
+    target.wishes ||= [];
+    for(const record of incoming.wishes){
+      const old=target.wishes.find(w=>w.id===record.id);
+      const conflict=message=>{throw Object.assign(new Error(message),{status:409});};
+      if(old){
+        if(['wallId','categoryKey','createdAt'].some(k=>old[k]!==record[k]) || old.fulfilledItemId && record.fulfilledItemId && (old.fulfilledItemId!==record.fulfilledItemId || old.fulfilledAt!==record.fulfilledAt))conflict('银饰心愿身份或实现关联冲突，本次不会导入任何记录');
+        summary.kept++;continue;
+      }
+      if(target.wishes.some(w=>!w.deletedAt&&!record.deletedAt&&w.wallId===record.wallId&&w.categoryKey===record.categoryKey || record.fulfilledItemId&&w.fulfilledItemId===record.fulfilledItemId))conflict('银饰心愿来源重复或藏品关联冲突，本次不会导入任何记录');
+      target.wishes.push(structuredClone(record));summary.silverWishesAdded=(summary.silverWishesAdded||0)+1;
     }
   }
 }

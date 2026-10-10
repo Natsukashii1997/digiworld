@@ -1,0 +1,10 @@
+.model-capability-console{color:var(--text);font-size:var(--fs-body)}
+.model-capability-console label{display:grid;gap:var(--s-2);min-width:0}
+.model-capability-console [role=radiogroup]{display:flex;flex-wrap:wrap;gap:var(--s-2)}
+.model-capability-console :is(input,textarea,select,button){min-height:44px;min-width:44px;max-width:100%}
+.model-capability-console :is(input,textarea,select){width:100%}
+.model-capability-console :is(p,small,code,pre,strong,span,label){overflow-wrap:anywhere}
+.model-capability-console pre{white-space:pre-wrap;max-width:100%}
+.capability-usage{display:grid;gap:var(--s-2);color:var(--muted)}
+.capability-usage p,.capability-usage pre{margin:0}
+@media (prefers-reduced-motion:reduce){.model-capability-console *{animation:none!important;transition:none!important}}

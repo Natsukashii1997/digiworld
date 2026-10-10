@@ -5,8 +5,10 @@ import {
   resolveReferences,
   workflowText,
   buildWorkflowBundle,
+  buildWorkflowDeploymentBundle,
 } from "./workflow-references.js";
 import { request } from "./api.js";
+import {WorkflowDeployment} from "./WorkflowDeployment.jsx";
 
 const labels = {
   current: "当前版",
@@ -242,6 +244,8 @@ export async function readWorkflow(assetId, versionId) {
 export function WorkflowDelivery({
   asset,
   version,
+  state,
+  onBusy,
   onDownload,
   onUsed,
   onCopyStart,
@@ -262,7 +266,10 @@ export function WorkflowDelivery({
     setFallback("");
     try {
       const fresh = await readWorkflow(asset.id, version.id);
-      if (kind === "export") {
+      if (kind === "deployment") {
+        onDownload(`${version.title}-部署包.zip`, await buildWorkflowDeploymentBundle(fresh.asset, fresh.version, fresh.assets), "application/zip");
+        notify("部署文件夹已打包；请解压复制到目标 Agent 工作区，尚未安装或执行");
+      } else if (kind === "export") {
         onDownload(
           `${version.title}.zip`,
           await buildWorkflowBundle(fresh.asset, fresh.version, fresh.assets),
@@ -302,6 +309,9 @@ export function WorkflowDelivery({
             导出流程与引用
           </Button>
         )}
+        <Button secondary disabled={busy || usageBlocked} onClick={() => deliver("deployment")}>
+          <Download size={16} />导出部署包
+        </Button>
         <button
           className="outlined-icon"
           aria-label="编辑资产"
@@ -311,6 +321,7 @@ export function WorkflowDelivery({
           <PenLine size={18} />
         </button>
       </div>
+      {state && <WorkflowDeployment asset={asset} version={version} state={state} onBusy={onBusy}/>}
       {!!version.references?.length && (
         <p className="context-receipt">
           含 Skill 时，请将导出的 ZIP 一并附给 Agent。仅复制说明不含文件。

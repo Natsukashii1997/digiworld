@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "数码世界 · 收藏",
+  "version": "1.0.1",
+  "description": "收藏当前小红书帖子到数码世界的本机画布。",
+  "minimum_chrome_version": "102",
+  "permissions": ["storage"],
+  "action": {"default_title":"数码世界 · 收藏","default_popup":"popup.html"},
+  "host_permissions": [
+    "http://127.0.0.1:5178/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.xiaohongshu.com/*",
+        "https://m.xiaohongshu.com/*"
+      ],
+      "js": ["page-data.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://www.xiaohongshu.com/*",
+        "https://m.xiaohongshu.com/*"
+      ],
+      "js": ["card-drag-helpers.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

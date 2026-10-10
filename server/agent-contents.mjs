@@ -316,7 +316,7 @@ export async function readAgentContents(
 }
 
 // 与资产仓库比对：同内容（当前版本）> 旧版本 > 有来源关系但内容不同 > 未收录。名称相同不算同内容。
-export function annotateAgentContents(result, state) {
+export function annotateAgentContents(result, state, verifiedFingerprints=new Map()) {
   const assets = (state?.assets || []).filter(
     (a) => a.type === "Skill" && !a.archived,
   );
@@ -325,7 +325,7 @@ export function annotateAgentContents(result, state) {
     if (!prints.has(version)) {
       let value = null;
       try {
-        value = skillFingerprint(version.files || []);
+        value = version.mediaManifest?.length ? verifiedFingerprints.get(version.id)||null : skillFingerprint(version.files || []);
       } catch {
         /* 无法计算的版本不参与比对。 */
       }
@@ -360,7 +360,7 @@ export function annotateAgentContents(result, state) {
         copies.some((c) => c.assetId === a.id && locations.has(c.location)),
       );
     if (related)
-      return { status: "drift", assetId: related.id, assetTitle: title(related) };
+      return { status: current(related).mediaManifest?.length && !printOf(current(related)) ? "unknown" : "drift", assetId: related.id, assetTitle: title(related) };
     return { status: "none" };
   }
   const skills = {

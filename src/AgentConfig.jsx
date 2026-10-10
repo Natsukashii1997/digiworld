@@ -39,6 +39,8 @@ export function AgentConfig({ target, revision, adoptState }) {
 
 function ConfigPanel({ target, revision, adoptState }) {
   const pendingKey = `guiji:agent-config-pending:${target.id}`;
+  const [gate,setGate]=useState(null);
+  useEffect(()=>{let live=true;request('/capabilities/settings/status',undefined,'GET',false).then(v=>live&&setGate(v.enabled.agent)).catch(()=>live&&setGate(false));return()=>{live=false;};},[]);
   const [view, setView] = useState(null),
     [draft, setDraft] = useState({});
   const [preview, setPreview] = useState(null),
@@ -124,7 +126,7 @@ function ConfigPanel({ target, revision, adoptState }) {
           );
         }
       }
-      const value = await request("/agent-config/" + action, data);
+      const value = await request("/agent-config/" + action, data,'POST',false);
       if (action === "inspect") {
         const latest = await request("/workspace");
         if (ticket !== sequence.current) return;
@@ -348,6 +350,7 @@ function ConfigPanel({ target, revision, adoptState }) {
                 预览有效至 {date(preview.expiresAt)}
                 。请勿同时在其他应用编辑此文件。
               </p>
+              {gate!==true&&<p role="status">Agent 配置写入默认关闭或授权尚未核验；请在设置开启后重新打开。</p>}
               {previewStale && (
                 <p className="inline-error" role="status">
                   预览已失效，请返回后重新读取并预览。
@@ -374,7 +377,7 @@ function ConfigPanel({ target, revision, adoptState }) {
                   返回配置
                 </Button>
                 <Button
-                  disabled={!!busy || !confirmed || !!pending || !!previewStale}
+                  disabled={!!busy || !confirmed || !!pending || !!previewStale || gate!==true}
                   onClick={() =>
                     run(
                       "apply",

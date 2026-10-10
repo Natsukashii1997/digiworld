@@ -61,7 +61,7 @@ export function createKnowledgeCompilation(
       }
       try {
         const document = await files.read(
-          { root: item.root, identity: item.identity },
+          { id: item.sourceId, generation: item.generation, root: item.root, identity: item.identity },
           {
             path: item.path,
             bytes: item.bytes,

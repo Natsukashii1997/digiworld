@@ -71,8 +71,9 @@ try {
   await fresh.close();
   console.log("PASS 旧版自动迁移不修改 IndexedDB；新浏览器读取相同文件主库");
   await p.goto(app.url + "/#settings");
+  await p.getByRole("radio",{name:"数据与备份",exact:true}).click();
   const waiting = p.waitForEvent("download");
-  await p.getByRole("button", { name: "导出备份", exact: true }).click();
+  await p.getByRole("button", { name: "导出可合并数据 JSON", exact: true }).click();
   const backup = parse(await readFile(await (await waiting).path(), "utf8"));
   assert.equal(backup.format, "guiji-backup");
   assert.equal(backup.state.notes[0].id, "legacy-note");

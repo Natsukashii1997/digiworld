@@ -2,6 +2,23 @@ import { parse, stringify } from "./serialization.js";
 import { readState as readLegacy, seed } from "./store.js";
 
 let sessionPromise;
+let pageRootIdentity;
+let pageRootObserved = false;
+const ROOT_IDENTITY = /^[a-f0-9]{64}$/;
+
+function bindPageRoot(value) {
+  // A missing identity keeps legacy reads available, but scoped writes stay closed.
+  const identity = ROOT_IDENTITY.test(value?.dataRootIdentity || "")
+    ? value.dataRootIdentity
+    : null;
+  if (pageRootObserved && identity !== pageRootIdentity)
+    throw new Error(
+      "本机数据目录已切换，请刷新工作台后核对原操作；本页不会向新目录重试写入。",
+    );
+  pageRootObserved = true;
+  pageRootIdentity = identity;
+  return { ...value, dataRootIdentity: identity };
+}
 export function session() {
   if (!sessionPromise)
     sessionPromise = fetch("/api/session", {
@@ -9,7 +26,7 @@ export function session() {
     })
       .then(async (r) => {
         if (!r.ok) throw new Error("本地服务不可用，请重新启动工作台");
-        return r.json();
+        return bindPageRoot(await r.json());
       })
       .catch((e) => {
         sessionPromise = null;
@@ -22,12 +39,14 @@ export async function request(
   data,
   method = data === undefined ? "GET" : "POST",
   retry = true,
+  options = {},
 ) {
   const { token } = await session();
   let r;
   try {
     r = await fetch("/api" + path, {
       method,
+      keepalive: options.keepalive === true,
       headers: {
         "X-Workbench-Token": token,
         ...(data === undefined ? {} : { "Content-Type": "application/json" }),
@@ -41,7 +60,7 @@ export async function request(
   }
   if (r.status === 403 && retry) {
     sessionPromise = null;
-    return request(path, data, method, false);
+    return request(path, data, method, false, options);
   }
   const result = parse(await r.text());
   if (!r.ok)
@@ -49,6 +68,7 @@ export async function request(
       status: r.status,
       operationNotStarted: result.operationNotStarted === true,
       unknownResult: result.unknownResult === true,
+      code: result.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED" || /^FEISHU_[A-Z_]+$/.test(result.code || "") ? result.code : undefined,
     });
   return result;
 }

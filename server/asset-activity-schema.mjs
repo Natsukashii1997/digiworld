@@ -77,6 +77,7 @@ export function validateActivity(state) {
           Workflow: "copy-workflow",
           Skill: "copy-skill",
           Rule: "copy-rule",
+          MCP: "copy-mcp-config",
         }[asset.type]
       )
         invalid("使用动作类型");

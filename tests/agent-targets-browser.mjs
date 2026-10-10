@@ -1,3 +1,4 @@
+import {openAgentInventory,agentInventoryEntry} from "./agents-v16-helpers.mjs";
 import { createRequire } from "node:module";
 import { mkdir } from "node:fs/promises";
 import assert from "node:assert/strict";
@@ -47,7 +48,7 @@ const audit = async (name) => {
 };
 const open = async () => {
   await page.goto(app.url + "/#agents");
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await panel.waitFor();
 };
 try {
@@ -107,7 +108,7 @@ try {
   assert.equal(saved.connections.agentTargets[0].running, undefined);
   assert.equal(await app.sourceUnchanged(), true);
   await page.reload();
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await target("个人 Codex").waitFor();
   assert.match(await target("个人 Codex").innerText(), /待核对/);
   assert.deepEqual(errors, []);
@@ -472,7 +473,7 @@ try {
   await page.keyboard.press("Escape");
   await panel.waitFor({ state: "hidden" });
   assert.match(
-    await page.evaluate(() => document.activeElement?.textContent || ""),
+    await page.evaluate(() => document.activeElement?.getAttribute("aria-label") || ""),
     /Codex/,
   );
   assert.equal(
@@ -480,7 +481,7 @@ try {
     "响应丢失的目标",
   );
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await inspect();
   console.log(
     "PASS 320/375/393/430 编辑无横向溢出，键盘焦点不逃逸且 Escape 取消不写；2 态 axe 无违规",
@@ -517,7 +518,7 @@ try {
   );
   assert.equal(await app.sourceUnchanged(), true);
   await page.reload();
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await target("并发后恢复").waitFor();
   assert.equal(await target("响应丢失的目标").count(), 0);
   assert.deepEqual(errors, []);
@@ -599,7 +600,7 @@ try {
   await lateReady;
   await page.keyboard.press("Escape");
   await panel.waitFor({ state: "hidden" });
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await panel.waitFor();
   assert.match(await panel.innerText(), /尚未检查版本与目标/);
   const lateWorkspace = page.waitForResponse(

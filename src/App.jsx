@@ -28,23 +28,26 @@ import { Dialog, TypeIcon, Maturity, typeLabel } from "./components.jsx";
 import { Assets, AssetEditor, AssetDetail } from "./Assets.jsx";
 import { Knowledge } from "./Knowledge.jsx";
 import { Home, ICONS as PAGE_ICONS } from "./Home.jsx";
-import { Inbox } from "./PlannedPage.jsx";
+import { useCalendarReminders } from "./calendar-reminders.js";
+import { InboxDrawer } from "./InboxDrawer.jsx";
 import { CalendarPage } from "./Calendar.jsx";
+import { useCollabProtocol } from "./useCollabProtocol.js";
 import { Collab } from "./Collab.jsx";
-import { pendingItems } from "./pending.js";
+import { mergeAgentHealth, pendingItems, inboxBadge } from "./pending.js";
 import { PartnerScreen } from "./PartnerScreen.jsx";
 import { Odometer } from "./Odometer.jsx";
 import { Motes, useV14Interactions } from "./v14.jsx";
 import {
-  Notes,
   Night,
   HistoryPage,
   References,
   Settings,
 } from "./WorkspacePages.jsx";
 import { ScrollDetail } from "./Scrolls.jsx";
-import { AiHot, Learning } from "./LifePages.jsx";
-import { Silver } from "./Silver.jsx";
+import { AiHot } from "./LifePages.jsx";
+import { Collection } from "./Collection.jsx";
+import { NotesV16 } from "./NotesV16.jsx";
+import { SilverV16 } from "./SilverV16.jsx";
 import { scrollsOf, createScroll } from "./scrolls.js";
 import { PAGES, ZONES, resolveRoute } from "./pages.js";
 import {
@@ -61,6 +64,7 @@ const ICONS = { home: Sun, ...PAGE_ICONS };
 // 并入其他页面的旧地址（如 #health、#scrolls）改写为实际页面地址，并记下要定位的页内分区或类型标签。
 function initialTarget() {
   const target = resolveRoute(location.hash.slice(1));
+  if (target.route === "inbox") { history.replaceState(null, "", "#home"); return {...target, route:"home", inbox:true}; }
   if (target.anchor || target.filter) history.replaceState(null, "", `#${target.route}`);
   return target;
 }
@@ -84,6 +88,15 @@ export default function App() {
     [ruleInstalls, setRuleInstalls] = useState({ items: [], error: "", loaded: false }),
     // 智能体群内容清单的最近一次只读结果（按 Agent），体检问题由此汇总进待处理；不写主库。
     [agentContents, setAgentContents] = useState({});
+  const { calendarTodos, calendarNow, refreshCalendarTodos, publishCalendarTodos } = useCalendarReminders();
+  const [inboxOpen,setInboxOpen]=useState(()=>!!target.inbox);
+  const [inboxTarget,setInboxTarget]=useState(null);
+  const [knowledgeStatus,setKnowledgeStatus]=useState({loaded:false});
+  const onKnowledgeRead=useCallback(v=>setKnowledgeStatus({...v,observedAt:new Date().toISOString()}),[]);
+  const [savepointReads,setSavepointReads]=useState({});
+  const onSavepointRead=useCallback(v=>setSavepointReads(all=>({...all,[v.projectId]:v})),[]);
+  const [healthAudit,setHealthAudit]=useState({items:[],loaded:false});
+  useEffect(()=>{let live=true;request("/agent-health/history").then(x=>live&&setHealthAudit(x)).catch(e=>live&&setHealthAudit({items:[],loaded:false,error:e.message}));return ()=>{live=false;};},[]);
   // 在推进项目的只读状态与体检（路线 v3 切片 2.1/2.2）。不在主库里，由服务端现读项目文件与 Git。
   const [projectStatus, setProjectStatus] = useState({
     items: [],
@@ -91,6 +104,15 @@ export default function App() {
     loaded: true,
   });
   const { route, anchor } = target;
+  const {collabStatus,refreshCollabStatus}=useCollabProtocol(state,route,inboxOpen);
+  const [vaultReceipts,setVaultReceipts]=useState({noteIds:[],loaded:false});
+  const [nightV2Reports,setNightV2Reports]=useState({items:[],loaded:false});
+  const refreshNightV2Reports=useCallback(async()=>{
+    try { const value=await request('/night-v2/morning-reports',undefined,'GET',false);setNightV2Reports({...value,loaded:true,error:''});return value; }
+    catch(error){setNightV2Reports({items:[],loaded:false,error:error.message});return null;}
+  },[]);
+  useEffect(()=>{if(!state)return;let live=true;request('/capabilities/vault/pending-notes',undefined,'GET',false).then(v=>live&&setVaultReceipts(v)).catch(e=>live&&setVaultReceipts({noteIds:[],loaded:false,error:e.message}));return()=>{live=false;};},[route,state?.revision]);
+  useEffect(()=>{if(state)refreshNightV2Reports();},[route,state?.revision,refreshNightV2Reports]);
   const [saveError, setSaveError] = useState("");
   const partnerScreen = useRef();
   // UI v14e 全站手感：主区（银饰页除外）的涟漪、微光、倾斜与阶梯浮现。
@@ -192,9 +214,12 @@ export default function App() {
     };
     const hash = () => {
       const next = initialTarget();
+      setInboxOpen(!!next.inbox);
       if (next.filter) setFilter(next.filter);
       // 站内跳转到页内分区时，随后触发的 hashchange 不带锚点，不能把待定位的分区冲掉。
-      setTarget((prev) => (next.route === prev.route && !next.anchor ? prev : next));
+      setTarget((prev) => (next.route === prev.route && !next.anchor &&
+        JSON.stringify(next.reportTarget||null)===JSON.stringify(prev.reportTarget||null) &&
+        (next.nightRunId || null) === (prev.nightRunId || null) ? prev : next));
       setMenu(false);
     };
     window.addEventListener("keydown", key);
@@ -234,11 +259,13 @@ export default function App() {
       setSaving(false);
     }
   }
-  function navigate(id) {
-    const next = resolveRoute(id);
+  function navigate(id, detail = {}) {
+    if(id === "inbox") { setInboxTarget(detail.itemId ? {itemId:detail.itemId,key:crypto.randomUUID()} : null); setInboxOpen(true); setMenu(false); return; }
+    const next = {...resolveRoute(id), ...detail, agentJumpKey: crypto.randomUUID()};
     if (next.filter) setFilter(next.filter);
     setTarget(next);
-    location.hash = next.route;
+    location.hash = next.route === "night" && next.nightRunId
+      ? `night/morning/${encodeURIComponent(next.nightRunId)}` : next.route;
     setMenu(false);
     setSelected(null);
     setScrollId(null);
@@ -249,7 +276,18 @@ export default function App() {
       !previous || next.revision >= previous.revision ? next : previous,
     );
   }
+  async function onNightMorningChange() {
+    await refreshNightV2Reports();
+    try {
+      adoptState(await request('/workspace'));
+    } catch (error) {
+      notify(`晨报已更新，但工作台回读失败：${error.message}`, 'warning');
+    }
+  }
   const common = {
+    collabStatus,refreshCollabStatus,
+    calendarTodos, calendarNow, refreshCalendarTodos, publishCalendarTodos,
+    savepointReads, onSavepointRead, knowledgeStatus, onKnowledgeRead,
     state,
     save,
     notify,
@@ -259,6 +297,12 @@ export default function App() {
     projectStatus,
     refreshProjectStatus,
     agentContents,
+    agentAnchor: anchor,
+    agentJump: target.agentId ? {id:target.agentId,tab:target.agentTab,key:target.agentJumpKey} : null,
+    healthAudit,
+    nightV2Reports,
+    vaultReceipts,
+    setHealthAudit,
   };
   const asset = state?.assets.find((a) => a.id === selected);
   // 卷被删除（进回收区）后抽屉自动关闭。
@@ -289,7 +333,8 @@ export default function App() {
       </div>
     );
   const partner = partnerOf(state);
-  const pending = pendingItems(state, ruleInstalls, projectStatus, agentContents);
+  const pending = pendingItems(state, ruleInstalls, projectStatus, mergeAgentHealth(healthAudit, agentContents),undefined,vaultReceipts,{savepointReads,knowledgeStatus,calendarTodos,calendarNow,collabStatus,nightV2Reports});
+  const badge = inboxBadge(pending);
   const currentPage = PAGES.find((p) => p.id === route);
   return (
     <div className="app-shell">
@@ -337,7 +382,7 @@ export default function App() {
               aria-label={zone.label}
               key={zone.id}
             >
-              {zone.id === "life" && <div className="nav-divider" role="separator" />}
+              {zone.id !== "today" && <div className="nav-divider" role="separator" />}
               {zone.id !== "today" && (
                 <div className="nav-zone-title" aria-hidden="true">
                   {zone.label}
@@ -346,7 +391,6 @@ export default function App() {
               )}
               {zone.groups.map((group) => (
                 <div className="nav-group" key={group}>
-                  {zone.groups.length > 1 && <div className="nav-heading">{group}</div>}
                   {PAGES.filter((p) => p.group === group && !p.navHidden).map(({ id, label, maturity }) => {
                     const Icon = ICONS[id];
                     const count =
@@ -401,12 +445,9 @@ export default function App() {
             </span>
           </span>
         </button>
-        <div className="save-state">
-          <span className={`save-dot ${saving ? "busy" : saveError ? "error" : ""}`} />
+        <div className="save-state" role="status" aria-live="polite">
+          <span className={`save-dot ${saving ? "busy" : saveError ? "error" : ""}`} aria-hidden="true" />
           <span>{saving ? "保存中…" : saveError ? "上次保存失败" : "已保存到本机"}</span>
-          <small>
-            REV <Odometer value={state.revision} />
-          </small>
         </div>
       </aside>
       <div className="workspace">
@@ -425,10 +466,6 @@ export default function App() {
             <strong>{currentPage?.label}</strong>
           </div>
           <div className="topbar-actions">
-            <span className="link-state">
-              <span className="save-dot" />
-              127.0.0.1 · 仅本机
-            </span>
             <button
               className="topbar-search"
               aria-label="搜索"
@@ -436,18 +473,19 @@ export default function App() {
               onClick={() => setPalette(true)}
             >
               <Search size={16} />
+              <span>搜索工作台</span>
               <kbd aria-hidden="true">⌘K</kbd>
             </button>
             <button
-              className="icon-button topbar-inbox"
-              aria-label={`待处理 ${pending.length} 项`}
+              className="icon-button topbar-inbox ib-open"
+              aria-label={badge.label}
               title="待处理"
-              onClick={() => navigate("inbox")}
+              onClick={() => setInboxOpen(true)}
             >
               <InboxIcon size={16} />
-              {pending.length > 0 && (
-                <small className="nav-count">
-                  <Odometer value={pending.length} />
+              {badge.count > 0 && (
+                <small className={`nav-count ib-badge ${badge.tone}`}>
+                  <Odometer value={badge.count} />
                 </small>
               )}
             </button>
@@ -466,12 +504,10 @@ export default function App() {
             {saveError}
           </div>
         )}
-        {/* UI v14e 换台：固定在内容区上的一道光线收成一条线再展开；不变形真实内容，布局与点击区域始终稳定。 */}
-        {route !== "silver" && <div className="v14-channel" key={`channel-${route}`} aria-hidden="true" />}
         <main
           id="main-content"
           tabIndex={-1}
-          className={`main-content page-${route}${route === "silver" ? "" : " v14"}`}
+          className={`main-content page-${route}${route === "silver" ? " v16" : ["home","agents","references","notes","history","knowledge"].includes(route) ? " v14 v16" : " v14"}`}
           key={route}
           ref={mainRef}
         >
@@ -505,25 +541,24 @@ export default function App() {
               }}
             />
           )}
-          {route === "projects" && <Projects {...common} />}
-          {route === "knowledge" && <Knowledge {...common} navigate={navigate} />}
-          {route === "notes" && <Notes {...common} navigate={navigate} />}
-          {route === "night" && <Night {...common} />}
+          {route === "projects" && <Projects {...common} navigate={navigate} projectJump={target.projectId ? {id:target.projectId,key:target.agentJumpKey} : null} />}
+          {route === "knowledge" && <Knowledge {...common} navigate={navigate} knowledgeJump={target.sourceId || target.taskId ? { id:target.sourceId, taskId:target.taskId, key:target.agentJumpKey } : null} />}
+          {route === "notes" && <NotesV16 {...common} navigate={navigate} />}
+          {route === "night" && <Night {...common} navigate={navigate} reportTarget={target.reportTarget || null}
+            morningTarget={target.nightRunId || null} onMorningChange={onNightMorningChange} />}
           {route === "history" && (
-            <HistoryPage {...common} select={setSelected} />
+            <HistoryPage {...common} navigate={navigate} projectId={target.projectId} />
           )}
-          {route === "references" && <References {...common} />}
+          {route === "references" && <References {...common} onSelect={a=>{navigate("assets");setSelected(a.id);}} />}
           {route === "settings" && <Settings {...common} />}
-          {route === "inbox" && (
-            <Inbox {...common} navigate={navigate} select={setSelected} />
-          )}
-          {route === "collab" && <Collab {...common} navigate={navigate} />}
+          {route === "collab" && <Collab {...common} navigate={navigate} collabJump={target.projectId && target.runId && target.launch ? {projectId:target.projectId,runId:target.runId,key:target.agentJumpKey} : null} />}
           {route === "aihot" && <AiHot {...common} navigate={navigate} />}
-          {route === "learning" && <Learning {...common} navigate={navigate} />}
-          {route === "silver" && <Silver {...common} />}
+          {route === "learning" && <Collection />}
+          {route === "silver" && <SilverV16 {...common} />}
           {route === "calendar" && <CalendarPage {...common} />}
         </main>
       </div>
+      {inboxOpen && <InboxDrawer {...common} items={pending} target={inboxTarget} navigate={navigate} select={setSelected} onClose={()=>{setInboxOpen(false);setInboxTarget(null);}} />}
       {asset && !editing && (
         <AssetDetail
           {...common}
@@ -594,8 +629,8 @@ export default function App() {
         <SearchPalette
           state={state}
           onClose={() => setPalette(false)}
-          navigate={(id) => {
-            navigate(id);
+          navigate={(id,detail) => {
+            navigate(id,detail);
             setPalette(false);
           }}
           select={(id) => {
@@ -845,14 +880,6 @@ function SearchPalette({ state, onClose, navigate, select }) {
         )}
       </div>
       <div className="search-scope" role="note" aria-label="搜索范围">
-        {found?.archived > 0 && (
-          <div>
-            <span>另有 {found.archived} 个已归档资产匹配，不在此列出。</span>
-            <button type="button" onClick={() => navigate("history")}>
-              去版本归档
-            </button>
-          </div>
-        )}
         <div>
           <span>
             搜索资产当前版本（含正文与文本文件）、随手记、参考和项目。知识库正文、历史版本和二进制文件不在此搜索。

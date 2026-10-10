@@ -1,0 +1,2 @@
+// 仅合成fixture显式授权；不作为任何生产默认或通用fixture隐式开关。
+export async function authorizeCapability(app,capability,options={}){const response=await app.call('/capabilities/settings/preview',{capability,enabled:true,options});const plan=response.body||response;const result=await app.call('/capabilities/settings/apply',{token:plan.token,operationId:plan.operationId,confirmed:true});if((result.body||result).status!=='verified')throw new Error('合成授权未回读');return result;}

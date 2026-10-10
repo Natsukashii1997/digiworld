@@ -233,7 +233,8 @@ try {
     "取消归档无变化；确认后进入可读历史，禁止继续导入或生成任务",
   );
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "模型设置", exact: true }).click();
+  await page.getByRole("button", { name: "设置", exact: true }).click();
+  await page.getByRole("radio",{name:"数据与备份",exact:true}).click();
   const backup = (await app.call("/backup")).body;
   await page.getByLabel("导入备份文件", { exact: true }).setInputFiles({
     name: "backup.json",

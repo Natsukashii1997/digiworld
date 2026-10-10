@@ -38,13 +38,13 @@
   min-width: 0;
 }
 .knowledge-source strong {
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 550;
   overflow-wrap: anywhere;
 }
 .knowledge-source small,
 .knowledge-source .knowledge-path {
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--muted);
 }
 .knowledge-source[aria-pressed="true"] small,
@@ -74,18 +74,18 @@
   min-width: 0;
 }
 .knowledge-source-heading h2 {
-  font-size: 20px;
+  font-size: var(--fs-section);
   font-weight: 550;
   margin: 0;
   overflow-wrap: anywhere;
 }
 .knowledge-source-heading p {
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--muted);
   margin: 8px 0 0;
 }
 .knowledge-scan-status {
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--muted);
 }
 .knowledge-search {
@@ -93,7 +93,7 @@
   gap: 10px;
   align-items: center;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r);
   padding: 0 12px;
   color: var(--muted);
   min-width: 0;
@@ -108,11 +108,11 @@
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-caption);
 }
 .knowledge-files {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r);
   overflow-y: auto;
   max-height: 320px;
   min-width: 0;
@@ -126,7 +126,7 @@
   min-height: 52px;
   padding: 12px;
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: var(--fs-caption);
 }
 .knowledge-file:last-child {
   border-bottom: 0;
@@ -147,7 +147,7 @@
 }
 .knowledge-empty {
   padding: 20px;
-  font-size: 13px;
+  font-size: var(--fs-caption);
   color: var(--muted);
 }
 .knowledge-preview {
@@ -164,13 +164,13 @@
 }
 .knowledge-preview h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-read);
 }
 .knowledge-preview > strong {
-  font-size: 13px;
+  font-size: var(--fs-caption);
 }
 .knowledge-preview > small {
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--muted);
 }
 .knowledge-original {
@@ -178,10 +178,10 @@
   padding: 16px;
   background: var(--canvas);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r);
 }
 .knowledge-issues {
-  font-size: 12px;
+  font-size: var(--fs-small);
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -200,7 +200,7 @@
   min-height: 44px;
   gap: 10px;
   color: var(--ink);
-  font-size: 13px;
+  font-size: var(--fs-caption);
   line-height: 1.8;
   cursor: pointer;
 }
@@ -215,13 +215,13 @@
 .knowledge-fallback {
   display: grid;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--fs-caption);
 }
 .knowledge-fallback textarea {
   min-width: 0;
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r);
   padding: 12px;
   font: inherit;
   background: var(--canvas);
@@ -251,7 +251,7 @@
   flex-wrap: wrap;
   gap: 8px 16px;
   align-items: center;
-  font-size: 12px;
+  font-size: var(--fs-small);
 }
 .knowledge-query-coverage strong {
   font-weight: 550;
@@ -261,7 +261,7 @@
 }
 .knowledge-query-result {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r);
   overflow: hidden;
   min-width: 0;
 }
@@ -273,7 +273,7 @@
   min-height: 48px;
   padding: 12px;
   text-align: left;
-  font-size: 13px;
+  font-size: var(--fs-caption);
 }
 .knowledge-result-open svg,
 .knowledge-result-open > span:last-child {
@@ -284,7 +284,7 @@
 }
 .knowledge-result-open > span:last-child {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-small);
 }
 .knowledge-result-open[aria-pressed="true"] {
   background: var(--accent-soft);
@@ -295,11 +295,11 @@
 .knowledge-snippet {
   padding: 0 12px 12px;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--fs-caption);
 }
 .knowledge-line {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-label);
 }
 .knowledge-snippet p {
   white-space: pre-wrap;
@@ -358,10 +358,10 @@
   flex: none;
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: var(--r-s);
   background: rgba(255, 255, 255, 0.04);
   box-shadow: inset 0 0 0 1px var(--line);
-  font: 700 12px var(--mono);
+  font: 700 var(--fs-small) var(--mono);
 }
 .kn-kv {
   display: grid;

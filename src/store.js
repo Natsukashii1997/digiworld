@@ -1,3 +1,6 @@
+import { validateWorkflowTemplate } from "./workflow-template.js";
+import { nightV2Of } from "./night-v2-model.js";
+import { validateMcpConfig, validateMcpVersion } from "./mcp-config.js";
 export const DB_NAME = "guiji-workbench-v1";
 export const now = () => new Date().toISOString();
 export const uid = () => crypto.randomUUID();
@@ -12,12 +15,20 @@ export function makeAsset(input) {
     source = "个人创建",
     demo = false,
     references,
+    mediaManifest,
+    workflowTemplate,
+    mcpConfig,
   } = input;
   if (!title?.trim()) throw new Error("请填写资产名称");
-  if (!["Skill", "Prompt", "Workflow", "Rule"].includes(type))
+  if (!["Skill", "Prompt", "Workflow", "Rule", "MCP"].includes(type))
     throw new Error("请选择资产类型");
   if (type === "Skill" && !files.some((f) => /(^|\/)SKILL\.md$/.test(f.path)))
     throw new Error("Skill 包中必须包含 SKILL.md");
+  if (workflowTemplate != null && type !== "Workflow")
+    throw new Error("只有工作流资产可设置协同模板");
+  if (type !== "MCP" && mcpConfig !== undefined)
+    throw new Error("只有 MCP 资产可设置 MCP 配置");
+  if (type === "MCP") validateMcpConfig(mcpConfig);
   const version = {
     id: uid(),
     at: now(),
@@ -28,7 +39,13 @@ export function makeAsset(input) {
     files,
     source,
     ...(references === undefined ? {} : { references }),
+    ...(mediaManifest === undefined ? {} : { mediaManifest }),
+    ...(mcpConfig === undefined ? {} : { mcpConfig }),
+    ...(workflowTemplate == null
+      ? {}
+      : { workflowTemplate: validateWorkflowTemplate(workflowTemplate) }),
   };
+  if (type === "MCP") validateMcpVersion(version);
   return {
     id: uid(),
     type,
@@ -47,7 +64,19 @@ export function revise(asset, values) {
   const { candidateId: _base, ...base } = current(asset);
   const { candidateId: _value, ...rest } = values;
   const next = { ...base, ...rest, id: uid(), at: now() };
+  if (Object.hasOwn(values, "workflowTemplate")) {
+    if (values.workflowTemplate == null) delete next.workflowTemplate;
+    else {
+      if (asset.type !== "Workflow")
+        throw new Error("只有工作流资产可设置协同模板");
+      next.workflowTemplate = validateWorkflowTemplate(values.workflowTemplate);
+    }
+  }
   if (!next.title.trim()) throw new Error("请填写资产名称");
+  if (values.type !== undefined && values.type !== asset.type)
+    throw new Error("资产类型不能在版本中改变");
+  if (asset.type === "MCP") validateMcpVersion(next);
+  else if (next.mcpConfig !== undefined) throw new Error("只有 MCP 资产可设置 MCP 配置");
   return { ...asset, versions: [...asset.versions, next] };
 }
 export function restore(asset, versionId) {
@@ -56,7 +85,13 @@ export function restore(asset, versionId) {
   return revise(asset, {
     ...version,
     ...(asset.type === "Workflow"
-      ? { references: version.references ?? [] }
+      ? {
+          references: version.references ?? [],
+          workflowTemplate: version.workflowTemplate ?? null,
+        }
+      : {}),
+    ...(asset.type === "Skill"
+      ? { mediaManifest: version.mediaManifest ?? [] }
       : {}),
     restoredFrom: version.id,
   });
@@ -202,6 +237,7 @@ export const seed = () => ({
     cover: i,
   })),
   notes: [],
+  collabRunSettings: [],
   projects: [],
   agents: [],
   references: [],
@@ -212,5 +248,6 @@ export const seed = () => ({
     task: "",
     enabled: false,
   },
+  nightV2: nightV2Of({}),
   model: { provider: "", model: "", endpoint: "" },
 });

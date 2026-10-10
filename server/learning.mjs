@@ -1,12 +1,13 @@
 // 学习成长书架（路线 v3 切片 5.4，产品定义 v1.2 §4.8，问题共识基线 D35）：
 // - 用户在设置里指定允许读取的文件夹（可多个），只能是存在的绝对路径目录，不接受符号链接与根目录；
 // - 索引只读：只取 PDF/EPUB 的文件名、大小、修改时间，不打开、不复制、不写入原件；不跟随符号链接，不进隐藏目录；
-// - 书的学习状态由页面写入主库 learning.books；本模块只负责文件夹与索引。
+// - 元数据仅由用户对单本书显式点击读取，按索引 ID 定位，解析只读且有界；状态和手动进度写入 learning.books。
 import { lstat, readdir, realpath } from "node:fs/promises";
 import { join, sep } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { failure } from "./repository.mjs";
 import { LEARNING_LIMITS } from "./schema.mjs";
+import { readBookMetadata } from "./learning-metadata.mjs";
 
 export const BOOK_EXTENSIONS = [".pdf", ".epub"];
 const MAX_DEPTH = 6,
@@ -93,7 +94,7 @@ async function indexFolder(folder) {
   return { status: unreadable && !books.length ? "unreadable" : "ok", books, truncated };
 }
 
-export function createLearning(repository, { clock = Date.now } = {}) {
+export function createLearning(repository, { clock = Date.now, metadataReader = readBookMetadata } = {}) {
   const now = () => new Date(clock()).toISOString();
   return {
     async addFolder({ path, expectedRevision } = {}) {
@@ -121,6 +122,15 @@ export function createLearning(repository, { clock = Date.now } = {}) {
         },
         { expectedRevision },
       );
+    },
+    async metadata(input) {
+      if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).length !== 1 || typeof input.id !== "string")
+        throw failure("元数据请求只接受书架索引 ID");
+      const shelf = await this.shelf();
+      const book = shelf.books.find(book => book.id === input.id);
+      if (!book) throw failure("书籍不在当前书架索引中，请刷新书架", 404);
+      try { return {id:book.id, ...await metadataReader(book.root,book.path)}; }
+      catch (e) { throw failure(e.message || "无法安全读取书籍元数据"); }
     },
     async shelf() {
       const folders = (await repository.read())?.learning?.folders || [];

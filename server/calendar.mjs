@@ -1,13 +1,17 @@
 // 日历与 todo（路线 v3 5.2；产品定义 v1.2 §4.8、v1.1 §4.5；基线 D13、D38、Q31）。
 // 权威数据在 macOS 日历与提醒事项；工作台只通过本机小助手（calendar-helper.swift，EventKit）读写，
-// 只在“工作台”日历 / 提醒事项列表中新建与修改，写后回读；冲突以回读为准并提示。
+// 只在“工作台”日历 / 提醒事项列表中新建与修改；规划块删除须确认与回读。
 // 非 macOS、助手不可运行、未授权时如实返回“不可用 / 未授权”，不做替代存储。
 // 注意：EventKit 部分在云端（Linux）无法验证，需本机 macOS 实测；测试注入桩 run。
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
 export const HELPER_SCRIPT = fileURLToPath(new URL("./calendar-helper.swift", import.meta.url));
+export const HELPER_BUNDLE = join(homedir(), "Library/Application Support/PersonalAIWorkbench/CalendarHelper.app/Contents/MacOS/CalendarHelper");
 export const WORKBENCH_NAME = "工作台";
 const ACCESS = ["authorized", "writeOnly", "denied", "restricted", "notDetermined"];
 const ERRORS = ["denied", "not_found", "conflict", "readonly", "invalid", "failed"];
@@ -50,11 +54,16 @@ function checkEvent(e) {
     !isIso(e.start) ||
     !isIso(e.end) ||
     typeof e.allDay !== "boolean" ||
-    !(e.modified === null || isIso(e.modified))
+    !(e.modified === null || isIso(e.modified)) ||
+    !(e.notes === undefined || text(e.notes, 2000)) ||
+    !(e.notesOverflow === undefined || e.notesOverflow === true) ||
+    (e.notesOverflow === true && e.notes !== undefined)
   )
     throw bad("日历条目格式无效");
   const { id, calendar, workbench, title, start, end, allDay, modified } = e;
-  return { id, calendar, workbench, title, start, end, allDay, modified };
+  return { id, calendar, workbench, title, start, end, allDay, modified,
+    ...(e.notes === undefined ? {} : { notes: e.notes }),
+    ...(e.notesOverflow === true ? { notesOverflow: true } : {}) };
 }
 function checkReminder(r) {
   if (
@@ -65,11 +74,12 @@ function checkReminder(r) {
     !text(r.title, 2000) ||
     typeof r.completed !== "boolean" ||
     !(r.due === null || isIso(r.due)) ||
+    !(r.dueHasTime === undefined || typeof r.dueHasTime === "boolean") ||
     !(r.modified === null || isIso(r.modified))
   )
     throw bad("提醒事项格式无效");
   const { id, title, completed, due, modified } = r;
-  return { id, title, completed, due, modified };
+  return { id, title, completed, due, modified, ...(r.dueHasTime !== undefined ? { dueHasTime: r.dueHasTime } : {}) };
 }
 const checkCurrent = (c) => ("completed" in c ? checkReminder(c) : checkEvent(c));
 
@@ -105,6 +115,15 @@ export function parseHelperOutput(stdout) {
     result.events = value.events.map(checkEvent);
   }
   if (value.event !== undefined) result.event = checkEvent(value.event);
+  if (value.found !== undefined) {
+    if (typeof value.found !== "boolean" || (value.found && !result.event) || (!value.found && result.event)) throw bad("查询结果无效");
+    result.found = value.found;
+  }
+  if (value.deleted !== undefined || value.verified !== undefined) {
+    if (typeof value.deleted !== "boolean" || typeof value.verified !== "boolean") throw bad("删除回读无效");
+    result.deleted = value.deleted;
+    result.verified = value.verified;
+  }
   if (value.reminders !== undefined) {
     if (!Array.isArray(value.reminders)) throw bad("reminders 不是列表");
     result.reminders = value.reminders.map(checkReminder);
@@ -134,7 +153,9 @@ export function reconcile(requested, readback) {
 
 // ---- 本机小助手：子进程调用 ----
 async function runSwift(command, input, { timeoutMs }) {
-  return exec("/usr/bin/swift", [HELPER_SCRIPT, command, JSON.stringify(input ?? {})], {
+  const bundled = existsSync(HELPER_BUNDLE);
+  return exec(bundled ? HELPER_BUNDLE : "/usr/bin/swift",
+    bundled ? [command, JSON.stringify(input ?? {})] : [HELPER_SCRIPT, command, JSON.stringify(input ?? {})], {
     timeout: timeoutMs,
     maxBuffer: 4 * 1024 * 1024,
   });
@@ -180,19 +201,33 @@ function when(value, label) {
   if (!isIso(value)) throw fail(`${label}无效`);
   return new Date(value).toISOString();
 }
-function span(input) {
-  const start = when(input?.start, "开始时间"),
-    end = when(input?.end, "结束时间");
-  const ms = Date.parse(end) - Date.parse(start);
+function span(input, { editing = false } = {}) {
+  const start = when(input?.start, "开始时间"), end = when(input?.end, "结束时间");
+  const a = new Date(start), b = new Date(end), ms = b - a;
   if (ms <= 0) throw fail("结束时间需要晚于开始时间");
-  if (ms > 24 * 3600 * 1000) throw fail("规划块不超过 24 小时");
-  return { start, end };
+  const explicit = Object.hasOwn(input, "allDay");
+  if (explicit && typeof input.allDay !== "boolean") throw fail("全天状态无效");
+  if (input.allDay === true) {
+    const midnight = (d) => !d.getHours() && !d.getMinutes() && !d.getSeconds() && !d.getMilliseconds();
+    const civilDay = (d) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000;
+    const days = civilDay(b) - civilDay(a);
+    if (!midnight(a) || !midnight(b) || days < 1 || days > 42)
+      throw fail("全天事件须使用本机日期边界，跨度为 1–42 天");
+  } else if (ms > (editing ? 42 : 1) * 86400000) {
+    throw fail(editing ? "规划块不超过 42 天" : "规划块不超过 24 小时");
+  }
+  return { start, end, ...(explicit ? { allDay: input.allDay } : {}) };
 }
 function version(input) {
   if (typeof input?.id !== "string" || !input.id || input.id.length > 512) throw fail("条目标识无效");
   if (!(input.expectedModified === null || isIso(input.expectedModified)))
     throw fail("缺少回读版本，请刷新后再改");
   return { id: input.id, expectedModified: input.expectedModified };
+}
+function notes(input) {
+  if (!Object.hasOwn(input || {}, "notes")) return {};
+  if (!text(input.notes, 2000) || input.notes.includes("\0")) throw fail("备注不能超过 2000 字或包含空字符");
+  return { notes: input.notes.replace(/\r\n/g, "\n") };
 }
 
 const ACCESS_TEXT = {
@@ -205,7 +240,7 @@ const accessReason = (kind, state) =>
   `${kind === "calendar" ? "日历" : "提醒事项"}未授权：${ACCESS_TEXT[state] || state}`;
 
 export function createCalendar({ helper = createCalendarHelper() } = {}) {
-  const unsupported = () => ({ available: false, reason: helper.platform.reason });
+  const unsupported = () => ({ available: false, supported: false, reason: helper.platform.reason });
   const unavailable = (error) => ({
     available: false,
     reason: error.unsupported ? error.message : `本机小助手不可用：${error.message}`,
@@ -222,7 +257,7 @@ export function createCalendar({ helper = createCalendarHelper() } = {}) {
       throw fail(accessReason(kind, result.access?.[kind]), 409, { operationNotStarted: true });
   }
   // 发出写入：此后助手失败即结果未知，必须刷新核对，不能假设成功或失败。
-  async function write(command, input, kind) {
+  async function write(command, input, kind, { unknownOnFailed = false } = {}) {
     await ready(kind);
     let result;
     try {
@@ -236,6 +271,8 @@ export function createCalendar({ helper = createCalendarHelper() } = {}) {
     }
     if (result.ok) return result;
     if (result.error === "conflict") return result;
+    if (result.error === "failed" && unknownOnFailed)
+      throw fail("删除结果未知：小助手未能完成独立回读。请先核对该规划块，再决定是否重做", 503, { unknownResult: true });
     const label = kind === "calendar" ? "日历" : "提醒事项";
     const messages = {
       denied: accessReason(kind, result.access?.[kind] || "denied"),
@@ -272,9 +309,10 @@ export function createCalendar({ helper = createCalendarHelper() } = {}) {
     async requestAccess() {
       try {
         const result = await helper.call("request-access");
+        if (!result.ok) throw fail(result.message || "系统未授予完全访问", 409);
         return { available: true, access: result.access };
       } catch (error) {
-        throw fail(`无法申请权限：${error.message}`, 503);
+        throw fail(`无法申请权限：${error.message}`, error.status || 503);
       }
     },
     async week(input = {}) {
@@ -317,19 +355,38 @@ export function createCalendar({ helper = createCalendarHelper() } = {}) {
       }
     },
     async createBlock(input) {
-      const want = { title: title(input?.title), ...span(input) };
+      const want = { title: title(input?.title), ...span(input), ...notes(input) };
       const result = await write("create-event", want, "calendar");
       const check = reconcile(want, result.event);
       return { block: result.event, check, message: confirmed(check, "日历") };
     },
     async updateBlock(input) {
       const target = version(input);
-      const want = { title: title(input?.title), ...span(input) };
+      const want = { title: title(input?.title), ...span(input, { editing: true }), ...notes(input) };
       const result = await write("update-event", { id: target.id, ...want, expectedModified: target.expectedModified }, "calendar");
       if (!result.ok)
         return { conflict: true, block: result.current, message: conflicted("日历") };
       const check = reconcile(want, result.event);
       return { conflict: false, block: result.event, check, message: confirmed(check, "日历") };
+    },
+    async checkBlock(input) {
+      const { id } = version({ id: input?.id, expectedModified: null });
+      await ready("calendar");
+      let result;
+      try { result = await helper.call("lookup-event", { id }); }
+      catch (error) { throw fail(`无法核对规划块：${error.message}`, 503); }
+      if (!result.ok || typeof result.found !== "boolean") throw fail("规划块核对结果未知，请在系统日历中检查", 503);
+      return { state: result.found ? "present" : "absent", block: result.event || null };
+    },
+    async deleteBlock(input) {
+      if (input?.confirmed !== true) throw fail("删除前需要二次确认");
+      const target = version(input);
+      if (target.expectedModified === null) throw fail("缺少可核对的日历版本，请刷新后再删除");
+      const result = await write("delete-event", { ...target, confirmed: true }, "calendar", { unknownOnFailed: true });
+      if (!result.ok) return { conflict: true, block: result.current || null, message: conflicted("日历") };
+      if (result.deleted !== true || result.verified !== true)
+        throw fail("删除结果未知：尚未取得独立回读", 503, { unknownResult: true });
+      return { conflict: false, deleted: true, verified: true, message: "已删除“工作台”规划块，独立回读确认不存在" };
     },
     async createTodo(input) {
       const want = { title: title(input?.title) };

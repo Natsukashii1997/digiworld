@@ -1,0 +1,11 @@
+.knowledge-clip{display:grid;gap:12px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.knowledge-clip h4,.knowledge-clip p{margin:0}
+.knowledge-clip p{line-height:1.65;color:var(--text-2)}
+.knowledge-clip label{display:grid;gap:8px}
+.knowledge-clip label:has(input[type=checkbox]){display:flex;align-items:center;gap:8px;min-height:44px}
+.knowledge-clip input[type=checkbox]{min-width:22px;min-height:22px;flex:0 0 auto}
+.knowledge-clip textarea{width:100%;min-height:110px;max-width:100%;resize:vertical;padding:10px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--field);color:var(--text);font:inherit}
+.knowledge-clip .button{justify-self:start;white-space:normal;text-align:left}
+.knowledge-clip-preview{display:grid;gap:10px;padding:14px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--field)}
+.knowledge-clip-preview blockquote{margin:0;padding:10px 12px;border-left:3px solid var(--cyan);white-space:pre-wrap;overflow-wrap:anywhere}
+.knowledge-clip code{overflow-wrap:anywhere}

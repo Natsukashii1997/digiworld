@@ -52,12 +52,13 @@ try {
     "silver",
   ]) {
     await page.goto(app.url + "/#" + route);
-    await page.locator(".page-heading").waitFor();
+    if(route==="inbox")await page.getByRole("dialog",{name:"待处理",exact:true}).waitFor();
+    else await page.locator(".page-heading").waitFor();
     await scan(route);
   }
   // 今日页没有标准页头，单独等待首屏后检查。
   await page.goto(app.url + "/#home");
-  await page.locator(".today-hero").waitFor();
+  await page.locator(".hx").waitFor();
   await scan("home");
   await page.goto(app.url + "/#assets");
   await page.getByRole("button", { name: "新建资产", exact: true }).click();

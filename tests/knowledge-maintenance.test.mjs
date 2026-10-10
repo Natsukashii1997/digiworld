@@ -1,4 +1,5 @@
 import test from "node:test";
+import {authorizeCapability} from "./capability-fixture.mjs";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { join } from "node:path";
@@ -63,6 +64,7 @@ async function fixture(run, options = {}) {
       assert.equal(received.status, 200);
       return received.body.state.knowledgeTasks.find((t) => t.id === task.id);
     }
+    await authorizeCapability(f,'vault',{sourceId:source.id,notesFolder:'随手记',profileFolders:[]});
     await run({ ...f, source, original, create });
   } finally {
     await f.close();

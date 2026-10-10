@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import {guardCapabilityFilesystem} from "./guarded-capability-filesystem.mjs";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { digest, failure } from "./repository.mjs";
@@ -66,8 +67,10 @@ function textOf(bytes) {
 export function createAgentConfig(
   repository,
   adapters,
-  { clock = Date.now, filesystem = fs } = {},
+  { clock = Date.now, filesystem = fs, settings } = {},
 ) {
+  settings ||= {get:async()=>({enabled:false,generation:'initial',options:{}}),assertEnabled:async()=>{throw failure('Agent写入默认关闭，请先在设置授权',409);}};
+  async function authorization(expected){const gate=await settings.assertEnabled('agent');if(gate.generation!==expected)throw failure('Agent写入授权代次已变化，请重新预览',409);}
   const previews = new Map();
   const journal = createConfigJournal(repository.directory, { filesystem });
   const at = () => new Date(clock()).toISOString();
@@ -257,6 +260,7 @@ export function createAgentConfig(
           return remember(
             {
               ...value,
+              authorizationGeneration:(await settings.get('agent')).generation,
               key: input.key,
               patch: change.patch,
               beforeValue: change.before,
@@ -279,6 +283,13 @@ export function createAgentConfig(
         const preview = previews.get(input.token);
         if (!preview) throw failure("配置预览已过期，请重新预览", 409);
         let current, change, row;
+        const writeGuard=async()=>{
+          await authorization(preview.authorizationGeneration);
+          if(preview.expires<=clock()||preview.revision!==state.revision)throw failure("配置预览已过期或主库已变化",409);
+          await scope(preview.target,preview.homeSignature);
+          await authorization(preview.authorizationGeneration);
+          if(preview.expires<=clock())throw failure("配置预览已过期",409);
+        };
         try {
           if (preview.expires <= clock())
             throw failure("配置预览已过期，请重新预览", 409);
@@ -287,6 +298,7 @@ export function createAgentConfig(
             preview.revision !== state.revision
           )
             throw failure("主库已变化，请重新读取并预览", 409);
+          await authorization(preview.authorizationGeneration);
           current = await source(state, preview.target.id, preview);
           if (
             current.file.identity !== preview.file.identity ||
@@ -331,7 +343,7 @@ export function createAgentConfig(
           if (preview.expires <= clock())
             throw failure("配置预览已过期，请重新预览", 409);
           try {
-            await journal.prepare(row);
+            await journal.prepare(row,{guard:writeGuard});
           } catch (error) {
             throw failure(
               "无法确认配置操作记录已保存；未启动配置写入，请先核对记录",
@@ -361,27 +373,30 @@ export function createAgentConfig(
             current.file,
             Buffer.from(change.content),
             {
-              filesystem,
+              filesystem:guardCapabilityFilesystem(filesystem,writeGuard),
               verifyScope: async () => {
+                await authorization(preview.authorizationGeneration);
                 if (preview.expires <= clock())
                   throw failure("配置预览已过期，请重新预览", 409);
                 await scope(current.target, current.homeSignature);
+                await authorization(preview.authorizationGeneration);
                 if (preview.expires <= clock())
                   throw failure("配置预览已过期，请重新预览", 409);
               },
             },
           );
-          await journal.complete(row.id, at());
+          await journal.complete(row.id, at(),{guard:writeGuard});
         } catch {
           const result = await checkOperation(row, state);
           return {
             ...result,
             completedAt: null,
+            newlyStarted: true,
             notice:
               "本次执行未确认完成；已保留操作记录，请先核对，不要重复提交",
           };
         }
-        return checkOperation(await journal.get(row.id), state);
+        return { ...await checkOperation(await journal.get(row.id), state), newlyStarted: true };
       });
     },
     async check(input) {
@@ -411,6 +426,7 @@ export function createAgentConfig(
           return remember(
             {
               ...value,
+              authorizationGeneration:(await settings.get('agent')).generation,
               key: row.key,
               patch: change.patch,
               beforeValue: row.afterValue,

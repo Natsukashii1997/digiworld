@@ -1,7 +1,21 @@
+import { createPolicyKnowledgeFiles } from "./knowledge-access-policy.mjs";
+import { createKnowledgeAccess } from "./knowledge-access.mjs";
+import { createSavepoints } from './savepoints.mjs';
+import {createRelaySessions} from "./relay-sessions.mjs";
+import {createReverseMedia} from './reverse-media.mjs';
+import {createCapabilitiesHttp} from './capabilities-http.mjs';
+import {readDataRootIdentity} from './data-root-identity.mjs';
+import {createNightV2Harness} from './night-v2-harness.mjs';
+import {createNightV2Morning} from './night-v2-morning.mjs';
+import {createNightV2Actions} from './night-v2-actions.mjs';
+import {createNightV2WorkspaceActions} from './night-v2-workspace-actions.mjs';
+import { createControlledExecution } from './controlled-execution.mjs';
+import { createHealthAudit } from "./health-audit.mjs";
+import { sanitizeKnowledgeAgentStatus } from "./knowledge-agent-status.mjs";
 import http from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile,realpath } from "node:fs/promises";
 import { join, extname } from "node:path";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { openRepository, failure } from "./repository.mjs";
 import { parse, stringify } from "../src/serialization.js";
 import { createAssetActivity } from "./asset-activity.mjs";
@@ -12,8 +26,10 @@ import { createProjectStatus, ghVisibility } from "./project-status.mjs";
 import { createCollabBoard } from "./collab-board.mjs";
 import { createProjectGithub, createGhRunner } from "./project-github.mjs";
 import { createProjectBrief } from "./project-brief.mjs";
+import { applyProjectCatalog, excludedProject, reconcileProjectCatalog } from "./project-catalog.mjs";
 import { inspectProjectLocation } from "./project-scan.mjs";
 import { createSkillSources } from "./skill-sources.mjs";
+import { createSkillSourceUpdates } from "./skill-source-updates.mjs";
 import { inspectAgentInventory } from "./agent-inventory.mjs";
 import { createAgentContents, readAgentContents } from "./agent-contents.mjs";
 import { inspectAgentPrograms } from "./agent-programs.mjs";
@@ -21,19 +37,29 @@ import { createAgentTargets } from "./agent-targets.mjs";
 import { createSkillCopies } from "./skill-copies.mjs";
 import { createAgentConfig } from "./agent-config.mjs";
 import { createRuleTemplates } from "./rule-templates.mjs";
+import { createAssetDeletion } from "./asset-delete.mjs";
 import { createKnowledgeFiles } from "./knowledge-files.mjs";
+import { createFeishuKnowledgeFiles, createKnowledgeFileDispatch } from "./knowledge-feishu.mjs";
+import { createFeishuConnections } from "./knowledge-feishu-connections.mjs";
 import { createKnowledgeConnections } from "./knowledge-connections.mjs";
 import { createKnowledgeCompilation } from "./knowledge-compilation.mjs";
+import { createKnowledgeClip } from "./knowledge-clip.mjs";
 import { createKnowledgeMaintenance } from "./knowledge-maintenance.mjs";
 import { createKnowledgeWriteback } from "./knowledge-writeback.mjs";
 import { createAiHot } from "./aihot.mjs";
 import { createLearning } from "./learning.mjs";
+import { createCollection } from "./collection.mjs";
 import { createKnowledgeProfile } from "./knowledge-profile.mjs";
 import { startProfileMcp } from "./profile-mcp.mjs";
 import { createSilverImages } from "./silver.mjs";
 import { createCutout } from "./silver-cutout.mjs";
 import { createFullBackup } from "./full-backup.mjs";
+import { createBackupRecords } from "./backup-records.mjs";
+import { createStorageStatus } from "./storage-status.mjs";
+import { createProjectActivity } from "./project-activity.mjs";
+import { createKnowledgeTrends } from "./knowledge-trends.mjs";
 import { createCalendar, createCalendarHelper } from "./calendar.mjs";
+import { createCapabilityUsage, capabilityUseOutcome } from "./capability-usage.mjs";
 import packageInfo from "../package.json" with { type: "json" };
 import {
   scanLocalProjects,
@@ -65,6 +91,7 @@ const MIME = {
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".ico": "image/x-icon",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
 };
 async function body(request) {
   let bytes = 0;
@@ -95,8 +122,62 @@ export async function startServer({
   discovery,
   clock,
   mcpPort,
+  mcpClientHealth,
+  enableCapabilityScheduler = false,
+  nightV2 = {},
+  controlledExecution = {},
 } = {}) {
   const repository = await openRepository(directory);
+  const controlled = createControlledExecution({ directory,
+    ...controlledExecution, clock: controlledExecution.clock ?? clock ?? Date.now });
+  // v2 has its own receipt/approval boundary. Production starts disabled and has no timer.
+  let nightV2Actions;
+  const nightV2Harness = createNightV2Harness({ ...nightV2, directory,
+    readWorkspace: () => repository.read(),
+    countUnresolvedBranches: async input => nightV2Actions.countUnresolvedBranches(input),
+    verifyContinuation: async ({ slot, source }) => {
+      if (!nightV2Actions || slot.id !== `resume-${createHash('sha256')
+        .update(JSON.stringify([source.runId, source.slotId])).digest('hex').slice(0, 24)}`)
+        return false;
+      const [action, oldRun] = await Promise.all([
+        nightV2Actions.query({ operationId: source.operationId }),
+        nightV2Harness.morningSource({ runId: source.runId }),
+      ]);
+      const old = oldRun.slots.find(item => item.slotId === source.slotId);
+      return action.action === 'continue' && action.status === 'queued' &&
+        action.runId === source.runId && action.slotId === source.slotId && !!old &&
+        old.chipId === slot.chipId && old.projectId === source.projectId &&
+        old.projectId === slot.projectId && old.branch === source.branch &&
+        old.lastGreenSha === source.lastGreenSha;
+    } });
+  const nightV2Morning = createNightV2Morning({ directory,
+    readRunSource: ({ runId }) => nightV2Harness.morningSource({ runId }),
+    readArtifact: nightV2.readArtifact, clock: nightV2.clock ?? clock ?? Date.now });
+  const nightV2WorkspaceActions = createNightV2WorkspaceActions({ repository, harness: nightV2Harness,
+    clock: nightV2.clock ?? clock ?? Date.now });
+  nightV2Actions = createNightV2Actions({ directory, morning: nightV2Morning,
+    harness: nightV2Harness, repository, branchAdapter: nightV2.branchAdapter,
+    clock: nightV2.clock ?? clock ?? Date.now, executionMode: nightV2.executionMode ?? 'disabled',
+    writeContinuation: nightV2.writeContinuation ?? nightV2WorkspaceActions.writeContinuation,
+    writeSuggestion: nightV2.writeSuggestion ?? nightV2WorkspaceActions.writeSuggestion });
+  async function nightV2MorningList() {
+    const [reports, decisions, workspace] = await Promise.all([
+      nightV2Morning.list(), nightV2Actions.decisions(), repository.read(),
+    ]);
+    const activeContinuations = new Set((workspace?.nightV2?.slots ?? [])
+      .map(slot => slot?.continueFrom?.operationId).filter(Boolean));
+    const handled = new Set(decisions.items.filter(item =>
+      ['merged', 'dispatched', 'discarded'].includes(item.status) ||
+      (item.status === 'queued' && activeContinuations.has(item.operationId)))
+      .map(item => `${item.runId}:${item.slotId}`));
+    const items = await Promise.all(reports.items.map(async item => {
+      const report = await nightV2Morning.read({ runId: item.runId });
+      return { ...item, decisionPending: report.slots.some(slot =>
+        !!slot.branch && !handled.has(`${item.runId}:${slot.slotId}`)) };
+    }));
+    return { ...reports, items, decisions: decisions.items };
+  }
+  const reverseMedia=createReverseMedia(await realpath(repository.directory));
   const deliveries = createDeliveries(repository, clock);
   const activity = createAssetActivity(repository, deliveries, clock);
   const projectContext = createProjectContext(repository, clock);
@@ -117,6 +198,10 @@ export async function startServer({
     silverCutout: createCutout(),
     ...discovery,
   };
+  const capabilityUsage = createCapabilityUsage(directory, { clock: clock || Date.now });
+  const capabilities = createCapabilitiesHttp(repository,{adapters,clock,enableScheduler:enableCapabilityScheduler,
+    onScheduledUse: result => capabilityUsage.record("night", capabilityUseOutcome(result))});
+  const skillSourceUpdates = createSkillSourceUpdates(repository,{clock,localReader:adapters.skillSourceReader});
   const projectStatus = createProjectStatus(repository, {
     clock,
     visibility: adapters.repoVisibility,
@@ -136,21 +221,45 @@ export async function startServer({
     cutout: adapters.silverCutout,
   });
   const agentContents = createAgentContents(repository, adapters);
+  const healthAudit = createHealthAudit(repository, agentContents, {clock});
   // 完整备份（切片 5.1）：整个数据目录打包；恢复只写到新的目录副本。
-  const fullBackup = createFullBackup(repository, { clock });
+  const backupRecords = createBackupRecords(directory,{clock});
+  const fullBackup = createFullBackup(repository, { clock,records:backupRecords });
+  const storageStatus = createStorageStatus(repository,{records:backupRecords,...adapters.storageStatus});
+  const projectActivity = createProjectActivity(repository,{clock,...adapters.projectActivity});
+  const knowledgeTrends = createKnowledgeTrends(repository,{clock,...adapters.knowledgeTrends});
   // 日历与 todo（切片 5.2）：本机小助手可由测试注入桩 run；非 macOS 如实返回不可用。
   const calendar = createCalendar({
     helper: createCalendarHelper(adapters.calendarHelper || {}),
   });
+  const used = async (capability, value, outcome = null) => {
+    await capabilityUsage.record(capability, outcome || capabilityUseOutcome(value)).catch(() => {});
+    return value;
+  };
+  const capabilityAction = (path, method) => {
+    if (method !== "POST") return null;
+    const match = path.match(/^\/api\/capabilities\/(vault|agent|model|daemon|night)\/([a-z-]+)$/);
+    const actions = { vault:["apply","rollback"], agent:["apply","model-apply","model-rollback","pool-publish-apply","pool-publish-rollback"], model:["apply-credentials","confirm-test","confirm-book","rollback"], daemon:["apply","rollback"], night:["register-confirm","unregister","save-tasks","confirm","run","rollback","draft-rollback","deliver-morning"] };
+    return match && actions[match[1]].includes(match[2]) ? match[1] : null;
+  };
   const agentTargets = createAgentTargets(repository, adapters, clock);
   const skillCopies = createSkillCopies(repository, adapters, clock);
-  const agentConfig = createAgentConfig(repository, adapters, { clock });
+  const agentConfig = createAgentConfig(repository, adapters, { clock, settings:capabilities.settings,filesystem:adapters.capabilityFilesystem });
   const ruleTemplates = createRuleTemplates(repository, { clock });
+  const assetDeletion = createAssetDeletion(repository, ruleTemplates);
   const projectIdentity = createProjectIdentity(repository, {
     clock,
     inspect: adapters.inspectProjectLocation,
   });
-  const knowledgeFiles = adapters.knowledgeFiles || createKnowledgeFiles();
+  const feishuFiles = adapters.feishuKnowledge || createFeishuKnowledgeFiles({ clock });
+  const rawKnowledgeFiles = createKnowledgeFileDispatch(adapters.knowledgeFiles || createKnowledgeFiles(), feishuFiles);
+  const knowledgeFiles = createPolicyKnowledgeFiles(repository,rawKnowledgeFiles);
+  const knowledgeAccess=createKnowledgeAccess(repository,{files:knowledgeFiles,clock,limits:adapters.knowledgeAccessLimits});
+  const feishuConnections = createFeishuConnections(repository, {
+    provider: feishuFiles,
+    clock,
+    initialConnections: () => emptyConnections(adapters.defaultRoots()),
+  });
   const knowledge = createKnowledgeConnections(repository, {
     files: knowledgeFiles,
     clock,
@@ -162,7 +271,9 @@ export async function startServer({
     files: knowledgeFiles,
     clock,
   });
+  const knowledgeClip = createKnowledgeClip(repository, { files: knowledgeFiles, clock });
   const knowledgeWrites = createKnowledgeWriteback(repository, {
+    settings:capabilities.settings,
     files: knowledgeFiles,
     clock,
   });
@@ -177,23 +288,27 @@ export async function startServer({
     fetch: adapters.aihotFetch || globalThis.fetch,
     clock,
   });
-  const learning = createLearning(repository, { clock });
+  const learning = createLearning(repository, { clock, ...(adapters.learningMetadataReader ? {metadataReader:adapters.learningMetadataReader}: {}) });
+  const collection = createCollection(repository, { directory, clock, ...adapters.collection });
   const knowledgeProfile = createKnowledgeProfile(repository, {
     files: knowledgeFiles,
     clock,
+    trends:knowledgeTrends,
   });
   // 个人说明 MCP 服务：单独端口、只监听 127.0.0.1；启动失败不影响工作台本身，页面如实显示未启动。
   let mcp = null,
     mcpError = "";
   if (mcpPort !== undefined)
     try {
-      mcp = await startProfileMcp({ profile: knowledgeProfile, port: mcpPort });
+      mcp = await startProfileMcp({ profile: knowledgeProfile, knowledge:knowledgeAccess, usage: capabilityUsage, port: mcpPort });
     } catch (error) {
       mcpError =
         error.code === "EADDRINUSE"
           ? `端口 ${mcpPort} 已被占用，MCP 服务未启动`
           : "MCP 服务未能启动";
     }
+  const relaySessions = adapters.relaySessions || createRelaySessions({clock, getAgents:async()=>(await repository.read())?.connections?.agents||[], getWorkspace:()=>repository.read()});
+  const savepoints = adapters.savepointsService || createSavepoints(repository,{clock,...adapters.savepoints});
   const scans = new Map();
   function singleScan(key, operation) {
     if (scans.has(key)) throw failure("已有扫描正在进行，请稍候", 409);
@@ -209,6 +324,8 @@ export async function startServer({
       const expected = `127.0.0.1:${server.address().port}`;
       if (request.headers.host !== expected)
         throw failure("只允许通过本机 127.0.0.1 地址访问", 403);
+      const collectionUrl = new URL(request.url, `http://${expected}`);
+      if (await collection.handleClip(request, response, collectionUrl, body)) return;
       const origin = request.headers.origin;
       if (origin && origin !== `http://${expected}`)
         throw failure("不允许跨站访问本地主库", 403);
@@ -217,6 +334,7 @@ export async function startServer({
       )
         throw failure("不允许跨站访问", 403);
       const url = new URL(request.url, `http://${expected}`);
+      if (url.pathname.startsWith('/collection-media/') && await collection.sendMedia(request,response,url.pathname)) return;
       const packageMatch = url.pathname.match(
         /^\/packages\/([a-f0-9]{64})\.zip$/,
       );
@@ -235,9 +353,19 @@ export async function startServer({
         if (url.pathname === "/api/session" && request.method === "GET") {
           if (request.headers["x-workbench-client"] !== "1")
             throw failure("请从工作台页面连接", 403);
+          let dataRootIdentity = null;
+          let dataRootIdentityError = null;
+          try {
+            dataRootIdentity = await readDataRootIdentity(repository.directory);
+          } catch {
+            // Older workspace features may continue; scoped pending writes fail closed.
+            dataRootIdentityError = "本机数据目录身份不可核验，受控待决操作保持关闭";
+          }
           return send(response, 200, {
             token,
             directory,
+            dataRootIdentity,
+            dataRootIdentityError,
             mode: "filesystem",
             version: packageInfo.version,
           });
@@ -254,8 +382,81 @@ export async function startServer({
           request.headers["content-type"] !== "application/json"
         )
           throw failure("需要 JSON 请求", 415);
+        if (url.pathname.startsWith('/api/collection/')) {
+          const path = url.pathname.slice('/api/collection'.length), method = request.method;
+          if (method==='GET' && path==='/notes') return send(response,200,await collection.notes());
+          if (method==='GET' && path==='/notes/version') return send(response,200,{revision:String((await collection.read()).revision)});
+          if (method==='GET' && path==='/health') return send(response,200,await collection.health());
+          if (method==='GET' && path==='/desk-workspace') return send(response,200,await collection.desk());
+          if (method==='PUT' && path==='/desk-workspace') return send(response,200,await collection.saveDesk(await body(request)));
+          if (method==='POST' && path==='/notes/import') return send(response,202,await collection.startImport(await body(request)));
+          if (method==='POST' && path==='/notes/manual') return send(response,200,await collection.manual(await body(request)));
+          if (method==='PATCH' && path==='/notes/categories') return send(response,200,await collection.categories(await body(request)));
+          if (method==='POST' && path==='/extension/pair') return send(response,200,await collection.pairing());
+          if (method==='POST' && path==='/extension/revoke') return send(response,200,await collection.revokePairing());
+          if (method==='POST' && path==='/legacy/clear') return send(response,200,await collection.clearLegacy((await body(request)).expectedRevision));
+          if (method==='GET' && path==='/setup') return send(response,200,await collection.setup());
+          if (method==='GET' && path==='/recycle') return send(response,200,await collection.recycle.list());
+          if (method==='POST' && path==='/recycle/organize') { const input=await body(request); if (Object.keys(input).length) throw failure('整理不接受自定义路径或筛选',400); return send(response,200,await collection.recycle.organize()); }
+          if (method==='POST' && path==='/recycle/open') return send(response,200,await collection.recycle.open(undefined,await body(request)));
+          const recycled=path.match(/^\/recycle\/([a-f0-9-]{36})\/(restore|open)$/);
+          if (method==='POST' && recycled) { const input=await body(request); if (Object.keys(input).length) throw failure('回收操作不接受自定义路径',400); return send(response,200,recycled[2]==='restore'?await collection.recycle.restore(recycled[1]):await collection.recycle.open(recycled[1],input)); }
+          const operation=path.match(/^\/operations\/([a-f0-9-]{36})$/);
+          if (method==='GET' && operation) return send(response,200,await collection.status(operation[1]));
+          const note=path.match(/^\/notes\/([a-f0-9]{24})(\/reanalyze)?$/);
+          if (method==='DELETE' && note && !note[2]) return send(response,200,await collection.remove(note[1]));
+          if (method==='POST' && note?.[2]) return send(response,200,await collection.reanalyze(note[1]));
+          throw failure('收藏接口不存在',404);
+        }
+        if(url.pathname.startsWith('/api/capabilities/')){
+          const action = capabilityAction(url.pathname, request.method);
+          let result;
+          try { result=await capabilities.dispatch(url.pathname,request.method,request.method==='POST'?await body(request):undefined); }
+          catch (error) { if (action && error.unknownResult) await capabilityUsage.record(action, "unknown").catch(() => {}); throw error; }
+          if(!result)throw failure('能力接口未开放',404);
+          if (action && !["not_started", "skipped"].includes(result.value?.status)
+            && !(url.pathname === "/api/capabilities/night/run" && result.value?.newlyStarted !== true)
+            && !(["/api/capabilities/agent/apply", "/api/capabilities/agent/model-apply", "/api/capabilities/agent/model-rollback", "/api/capabilities/agent/pool-publish-apply", "/api/capabilities/agent/pool-publish-rollback"].includes(url.pathname) && result.value?.newlyStarted !== true)) await used(action, result.value);
+          return send(response,200,result.value);
+        }
+        if (url.pathname === "/api/night-v2/status" && request.method === "GET")
+          return send(response, 200, await nightV2Harness.status());
+        if (url.pathname === "/api/night-v2/stop" && request.method === "POST")
+          return send(response, 200, await nightV2Harness.stop(await body(request)));
+        if (url.pathname === "/api/night-v2/recheck" && request.method === "POST")
+          return send(response, 200, await nightV2Harness.recheck(await body(request)));
+        if (url.pathname === "/api/night-v2/actions/preview" && request.method === "POST")
+          return send(response, 200, await nightV2Actions.preview(await body(request)));
+        if (url.pathname === "/api/night-v2/actions/confirm" && request.method === "POST")
+          return send(response, 200, await nightV2Actions.confirm(await body(request)));
+        if (url.pathname === "/api/night-v2/actions/query" && request.method === "GET")
+          return send(response, 200, await nightV2Actions.query({ operationId: url.searchParams.get('operationId') }));
+        if (url.pathname === "/api/night-v2/actions/decisions" && request.method === "GET")
+          return send(response, 200, await nightV2Actions.decisions({ runId: url.searchParams.get('runId') ?? undefined }));
+        if (url.pathname === "/api/night-v2/actions/suggestion-preview" && request.method === "POST")
+          return send(response, 200, await nightV2Actions.suggestionPreview(await body(request)));
+        if (url.pathname === "/api/night-v2/actions/suggestion-confirm" && request.method === "POST")
+          return send(response, 200, await nightV2Actions.suggestionConfirm(await body(request)));
+        if (url.pathname === "/api/night-v2/actions/suggestion-query" && request.method === "GET")
+          return send(response, 200, await nightV2Actions.suggestionQuery({ operationId: url.searchParams.get('operationId') }));
+        if (url.pathname === "/api/night-v2/morning/reconcile" && request.method === "POST")
+          return send(response, 200, await nightV2Morning.reconcile(await body(request)));
+        if (url.pathname === "/api/night-v2/morning-reports" && request.method === "GET")
+          return send(response, 200, await nightV2MorningList());
+        if (url.pathname === "/api/night-v2/morning-report" && request.method === "GET")
+          return send(response, 200, await nightV2Morning.read({ runId: url.searchParams.get("runId") }));
+        if (url.pathname === "/api/night-v2/output" && request.method === "GET")
+          return send(response, 200, await nightV2Morning.output({ runId: url.searchParams.get("runId"),
+            slotId: url.searchParams.get("slotId") }));
+        if (url.pathname === "/api/capability-usage" && request.method === "GET")
+          return send(response, 200, await capabilityUsage.summary());
         if (url.pathname === "/api/workspace" && request.method === "GET")
           return send(response, 200, await repository.read());
+        if (url.pathname === "/api/assets/delete" && request.method === "POST")
+          return send(response, 200, await assetDeletion.remove(await body(request)));
+        if(url.pathname==='/api/reverse/media'&&request.method==='POST')return send(response,200,await reverseMedia.store(await body(request)));
+        if(url.pathname==='/api/reverse/media/read'&&request.method==='POST')return send(response,200,await reverseMedia.read(await body(request)));
+        if(url.pathname==='/api/reverse/media/locate'&&request.method==='POST')return send(response,200,await reverseMedia.locate(await body(request)));
         if (url.pathname === "/api/aihot" && request.method === "GET")
           return send(response, 200, await aihot.status());
         if (url.pathname === "/api/aihot/refresh" && request.method === "POST") {
@@ -266,6 +467,8 @@ export async function startServer({
           return send(response, 200, await aihot.saveSettings(await body(request)));
         if (url.pathname === "/api/learning/shelf" && request.method === "GET")
           return send(response, 200, await learning.shelf());
+        if (url.pathname === "/api/learning/metadata" && request.method === "POST")
+          return send(response, 200, await learning.metadata(await body(request)));
         const folderAction = url.pathname.match(/^\/api\/learning\/folders\/(add|remove)$/)?.[1];
         if (folderAction && request.method === "POST") {
           const input = await body(request);
@@ -282,6 +485,13 @@ export async function startServer({
         if (url.pathname === "/api/asset-activity") {
           if (request.method === "GET") return send(response, 200, await activity.query(url.searchParams.get("id")));
           if (request.method === "POST") return send(response, 200, await activity.append(await body(request)));
+        }
+        if (url.pathname === "/api/knowledge/mcp-clients" && request.method === "GET") {
+          let health = null;
+          if (mcp?.url && mcpClientHealth) {
+            try { health = await mcpClientHealth(mcp.url); } catch { /* Probe failures remain unknown. */ }
+          }
+          return send(response, 200, sanitizeKnowledgeAgentStatus(health, clock || Date.now));
         }
         const zonesAction = url.pathname.match(
           /^\/api\/knowledge\/zones\/(rules|stats|summary)$/,
@@ -334,6 +544,9 @@ export async function startServer({
         const compilationAction = url.pathname.match(
           /^\/api\/knowledge\/tasks\/(create|packet|receive|check|archive)$/,
         )?.[1];
+        const clipAction = url.pathname.match(
+          /^\/api\/knowledge\/clip\/(preview|confirm|check)$/,
+        )?.[1];
         const maintenanceAction = url.pathname.match(
           /^\/api\/knowledge\/maintenance\/(impact|preview|create|recover)$/,
         )?.[1];
@@ -358,6 +571,18 @@ export async function startServer({
             200,
             await compilation[compilationAction](await body(request)),
           );
+        if (clipAction && request.method === "POST")
+          return send(response, 200, await knowledgeClip[clipAction](await body(request)));
+        if(request.method === "POST" && url.pathname === "/api/knowledge/policy")return send(response,200,await knowledgeAccess.setPolicy(await body(request)));
+        if (request.method === "GET" && url.pathname === "/api/knowledge/feishu/spaces")
+          return send(response, 200, await feishuFiles.listSpaces());
+        const feishuAction = url.pathname.match(/^\/api\/knowledge\/feishu\/(connect|connect-space|verify)$/)?.[1];
+        if (request.method === "POST" && feishuAction)
+          return send(response, 200,
+            await feishuConnections[feishuAction === "connect-space" ? "connectSpace" : feishuAction](await body(request)));
+        if(request.method === "POST" && url.pathname === "/api/knowledge/search-all")return send(response,200,await knowledgeAccess.searchAll(await body(request),{audience:"user"}));
+        if(request.method === "POST" && url.pathname === "/api/knowledge/read-note")return send(response,200,await knowledgeAccess.readNote(await body(request),{audience:"user"}));
+        if(request.method === "POST" && url.pathname === "/api/knowledge/profile/read-preview")return send(response,200,await knowledgeProfile.readPreview(await body(request)));
         const knowledgeAction = url.pathname.match(
           /^\/api\/knowledge\/(connect|scan|read|search|reconfirm|remove)$/,
         )?.[1];
@@ -391,6 +616,14 @@ export async function startServer({
             200,
             await skillCopies[copyAction](await body(request)),
           );
+        const savepointAction=url.pathname.match(/^\/api\/savepoints\/(inspect|detail|compare|handoff|preview|confirm|query|pending)$/)?.[1];
+        if(savepointAction&&request.method==='POST'){
+          let value;
+          try { value = await savepoints[savepointAction](await body(request)); }
+          catch (error) { if (savepointAction === "confirm" && error.unknownResult) await capabilityUsage.record("savepoints", "unknown").catch(() => {}); throw error; }
+          if (savepointAction === "confirm" && value?.newlyStarted === true) await used("savepoints", value);
+          return send(response,200,value);
+        }
         const projectIdentityAction = url.pathname.match(
           /^\/api\/project-identity\/(preview|confirm)$/,
         )?.[1];
@@ -400,6 +633,10 @@ export async function startServer({
             200,
             await projectIdentity[projectIdentityAction](await body(request)),
           );
+        if(url.pathname==="/api/agent-health/history" && request.method==="GET") return send(response,200,await healthAudit.history());
+        if(url.pathname==="/api/agent-health/inspect" && request.method==="POST") return send(response,200,await healthAudit.inspect(await body(request)));
+        if (url.pathname === "/api/project-status/activity" && request.method === "POST")
+          return send(response,200,await projectActivity.inspect(await body(request)));
         const statusAction = url.pathname.match(
           /^\/api\/project-status\/(inspect|mark|settings)$/,
         )?.[1];
@@ -420,8 +657,15 @@ export async function startServer({
             200,
             await projectBrief[briefAction](await body(request)),
           );
+        const controlledAction = url.pathname.match(
+          /^\/api\/controlled-execution\/(list|preview|confirm|resolve|status|start|check|stop|gate-preview|gate|collect)$/,
+        )?.[1];
+        if (controlledAction && request.method === "POST") {
+          const action = controlledAction === 'gate-preview' ? 'gatePreview' : controlledAction;
+          return send(response, 200, await controlled[action](await body(request)));
+        }
         const collabAction = url.pathname.match(
-          /^\/api\/collab\/(board|record)$/,
+          /^\/api\/collab\/(board|record|protocol)$/,
         )?.[1];
         if (collabAction && request.method === "POST")
           return send(
@@ -433,15 +677,16 @@ export async function startServer({
           /^\/api\/agent-config\/(inspect|preview|apply|check|history|restore-preview)$/,
         )?.[1];
         if (configAction && request.method === "POST") {
+          if(configAction==='apply'){try{await capabilities.settings.assertEnabled('agent');}catch(e){e.operationNotStarted=true;throw e;}}
           const action =
             configAction === "restore-preview"
               ? "restorePreview"
               : configAction;
-          return send(
-            response,
-            200,
-            await agentConfig[action](await body(request)),
-          );
+          let value;
+          try { value = await agentConfig[action](await body(request)); }
+          catch (error) { if (configAction === "apply" && error.unknownResult) await capabilityUsage.record("agent", "unknown").catch(() => {}); throw error; }
+          if (configAction === "apply" && value?.newlyStarted === true) await used("agent", value);
+          return send(response,200,value);
         }
         const ruleAction = url.pathname.match(
           /^\/api\/rule-templates\/(preview|apply|check|installs|revert-preview)$/,
@@ -454,6 +699,13 @@ export async function startServer({
               ruleAction === "revert-preview" ? "revertPreview" : ruleAction
             ](await body(request)),
           );
+        const relayAction=url.pathname.match(/^\/api\/relay-sessions\/(list|prepare|clear|open)$/)?.[1];
+        if(relayAction && request.method==='POST') {
+          const data=await body(request);
+          const keys={list:['pageId','earlier'],prepare:['pageId','id'],clear:['pageId'],open:['agentId']}[relayAction];
+          if(!data||Array.isArray(data)||Object.keys(data).some(k=>!keys.includes(k)))throw failure('接力请求只接受白名单字段');
+          return send(response,200,await relaySessions[relayAction](data));
+        }
         if (
           url.pathname === "/api/agent-inventory" &&
           request.method === "POST"
@@ -481,6 +733,8 @@ export async function startServer({
             200,
             await agentContents.inspect(await body(request)),
           );
+        const updateAction=url.pathname.match(/^\/api\/skill-source-updates\/(check|adopt)$/)?.[1];
+        if(updateAction&&request.method==="POST")return send(response,200,await skillSourceUpdates[updateAction](await body(request)));
         if (url.pathname === "/api/skill-sources" && request.method === "GET")
           return send(response, 200, skillSources.defaults());
         const skillAction = url.pathname.match(
@@ -565,9 +819,14 @@ export async function startServer({
             200,
             await repository.write(input.state, {
               initialize: input.initialize === true,
+              restrictAssetDeletion: true,
             }),
           );
         }
+        if (url.pathname === "/api/storage/status" && request.method === "GET")
+          return send(response,200,await storageStatus.status());
+        if (url.pathname === "/api/storage/reveal" && request.method === "POST")
+          return send(response,200,await storageStatus.reveal(await body(request)));
         if (url.pathname === "/api/backup" && request.method === "GET")
           return send(response, 200, {
             format: "guiji-backup",
@@ -585,27 +844,32 @@ export async function startServer({
         if (url.pathname === "/api/calendar/status" && request.method === "GET")
           return send(response, 200, await calendar.status());
         const calendarAction = url.pathname.match(
-          /^\/api\/calendar\/(access|week|todos|blocks\/create|blocks\/update|todos\/create|todos\/update)$/,
+          /^\/api\/calendar\/(access|week|todos|blocks\/create|blocks\/update|blocks\/check|blocks\/delete|todos\/create|todos\/update)$/,
         )?.[1];
         if (calendarAction && request.method === "POST") {
           const input = await body(request);
           if (!input || typeof input !== "object" || Array.isArray(input))
             throw failure("请求格式无效");
-          return send(
-            response,
-            200,
-            await calendar[
+          let value;
+          try { value = await calendar[
               {
                 access: "requestAccess",
                 week: "week",
                 todos: "todos",
                 "blocks/create": "createBlock",
                 "blocks/update": "updateBlock",
+                "blocks/check": "checkBlock",
+                "blocks/delete": "deleteBlock",
                 "todos/create": "createTodo",
                 "todos/update": "updateTodo",
               }[calendarAction]
-            ](input),
-          );
+            ](input); }
+          catch (error) { if (error.unknownResult) await capabilityUsage.record("calendar", "unknown").catch(() => {}); throw error; }
+          if (calendarAction === "week" ? Array.isArray(value.events)
+            : calendarAction === "todos" ? Array.isArray(value.reminders)
+            : !["access", "blocks/check"].includes(calendarAction))
+            await used("calendar", value, ["week", "todos"].includes(calendarAction) ? "verified" : null);
+          return send(response,200,value);
         }
         if (url.pathname === "/api/import/preview" && request.method === "POST")
           return send(
@@ -631,6 +895,8 @@ export async function startServer({
             (await repository.read())?.connections ||
               emptyConnections(adapters.defaultRoots()),
           );
+        if (url.pathname === "/api/project-catalog/apply" && request.method === "POST")
+          return send(response, 200, await applyProjectCatalog(repository, await body(request)));
         if (
           url.pathname === "/api/scan/projects" &&
           request.method === "POST"
@@ -644,7 +910,9 @@ export async function startServer({
             const [local, remote] = await Promise.all([
               adapters.scanLocalProjects(roots, {
                 knownPaths: [
-                  ...new Set(existing.projects.flatMap((p) => p.localPaths)),
+                  ...new Set(existing.projects
+                    .filter((p) => !p.manual && !excludedProject(p, existing.projectExclusions || []))
+                    .flatMap((p) => p.localPaths)),
                 ],
               }),
               adapters.scanGitHub(),
@@ -653,21 +921,30 @@ export async function startServer({
               const c = previous || existing;
               if (JSON.stringify(c.roots) !== JSON.stringify(existing.roots))
                 throw failure("扫描期间目录范围已变化，请重新扫描", 409);
+              const exclusions = c.projectExclusions || [];
+              const prior = c.projects.filter((p) => !excludedProject(p, exclusions));
+              const merged = mergeProjects(
+                prior,
+                local.items.filter((p) => !excludedProject(p, exclusions)),
+                (remote.status === "connected" ? remote.items : [])
+                  .filter((p) => !excludedProject(p, exclusions)),
+                {
+                  protectedIds: [
+                    ...(c.contextBindings || []).map((b) => b.projectId),
+                    ...(c.projectCatalog || []).map((item) => item.projectId),
+                  ],
+                  locations: local.locations || [],
+                  at: local.at,
+                  remoteComplete: remote.status === "connected" && !remote.truncated,
+                },
+              ).filter((p) => !excludedProject(p, exclusions));
               return {
                 ...c,
                 roots,
-                projects: mergeProjects(
-                  c.projects,
-                  local.items,
-                  remote.status === "connected" ? remote.items : [],
-                  {
-                    protectedIds: (c.contextBindings || []).map(
-                      (b) => b.projectId,
-                    ),
-                    locations: local.locations || [],
-                    at: local.at,
-                  },
-                ),
+                projects: merged,
+                ...(c.projectCatalog ? {
+                  projectCatalog: reconcileProjectCatalog(c.projectCatalog, merged),
+                } : {}),
                 projectScannedAt: local.at,
                 errors: local.errors,
                 truncated: local.truncated || remote.truncated,
@@ -751,6 +1028,8 @@ export async function startServer({
             ? { operationNotStarted: true }
             : {}),
           ...(error.unknownResult === true ? { unknownResult: true } : {}),
+          ...((error.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED" || /^FEISHU_[A-Z_]+$/.test(error.code || "")) ? { code: error.code } : {}),
+          ...(error.operationId ? {operationId:error.operationId}:{}),
         });
       else response.end();
     }
@@ -769,13 +1048,19 @@ export async function startServer({
     throw error;
   }
   aihot.start();
+  capabilities.start();
   return {
     url: `http://127.0.0.1:${server.address().port}`,
     repository,
+    nightV2Harness,
+    nightV2Morning,
+    nightV2Actions,
     mcpUrl: mcp?.url || null,
     async close() {
+      relaySessions.dispose?.();
       aihot.close();
       fullBackup.close();
+      await capabilities.close();
       await new Promise((resolve) => server.close(resolve));
       await mcp?.close();
       deliveries.close();

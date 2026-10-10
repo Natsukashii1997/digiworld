@@ -86,7 +86,7 @@ try {
       await button(page, `置顶 ${current(a).title}`).getAttribute("aria-pressed"),
       "false",
     );
-  assert.match(await page.locator(".collection-meta").innerText(), /全部资产 · 7/);
+  assert.match(await page.locator(".collection-meta").innerText(), /当前结果 · 7/);
   assert.doesNotMatch(await page.locator(".collection-meta").innerText(), /置顶/);
   ok("去掉收藏；favorite=true 不等于置顶");
 
@@ -109,7 +109,7 @@ try {
   for (let i = 0; i < 50 && (await pinnedOf(workflow)) !== true; i++)
     await page.waitForTimeout(100);
   assert.equal(await pinnedOf(workflow), true);
-  assert.match(await page.locator(".collection-meta").innerText(), /全部资产 · 7 · 置顶 1/);
+  assert.match(await page.locator(".collection-meta").innerText(), /当前结果 · 7 · 置顶 1/);
   for (const sort of ["recent", "most", "used", "name"]) {
     await page.getByLabel("排序方式").selectOption(sort);
     assert.equal(await firstTitle(page), current(workflow).title, `全部 · ${sort}`);
@@ -162,6 +162,7 @@ try {
 
   // 最常用：取消全部置顶后，按次数降序。
   await button(page, `取消置顶 ${current(prompt).title}`).click();
+  await button(page, `置顶 ${current(prompt).title}`).waitFor();
   await button(page, `取消置顶 ${current(workflow).title}`).click();
   await button(page, `置顶 ${current(workflow).title}`).waitFor();
   await page.getByLabel("排序方式").selectOption("most");
@@ -176,10 +177,10 @@ try {
   assert.equal(await ruleCard.locator(".card-type svg.pixel").count(), 1);
   ok("规则卡片封面与小角标均为像素图标");
 
-  // 顶栏搜索：只有图标与 ⌘K，至少 44px，位于待处理按钮旁；点击与 ⌘K 都能打开浮层。
+  // 顶栏搜索：展开为可读搜索入口，至少 44px，位于待处理按钮旁。
   const search = page.locator(".topbar").getByRole("button", { name: "搜索", exact: true });
   await atLeast44(search, "顶栏搜索按钮");
-  assert.doesNotMatch(await search.innerText(), /搜索/);
+  assert.match(await search.innerText(), /搜索工作台/);
   assert.match(await search.innerText(), /⌘K/);
   assert.equal(
     await search.evaluate((el) => el.nextElementSibling?.classList.contains("topbar-inbox")),
@@ -193,23 +194,23 @@ try {
   await page.getByRole("dialog", { name: "搜索工作台" }).waitFor();
   await page.keyboard.press("Escape");
   await page.getByRole("dialog", { name: "搜索工作台" }).waitFor({ state: "hidden" });
-  ok("顶栏搜索：图标 + ⌘K，至少 44px，点击与 ⌘K 都能打开浮层");
+  ok("顶栏搜索：完整提示 + ⌘K，至少 44px，点击与 ⌘K 都能打开浮层");
 
   // 带置顶卡片时的无障碍扫描。
   await button(page, `置顶 ${current(rule).title}`).click();
   await button(page, `取消置顶 ${current(rule).title}`).waitFor();
   await axe(page, "assets");
 
-  // 新建资产：五个类型同一行（切片 1.3b 加入焚决，用户 2026-09-30 纠正）。
-  await button(page, "新建资产").click();
+  // 新建资产：六个类型同一行（切片 1.3b 加入焚决，用户 2026-09-30 纠正）。
+  await button(page, "新建").click();
   const types = page.locator(".type-picker button");
-  assert.equal(await types.count(), 5);
+  assert.equal(await types.count(), 6);
   const tops = [];
-  for (let i = 0; i < 5; i++) tops.push(Math.round((await size(types.nth(i))).y));
+  for (let i = 0; i < 6; i++) tops.push(Math.round((await size(types.nth(i))).y));
   assert.equal(new Set(tops).size, 1, `类型按钮不在同一行：${tops.join(",")}`);
   await axe(page, "create-dialog");
   await page.keyboard.press("Escape");
-  ok("1440 宽时五个类型按钮同一行；axe 无违规");
+  ok("1440 宽时六个类型按钮同一行；axe 无违规");
 
   // 390 宽：无横向溢出，控件仍至少 44px。
   const narrow = await open(390, 844);
@@ -222,7 +223,7 @@ try {
     "窄屏搜索按钮",
   );
   await atLeast44(button(narrow, `取消置顶 ${current(rule).title}`), "窄屏置顶按钮");
-  await button(narrow, "新建资产").click();
+  await button(narrow, "新建").click();
   assert.equal(
     await narrow.evaluate(() => document.documentElement.scrollWidth - innerWidth),
     0,

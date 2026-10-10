@@ -1,3 +1,4 @@
+import { scanProjectUpdate, updateDate } from "./project-update.mjs";
 import { stat, access, realpath } from "node:fs/promises";
 import { constants } from "node:fs";
 import { join, delimiter } from "node:path";
@@ -235,6 +236,7 @@ export async function scanGitHub({ run = exec } = {}) {
           language: String(r.language || ""),
           githubSeenAt: new Date().toISOString(),
           updatedAt: String(r.updated_at || ""),
+          githubPushedAt: updateDate(r.pushed_at) || undefined,
         });
       }
       if (records.length < 100) break;
@@ -270,7 +272,7 @@ export function mergeProjects(
   previous,
   locals,
   remotes,
-  { protectedIds = [], locations = [], at } = {},
+  { protectedIds = [], locations = [], at, remoteComplete = true } = {},
 ) {
   const items = [];
   const protectedSet = new Set([
@@ -382,6 +384,13 @@ export function mergeProjects(
     }
   }
   for (const prior of previous) {
+    const exactTarget = items.find((p) => p.id === prior.id);
+    if (exactTarget && (exactTarget.repoKey === prior.repoKey || !prior.githubUrl || !prior.repoKey)) {
+      exactTarget.localPaths = [
+        ...new Set([...exactTarget.localPaths, ...prior.localPaths.filter((path) => !currentPaths.has(path))]),
+      ];
+      continue;
+    }
     const target = items.find(
       (p) =>
         p.repoKey === prior.repoKey &&
@@ -396,7 +405,7 @@ export function mergeProjects(
       ];
       continue;
     }
-    if (!remainingPaths.length && !prior.githubUrl && prior.localPaths.length)
+    if (!prior.manual && !protectedSet.has(prior.id) && !remainingPaths.length && !prior.githubUrl && prior.localPaths.length)
       continue;
     append(
       { ...prior, localPaths: remainingPaths, seenThisScan: false },
@@ -468,5 +477,6 @@ export function mergeProjects(
       };
     });
   }
+  for (const p of items) p.recentUpdate = scanProjectUpdate(p, locals, remotes, {at,remoteComplete});
   return items.sort((a, b) => a.name.localeCompare(b.name, "zh"));
 }

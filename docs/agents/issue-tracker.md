@@ -1,6 +1,14 @@
 # 项目本地跟踪
 
+## 2026-10-09 收藏复刻
+
+用户授权完整对标看看收藏并继承数码世界风格。规格 [collection-replica/SPEC.md](collection-replica/SPEC.md)；[01画布](collection-replica/01.md) -> [02Chrome](collection-replica/02.md) -> [03原生与整合](collection-replica/03.md)。状态实施中，当前权威为根CURRENT，未经验证不关闭。
+
 沿用既有文件跟踪，不创建远程 Issue 或 PR。
+
+撤回 [05 Obsidian单份素材库](collection-replica/05-obsidian.md)：用户最新决定仅本地存储；330反迁当前3条/15附件、恢复接入前代码和界面、移专属区至废纸篓，交接331。非活动功能，不自动重新启用；独立知识库模块不属于本次撤回。
+
+追加 [04回收整理](collection-replica/04-recycle.md)：垃圾桶「本地删除」单按钮，成功后不留结果行/历史缺失红字，仅本次真实失败保留提示，不自动永久删除。1196单元、定向故障/六宽及两轴/T2通过，5178已采用；真实重复按钮无结果行且原库SHA未变。见[交接326](handoffs/2026-10-09-codex-collection-feedback-326.md)，完整复刻仍实施中。
 
 ## 2026-09-28 协作入口校准
 
@@ -25,3 +33,22 @@
 - 状态沿用「实施中 / 本地验证通过、待用户验收 / 阻塞 / 已验收」。测试通过不等于用户验收。
 - 开始时记录范围与 start_head；结束时记录本地变更、测试、Standards/Spec、T2、运行版本及未完成项。未经授权不提交、推送或创建远程任务。
 - 领域定义：`../../outputs/个人AI工作台-B04-首版资产中心实施方案-v0.2/CONTEXT.md`（相对于应用根目录）；当前用户确认和切片契约优先于历史候选。
+
+## 2026-10-07 完整蓝图终审优化
+
+当前事实源仍为 CURRENT.md；总范围见 [优化规格](audit-optimization/SPEC.md)。用户已授权按报告结构实施，技术切片/依赖由Codex维护。
+
+- [T01 状态与操作表达](audit-optimization/01.md)：依赖 无。
+- [T02 资产目标交付与采用证据](audit-optimization/02.md)：依赖 无。
+- [T03 持久快照与已知故障修复](audit-optimization/03.md)：依赖 02仅对挂载修复。
+- [T04 MCP配置资产与目标模型](audit-optimization/04.md)：依赖 02。
+- [T05 工作流B目标部署](audit-optimization/05.md)：依赖 02、04（涉及对应能力时）。
+- [T06 受控执行与工作流C](audit-optimization/06.md)：依赖 目标执行适配事实核实。
+- [T07 夜巡v2生产准备](audit-optimization/07.md)：依赖 06。
+- [T08 知识剪藏与后台候选](audit-optimization/08.md)：依赖 来源/候选规则已定义；自动执行依赖06。
+- [T09 项目差异解释与用量](audit-optimization/09.md)：依赖 06仅对执行来源汇总。
+- [T10 整合与真实验收准备](audit-optimization/10.md)：依赖 所有已激活切片。
+
+## 2026-10-07 终审优化本轮交接263
+
+T01/T10 本地验证通过、待用户验收；T02–T09 本轮有限切片通过，完整票仍实施中，逐票记录剩余原生/生产能力。1164单测、106独立入口、额外修复1项及18对图通过；不宣称E03通过。详见 [交接263](handoffs/2026-10-07-codex-audit-optimization-263.md)。

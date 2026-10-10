@@ -27,7 +27,7 @@ const versionNumber = (asset, versionId) =>
   asset.versions.findIndex((v) => v.id === versionId) + 1;
 
 // 当前资产是否可以走改版任务包：Skill 的有效内容在文件包里，本版不支持。
-export const revisable = (asset) => !!asset && !asset.archived && asset.type !== "Skill";
+export const revisable = (asset) => !!asset && !asset.archived && !["Skill", "MCP"].includes(asset.type);
 
 export function buildRevisionPacket(asset, activity = []) {
   const v = current(asset);
@@ -134,7 +134,7 @@ export const candidatesOf = (state, assetId) =>
 export function addCandidate(state, assetId, { content, changeNote }, { id = uid(), at = now() } = {}) {
   const asset = state.assets.find((a) => a.id === assetId);
   if (!asset) throw new Error("找不到该资产");
-  if (asset.type === "Skill") throw new Error("Skill 的正文在文件包里，本版不支持改版候选");
+  if (["Skill", "MCP"].includes(asset.type)) throw new Error("Skill 文件包与 MCP 结构化配置不支持正文改版候选");
   if (asset.archived) throw new Error("资产已归档，不能再生成改版候选");
   checkCandidateText({ content, changeNote });
   if (content === current(asset).content)

@@ -30,10 +30,12 @@ export function createKnowledgeQuery({
   async function verifyRoot(source) {
     let current;
     try {
-      current = await files.inspectRoot(source.root);
+      current = await (files.verifyRoot ? files.verifyRoot(source) : files.inspectRoot(source.root));
     } catch (error) {
+      if (error.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED") throw error;
       throw failure(
-        "无法核验知识目录，请重新确认连接",
+        error?.status === 403 ? "知识目录权限不足，请检查本机访问权限"
+          : "无法核验知识目录，请检查连接与访问权限",
         [400, 403, 404, 409, 503].includes(error?.status) ? error.status : 503,
       );
     }
@@ -116,12 +118,14 @@ export function createKnowledgeQuery({
           }
           await assertCurrent();
           if (readError) {
-            if (
-              readError.scope === "source" ||
-              [403, 409].includes(readError.status)
-            )
+            if (readError.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED") throw readError;
+            if (readError.code === "KNOWLEDGE_UNSAFE_PATH")
+              throw failure("知识路径不再安全可读，请重新扫描后查询", 409);
+            if (readError.status === 403)
+              throw failure("来源权限不足，无法安全读取；请检查本机访问权限", 403);
+            if (readError.scope === "source" || readError.status === 409)
               throw failure(
-                "文件或目录不再安全可读，请重新确认连接并扫描后查询",
+                "文件或目录已变化，请重新扫描后查询",
                 409,
               );
             issues.push({

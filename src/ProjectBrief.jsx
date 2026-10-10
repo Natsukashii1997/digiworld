@@ -113,14 +113,13 @@ export function HomeBrief({ state, adoptState, notify, navigate }) {
   const unread = brief.items.filter((i) => i.read !== "read");
   return (
     <section className="home-section home-brief" aria-labelledby="home-brief-title">
-      <div className="section-title">
-        <span className="section-index">C</span>
+      <div className="v14-sh">
         <h2 id="home-brief-title">今日项目简报</h2>
-        <p>
+        <span className="v14-sub">
           {brief.date
             ? `统计区间：从上次标为已读起，没标过从昨天 0:00 起 · 由本机数据按规则生成，不调用模型`
             : "由本机数据按规则生成，不调用模型"}
-        </p>
+        </span>
       </div>
       {!active.length ? (
         <p className="recent-empty">

@@ -1,3 +1,4 @@
+import {openAgentInventory,agentInventoryEntry} from "./agents-v16-helpers.mjs";
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import { readFile, mkdir, appendFile } from "node:fs/promises";
@@ -33,7 +34,7 @@ const audit = async () => {
 const open = async () => {
   await page.goto(app.url + "/#agents");
   await page.reload();
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await page.getByRole("button", { name: "配置管理", exact: true }).click();
 };
 const inspect = async () => {
@@ -65,7 +66,7 @@ page.on("request", (r) => {
 });
 try {
   await page.goto(app.url + "/#agents");
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await page.getByRole("button", { name: "配置管理", exact: true }).click();
   assert.deepEqual(calls, [], "展开不能自动读取配置");
   await page.getByRole("button", { name: "读取配置", exact: true }).click();
@@ -212,7 +213,7 @@ try {
   );
   await page.unroute("**/api/agent-config/check");
   await page.reload();
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await page.getByRole("button", { name: "配置管理", exact: true }).click();
   await page
     .getByRole("button", { name: "核对本次操作", exact: true })
@@ -232,7 +233,7 @@ try {
   await audit();
   flows++;
   await page.reload();
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await page.getByRole("button", { name: "配置管理", exact: true }).click();
   await page.getByRole("button", { name: "变更记录", exact: true }).click();
   const history = page.getByRole("region", {

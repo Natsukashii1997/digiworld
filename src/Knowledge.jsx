@@ -19,7 +19,7 @@ import "./knowledge.css";
 
 const date = (value) => new Date(value).toLocaleString("zh-CN");
 
-export function Knowledge({ state, adoptState, notify, navigate }) {
+export function LegacyKnowledge({ state, adoptState, notify, navigate }) {
   const sources = state.connections?.knowledgeSources || [];
   const [selectedId, setSelectedId] = useState("");
   const selected =
@@ -219,7 +219,6 @@ export function Knowledge({ state, adoptState, notify, navigate }) {
         </div>
         <section className="kn-side" aria-labelledby="k-links-title">
           <div className="v14-sh">
-            <span className="v14-idx" aria-hidden="true">C</span>
             <h2 id="k-links-title">连接状态</h2>
             <span className="v14-sub">仅限本机</span>
             <Button secondary className="ghost" disabled={!!busy} onClick={refresh}>
@@ -292,7 +291,6 @@ export function Knowledge({ state, adoptState, notify, navigate }) {
       {selected && (
         <section className="kn-query" aria-labelledby="k-query-title">
           <div className="v14-sh">
-            <span className="v14-idx" aria-hidden="true">D</span>
             <h2 id="k-query-title">查询原文</h2>
             <span className="v14-sub">{selected.name} · 按文件名或正文短语，只读，不复制正文</span>
           </div>
@@ -336,7 +334,7 @@ export function Knowledge({ state, adoptState, notify, navigate }) {
   );
 }
 
-function KnowledgeForm({
+export function KnowledgeForm({
   mode,
   source,
   busy,
@@ -452,13 +450,16 @@ function KnowledgeForm({
   );
 }
 
-function KnowledgeSource({
+export function KnowledgeSource({
   source,
   blocked,
+  needsReconfirmation = false,
   onManage,
   notify,
   selections,
   onAddSelection,
+  onRefresh,
+  refreshEpoch = 0,
 }) {
   const [scan, setScan] = useState(null),
     [query, setQuery] = useState("");
@@ -509,6 +510,9 @@ function KnowledgeSource({
     setScan(null);
     clearQuery();
   }, [blocked]);
+  useEffect(() => {
+    sequence.current++; lock.current = false; setBusy(""); setScan(null); clearQuery();
+  }, [refreshEpoch]);
   const files =
     scan?.files.filter((file) =>
       file.path.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
@@ -574,6 +578,7 @@ function KnowledgeSource({
       clearQuery();
       setError(failure.message);
       if (failure.status === 409) setScan(null);
+      if (failure.status === 409) onRefresh?.();
     } finally {
       if (ticket === sequence.current) {
         lock.current = false;
@@ -639,6 +644,7 @@ function KnowledgeSource({
         setMatches(null);
         setScan(null);
         setSelectedPath("");
+        if (failure.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED" || failure.status === 409) onRefresh?.();
       }
     } finally {
       if (active()) {
@@ -657,7 +663,8 @@ function KnowledgeSource({
         <Badge tone="muted">只读连接</Badge>
       </header>
       <div className="heading-actions">
-        <Button disabled={!!busy || blocked} onClick={() => run("scan")}>
+        {onRefresh && <Button secondary onClick={onRefresh}>刷新连接核对</Button>}
+        <Button disabled={!!busy || blocked || needsReconfirmation} onClick={() => run("scan")}>
           <RefreshCw size={16} />
           {busy === "scan" ? "扫描中…" : scan ? "重新扫描" : "扫描文件"}
         </Button>
@@ -678,6 +685,7 @@ function KnowledgeSource({
           断开连接
         </Button>
       </div>
+      {needsReconfirmation && <p className="inline-error" role="status">需重新确认目录：目录身份已变化，读取与 Agent 共享已暂停。请先核对目录，再点“重新确认目录”。</p>}
       {error && (
         <p className="inline-error" role="alert">
           {error}
@@ -852,7 +860,7 @@ function KnowledgeSource({
           <div className="knowledge-preview-heading">
             <h3>原文预览</h3>
             <div className="heading-actions">
-              <Button
+              {onAddSelection && <Button
                 disabled={
                   !!busy ||
                   blocked ||
@@ -879,7 +887,7 @@ function KnowledgeSource({
                 )
                   ? "已加入整理"
                   : "加入整理"}
-              </Button>
+              </Button>}
               <Button
                 secondary
                 disabled={!!busy || blocked || expired}
@@ -1009,3 +1017,5 @@ function KnowledgeMatches({ matches, busy, selectedPath, onContinue, onRead }) {
     </div>
   );
 }
+
+export { KnowledgeV16 as Knowledge } from "./KnowledgeV16.jsx";

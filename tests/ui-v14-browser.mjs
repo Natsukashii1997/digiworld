@@ -138,14 +138,17 @@ try {
   assert.equal(await chip.count(), 1);
   assert.match(await zones(page).getByRole("group", { name: "知识分区" }).getByRole("button", { name: /^我的知识/ }).innerText(), /2\s*篇[\s\S]*本周 \+2/);
   assert.match(await zones(page).locator(".zone-share").innerText(), /共 4 篇/);
-  // 近 7 天按天趋势没有数据来源：只显示“待接入”，不画柱高。
-  assert.equal(await zones(page).getByText("近 7 天按天趋势 · 待接入数据").count(), 3);
+  // fixture未留存写入或整理回执：三组各7天均无记录，不画假柱高。
+  assert.equal(await zones(page).getByText("近 7 天本机写入 / 整理记录", {exact:true}).count(), 3);
+  assert.equal(await zones(page).locator('.zone-trend .bars i[data-status="unrecorded"]').count(),21);
+  assert.equal(await zones(page).locator('.zone-trend .bars i[style*="height"]').count(),0);
+  assert.equal(await zones(page).getByText(/近 7 天.*待接入数据/).count(),0);
   await atLeast44(button(zones(page), "统计三区"), "统计三区");
   await atLeast44(button(zones(page), "划分规则"), "划分规则");
   await atLeast44(button(page, "规则与 MCP"), "规则与 MCP");
   await axe(page, "knowledge-1440");
   await page.screenshot({ path: join(output, "knowledge-1440.png"), fullPage: true });
-  ok("正常动效：点阵眉题、ZONE MONITOR、背景微尘；统计成功后翻转一次并出现一次“已重新统计”；趋势如实标待接入；44px；axe");
+  ok("正常动效：点阵眉题、ZONE MONITOR、背景微尘；统计成功后翻转一次并出现一次“已重新统计”；趋势21天点均无记录、零假柱；44px；axe");
 
   // 2. 运行中开启“减少动态效果”：CSS 与 JS 动画全部停，背景微尘清空且不再画。
   assert.ok((await running(page)).length > 0, "切换前应有运行中的动画");

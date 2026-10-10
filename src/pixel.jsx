@@ -704,6 +704,7 @@ for (const key of ["bakemon", "mecha"])
   };
 // Skill 用八颗数码蛋之一：按资产 ID 稳定取值，同一资产在各处显示同一颗蛋。
 export function glyphOf(asset) {
+  if (asset.type === "MCP") return "Workflow";
   if (asset.type !== "Skill") return asset.type;
   const h = [...asset.id].reduce((n, ch) => (n * 33 + ch.charCodeAt(0)) >>> 0, 5381);
   return `egg${(h % 8) + 1}`;
@@ -1029,6 +1030,17 @@ const CRESTS = [
     circles: [[10.5, 20, 7], [10.5, 20, 3.4], [30, 20, 6], [30, 20, 2.8]],
   },
 ];
+export function CrestIcon({ name, size = 40, className = "", crestId }) {
+  const crest = CRESTS.find(item => item.name === name) || CRESTS[0];
+  return (
+    <svg className={className} data-crest-id={crestId} viewBox="0 0 40 40" width={size} height={size}
+      fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round"
+      style={{ color: crest.color, "--crest-color": crest.color }} aria-hidden="true">
+      <path d={crest.d} />
+      {crest.circles?.map(([cx, cy, r], index) => <circle key={index} cx={cx} cy={cy} r={r} />)}
+    </svg>
+  );
+}
 export function CrestRing() {
   return (
     <div className="crest-ring" aria-hidden="true">
@@ -1039,12 +1051,7 @@ export function CrestRing() {
           style={{ "--a": `${i * 45}deg`, "--c": c.color, "--i": i }}
           title={c.name}
         >
-          <svg viewBox="0 0 40 40">
-            <path d={c.d} />
-            {c.circles?.map(([cx, cy, r], k) => (
-              <circle key={k} cx={cx} cy={cy} r={r} />
-            ))}
-          </svg>
+          <CrestIcon name={c.name} />
         </span>
       ))}
     </div>

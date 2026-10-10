@@ -34,7 +34,10 @@ page.on("request", (request) => {
     });
 });
 page.on("pageerror", (error) => report.errors.push(error.message));
-const button = (name) => page.getByRole("button", { name, exact: true });
+const button = (name) => name === "连接知识源" ? {click: async () => {await closeSource();await page.getByRole("button",{name:"接入知识库",exact:true}).first().click();}} : page.getByRole("button", { name, exact: true });
+async function closeSource(){ const close=page.getByRole('dialog').getByRole('button',{name:'关闭',exact:true});if(await page.getByRole('dialog').locator('.knowledge-workspace').count())await close.click(); }
+async function activateSource(name){ await closeSource();await page.locator('.kh-srcs .kh-src').filter({hasText:name}).click();await page.getByRole('dialog',{name,exact:true}).waitFor(); }
+
 const keyword = () => page.getByLabel("正文关键词", { exact: true });
 async function connect(name, root) {
   await button("连接知识源").click();
@@ -42,7 +45,7 @@ async function connect(name, root) {
   await page.getByLabel("目录绝对路径", { exact: true }).fill(root);
   await page.getByLabel("我确认仅只读访问此目录", { exact: true }).check();
   await button("确认连接").click();
-  await page.getByRole("heading", { name, exact: true }).waitFor();
+  await activateSource(name);
 }
 async function scan() {
   await page
@@ -110,6 +113,7 @@ try {
   await page.getByLabel("目录绝对路径", { exact: true }).fill(app.root);
   await page.getByLabel("我确认仅只读访问此目录", { exact: true }).check();
   await button("确认连接").click();
+  await activateSource("正文查询合成来源");
   await button("扫描文件").click();
   const beforeMode = requests.length;
   await button("正文查询").click();
@@ -328,22 +332,14 @@ try {
   await query("needle");
   await page.getByText("已检查 0 / 0 份文件", { exact: true }).waitFor();
   await page.getByText("当前扫描范围内未找到该短语", { exact: true }).waitFor();
-  await page
-    .getByRole("navigation", { name: "知识源", exact: true })
-    .getByRole("button")
-    .filter({ hasText: "正文查询合成来源" })
-    .click();
+  await activateSource("正文查询合成来源");
   await scan();
   await button("正文查询").click();
   await keyword().fill("needle");
   const sourceHeld = await holdSearch();
   await button("查询正文").click();
   await sourceHeld.observed;
-  await page
-    .getByRole("navigation", { name: "知识源", exact: true })
-    .getByRole("button")
-    .filter({ hasText: "空知识库" })
-    .click();
+  await activateSource("空知识库");
   await sourceHeld.release();
   await page.waitForLoadState("networkidle");
   assert.equal(await page.locator(".knowledge-query-result").count(), 0);

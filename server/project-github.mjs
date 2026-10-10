@@ -66,6 +66,7 @@ export function readOnlyGhArgs(args) {
       args[4] === "github.com" &&
       args[5].startsWith("repos/") &&
       repoKeyOk(args[5].slice(6))) ||
+      (args.length===6&&args[0]==="api"&&args[1]==="--method"&&args[2]==="GET"&&args[3]==="--hostname"&&args[4]==="github.com"&&(()=>{const m=args[5].match(/^repos\/([^/]+\/[^/]+)\/(commits\?per_page=20&page=\d{1,3}|tags\?per_page=100|commits\/[a-f0-9]{40})$/);return m&&repoKeyOk(m[1]);})()) ||
       listShape(args, "pr", true, ["--state", (v) => v === "open" || v === "merged"]) ||
       listShape(args, "issue", true, ["--state", (v) => v === "open"]) ||
       listShape(args, "run", true, ["--branch", branchOk]));

@@ -51,7 +51,7 @@ test("子进程异常终止后可重新打开；活跃写入进程仍排他锁�
       [
         "--input-type=module",
         "-e",
-        `import{openRepository}from ${JSON.stringify(moduleURL)};import{seed}from ${JSON.stringify(seedURL)};const r=await openRepository(${JSON.stringify(dir)});await r.write(seed(),{initialize:true});console.log('READY');setInterval(()=>{},1000);`,
+        `import{openRepository}from ${JSON.stringify(moduleURL)};import{seed}from ${JSON.stringify(seedURL)};const r=await openRepository(${JSON.stringify(dir)});await r.write(seed(),{initialize:true});globalThis.activeRepository=r;console.log('READY');setInterval(()=>{},1000);`,
       ],
       { stdio: ["ignore", "pipe", "pipe"] },
     );

@@ -38,7 +38,7 @@ export function createKnowledgeMaintenance(
     await authorized(evidence);
     for (const item of evidence) {
       await authorized([item]);
-      const document = await files.read(item, item);
+      const document = await files.read({ id: item.sourceId, generation: item.generation, root: item.root, identity: item.identity }, item);
       if (document.sha256 !== item.sha256)
         throw failure("预览后的来源内容又发生变化，请重新预览", 409);
     }
@@ -79,7 +79,7 @@ export function createKnowledgeMaintenance(
         documents = [];
       for (const old of captured.task.evidence) {
         await authorized([old]);
-        const { selected, document } = await files.current(old, old.path);
+        const { selected, document } = await files.current({ id: old.sourceId, generation: old.generation, root: old.root, identity: old.identity }, old.path);
         const next = {
           ...old,
           id: randomUUID(),

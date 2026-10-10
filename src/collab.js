@@ -18,7 +18,7 @@ export const agentLabel = (id) =>
   COLLAB_AGENTS.find((a) => a.id === id)?.label || "";
 
 // 模板 #1 建议的下一阶段与这一棒的专属验收。只是建议，谁接手、做什么由用户确认。
-const NEXT = {
+export const NEXT = {
   claim: ["实现", "按 CURRENT 登记的范围实现；代码项目先写会失败的测试再改，按项目约定运行验证并保存结果。"],
   implement: ["复核", "独立复核：绑定被复核的文件版本；问题按“已复现缺陷 / 有证据的维护债 / 待验证建议”分三类报告。"],
   review: ["返修或验收（按复核结论：有阻断项转返修，否则交用户验收）", "按复核结论推进：阻断项逐条返修并附复现与验证，没有阻断项时整理用户验收清单。"],
@@ -54,7 +54,7 @@ function projectRoot(root) {
 }
 function agentOf(id) {
   const label = agentLabel(id);
-  if (!label) throw new Error("只能选择 Codex、Claude Code 或 Hermes 这三个 Agent");
+  if (!label) throw new Error("只能选择 Codex、Claude Code 或 Hermes Agent");
   return label;
 }
 function statusOf(item) {
@@ -139,7 +139,7 @@ export function dispatchPrompt(item, agentId) {
 }
 
 export function startPrompt(item, agentId) {
-  const agent = agentOf(agentId);
+  const agent = agentId === "openclaw" ? "OpenClaw" : agentOf(agentId);
   const root = projectRoot(item?.root);
   const s = statusOf(item);
   return [
@@ -174,6 +174,7 @@ const localDate = (iso) => {
 
 // 操作留痕时间线：工作台复制记录、CURRENT 状态链、交接文档三类合并，按日期倒序；
 // 同一天内依次为工作台记录（按时间）、状态链（按编号）、交接文档（按修改时间）。
+const recordAgentLabel = r => r.kind === "start" && r.agent === "openclaw" ? "OpenClaw" : agentLabel(r.agent);
 export function timelineOf({ states = [], handoffs, records = [] }) {
   const events = [
     ...records.map((r) => ({
@@ -183,12 +184,12 @@ export function timelineOf({ states = [], handoffs, records = [] }) {
       key: r.at,
       at: r.at,
       id: r.id,
-      agent: agentLabel(r.agent),
+      agent: recordAgentLabel(r),
       stateId: r.stateId || "",
       title:
         r.kind === "start"
-          ? `复制开工口令给 ${agentLabel(r.agent)}`
-          : `复制派发口令给 ${agentLabel(r.agent)}${r.stateId ? `（输入状态 ${r.stateId}）` : ""}`,
+          ? `复制开工口令给 ${recordAgentLabel(r)}`
+          : `复制派发口令给 ${recordAgentLabel(r)}${r.stateId ? `（输入状态 ${r.stateId}）` : ""}`,
     })),
     ...states.map((h) => ({
       kind: "state",

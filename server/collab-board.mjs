@@ -2,6 +2,7 @@
 // 看板全部只读：阶段与“笔在谁手上”只从项目 CURRENT.md 的协作状态表与带 state_id 的节标题推断；
 // 交接文档只列 docs/agents/handoffs/*.md 的文件名与修改时间，不读正文。推断不了就是“未知”。
 // 唯一的写入是“口令已复制”的留痕：只追加到本机主库 collabLog，不存口令正文。
+import { readProtocolProjection } from "./collab-protocol.mjs";
 import { lstat, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { failure } from "./repository.mjs";
@@ -228,7 +229,7 @@ function exactKeys(input, allowed) {
 }
 
 export function createCollabBoard(repository, { clock = Date.now } = {}) {
-  async function boardItem(project, connections, records) {
+  async function boardItem(project, connections, records, includeProtocol = false, stored = null) {
     const item = {
       projectId: project.id,
       name: project.name,
@@ -283,6 +284,10 @@ export function createCollabBoard(repository, { clock = Date.now } = {}) {
       "COLLABORATION.md",
     ]);
     item.handoffs = await readHandoffIndex(canonical);
+    if (includeProtocol) item.protocol = await readProtocolProjection({
+      item, project, connections, canonical, path, currentFile: file, clock,
+      assets: stored?.assets || [], runSettings: stored?.collabRunSettings || [],
+    });
     return item;
   }
   return {
@@ -294,8 +299,15 @@ export function createCollabBoard(repository, { clock = Date.now } = {}) {
       const records = state?.collabLog || [];
       const items = [];
       for (const project of active)
-        items.push(await boardItem(project, connections, records));
+        items.push(await boardItem(project, connections, records, false, state));
       return { at: new Date(clock()).toISOString(), stages: STAGES, items };
+    },
+    async protocol(input = {}) {
+      exactKeys(input, []);
+      const state = await repository.read(), connections = state.connections;
+      const items = [];
+      for (const project of (connections?.projects || []).filter(p => p.active)) items.push(await boardItem(project, connections, state.collabLog || [], true, state));
+      return {at:new Date(clock()).toISOString(),items};
     },
     // 浏览器复制口令成功后调用。只记事实：谁、哪个项目、给哪个 Agent、口令指纹；时间由服务端生成。
     async record(input) {
@@ -311,7 +323,7 @@ export function createCollabBoard(repository, { clock = Date.now } = {}) {
       if (typeof input.id !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(input.id))
         throw failure("留痕 ID 无效");
       if (!COLLAB_KINDS.includes(input.kind)) throw failure("留痕种类无效");
-      if (!COLLAB_AGENT_IDS.includes(input.agent))
+      if (!COLLAB_AGENT_IDS.includes(input.agent) && !(input.kind === "start" && input.agent === "openclaw"))
         throw failure("只能派给 Codex、Claude Code 或 Hermes");
       if (typeof input.projectId !== "string") throw failure("请选择项目");
       if (input.stateId !== undefined && (typeof input.stateId !== "string" || !STATE_ID.test(input.stateId)))

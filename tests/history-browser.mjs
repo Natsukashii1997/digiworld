@@ -74,7 +74,7 @@ const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 try {
   await page.goto(app.url + "/#assets");
-  await page.getByRole("button", { name: "新建资产", exact: true }).click();
+  await page.getByRole("button", { name: "新建", exact: true }).click();
   await page.getByRole("button", { name: "Prompt", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("历史验收");
   await page.getByLabel("提示词全文").fill("共同背景\n旧的判断\n保持来源");

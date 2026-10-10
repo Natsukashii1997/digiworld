@@ -29,7 +29,7 @@ try {
   await mkdir("test-results", { recursive: true });
 
   // 1. 实体按键：有底边厚度，按下沉 3px
-  const create = page.getByRole("button", { name: "新建资产", exact: true });
+  const create = page.getByRole("button", { name: "新建", exact: true });
   assert.match(await create.evaluate((el) => getComputedStyle(el).boxShadow), /0px 3px 0px/);
   const box = await create.boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -60,21 +60,22 @@ try {
   await page.keyboard.press("Escape");
 
   // 3. 轻量新版本：新收录仍有全屏演出；保存新版本不弹全屏，详情里翻页并冒 NEW VERSION
-  const revBefore = Number((await page.locator(".save-state small").innerText()).replace(/\D/g, ""));
+  const revBefore = (await app.repository.read()).revision;
   const navCount = page.locator(".nav-item", { hasText: "资产仓库" }).locator(".nav-count");
   const countBefore = Number(await navCount.innerText());
-  await page.getByRole("button", { name: "新建资产", exact: true }).click();
+  await page.getByRole("button", { name: "新建", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Prompt", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("手感验收");
   await page.getByLabel("提示词全文").fill("第一版");
   await page.getByRole("button", { name: "保存资产", exact: true }).click();
   await page.locator(".evolution").waitFor();
   console.log("PASS 新收录仍播放全屏诞生演出");
-  // 4. 数字滚动：侧栏计数与 REV 滚到新值
+  // 4. 数字滚动：侧栏计数更新；版本序号不再占用界面。
   await page.waitForTimeout(600); // 等数字滚动结束（约 0.45 秒）
   assert.equal(Number(await navCount.innerText()), countBefore + 1, "资产计数滚到新值");
-  assert.ok(Number((await page.locator(".save-state small").innerText()).replace(/\D/g, "")) > revBefore, "REV 增加");
-  console.log("PASS 数字滚动：资产计数与 REV 更新到新值");
+  assert.ok((await app.repository.read()).revision > revBefore, "保存版本增加");
+  assert.doesNotMatch(await page.locator('.save-state').innerText(), /REV|\d+/, '左下角只显示有用的保存状态');
+  console.log("PASS 资产计数滚动，保存状态保留且隐藏技术序号");
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "查看 手感验收", exact: true }).click();
   await page.getByRole("button", { name: "编辑资产", exact: true }).click();

@@ -1,8 +1,8 @@
 // AI HOT（路线 v3 切片 5.3，产品定义 v1.2 §4.8，问题共识基线 D34）：aihot.news 公开只读接口的本机拉取与缓存。
-// - 接口返回一律当作不可信文本：只取标题、摘要、链接、来源、时间五个白名单字段，截断长度，链接只允许 http/https。
+// - 接口返回一律当作不可信文本：只取标题、摘要、链接、来源、时间六个白名单字段，截断长度，链接只允许 http/https。
 // - 缓存与设置是数据目录下的 JSON（aihot/cache.json、aihot/settings.json），有大小上限；不进主库、不进备份。
 // - 拉取失败保留上次缓存，标注失败与上次成功时间；网络访问可关闭；首次拉取须由页面上的“开始拉取”确认后才发生。
-// 接口字段名未在本机实测（云端不放行 aihot.news），下面按常见写法做了宽松映射，映射不上的条目被丢弃。
+// v1公开文档于2026-10-06核对：items.category、source.name、links.original、publishedAt；热点latestAt。兼容旧缓存别名。
 import { mkdir, open, readFile, rename, lstat } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -12,6 +12,7 @@ export const AIHOT_LIMITS = {
   title: 200,
   summary: 600,
   source: 80,
+  category: 80,
   url: 2000,
   items: 50,
   cacheBytes: 512 * 1024,
@@ -78,12 +79,15 @@ export function sanitizeItem(raw) {
   if (!cleanTitle) return null;
   const summary = pick(raw, ["summary", "description", "excerpt", "ai_summary", "aiSummary", "digest", "content"]);
   // 真实接口把链接放在 links.original（原文）与 links.aihot（站内页）里（2026-10-03 本机核对）。
-  const url =
-    pick(raw, ["url", "link", "source_url", "sourceUrl", "original_url", "originalUrl", "href", "permalink"]) ??
-    (isObject(raw.links) ? pick(raw.links, ["original", "aihot"]) : undefined);
-  const at = pick(raw, ["published_at", "publishedAt", "time", "created_at", "createdAt", "date", "pub_date"]);
+  // 原文优先于站内落地页；若接口明确给了无效原文，不悄悄改指向另一地址。
+  const explicitOriginal = isObject(raw.links) ? pick(raw.links, ["original"]) : undefined;
+  const url = explicitOriginal ??
+    pick(raw, ["original_url", "originalUrl", "source_url", "sourceUrl", "url", "link", "href", "permalink"]) ??
+    (isObject(raw.links) ? pick(raw.links, ["aihot"]) : undefined);
+  const at = pick(raw, ["published_at", "publishedAt", "time", "created_at", "createdAt", "date", "pub_date", "latestAt"]);
   return {
     title: cleanTitle,
+    category: cleanText(raw.category, AIHOT_LIMITS.category),
     summary: cleanText(typeof summary === "string" ? summary : "", AIHOT_LIMITS.summary),
     url: cleanUrl(url),
     source: cleanText(sourceOf(raw), AIHOT_LIMITS.source),
@@ -125,6 +129,8 @@ export function sanitizeList(payload) {
   return out;
 }
 function dailyDate(payload) {
+  // 已有接口结构样例明确 report.date，不用条目时间或拉取时间生成期号。
+  if (typeof payload?.report?.date === "string" && DATE.test(payload.report.date)) return payload.report.date;
   const list = findItems(payload);
   const first = list.find(isObject) || (isObject(payload) ? payload : null);
   const date = first && pick(first, ["date", "day", "id"]);

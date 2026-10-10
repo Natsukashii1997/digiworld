@@ -4,12 +4,9 @@ import {
   Route,
   KeyRound,
   Sparkles,
-  Inbox as InboxIcon,
 } from "lucide-react";
 import { page } from "./pages.js";
-import { PageHeading, Empty } from "./components.jsx";
-import { pendingItems, rulePendingReady } from "./pending.js";
-import { ProfileProposals } from "./ProfileProposals.jsx";
+import { PageHeading } from "./components.jsx";
 
 // 规划中页面：如实说明将来做什么、在路线哪一步、现在可以怎么做。不放假数据或无效按钮。
 const NOW = {
@@ -89,7 +86,7 @@ export function PendingList({ items, navigate, select, limit }) {
           <button
             className="pending-item"
             onClick={() =>
-              item.assetId ? select(item.assetId) : navigate(item.to)
+              item.assetId ? select(item.assetId) : navigate(item.to, {...(item.agentId ? {agentId:item.agentId,agentTab:item.agentTab} : {}), ...(item.projectId ? {projectId:item.projectId} : {})})
             }
           >
             <span className="pending-kind">{item.kind}</span>
@@ -105,41 +102,3 @@ export function PendingList({ items, navigate, select, limit }) {
   );
 }
 
-export function Inbox({ state, navigate, select, ruleInstalls, projectStatus, agentContents, adoptState, notify }) {
-  const items = pendingItems(state, ruleInstalls, projectStatus, agentContents);
-  return (
-    <>
-      <PageHeading page="inbox" />
-      <section className="inbox-section" aria-label="当前线索">
-        <div className="section-title">
-          <span className="section-index">A</span>
-          <h2>当前线索 · {items.length}</h2>
-          <p>只来自本机已有数据；点击到对应页面处理</p>
-        </div>
-        {!rulePendingReady(ruleInstalls) && !ruleInstalls?.error && (
-          <p className="detail-footnote" role="status">
-            规则模板装入记录还在读取，读完前不能确定待处理是否完整；规则升级提示读完后才会出现。
-          </p>
-        )}
-        {items.length ? (
-          <PendingList items={items} navigate={navigate} select={select} />
-        ) : (
-          rulePendingReady(ruleInstalls) && (
-            <Empty icon={InboxIcon} title="目前没有可读出的待处理事项">
-              这只代表下方已接入的几类来源里没有事项；尚未接入的来源不在统计范围内。
-            </Empty>
-          )
-        )}
-      </section>
-      <ProfileProposals state={state} adoptState={adoptState} notify={notify} index="B" />
-      <section className="inbox-section" aria-label="尚未接入的来源">
-        <div className="section-title">
-          <span className="section-index">C</span>
-          <h2>尚未接入的来源</h2>
-          <p>随对应功能上线逐类加入</p>
-        </div>
-        <PlanDetails id="inbox" navigate={navigate} />
-      </section>
-    </>
-  );
-}

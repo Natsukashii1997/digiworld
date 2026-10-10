@@ -134,9 +134,6 @@ export function KnowledgeCompilation({
   return (
     <section className="knowledge-compilation" aria-label="知识整理">
       <header className="v14-sh">
-        <span className="v14-idx" aria-hidden="true">
-          B
-        </span>
         <h2>整理任务</h2>
         <span className="v14-sub">仅限本人 Codex</span>
       </header>

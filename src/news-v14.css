@@ -1,0 +1,29 @@
+/* AI HOT（Claude 165 设计评审）：保留“头条 + 列表”的日报结构，但不再用衬线报纸体与双线刊头，
+   改用全站的无衬线标题、屏幕 / 面板材质与生活区青蓝强调，读起来是同一台掌机里的一页。 */
+.news-v14 { min-width: 0; }
+/* 生活区主按钮用青蓝（与日历、随手记一致）。 */
+.news-v14 .button:not(.secondary) { background:linear-gradient(180deg,color-mix(in srgb,var(--cyan) 62%,#fff),var(--cyan)); color:var(--px-ink); border-color:transparent; box-shadow:0 10px 28px -12px rgba(77,227,255,.9), inset 0 1px 0 rgba(255,255,255,.6); }
+.news-v14 .button:not(.secondary):disabled { opacity:.55; box-shadow:none; }
+.news-v14 .news-mast { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:var(--s-3) var(--s-5); margin-bottom:var(--s-4); padding:var(--s-4) var(--s-5); border-radius:var(--r-xl); background:var(--m-screen); box-shadow:var(--m-screen-edge); }
+.news-v14 .news-mast h2 { margin:0; font:700 var(--fs-display-s)/1.2 var(--sans); letter-spacing:0.02em; color:var(--text); }
+.news-v14 .news-mast p { margin:0; color:var(--muted); font:500 var(--fs-small)/1.7 var(--mono); text-align:right; }
+.news-v14 .aihot-bar { display:block; margin-bottom:var(--s-5); }
+.news-v14 .news-tabs { display:flex; flex-wrap:wrap; gap:var(--s-2); border-bottom:1px solid var(--line-2); }
+.news-v14 .news-tabs button { min-height:44px; min-width:44px; padding:var(--s-3); border:0; border-bottom:2px solid transparent; border-radius:0; background:none; color:var(--muted); display:flex; align-items:center; gap:var(--s-2); }
+.news-v14 .news-tabs button span { font:600 var(--fs-label) var(--mono); color:var(--muted); }
+.news-v14 .news-tabs button[aria-checked="true"] { color:var(--text); border-bottom-color:var(--cyan); }
+.news-v14 .news-tabs button[aria-checked="true"] span { color:var(--cyan); }
+.news-v14 .hot-list { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:0 var(--s-5); border:0; background:none; padding:0; counter-reset:news; }
+.news-v14 .hot-list > li { display:flex; gap:var(--s-3); min-width:0; padding:var(--s-4) 0; background:none; border:0; border-bottom:1px solid var(--line); }
+.news-v14 .hot-list > .news-lead { grid-row:1 / span var(--news-rows,1); align-self:start; padding:var(--s-5); border:0; border-radius:var(--r-l); background:var(--m-panel); box-shadow:var(--m-panel-edge); }
+.news-v14 .hot-item { width:100%; min-width:0; padding:0; border:0; background:none; box-shadow:none; }
+.news-v14 .hot-item h3 { font-size:var(--fs-title); font-weight:600; line-height:1.5; overflow-wrap:anywhere; }
+.news-v14 .news-lead h3 { font-size:var(--fs-section); font-weight:700; line-height:1.4; }
+.news-v14 h3 a { display:inline-block; min-height:44px; min-width:44px; color:var(--text); }
+.news-v14 .hot-summary { overflow-wrap:anywhere; color:var(--text-2); }
+.news-v14 .news-number { font:700 var(--fs-caption)/2 var(--mono); color:var(--muted); }
+.news-v14 .news-lead .news-number { color:var(--cyan); }
+.news-v14 .hot-actions { justify-content:flex-end; }
+.news-v14 .news-star { min-width:44px; min-height:44px; color:var(--muted); }
+.news-v14 .news-star.collected { color:var(--yellow); }
+@media (max-width:900px) { .news-v14 .hot-list { grid-template-columns:minmax(0,1fr); } .news-v14 .hot-list > .news-lead { grid-row:auto; margin-bottom:var(--s-2); } .news-v14 .news-mast p { text-align:left; } }

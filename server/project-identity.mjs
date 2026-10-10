@@ -174,6 +174,7 @@ export function createProjectIdentity(
         "description",
         "language",
         "updatedAt",
+        "githubPushedAt",
       ])
         if (candidate[key] !== undefined) merged[key] = candidate[key];
     }
@@ -190,11 +191,13 @@ export function createProjectIdentity(
           "description",
           "language",
           "updatedAt",
+        "githubPushedAt",
         ])
           delete merged[key];
         if (repoKey) merged.githubUrl = `https://github.com/${repoKey}`;
       }
     }
+    merged.recentUpdate = {state:"unknown",source:newPaths.length?"Git":"GitHub",checkedAt:new Date().toISOString(),reason:"身份或关联刚变更，需重新扫描时间"};
     const contextNeedsReview = bindings.some((b) => b.projectId === project.id);
     const proof = digest(
       JSON.stringify({

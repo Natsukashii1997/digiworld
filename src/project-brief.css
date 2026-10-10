@@ -37,16 +37,16 @@
 }
 .brief-item h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-read);
   overflow-wrap: anywhere;
 }
 .brief-since {
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--text-2);
 }
 .brief-text {
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--fs-caption);
   line-height: 1.75;
   color: var(--text);
   overflow-wrap: anywhere;

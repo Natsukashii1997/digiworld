@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "数码世界",
+  "short_name": "数码世界",
+  "description": "个人 AI 资产与多 Agent 管理工作台",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#070b16",
+  "theme_color": "#070b16",
+  "icons": [
+    {
+      "src": "/assets/digivice-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/digivice-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

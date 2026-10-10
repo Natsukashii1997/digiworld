@@ -1,8 +1,9 @@
 // 个人说明本机 MCP 服务（路线 v3 切片 3.3，D30）。
-// 与工作台 HTTP 服务隔离：单独端口、只监听 127.0.0.1、只暴露两个工具，不经过工作台会话接口。
+// 与工作台 HTTP 服务隔离：单独端口、只监听 127.0.0.1、按权限暴露四个工具，不经过工作台会话接口。
 // 传输：MCP Streamable HTTP 的最小实现——POST /mcp 接收单条 JSON-RPC 消息，以 application/json 回复；
 // 不开 SSE 流、不保存会话。Host 必须是本机地址，带 Origin 的浏览器请求一律拒绝（防 DNS 重绑定与跨站）。
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 
 const PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const MAX_BODY = 256 * 1024;
@@ -43,6 +44,10 @@ export const PROFILE_TOOLS = [
   },
 ];
 
+export const KNOWLEDGE_TOOLS = [
+ {name:"search_knowledge",title:"跨知识库检索",description:"只读检索本人已授权知识源；个人说明单独授权。返回来源、相对路径、摘录和覆盖；partial不表示未命中。显式cursor续查。",annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},inputSchema:{type:"object",properties:{query:{type:"string",minLength:1,maxLength:100},limit:{type:"integer",minimum:1,maximum:50},cursor:{type:"string"}},required:["query"],additionalProperties:false}},
+ {name:"read_note",title:"读取知识原文",description:"只读当前已授权知识源内一篇Markdown，校验检索哈希；字数超限拒绝，不截断。个人说明请用read_profile。",annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},inputSchema:{type:"object",properties:{sourceId:{type:"string"},path:{type:"string"},expectedSha256:{type:"string",pattern:"^[a-f0-9]{64}$"},maxChars:{type:"integer",minimum:1,maximum:16000}},required:["sourceId","path","expectedSha256"],additionalProperties:false}},
+];
 const reply = (id, result) => ({ jsonrpc: "2.0", id, result });
 const error = (id, code, message) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
 const toolResult = (text, structuredContent, isError = false) => ({
@@ -60,7 +65,7 @@ function readText(result) {
 }
 
 // 处理一条 JSON-RPC 消息；通知返回 null。工具执行失败以 isError 结果返回，协议错误用 JSON-RPC error。
-export async function handleMcp(profile, message) {
+export async function handleMcp(profile, message, knowledge) {
   if (!message || typeof message !== "object" || Array.isArray(message) || message.jsonrpc !== "2.0" || typeof message.method !== "string")
     return error(message?.id, -32600, "无效的 JSON-RPC 请求");
   const { id, method, params } = message;
@@ -77,17 +82,23 @@ export async function handleMcp(profile, message) {
     });
   }
   if (method === "ping") return reply(id, {});
-  if (method === "tools/list") return reply(id, { tools: PROFILE_TOOLS });
+  const tools=[...PROFILE_TOOLS,...(knowledge?KNOWLEDGE_TOOLS:[])];
+  if (method === "tools/list") return reply(id, { tools });
   if (method !== "tools/call") return error(id, -32601, `不支持的方法：${method}`);
   const name = params?.name;
   const args = params?.arguments ?? {};
-  if (!PROFILE_TOOLS.some((tool) => tool.name === name))
+  if (!tools.some((tool) => tool.name === name))
     return error(id, -32602, `未知工具：${String(name).slice(0, 60)}`);
   try {
     if (name === "read_profile") {
       const result = await profile.readProfile(args);
       return reply(id, toolResult(readText(result), result));
     }
+    if(name === "search_knowledge" || name === "read_note") {
+      const result=await (name === "search_knowledge" ? knowledge.searchAll(args) : knowledge.readNote(args));
+      return reply(id,toolResult(name === "search_knowledge" ? `已查${result.searchedSources}/${result.totalSources}个授权知识源，${result.results.length}条命中；覆盖${result.status}。` : `已读取${result.sourceName}/${result.path}；SHA-256 ${result.sha256}`,result));
+    }
+    if(name !== "propose_profile_change")return error(id,-32602,"未知工具");
     const result = await profile.propose(args);
     return reply(
       id,
@@ -99,10 +110,11 @@ export async function handleMcp(profile, message) {
   }
 }
 
-export async function startProfileMcp({ profile, port = 5179 }) {
+export async function startProfileMcp({ profile, knowledge, usage, port = 5179 }) {
+  const sessions = new Map();
   const server = http.createServer(async (request, response) => {
-    const send = (status, value) => {
-      response.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+    const send = (status, value, headers = {}) => {
+      response.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers });
       response.end(value === undefined ? undefined : JSON.stringify(value));
     };
     try {
@@ -132,9 +144,25 @@ export async function startProfileMcp({ profile, port = 5179 }) {
       } catch {
         return send(400, error(null, -32700, "JSON 解析失败"));
       }
-      const result = await handleMcp(profile, message);
+      const result = await handleMcp(profile, message, knowledge);
       if (result === null) return send(202);
-      return send(200, result);
+      if (message.method === "initialize" && result?.result) {
+        const candidate = message.params?.clientInfo?.name;
+        const clientName = typeof candidate === "string" && /^[\w .-]{1,60}$/.test(candidate) ? candidate : null;
+        const sessionId = randomUUID();
+        if (sessions.size >= 256) sessions.delete(sessions.keys().next().value);
+        sessions.set(sessionId, { clientName, at: Date.now() });
+        return send(200, result, { "Mcp-Session-Id": sessionId });
+      }
+      const finalResult = ["search_knowledge","read_note"].includes(message.params?.name) && Buffer.byteLength(JSON.stringify(result)) > MAX_BODY
+        ? reply(message.id,toolResult("工具输出超过安全上限，请缩小读取范围",null,true)) : result;
+      if (message.method === "tools/call" && [...PROFILE_TOOLS, ...(knowledge ? KNOWLEDGE_TOOLS : [])].some((tool) => tool.name === message.params?.name) && finalResult?.result) {
+        const session = sessions.get(request.headers["mcp-session-id"]);
+        if (session && Date.now() - session.at > 24 * 60 * 60 * 1000) sessions.delete(request.headers["mcp-session-id"]);
+        const clientName = session && Date.now() - session.at <= 24 * 60 * 60 * 1000 ? session.clientName : null;
+        await usage?.record("knowledge", finalResult.result.isError ? "failed" : "verified", clientName).catch(() => {});
+      }
+      return send(200, finalResult);
     } catch {
       if (!response.headersSent) send(500, error(null, -32603, "个人说明服务处理失败"));
       else response.end();

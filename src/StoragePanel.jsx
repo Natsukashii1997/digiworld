@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Download, Upload, HardDrive, Archive } from "lucide-react";
 import { Button, Dialog } from "./components.jsx";
 import { session, request } from "./api.js";
@@ -6,11 +6,17 @@ import { parse, stringify } from "./serialization.js";
 import { readState as readLegacy } from "./store.js";
 import { download } from "./Assets.jsx";
 
-export function StoragePanel({ state, adoptState, notify }) {
+export function StoragePanel({ state, adoptState, notify, compact = false }) {
   const [directory, setDirectory] = useState(""),
     [preview, setPreview] = useState(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [facts,setFacts] = useState(null), [factsError,setFactsError] = useState(""), [finderBusy,setFinderBusy] = useState(false);
+  const reloadFacts = useCallback(async () => {
+    try { setFacts(await request("/storage/status")); setFactsError(""); }
+    catch (e) { setFactsError(e.message); }
+  },[]);
+  useEffect(() => { reloadFacts(); },[reloadFacts]);
   useEffect(() => {
     session()
       .then((s) => setDirectory(s.directory))
@@ -29,28 +35,22 @@ export function StoragePanel({ state, adoptState, notify }) {
     }
   }
   return (
-    <section className="settings-panel">
-      <div className="section-head">
-        <div>
-          <h2>本地数据</h2>
-          <p>文件主库 · 版本 {state.revision}</p>
-        </div>
-        <HardDrive size={22} />
-      </div>
-      <code className="storage-path">{directory || "正在读取存储位置…"}</code>
+    <section className={compact ? "st-storage st-group" : "settings-panel"}>
+      {compact ? <div className="st-row"><div className="st-cap"><b>主库</b><small><code>{directory || "正在读取存储位置…"}</code></small><small>{facts?.size.state === "ok" ? `${facts.size.bytes.toLocaleString("zh-CN")} 字节 · ${facts.size.files} 个文件` : facts?.size.reason || "正在读取…"} · REV {state.revision}</small>{!!facts?.size.skipped?.length&&<small>{facts.size.skipped.length} 个链接或特殊文件未计入；不跟随链接。</small>}{factsError&&<small role="alert">目录信息读取失败：{factsError}</small>}</div><Button secondary disabled={finderBusy || !facts?.finderAvailable} onClick={async()=>{setFinderBusy(true);try{await request("/storage/reveal",{});notify("已请求访达显示数据目录");}catch(e){notify(e.message,"error");}finally{setFinderBusy(false);}}}>{finderBusy?"正在请求访达…":"在访达中显示数据目录"}</Button></div> : <><div className="section-head"><div><h2>本地数据</h2><p>文件主库 · 版本 {state.revision}</p></div><HardDrive size={22}/></div><code className="storage-path">{directory || "正在读取存储位置…"}</code></>}
+      <FullBackup busy={busy} notify={notify} onCreated={reloadFacts} compact={compact} facts={facts}/>
       {error && (
         <p className="inline-error" role="alert">
           {error}
         </p>
       )}
-      <div className="setting-row">
+      <div className={compact ? "st-row" : "setting-row"}>
         <div>
-          <strong>备份与恢复</strong>
-          <p>导出资产、连接与整理任务；恢复前预览合并，不覆盖现有历史。</p>
-          <p>
+          <strong>合并导入 / 导出</strong>
+          <p>JSON 用于合并资产、连接与整理任务；导入前预览，不覆盖现有历史。恢复整个工作台请使用 ZIP 恢复包。</p>
+          {!compact && <p>
             候选写回的恢复全文与操作记录独立保存在 knowledge-writes
             目录，不在此备份中；需要时用下面的“完整备份”。
-          </p>
+          </p>}
         </div>
         <div className="heading-actions">
           <Button
@@ -64,14 +64,14 @@ export function StoragePanel({ state, adoptState, notify }) {
                   stringify(backup, 2),
                   "application/json",
                 );
-                notify("备份已导出");
+                notify("可合并数据已生成并发起下载，请确认 JSON 文件已保存");
               } catch (e) {
                 setError(e.message);
               }
             }}
           >
             <Download size={16} />
-            导出备份
+            导出可合并数据 JSON
           </Button>
           <label className="button secondary import-backup">
             <Upload size={16} />
@@ -99,8 +99,7 @@ export function StoragePanel({ state, adoptState, notify }) {
           </label>
         </div>
       </div>
-      <FullBackup busy={busy} notify={notify} />
-      <div className="setting-row">
+      <div className={compact ? "st-row" : "setting-row"}>
         <div>
           <strong>旧版浏览器数据</strong>
           <p>原始数据保留不动；仅在当前浏览器查找。</p>
@@ -156,6 +155,7 @@ export function StoragePanel({ state, adoptState, notify }) {
               <div><span>新增使用与反馈</span><strong>{preview.summary.activityAdded ?? 0}</strong></div>
               <div><span>新增协同留痕</span><strong>{preview.summary.collabAdded ?? 0}</strong></div>
               <div><span>新增改版候选</span><strong>{preview.summary.candidatesAdded ?? 0}</strong></div>
+              <div><span>新增 Skill 采用回执</span><strong>{preview.summary.skillSourceAdoptionsAdded ?? 0}</strong></div>
             </div>
             <p className="body-copy">
               保留当前设置、连接与兼容历史。整理任务恢复后仍需核对来源，不恢复读取授权。确认后写入本机主库，不修改原备份文件。
@@ -225,20 +225,22 @@ function PathList({ label, items }) {
 
 // 完整备份（路线 v3 5.1）：整个数据目录打包为一个 zip（含清单与每个文件 SHA256）。
 // 恢复只写到新的数据目录副本并校验，不覆盖当前目录；切换由用户手动完成。
-function FullBackup({ busy: outerBusy, notify }) {
+function FullBackup({ busy: outerBusy, notify, onCreated, compact = false, facts }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [preview, setPreview] = useState(null),
     [done, setDone] = useState(null);
   const disabled = busy || outerBusy;
   return (
-    <div className="setting-row full-backup">
+    <div className={compact ? "st-row full-backup" : "setting-row full-backup"}>
       <div>
-        <strong>完整备份（整个数据目录）</strong>
-        <p>
-          打包主库快照、配置操作日志、知识写入日志、各集合与上传的图片，附清单与每个文件的
+        <strong>{compact?"最近完整备份 / 恢复":"完整备份（整个数据目录）"}</strong>
+        {compact && <><p>上次完整备份生成并校验：{facts?.lastBackup.state === "ok" ? new Date(facts.lastBackup.at).toLocaleString("zh-CN") : facts?.lastBackup.state === "none" ? "尚无成功记录" : facts?.lastBackup.state === "pending" ? "生成记录待核对" : facts?.lastBackup.reason || "正在读取…"}</p>{!!facts?.lastBackup.pending&&<p role="status">另有 {facts.lastBackup.pending} 条未完成的生成记录；请核对后再决定是否重做。</p>}<p>服务端生成记录不证明下载文件已保存到你的磁盘。</p></> }
+        <p className="full-backup-scope">含工作台数据与记录；不含银饰原图，原图请另行保留。恢复后银饰记录仍在，但原图需单独找回。</p>
+        {!compact && <p>
+          打包主库快照、配置操作日志、知识写入日志、各集合与逆向图片；银饰图片不含，银饰记录保留，旧备份仍可恢复。附清单与每个文件的
           SHA256。恢复前先预览新增、冲突与缺失；确认后恢复到一个新的数据目录并校验，不覆盖当前目录，切换由你手动完成。
-        </p>
+        </p>}
         {error && (
           <p className="inline-error" role="alert">
             {error}
@@ -268,7 +270,8 @@ function FullBackup({ busy: outerBusy, notify }) {
             try {
               const result = await request("/full-backup/create", {});
               download(result.filename, result.bytes, "application/zip");
-              notify(`完整备份已导出：${result.manifest.files.length} 个文件`);
+              await onCreated?.();
+              notify(`恢复包已生成并校验 ${result.manifest.files.length} 个文件，已发起下载；请确认 ZIP 文件已保存`);
             } catch (e) {
               setError(e.message);
             } finally {
@@ -277,7 +280,7 @@ function FullBackup({ busy: outerBusy, notify }) {
           }}
         >
           <Archive size={16} />
-          {busy && !preview ? "正在处理…" : "导出完整备份"}
+          {busy && !preview ? "正在处理…" : "下载恢复包 ZIP"}
         </Button>
         <label className="button secondary import-backup">
           <Upload size={16} />
@@ -312,7 +315,8 @@ function FullBackup({ busy: outerBusy, notify }) {
       </div>
       {preview && (
         <Dialog title="完整备份恢复预览" onClose={() => !busy && setPreview(null)}>
-          <div className="asset-form">
+          <div className="asset-form full-backup-restore">
+          <div className="full-backup-restore-body">
             <h2>恢复前预览</h2>
             <p className="body-copy">
               备份时间 {new Date(preview.backup.createdAt).toLocaleString("zh-CN")} · {preview.backup.files}{" "}
@@ -320,6 +324,7 @@ function FullBackup({ busy: outerBusy, notify }) {
               {preview.mainDatabase ? ` · 主库修订 ${preview.mainDatabase.revision}` : " · 不含主库"}
               {preview.current.revision !== null ? `（当前主库修订 ${preview.current.revision}）` : ""}
             </p>
+            <p className="body-copy full-backup-scope">恢复包不含银饰原图；恢复银饰记录后，原图仍需从你另行保留的文件找回。</p>
             <div className="backup-summary">
               <div>
                 <span>新增（当前目录没有）</span>
@@ -353,7 +358,8 @@ function FullBackup({ busy: outerBusy, notify }) {
                 {error}
               </p>
             )}
-            <div className="form-actions">
+            </div>
+            <div className="form-actions full-backup-restore-actions">
               <Button secondary disabled={busy} onClick={() => setPreview(null)}>
                 取消
               </Button>

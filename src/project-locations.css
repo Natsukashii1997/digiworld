@@ -26,7 +26,7 @@
 .project-location-heading h3,
 .project-location-heading h4 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .project-locations code,
 .project-locations p,
@@ -35,14 +35,14 @@
 }
 .project-locations small {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-small);
   line-height: 1.7;
 }
 .project-location-row {
   padding: 12px 0 18px;
 }
 .project-location-paths {
-  font-size: 13px;
+  font-size: var(--fs-caption);
   gap: 6px;
 }
 .project-location-paths ul {
@@ -56,7 +56,7 @@
 .project-location-result {
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r);
   scroll-margin-top: 80px;
 }
 .project-location-preview:focus,
@@ -68,7 +68,7 @@
   min-height: 44px;
   padding: 12px 0;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-caption);
 }
 .project-location-details code,
 .project-location-details > span {
@@ -81,7 +81,7 @@
   align-items: flex-start;
   gap: 10px;
   min-height: 44px;
-  font-size: 13px;
+  font-size: var(--fs-caption);
   line-height: 1.8;
   color: var(--ink);
   cursor: pointer;

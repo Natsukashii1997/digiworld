@@ -288,7 +288,7 @@ async function readTarget(path, filesystem) {
 function templateOf(state, assetId, versionId) {
   const asset = state.assets?.find((a) => a.id === assetId);
   const version = asset?.versions.find((v) => v.id === versionId);
-  if (!asset || asset.type !== "Rule" || !version)
+  if (!asset || asset.archived || asset.type !== "Rule" || !version)
     throw failure("规则模板或其版本不存在", 404);
   return { assetId, versionId, body: version.content, title: version.title };
 }

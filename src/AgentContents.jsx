@@ -1,12 +1,13 @@
 // 智能体群 · 内容清单与体检摘要（产品定义 v1.2 §4.3；G3）。
 // 每个已检测、支持清单的 Agent 一张卡：展开时才只读读取，按 Skill / 配置文件 / 插件 / MCP 分组。
-// 单项开关只预览“将要做什么”，不执行；“存入资产仓库”交给现有“收录本机 Skill”流程（预览 → 确认 → 回读）。
+// Codex/Hermes 单项开关进入已登记目标的受控入口，默认关闭，预览后人工确认；其他 Agent 仍只预览。
 // 角色卡（F4，silver-agents 分支）挂在每张卡的 .agent-contents-top 右侧，本文件不实现。
-import React, { useRef, useState } from "react";
-import { ChevronDown, PackagePlus, RefreshCw, ToggleRight } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronDown, RefreshCw, ToggleRight } from "lucide-react";
 import { Badge, Button, Dialog } from "./components.jsx";
 import { request } from "./api.js";
 import "./agent-contents.css";
+import { AgentContentDrawer, AgentWriteLaunch } from "./AgentWriteUI.jsx";
 
 export const CONTENT_AGENT_IDS = ["codex", "claude-code", "hermes", "openclaw"];
 const SOURCE = {
@@ -74,8 +75,24 @@ function GroupState({ group }) {
   );
 }
 
-function SkillRow({ item, onToggle, onStore }) {
-  const store = item.store && item.match?.status !== "same";
+function CompactRow({ name, badge, tone = "muted", path, details, onToggle }) {
+  return <li className="agent-content-item compact-row">
+    <details>
+      <summary title={`查看 ${name} 的详情`}>
+        <strong title={name}>{name}</strong>
+        <Badge tone={tone}>{badge}</Badge>
+        <code title={path}>{path}</code>
+      </summary>
+      <div className="compact-row-details">{details}</div>
+    </details>
+    {onToggle && <button type="button" className="compact-toggle" aria-label={`开关预览：${name}`} title="开关预览" onClick={onToggle}><ToggleRight size={18}/></button>}
+  </li>;
+}
+
+function SkillRow({ item, onToggle, compact = false }) {
+  const path = item.path + (item.target ? ` → ${item.target}` : "");
+  const tone = item.source === "broken" ? "danger" : item.source === "unreadable" ? "warning" : "muted";
+  if (compact) return <CompactRow name={item.name} badge={sourceLabel(item)} tone={tone} path={path} onToggle={() => onToggle(item)} details={<><span className="agent-content-match">{matchText(item.match)}</span>{(item.reason || item.readError) && <small>{item.readError || item.reason}</small>}<code>{path}</code></>}/>;
   return (
     <li className="agent-content-item">
       <div className="agent-content-main">
@@ -113,16 +130,6 @@ function SkillRow({ item, onToggle, onStore }) {
           <ToggleRight size={15} />
           开关预览
         </Button>
-        {store && (
-          <Button
-            secondary
-            aria-label={`存入资产仓库：${item.name}`}
-            onClick={() => onStore(item.store)}
-          >
-            <PackagePlus size={15} />
-            存入资产仓库
-          </Button>
-        )}
       </div>
     </li>
   );
@@ -170,15 +177,30 @@ function TogglePreview({ agentName, item, onClose }) {
   );
 }
 
-function ContentsCard({ agent, result, onResult, onStore }) {
+function ContentsCard({ agent, state, result, onResult, focus = 0, roleCard = false }) {
   const [open, setOpen] = useState(false),
+    [group, setGroup] = useState("skills"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [toggle, setToggle] = useState(null),
     // 展开时发起的重读返回前，不把上一次结果当作当前清单显示（读取失败时再退回上次结果）。
     [stale, setStale] = useState(false);
+  const [write, setWrite] = useState(null);
+  const previewToggle = (item) => ["codex", "hermes"].includes(agent.id) ? setWrite(item) : setToggle(item);
   const lock = useRef(false);
+  const card = useRef(null);
   const bodyId = `agent-contents-${agent.id}`;
+  // 档案里点“查看内容清单”：滚到这张卡，未展开时展开并只读读取（与点“展开清单”相同）。
+  useEffect(() => {
+    if (!focus) return;
+    card.current?.scrollIntoView({ block: "start" });
+    card.current?.querySelector("button")?.focus({ preventScroll: true });
+    if (!open) {
+      setOpen(true);
+      setStale(true);
+      load();
+    }
+  }, [focus]);
   async function load() {
     if (lock.current) return;
     lock.current = true;
@@ -195,15 +217,20 @@ function ContentsCard({ agent, result, onResult, onStore }) {
     }
   }
   const groups = result?.groups;
+  const sortedSkills = groups ? [...groups.skills.items].sort((a,b)=>Number(b.source==="broken")-Number(a.source==="broken")) : [];
+  const groupNames = { skills: "Skill", configs: "配置", plugins: "插件", mcp: "MCP" };
   return (
     <article
-      className="agent-contents-card"
+      ref={card}
+      data-agent={agent.id}
+      className={`agent-contents-card${roleCard ? " role-contents-card" : " m-panel"}`}
       aria-labelledby={`${bodyId}-title`}
       aria-busy={busy}
     >
+      <div className={roleCard ? "role-contents-toolbar" : undefined}>
       <div className="agent-contents-top">
-        <h3 id={`${bodyId}-title`}>{agent.name}</h3>
-        <HealthSummary result={result} />
+        <h3 id={`${bodyId}-title`}>{roleCard ? "内容清单" : agent.name}</h3>
+        {!roleCard && <HealthSummary result={result} />}
       </div>
       <div className="heading-actions">
         <Button
@@ -220,14 +247,22 @@ function ContentsCard({ agent, result, onResult, onStore }) {
           }}
         >
           <ChevronDown size={15} className={open ? "flip" : ""} />
-          {open ? "收起清单" : "展开清单"}
+          {roleCard && open ? <span className="sr-only">收起清单</span> : open ? "收起清单" : "展开清单"}
         </Button>
         {open && (
           <Button secondary disabled={busy} onClick={load}>
             <RefreshCw size={15} className={busy ? "spinning" : ""} />
-            {busy ? "读取中…" : "重新读取"}
+            {roleCard ? <span className="sr-only">{busy ? "读取中…" : "重新读取"}</span> : busy ? "读取中…" : "重新读取"}
           </Button>
         )}
+        {!roleCard && ["codex", "hermes"].includes(agent.id) && <AgentWriteLaunch state={state} agentId={agent.id} />}
+      </div>
+      {roleCard && open && groups && !stale && <>
+        <div className="role-content-groups" role="group" aria-label="内容分组">
+          {Object.entries(groupNames).map(([key,label])=><button key={key} type="button" aria-pressed={group===key} onClick={()=>setGroup(key)}>{label}<span>{key==="mcp" ? (groups.mcp.status==="ok" ? "已读" : "未读") : groups[key].items.length}</span></button>)}
+        </div>
+        <h4 className="role-content-group-title">{groupNames[group]}{group!=="mcp" && <small>{groups[group].items.length}</small>}</h4>
+      </>}
       </div>
       {error && (
         <p className="inline-error" role="alert">
@@ -242,10 +277,10 @@ function ContentsCard({ agent, result, onResult, onStore }) {
           )}
           {groups && !stale && (
             <>
-              <section aria-label={`${agent.name} · Skill`}>
-                <h4>
+              <section aria-label={`${agent.name} · Skill`} hidden={roleCard && group!=="skills"}>
+                {!roleCard && <h4>
                   Skill <small>{groups.skills.items.length}</small>
-                </h4>
+                </h4>}
                 <GroupState group={groups.skills} />
                 {groups.skills.errors
                   ?.filter((e) => e.path !== groups.skills.root)
@@ -255,24 +290,24 @@ function ContentsCard({ agent, result, onResult, onStore }) {
                     </p>
                   ))}
                 <ul className="agent-content-list">
-                  {groups.skills.items.map((item) => (
+                  {(roleCard ? sortedSkills : groups.skills.items).map((item) => (
                     <SkillRow
                       key={item.id}
                       item={item}
-                      onToggle={setToggle}
-                      onStore={onStore}
+                      onToggle={previewToggle}
+                      compact={roleCard}
                     />
                   ))}
                 </ul>
               </section>
-              <section aria-label={`${agent.name} · 配置文件`}>
-                <h4>
+              <section aria-label={`${agent.name} · 配置文件`} hidden={roleCard && group!=="configs"}>
+                {!roleCard && <h4>
                   配置文件 <small>{groups.configs.items.length}</small>
-                </h4>
+                </h4>}
                 <GroupState group={groups.configs} />
                 <ul className="agent-content-list compact">
                   {groups.configs.items.map((item) => (
-                    <li className="agent-content-item" key={item.path}>
+                    roleCard ? <CompactRow key={item.path} name={item.name} badge={item.status === "present" ? `${item.bytes} 字节` : item.status === "missing" ? "未发现" : "无法读取"} tone={item.status === "present" ? "muted" : "warning"} path={item.path} details={<code>{item.path}</code>}/> : <li className="agent-content-item" key={item.path}>
                       <div className="agent-content-main">
                         <strong>{item.name}</strong>
                         <Badge tone={item.status === "present" ? "muted" : "warning"}>
@@ -289,14 +324,14 @@ function ContentsCard({ agent, result, onResult, onStore }) {
                 </ul>
                 <p className="detail-footnote">只读文件元数据，不读取配置正文；配置文件不提供开关。</p>
               </section>
-              <section aria-label={`${agent.name} · 插件`}>
-                <h4>
+              <section aria-label={`${agent.name} · 插件`} hidden={roleCard && group!=="plugins"}>
+                {!roleCard && <h4>
                   插件 <small>{groups.plugins.items.length}</small>
-                </h4>
+                </h4>}
                 <GroupState group={groups.plugins} />
                 <ul className="agent-content-list">
                   {groups.plugins.items.map((item) => (
-                    <li className="agent-content-item" key={item.id}>
+                    roleCard ? <CompactRow key={item.id} name={item.name} badge={{ directory: "目录", file: "文件", link: "链接" }[item.kind] || "未知"} path={item.path} details={<code>{item.path}</code>} onToggle={()=>previewToggle(item)}/> : <li className="agent-content-item" key={item.id}>
                       <div className="agent-content-main">
                         <strong>{item.name}</strong>
                         <Badge tone="muted">
@@ -308,7 +343,7 @@ function ContentsCard({ agent, result, onResult, onStore }) {
                         <Button
                           secondary
                           aria-label={`开关预览：${item.name}`}
-                          onClick={() => setToggle(item)}
+                          onClick={() => previewToggle(item)}
                         >
                           <ToggleRight size={15} />
                           开关预览
@@ -318,8 +353,8 @@ function ContentsCard({ agent, result, onResult, onStore }) {
                   ))}
                 </ul>
               </section>
-              <section aria-label={`${agent.name} · MCP`}>
-                <h4>MCP</h4>
+              <section aria-label={`${agent.name} · MCP`} hidden={roleCard && group!=="mcp"}>
+                {!roleCard && <h4>MCP</h4>}
                 <GroupState group={groups.mcp} />
               </section>
               {result.truncated && (
@@ -338,35 +373,37 @@ function ContentsCard({ agent, result, onResult, onStore }) {
           onClose={() => setToggle(null)}
         />
       )}
+      {write && <AgentContentDrawer state={state} agentId={agent.id} initialName={write.name} onClose={() => setWrite(null)} />}
+      {roleCard && <p className="detail-footnote">豆包工作等其他 Agent 暂只做安装检测。原清单只读元数据；受控入口按明确选定目标处理白名单配置与独立 Skill 副本，不自动读取私人会话。</p>}
     </article>
   );
 }
 
-export function AgentContents({ agents, results, onResult, onStore }) {
+export function AgentContents({ state, agents, results, onResult, focus = {}, roleCard = false }) {
   const shown = agents.filter(
     (a) => a.status === "detected" && CONTENT_AGENT_IDS.includes(a.id),
   );
   return (
     <section
       id="agent-contents"
-      className="agent-contents"
-      aria-labelledby="agent-contents-title"
+      className={`agent-contents${roleCard ? " in-role-card" : ""}`}
+      aria-labelledby={roleCard ? undefined : "agent-contents-title"}
+      aria-label={roleCard ? "内容清单" : undefined}
     >
-      <div className="section-title">
-        <span className="section-index">清</span>
+      {!roleCard && <div className="v14-sh">
         <h2 id="agent-contents-title">内容清单</h2>
-        <p>
-          Skill、配置文件、插件、MCP 分组列出，并做只读体检；开关只预览，不写入。
-        </p>
-      </div>
+        <span className="v14-sub">原内容清单只读；已登记目标可从受控入口预览、备份、确认、回读与回滚。</span>
+      </div>}
       <div className="agent-contents-grid">
         {shown.map((agent) => (
           <ContentsCard
             key={agent.id}
             agent={agent}
+            state={state}
             result={results[agent.id]}
             onResult={(value) => onResult(agent.id, value)}
-            onStore={onStore}
+            focus={focus.id === agent.id ? focus.n : 0}
+            roleCard={roleCard}
           />
         ))}
       </div>
@@ -375,9 +412,9 @@ export function AgentContents({ agents, results, onResult, onStore }) {
           还没有检测到支持内容清单的 Agent（Codex、Claude Code、Hermes、OpenClaw）。
         </p>
       )}
-      <p className="detail-footnote">
-        豆包工作等其他 Agent 暂只做安装检测。清单只在本机读取，不读取凭据、会话或配置正文。
-      </p>
+      {(!roleCard || !shown.length) && <p className="detail-footnote">
+        豆包工作等其他 Agent 暂只做安装检测。原清单只读元数据；受控入口按明确选定目标处理白名单配置与独立 Skill 副本，不自动读取私人会话。
+      </p>}
     </section>
   );
 }

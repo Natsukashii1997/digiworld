@@ -1,3 +1,4 @@
+import {openAgentInventory,agentInventoryEntry} from "./agents-v16-helpers.mjs";
 // 视觉基线：合成数据下逐页、逐宽度截图，并检查横向溢出与页面错误。
 // 用法：node tests/visual.mjs <标签>   → test-results/visual/<标签>/
 // 需要已构建的 dist/；不属于 npm test，不能替代真人视觉验收。
@@ -51,7 +52,8 @@ try {
     };
     for (const route of routes) {
       await page.goto(`${app.url}/#${route}`);
-      await page.locator("main h1").first().waitFor();
+      if(route==="inbox")await page.getByRole("dialog",{name:"待处理",exact:true}).waitFor();
+      else await page.locator("main h1").first().waitFor();
       await page.waitForTimeout(route === "agents" || route === "projects" ? 600 : 250);
       // 宽屏：内容区在上限内铺满内容列，超过上限时左右空白相等，不能只剩右侧空档。
       const gap = await page.evaluate(() => {
@@ -72,6 +74,49 @@ try {
           Math.abs(gap.right - gap.expected) > 2)
       )
         problems.push(`${width} ${route} content gap left ${Math.round(gap.left)} right ${Math.round(gap.right)} expected ${Math.round(gap.expected)}`);
+      if (route === "night" && width <= 390) {
+        const chipLayout = await page.evaluate(() => {
+          const title = document.querySelector('.night-v16 .nv-library .nv-section-title h2');
+          const titleStyle = title && getComputedStyle(title);
+          const lineHeight = titleStyle &&
+            (parseFloat(titleStyle.lineHeight) || parseFloat(titleStyle.fontSize) * 1.4);
+          const titleLines = title && lineHeight
+            ? title.getBoundingClientRect().height / lineHeight
+            : Infinity;
+          const cards = [...document.querySelectorAll('.night-v16 .nv-lib-row .nt-chip')].map(card => {
+            const face = card.querySelector('.nv-chip-face')?.getBoundingClientRect();
+            const name = card.querySelector('.nv-chip-name')?.getBoundingClientRect();
+            const out = card.querySelector('.nv-chip-out')?.getBoundingClientRect();
+            return { faceOverName: !!face && !!name && face.bottom > name.top + 1,
+              nameOverOut: !!name && !!out && name.bottom > out.top + 1,
+              clipped: card.scrollHeight > card.clientHeight + 1 };
+          });
+          return { titleLines, cards };
+        });
+        if (chipLayout.titleLines > 1.5) problems.push(`${width} night library title wraps`);
+        if (chipLayout.cards.some(card => card.faceOverName || card.nameOverOut || card.clipped))
+          problems.push(`${width} night library chip content overlaps or clips`);
+      }
+      if (route === "silver" && width <= 390) {
+        const emptyWall = await page.evaluate(() => {
+          const card = document.querySelector('.silver-v16 .canvas.empty .pile.ghost .pile-cards');
+          const caption = document.querySelector('.silver-v16 .canvas.empty .canvas-empty');
+          if (!card || !caption) return null;
+          const a = card.getBoundingClientRect(), b = caption.getBoundingClientRect();
+          return { gap: b.top - a.bottom, left: b.left, right: b.right };
+        });
+        if (!emptyWall || emptyWall.gap < 8 || emptyWall.left < 0 || emptyWall.right > width)
+          problems.push(`${width} silver empty caption overlaps or escapes ghost card`);
+      }
+      if (route === "settings" && width === 1024) {
+        const rows = await page.locator(".settings-v16 .st-tr:not(.st-th)").evaluateAll(elements =>
+          elements.map(element => ({
+            capWidth: element.querySelector(".st-cap")?.getBoundingClientRect().width ?? 0,
+            height: element.getBoundingClientRect().height,
+          })));
+        if (!rows.length || rows.some(row => row.capWidth < 180 || row.height > 180))
+          problems.push(`${width} settings capability table collapsed ${JSON.stringify(rows)}`);
+      }
       await shot(route);
     }
     await page.goto(`${app.url}/#assets`);
@@ -91,7 +136,7 @@ try {
     await shot("state-palette");
     await page.keyboard.press("Escape");
     await page.goto(`${app.url}/#agents`);
-    await page.getByRole("button", { name: /Codex/ }).first().click();
+    await openAgentInventory(page);
     await page.waitForTimeout(500);
     await shot("state-agent-drawer");
     await page.keyboard.press("Escape");

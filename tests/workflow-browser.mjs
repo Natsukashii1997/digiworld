@@ -72,7 +72,7 @@ const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 try {
   await page.goto(app.url + "/#assets");
-  await page.getByRole("button", { name: "新建资产", exact: true }).click();
+  await page.getByRole("button", { name: "新建", exact: true }).click();
   await page.getByRole("button", { name: "工作流", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("上线复核");
   await page
@@ -114,6 +114,7 @@ try {
   await page.getByLabel("引用资产", { exact: true }).selectOption(skill.id);
   await page.getByRole("button", { name: "添加引用", exact: true }).click();
   await page.getByRole("button", { name: "保存资产", exact: true }).click();
+  await page.getByRole("button",{name:"查看 上线复核",exact:true}).waitFor();
   await page.reload();
   await page
     .getByRole("button", { name: "查看 上线复核", exact: true })
@@ -268,7 +269,7 @@ try {
     });
   });
   const beforeArchive = await getState();
-  await putState({
+  await app.repository.write({
     ...beforeArchive,
     assets: beforeArchive.assets.map((a) =>
       a.id === prompt.id ? { ...a, archived: true } : a,
@@ -301,7 +302,7 @@ try {
   assert.deepEqual(downloads, []);
   page.off("download", recordDownload);
   const archivedState = await getState();
-  await putState({
+  await app.repository.write({
     ...archivedState,
     assets: archivedState.assets.map((a) =>
       a.id === prompt.id ? { ...a, archived: false } : a,
@@ -511,27 +512,16 @@ try {
       .slice(0, -1)
       .some((v) => v.references.some((r) => r.assetId === prompt.id)),
   );
-  await page.goto(app.url + "/#settings");
-  await page.reload();
-  await page.getByRole("button", { name: "移除示例", exact: true }).click();
-  assert.match(
-    await page.getByRole("dialog").innerText(),
-    /将移除 1 份演示资产/,
-  );
-  assert.match(
-    await page.getByRole("dialog").innerText(),
-    /保留 1 份被工作流历史、个人改版、目标副本或使用反馈引用的示例/,
-  );
-  await page.getByRole("button", { name: "确认移除", exact: true }).click();
-  await page
-    .getByRole("status")
-    .filter({ hasText: "已移除未被引用的示例" })
-    .waitFor();
+  await page.keyboard.press("Escape");
+  await page.getByRole("dialog", { name: "资产详情" }).waitFor({ state: "detached" });
+  await page.goto(app.url + "/#assets");
+  await page.getByRole("button", { name: "删除 审阅原则", exact: true }).click();
+  await page.getByRole("dialog", { name: "无法删除资产" }).getByText(/工作流：上线复核/).first().waitFor();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "删除 未引用的演示", exact: true }).click();
+  await page.getByRole("button", { name: "删除 未引用的演示", exact: true }).waitFor({ state: "detached" });
   const afterCleanup = await getState();
-  assert.equal(
-    afterCleanup.assets.some((a) => a.id === unusedDemo.id),
-    false,
-  );
+  assert.equal(afterCleanup.assets.find((a) => a.id === unusedDemo.id).archived, true);
   assert.deepEqual(
     afterCleanup.assets.find((a) => a.id === prompt.id),
     beforeCleanup.assets.find((a) => a.id === prompt.id),

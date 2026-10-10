@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数码世界 UI v15 视觉稿</title>
+<style>
+:root{--bg:#070b16;--panel:#0f1729;--panel-2:#131d33;--panel-3:#1a2641;--line:rgba(140,178,255,.11);--line-2:rgba(140,178,255,.19);--text:#e9eeff;--text-2:#b4bfda;--muted:#8b98b8;--orange:#ff8a24;--cyan:#4de3ff;--lcd:#a6e36e;--mono:ui-monospace,"SF Mono",Menlo,monospace;--sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#04070f;color:var(--text);font:14px/1.6 var(--sans)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.bar{position:sticky;top:0;z-index:5;background:rgba(4,7,15,.96);border-bottom:1px solid var(--line);padding:10px 18px 0}
+.row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ttl{font-weight:700;font-size:15px}
+.ttl small{font:500 11px var(--mono);letter-spacing:.14em;color:var(--muted);margin-left:8px}
+.sub{color:var(--muted);font-size:12.5px}
+.ctl{margin-left:auto;display:flex;gap:8px}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--panel)}
+.seg button{min-height:32px;padding:0 12px;border-radius:999px;font:600 12px var(--mono);color:var(--muted)}
+.seg button[aria-pressed=true]{background:var(--panel-3);color:var(--text)}
+.tabs{display:flex;gap:2px;overflow-x:auto;margin-top:8px}
+.tabs button{min-height:40px;padding:0 13px;color:var(--muted);font-size:13px;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-selected=true]{color:var(--text);border-bottom-color:var(--orange)}
+.tabs .life[aria-selected=true]{border-bottom-color:var(--cyan)}
+.tabs .sep{width:1px;background:var(--line-2);margin:10px 6px}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px 18px;border-bottom:1px solid var(--line);background:#060a15}
+.notes>div{padding:10px 14px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.notes h4{font:700 11px var(--mono);letter-spacing:.16em;margin-bottom:4px}
+.notes .k h4{color:var(--lcd)}.notes .c h4{color:var(--orange)}.notes .w h4{color:var(--cyan)}
+.notes ul{padding-left:16px;color:var(--text-2);font-size:12.5px}
+.notes[hidden]{display:none}
+.stage{padding:18px;overflow:auto}
+.frame-wrap{margin:0 auto;transform-origin:top left}
+iframe{display:block;border:1px solid var(--line-2);border-radius:12px;background:#070b16;box-shadow:0 30px 80px -40px #000}
+.ov{max-width:1180px;margin:0 auto;padding:28px 18px 60px;display:grid;gap:22px}
+.ov[hidden],.stage[hidden]{display:none}
+.ov h2{font-size:22px}
+.ov p.lead{color:var(--text-2);max-width:86ch}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.grid3>div{padding:16px 18px;border-radius:14px;background:var(--panel);border:1px solid var(--line);display:grid;gap:6px}
+.grid3 i{font:700 11px var(--mono);letter-spacing:.14em;color:var(--orange);font-style:normal}
+.grid3 b{font-size:15px}
+.grid3 span{font-size:13px;color:var(--text-2)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;font:700 11px var(--mono);letter-spacing:.12em;color:var(--muted);border-bottom:1px solid var(--line-2)}
+td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--text-2)}
+td:first-child{color:var(--text);font-weight:600;white-space:nowrap}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pills span{font-size:12px;padding:2px 10px;border-radius:999px;background:rgba(140,178,255,.08);color:var(--text-2)}
+.how{padding:14px 18px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line-2);color:var(--text-2);font-size:13px}
+.how b{color:var(--text)}
+@media (max-width:900px){.notes,.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="row">
+    <div class="ttl">数码世界 · UI v15 视觉稿<small>CLAUDE · 2026-10-04 · 待你确认</small></div>
+    <span class="sub">用项目真实组件、真实编译样式渲染（像素精灵、点阵读数、暴龙机、封面都是应用里的同一份）；数据为合成。</span>
+    <div class="ctl">
+      <div class="seg" role="group" aria-label="宽度"><button data-w="1440" aria-pressed="true">1440</button><button data-w="390" aria-pressed="false">390</button></div>
+      <div class="seg" role="group" aria-label="缩放"><button data-fit="1" aria-pressed="true">适应窗口</button><button data-fit="0" aria-pressed="false">原尺寸</button></div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="页面">
+    <button role="tab" data-p="overview" aria-selected="true">总览</button><span class="sep"></span>
+    <button role="tab" data-p="home">世界总览</button><button role="tab" data-p="inbox">待处理</button><button role="tab" data-p="assets">资产仓库</button><button role="tab" data-p="references">逆向工程</button><button role="tab" data-p="agents">智能体群</button><button role="tab" data-p="projects">项目空间</button><button role="tab" data-p="collab">协同</button><button role="tab" data-p="knowledge">知识仓库</button><span class="sep"></span>
+    <button role="tab" class="life" data-p="calendar">日历</button><button role="tab" class="life" data-p="notes">随手记</button><button role="tab" class="life" data-p="aihot">AI HOT</button><span class="sep"></span>
+    <button role="tab" data-p="settings">设置</button><button role="tab" data-p="history">版本归档</button>
+  </nav>
+</div>
+<div class="notes" id="notes" hidden><div class="k"><h4>保留</h4><ul id="nk"></ul></div><div class="c"><h4>改动</h4><ul id="nc"></ul></div><div class="w"><h4>为什么</h4><ul id="nw"></ul></div></div>
+
+<section class="ov" id="overview">
+  <div>
+    <h2>这一版是什么</h2>
+    <p class="lead">上一版是低保真线框，资产仓库那页是我凭印象手画的简化版，把你最满意的设计画坏了。这一版改成高保真：页面里的像素精灵、点阵读数、暴龙机、资产封面、成长期指示、侧栏和顶栏，都是从项目真实组件渲染出来的，样式用的是应用正在用的那份编译 CSS，新版式只在上面加一层。所以这里看到的质感，就是落地后的质感。</p>
+  </div>
+  <div class="how"><b>怎么看：</b>上方标签切页面；右上角切 1440 / 390 两种宽度（窄屏按应用真实的响应式规则排版）；每页上方三栏写了 保留 / 改动 / 为什么。<b>资产仓库</b>标签里是你现在的真实页面原样，作为全站的品质标杆，这次不改。</div>
+  <div><h2>审核结论：六个共性问题</h2></div>
+  <div class="grid3">
+    <div><i>01</i><b>每页都是一根长条</b><span>页头 → 虚线说明框 → A/B/C/D 区块从上往下排，区块一样宽一样重，没有主区；宽屏右侧空。</span></div>
+    <div><i>02</i><b>说明文字抢了内容</b><span>“只读、不复制、不执行……”出现在页头、虚线框、区块副标题里，比数据还显眼。</span></div>
+    <div><i>03</i><b>空状态太大</b><span>项目空间、协同、智能体群没数据时是半屏高的空框，占掉首屏最好的位置。</span></div>
+    <div><i>04</i><b>按钮没有主次</b><span>一屏七八个同样的深色按钮，主操作不突出。</span></div>
+    <div><i>05</i><b>流程被摊平</b><span>逆向工程四步全部展开；日历把整周事件在轴下又列一遍；智能体群六块纵向堆叠。</span></div>
+    <div><i>06</i><b>质感不统一</b><span>资产仓库有屏幕材质、像素封面、点阵读数和成长期指示，其他页大多只是平面卡片和文字，品质落差大。</span></div>
+  </div>
+  <div><h2>v15 的做法</h2></div>
+  <div class="grid3">
+    <div><i>以资产仓库为标杆</i><b>把它的材质带到每一页</b><span>屏幕扫描线面板、点阵液晶读数、带辉光的像素图、编号角标、成长期 / 阶段灯，用在每页最重要的对象上，但每页形态不同。</span></div>
+    <div><i>焦点区</i><b>首屏先回答“现在做什么”</b><span>每页第一屏是最重要的数字或对象，配唯一的亮色主按钮；工作区橙色，生活区青蓝（和侧栏一致）。</span></div>
+    <div><i>主区 + 右栏</i><b>宽屏两栏，窄屏一列</b><span>主区放工作内容，右栏放来源、连接、当天详情等状态。</span></div>
+    <div><i>边界一行</i><b>说明收成页头下的小标签</b><span>正文里不再重复“只读 / 不执行”。</span></div>
+    <div><i>流程收拢</i><b>只展开正在进行的那一步</b><span>逆向工程变工作台步骤条；智能体群改页内标签；日历右栏显示选中的一天。</span></div>
+    <div><i>不变的底线</i><b>沿用你定下的原则</b><span>不模板化、不贴插图、暴龙机只在首页和协同、没有换页特效；不新增颜色。</span></div>
+  </div>
+  <div><h2>逐页一句话</h2></div>
+  <table>
+    <thead><tr><th>页面</th><th>v15 的焦点</th></tr></thead>
+    <tbody>
+      <tr><td>世界总览</td><td>主卡左侧三块液晶数字（可点直达），右侧暴龙机 + 徽章环 + 伙伴；“现在要处理”把待处理与在推进项目合成一张清单；右栏热点与存档槽；世界地图一行五区，每区有它的数码兽。</td></tr>
+      <tr><td>待处理</td><td>四块液晶分诊计数（即筛选器）；统一清单按级别分组，每行左色条 + 来源像素图 + 唯一动作；右栏“来源覆盖”信号灯。</td></tr>
+      <tr><td>资产仓库</td><td>原样保留（标杆）。</td></tr>
+      <tr><td>逆向工程</td><td>看板卡带小封面；选中后出现“工作台”屏：步骤条只亮当前步，米色剪报 + 荧光编号 + 批注是主体，任务包和回复折成一行。</td></tr>
+      <tr><td>智能体群</td><td>名册卡带健康信号灯；档案屏放大角色像素 + 点阵四读数 + 派活栏；其余四块改页内标签，内容清单是表格。</td></tr>
+      <tr><td>项目空间</td><td>液晶统计条；在推进是存档卡（SLOT 液晶、写入者像素头像、阶段灯、下一步气泡、30 天热力）；全部项目是紧凑表格，一键标为在推进。</td></tr>
+      <tr><td>协同</td><td>两台暴龙机对接：中间任务胶囊、五段阶段灯和唯一主按钮；下方 STATE / PROMPT / LOG 三块屏。</td></tr>
+      <tr><td>知识仓库</td><td>顶部查询原文；三区三块屏，各有液晶计数、本周增量、7 天柱（虚线 = 无记录）；一条占比；右栏连接信号。</td></tr>
+      <tr><td>日历</td><td>大日期 + 周数；周轴加“全天”行，色块真实比例，放得下才显示标题；右栏“选中的一天”+ todo；主按钮青蓝。</td></tr>
+      <tr><td>随手记</td><td>速记屏（聚焦态）；筛选胶囊；便签墙每张顶部发光色条，动作收成三个图标。</td></tr>
+      <tr><td>AI HOT</td><td>报头 + 衬线头条（首字下沉）+ 两条次稿 + 两列简讯，星标即收藏。</td></tr>
+      <tr><td>设置</td><td>左侧分类带状态灯；“授权能力”独立一类：液晶汇总 + 五项能力（像素徽记 + 开关 + 预览开启）。</td></tr>
+      <tr><td>版本归档</td><td>左侧资产列表（小封面）；右侧大封面资产头 + 发光时间线，差异就地展开，删掉重复的下拉比较。</td></tr>
+    </tbody>
+  </table>
+  <div class="pills"><span>不动：银饰计划</span><span>不动：学习成长</span><span>不动：夜巡</span><span>资产仓库：原样保留</span><span>示意数据均为合成</span></div>
+</section>
+
+<div class="stage" id="stage" hidden><div class="frame-wrap" id="wrap"><iframe id="frame" title="页面视觉稿" width="1440" height="1000"></iframe></div></div>
+
+<script>
+const NOTES={
+home:[["暴龙机、徽章环、数码蛋伙伴","世界地图五区与迷雾","首页不放日程（你在 129 的决定）"],["主卡压矮：左侧三块液晶数字可点直达","“现在要处理”合并待处理与在推进项目","热点、存档槽进右栏；跑马灯去掉","世界地图一行五区，每区带对应数码兽"],["首页是每天的入口，第一眼该看到今天要做什么","原来五块平铺，最重要的事和装饰一样重"]],
+inbox:[["三级分诊与颜色","来源下划线单选","每行唯一动作"],["四块液晶计数即筛选器","统一清单按级别分组，空组不显示","来源像素图标、时间等宽字","右栏“来源覆盖”信号灯 + 个人说明"],["这页是“扫一眼 → 去处理”，数量与级别要最先看到"]],
+assets:[["整页原样：卡片墙、像素封面、点阵计数、成长期、筛选与排序"],["无（标杆页）"],["你最满意的一页；v15 把它的材质带到其他页，而不是改它"]],
+references:[["四列看板","米色剪报 + 荧光编号 + 批注（v14g）","复制回执，不称“已派发”"],["看板卡带小封面，选中橙光","工作台屏：步骤条只亮当前一步","任务包、回复折成一行可展开","页头唯一“投入素材”主按钮"],["这是流程页：你永远只在其中一步，其余只需看结果"]],
+agents:[["名册单选 + 档案舞台（129）","点阵四读数","所有写入走预览确认"],["名册卡带健康信号灯","档案屏放大角色像素，派活栏收进档案","四大块改页内标签，标签带数量 / 异常","内容清单改表格，一行一个动作"],["原来六块纵向堆叠，要滚三屏才看到体检"]],
+projects:[["存档卡：液晶编号、阶段灯、下一步气泡（125）","30 天活动"],["液晶统计条（含停滞数）","写入者用像素头像","全部项目改紧凑表格，一键标为在推进","窄屏表格变卡片"],["存档卡负责“在推进”，表格负责“找项目”"]],
+collab:[["两台暴龙机、任务胶囊、阶段灯（127）","只复制口令，不自动发送"],["项目切换放页头","主按钮放在连接线中间","下方 STATE / PROMPT / LOG 三块屏","没数据时两台机器变暗，不用空框"],["这页的形态本身就是信息"]],
+knowledge:[["三区与“我的知识”主要指标","7 天记录与无记录虚线","候选确认后才写"],["查询原文移到页顶","厚外壳改三块屏 + 一条占比","整理任务清单化，表单收进“新建整理任务”","右栏连接信号"],["查原文是最常用的动作，原来在页面最底部"]],
+calendar:[["大日期 + 周数、周 / 今天","橙 / 青 / 紫语义、红色当前线","真实比例、放得下才显示标题、点击编辑"],["周轴加“全天”行","删掉轴下整周重复清单","右栏：选中这一天 + todo","主按钮青蓝"],["同一份信息出现两次，页面翻倍长"]],
+notes:[["速记在上、便签墙在下","五色语法、任务勾选"],["速记屏聚焦态 + 快捷键提示","筛选胶囊：全部 / 未炼 / 已炼 / 有任务","便签顶部发光色条，动作收成三个图标","主按钮青蓝"],["便签墙的主角是文字，原来每张都像表单"]],
+aihot:[["日报报头、衬线标题、主次稿","收藏 = 加到学习，重复不新增"],["头条首字下沉、摘要给足","次稿两条带摘要","两列编号简讯，星标即收藏","接口说明收进页头标签"],["日报的节奏是 头条 → 次稿 → 简讯"]],
+settings:[["左分类 + 右内容","配置在抽屉里改","备份恢复原门禁"],["分类带状态灯与一行摘要","“授权能力”独立：液晶汇总 + 五项能力","每项像素徽记 + 开关 + 预览开启","夜巡标“暂缓”"],["授权是这轮最重要的新东西，必须一眼找到"]],
+history:[["左资产、右竖向时间线、当前版本光效（v14g）","“恢复为 v4”= 追加新版本","字段与行级红绿差异"],["资产列表带小封面与搜索","右侧大封面资产头","差异就地展开在版本卡里","删掉重复的“查看版本 / 比较到”"],["同一件事两种入口，用户不知道用哪个"]]
+};
+const tabs=[...document.querySelectorAll('[role=tab]')],frame=document.getElementById('frame'),wrap=document.getElementById('wrap'),stage=document.getElementById('stage'),ov=document.getElementById('overview'),notes=document.getElementById('notes');
+let W=1440,fit=true,cur='overview';
+function layout(){if(cur==='overview')return;const avail=stage.clientWidth-36;const s=fit?Math.min(1,avail/W):1;const h=Math.max(600,Math.round((innerHeight-stage.getBoundingClientRect().top-24)/s));frame.width=W;frame.height=h;wrap.style.transform=`scale(${s})`;wrap.style.width=W+'px';wrap.style.height=(h*s)+'px';}
+function show(p){cur=p;tabs.forEach(b=>b.setAttribute('aria-selected',String(b.dataset.p===p)));const isOv=p==='overview';ov.hidden=!isOv;stage.hidden=isOv;notes.hidden=isOv;
+  if(!isOv){const [k,c,w]=NOTES[p];document.getElementById('nk').innerHTML=k.map(x=>'<li>'+x+'</li>').join('');document.getElementById('nc').innerHTML=c.map(x=>'<li>'+x+'</li>').join('');document.getElementById('nw').innerHTML=w.map(x=>'<li>'+x+'</li>').join('');frame.src='pages/'+p+'.html';}
+  try{localStorage.setItem('v15p',p)}catch(e){} requestAnimationFrame(layout);}
+tabs.forEach(b=>b.addEventListener('click',()=>show(b.dataset.p)));
+document.querySelectorAll('[data-w]').forEach(b=>b.addEventListener('click',()=>{W=+b.dataset.w;document.querySelectorAll('[data-w]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));layout();}));
+document.querySelectorAll('[data-fit]').forEach(b=>b.addEventListener('click',()=>{fit=b.dataset.fit==='1';document.querySelectorAll('[data-fit]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));layout();}));
+addEventListener('resize',layout);
+try{const p=localStorage.getItem('v15p');show(p&&(p==='overview'||NOTES[p])?p:'overview')}catch(e){show('overview')}
+</script>
+</body>
+</html>

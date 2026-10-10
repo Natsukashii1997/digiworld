@@ -1,3 +1,4 @@
+import {openLegacyInput,openReferenceTools} from './reverse-v16-helpers.mjs';
 // 逆向工程：长候选默认折叠（用户 2026-10-03）。超过 6 行或 360 字只显示开头，可展开全文、再收起；
 // 点展开按钮不会顺带勾选候选；短候选不出现按钮；按钮 44px、axe 无违规。
 import { createRequire } from "node:module";
@@ -35,6 +36,7 @@ try {
   page.setDefaultTimeout(10000);
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${app.url}/#references`);
+  await openLegacyInput(page);
   const wb = page.getByRole("region", { name: "逆向工程工作区" });
   await wb.getByLabel("素材原文").fill("素材");
   await wb.getByRole("button", { name: "生成拆解任务包", exact: true }).click();

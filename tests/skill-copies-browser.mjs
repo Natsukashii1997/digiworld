@@ -1,3 +1,4 @@
+import {openAgentInventory} from "./agents-v16-helpers.mjs";
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import { mkdir, rename, symlink, unlink } from "node:fs/promises";
@@ -207,7 +208,7 @@ try {
   await page.keyboard.press("Escape");
   await page.goto(app.url + "/#agents");
   await page.reload();
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page,"codex","Codex");
   const linkedAssets = page.getByRole("region", {
     name: "隔离 Codex 的关联资产",
     exact: true,
@@ -491,6 +492,9 @@ try {
     );
     await panel.getByRole("button", { name: "预览对比", exact: true }).click();
     await started;
+    const readback = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/workspace",
+    );
     if (selection === "version")
       await panel
         .getByRole("combobox", { name: "固定资产版本", exact: true })
@@ -499,9 +503,6 @@ try {
       await panel
         .getByRole("combobox", { name: "管理目标", exact: true })
         .selectOption("");
-    const readback = page.waitForResponse(
-      (response) => new URL(response.url()).pathname === "/api/workspace",
-    );
     release();
     await completed;
     await (await readback).finished();

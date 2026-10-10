@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { digest, failure } from "./repository.mjs";
 import { discoverSkills, readLocalSkill } from "./skill-files.mjs";
+import {materializeSkillVersion} from "../src/skill-version.js";
+import {skillMediaReader} from "./skill-version-media.mjs";
 import { compareSkillCopy } from "../src/skill-copy-diff.js";
 
 const signature = (t) =>
@@ -185,7 +187,7 @@ export function createSkillCopies(repository, adapters, clock = Date.now) {
         root: candidate.root,
         location: pkg.location,
         fingerprint: pkg.fingerprint,
-        comparison: compareSkillCopy(selected.version.files, pkg.files),
+        comparison: compareSkillCopy((await materializeSkillVersion(selected.version,{readMedia:adapters.readReverseMedia||skillMediaReader(repository)})).files, pkg.files),
         existingCopy,
       };
     },
@@ -300,7 +302,7 @@ export function createSkillCopies(repository, adapters, clock = Date.now) {
         if (pkg.location !== copy.location)
           return result("blocked", "关联路径已指向其他位置，请重新关联");
         await verifiedScope(target, targetScope);
-        const comparison = compareSkillCopy(version.files, pkg.files);
+        const comparison = compareSkillCopy((await materializeSkillVersion(version,{readMedia:adapters.readReverseMedia||skillMediaReader(repository)})).files, pkg.files);
         if ((await repository.read()).revision !== state.revision)
           return result("blocked", "核对期间主库已变化，请重新核对");
         return result(

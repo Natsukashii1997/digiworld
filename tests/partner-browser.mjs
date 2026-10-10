@@ -98,10 +98,10 @@ try {
   await stage.waitFor();
   assert.equal(await stage.getAttribute("data-motion"), "live");
   await mkdir("test-results", { recursive: true });
-  await page.locator(".hero-stage").screenshot({ path: "test-results/partner-stage.png" });
+  await page.locator(".hx-device").screenshot({ path: "test-results/partner-stage.png" });
   await page.locator("[data-partner-screen]").screenshot({ path: "test-results/partner-side.png" });
   assert.equal(await page.getByText(/进化为/).count(), 0, "首页不再显示进化线");
-  await page.getByText(/已收录 \d+ 份你自己的资产/).waitFor();
+  assert.equal(await page.getByText(/成长进度待定 · 当前固定为数码蛋/).count(), 0);
 
   // 戳一下：按钮至少 44px，鼠标和键盘都能让蛋动
   const poke = page.getByRole("button", { name: "戳一下数码蛋", exact: true });

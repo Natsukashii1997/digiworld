@@ -67,15 +67,15 @@ export function eventsOfDay(events, day) {
   return { timed, allDay };
 }
 
-// 夜巡窗口（草稿）在某天里的分段：23:00–07:00 → [0, 420) 与 [1380, 1440)。
-export function nightSegments(night) {
-  if (!night?.time || !night?.end) return [];
+// 夜巡 v2 计划窗口在某天里的分段：23:00–07:00 → [0, 420) 与 [1380, 1440)。
+export function nightSegments(window) {
+  if (!window?.start || !window?.end) return [];
   const toMin = (t) => {
     const [h, m] = t.split(":").map(Number);
     return h * 60 + m;
   };
-  const a = toMin(night.time),
-    b = toMin(night.end);
+  const a = toMin(window.start),
+    b = toMin(window.end);
   if (a === b) return [];
   return a < b ? [[a, b]] : [[0, b], [a, DAY_MINUTES]].filter(([x, y]) => y > x);
 }
@@ -98,4 +98,10 @@ export function fromLocalInput(value) {
   const [date, time] = String(value).split("T");
   if (!date || !time) return null;
   return localIso(date, time.slice(0, 5));
+}
+
+// 到点必须具备明确时间精度；仅日期与旧版未知精度都不推断成午夜。
+export function todoIsDue(item, now = Date.now()) {
+  return !!item && !item.completed && item.dueHasTime === true &&
+    Number.isFinite(Date.parse(item.due)) && Date.parse(item.due) <= Number(now);
 }

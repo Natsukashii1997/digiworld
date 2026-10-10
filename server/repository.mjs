@@ -131,18 +131,28 @@ export async function openRepository(directory) {
         return operation(stored);
       });
     },
-    updateAssets(update, { expectedRevision } = {}) {
+    updateAssets(update, { expectedRevision, allowAssetDelete = false, restrictAssetDeletion = false } = {}) {
       return serial(async () => {
         const stored = await read();
         if (!stored) throw failure("请先打开工作台初始化资产库", 409);
         if (expectedRevision !== stored.revision)
           throw failure("主库已变化，请刷新后重新预览确认", 409);
-        const assets = await update(stored.assets);
+        const assets = await update(stored.assets, stored);
         if (equivalent(assets, stored.assets)) return stored;
         const state = { ...stored, assets, revision: stored.revision + 1 };
         validateState(state);
-        validateHistory(stored, state, { allowOrigins: true });
+        validateHistory(stored, state, { allowOrigins: true, allowAssetDelete, restrictAssetDeletion });
         return commit(state);
+      });
+    },
+    updateSkillSourceAdoptions(update, {expectedRevision} = {}) {
+      return serial(async()=>{
+        const stored=await read();if(!stored)throw failure("请先初始化资产库",409);
+        if(expectedRevision!==stored.revision)throw failure("主库已变化，请重新核验来源后确认",409);
+        const skillSourceAdoptions=await update(stored.skillSourceAdoptions||[],stored);
+        if(equivalent(skillSourceAdoptions,stored.skillSourceAdoptions||[]))return stored;
+        const state={...stored,skillSourceAdoptions,revision:stored.revision+1};
+        validateState(state);validateHistory(stored,state,{allowSkillSourceAdoptions:true});return commit(state);
       });
     },
     updateActivity(update, { expectedRevision } = {}) {
@@ -253,6 +263,20 @@ export async function openRepository(directory) {
         return commit(state);
       });
     },
+    // Knowledge scope mutations atomically revoke overlapping grants and the
+    // independent profile grant; general workspace saves cannot write these.
+    updateKnowledgeAccess(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先初始化资产库",409);
+        if(expectedRevision !== undefined && expectedRevision !== stored.revision) throw failure("主库已变化，请刷新后重新确认范围",409);
+        const patch = await update(stored);
+        if(Object.keys(patch).some(k=>!["connections","knowledgeZones"].includes(k)))throw failure("知识权限更新字段无效");
+        const state={...stored,...patch,revision:stored.revision+1};
+        if(equivalent(state.connections,stored.connections)&&equivalent(state.knowledgeZones,stored.knowledgeZones))return stored;
+        validateState(state);validateHistory(stored,state,{allowConnections:true,allowProfile:true});return commit(state);
+      });
+    },
     updateConnections(update, { expectedRevision } = {}) {
       return serial(async () => {
         const stored = await read();
@@ -310,6 +334,8 @@ export async function openRepository(directory) {
           allowCollab: true,
           allowProfile: true,
           allowCandidateImport: true,
+          allowSkillSourceAdoptions: true,
+          allowSilverImport: true,
         });
         const result = await commit({
           ...state,
@@ -319,7 +345,7 @@ export async function openRepository(directory) {
         return result;
       });
     },
-    write(state, { initialize = false } = {}) {
+    write(state, { initialize = false, restrictAssetDeletion = false } = {}) {
       return serial(async () => {
         const stored = await read();
         if (initialize && stored) return stored;
@@ -329,7 +355,7 @@ export async function openRepository(directory) {
             "另一个页面已更新主库，本次没有覆盖。请先保留未保存内容，再刷新。",
             409,
           );
-        validateHistory(stored, state);
+        validateHistory(stored, state, { restrictAssetDeletion });
         return commit({ ...state, revision: (stored?.revision ?? 0) + 1 });
       });
     },

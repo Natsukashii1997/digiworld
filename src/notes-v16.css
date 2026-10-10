@@ -1,0 +1,261 @@
+/* ==========================================================================
+   随手记（简报 05）：屏幕便签墙
+   主角是一张便签 = 一条念头。纸色取正文第一个字色（深色纸淡染 + 顶部胶带）；
+   唯一亮起来的是正在编辑的那张（暖黄）。所见即所得：看不到任何 md1 标记。
+   类名一律 sn- 前缀（.note-* 已被全站样式占用）。
+   注：视觉稿截图在 reduced-motion 下拍摄，为展示倾斜这里没有写“减少动态效果时不倾斜”；
+   实现必须加上（简报第 6 节）。
+   ========================================================================== */
+.notes-v16 .sn-page { display: grid; gap: var(--s-5); margin-top: var(--s-5); }
+.notes-v16 .sn-filter { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.notes-v16 .sn-filter button {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  min-height: 44px; padding: 0 var(--s-4);
+  border: 1px solid var(--line-2); border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--text-2); font-size: var(--fs-caption);
+}
+.notes-v16 .sn-filter button b { font: 600 var(--fs-small) var(--mono); color: var(--muted); }
+.notes-v16 .sn-filter button.on { border-color: var(--cyan); color: var(--text); background: color-mix(in srgb, var(--cyan) 8%, transparent); }
+.notes-v16 .sn-filter button.on b { color: var(--cyan); }
+
+/* 墙：三列手排（实现用真正的瀑布流）；编辑中的空白便签横跨两列 */
+.notes-v16 .sn-wall { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); align-items: start; }
+.notes-v16 .sn-col { display: grid; gap: var(--s-5); align-content: start; }
+.notes-v16 .sn-top { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); }
+.notes-v16 .sn-top .sn-pad { grid-column: span 2; }
+.notes-v16 .sn-list { display: none; }
+
+/* 便签：每种字色一套纸 */
+.notes-v16 .sn { --paper: var(--text-hi); --a: 0.05;
+  position: relative; display: grid; gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1px solid color-mix(in srgb, var(--paper) 20%, transparent); border-radius: var(--r-s);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--paper) calc(var(--a) * 200%), transparent), color-mix(in srgb, var(--paper) calc(var(--a) * 100%), transparent) 60%), var(--panel);
+  box-shadow: 0 14px 28px -18px color-mix(in srgb, #000 90%, transparent);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.notes-v16 .sn.tone-red { --paper: var(--red); --a: 0.06; }
+.notes-v16 .sn.tone-blue { --paper: var(--blue); --a: 0.06; }
+.notes-v16 .sn.tone-green { --paper: var(--lcd); --a: 0.05; }
+.notes-v16 .sn.tone-yellow { --paper: var(--yellow); --a: 0.06; }
+.notes-v16 .sn.tone-gray { --paper: var(--muted); --a: 0.04; }
+.notes-v16 .sn:hover, .notes-v16 .sn.is-hover {
+  transform: rotate(0deg) translateY(-3px);
+  box-shadow: 0 22px 36px -18px color-mix(in srgb, #000 95%, transparent), 0 0 0 1px color-mix(in srgb, var(--paper) 32%, transparent);
+}
+.notes-v16 .sn-tape {
+  position: absolute; top: -7px; left: 50%; width: 68px; height: 14px;
+  transform: translateX(-50%) rotate(-2deg);
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--paper) 60%, transparent) 0 6px, color-mix(in srgb, var(--paper) 45%, transparent) 6px 8px);
+  border-radius: 2px; opacity: 0.85;
+}
+.notes-v16 .sn.tone-plain .sn-tape { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--text-2) 32%, transparent) 0 6px, color-mix(in srgb, var(--text-2) 22%, transparent) 6px 8px); }
+.notes-v16 .sn header { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: 22px; }
+.notes-v16 .sn-time { font: 500 var(--fs-small) var(--mono); color: var(--muted); letter-spacing: 0.04em; }
+.notes-v16 .sn-seal {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 6px;
+  border: 1.5px solid color-mix(in srgb, var(--orange) 70%, transparent); border-radius: var(--r-xs);
+  color: var(--orange-2); font-size: var(--fs-small); transform: rotate(-6deg);
+}
+.notes-v16 .sn-seal b { font-weight: 700; }
+.notes-v16 .sn-body { display: grid; gap: var(--s-2); color: var(--text); font-size: var(--fs-read); line-height: 1.65; overflow-wrap: anywhere; }
+.notes-v16 .sn-body p { margin: 0; }
+.notes-v16 .sn-body > p:first-child { font-weight: 700; }
+.notes-v16 .sn-ul, .notes-v16 .sn-ol { margin: 0; padding-left: 1.4em; }
+.notes-v16 .sn-ol li::marker { font-family: var(--mono); color: var(--muted); }
+.notes-v16 .sn-tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.notes-v16 .sn-tasks label { position: relative; display: flex; align-items: flex-start; gap: var(--s-3); min-height: 32px; padding: 4px 0; cursor: pointer; }
+.notes-v16 .sn-tasks input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
+/* 方框：线框圆角 + 打钩（参考 refs/notes-checkbox.png），不是实心色块 */
+.notes-v16 .sn-box {
+  flex: none; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-top: 4px;
+  border: 1.5px solid var(--text-2); border-radius: var(--r-xs); color: var(--text);
+  transition: transform 0.15s var(--ease-back);
+}
+.notes-v16 .sn-box.on { border-color: var(--text); }
+.notes-v16 .sn-box svg { stroke-width: 3; }
+.notes-v16 .sn-tasks .done > label > span:last-child {
+  color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1.5px; text-decoration-color: var(--text-2);
+}
+.notes-v16 .sn-tasks label:hover .sn-box { transform: scale(1.08); }
+/* 长便签：最高约 320px，超出渐隐 */
+.notes-v16 .sn.is-long .sn-body { max-height: 220px; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent); mask-image: linear-gradient(180deg, #000 60%, transparent); }
+.notes-v16 .sn-more { justify-self: start; min-height: 32px; padding: 0; border: 0; background: none; color: var(--cyan); font-size: var(--fs-caption); }
+/* 操作：桌面悬停出现，390 常驻 */
+.notes-v16 .sn-act {
+  position: absolute; right: var(--s-1); bottom: var(--s-1); display: flex; gap: 2px; padding-left: var(--s-4);
+  border-radius: var(--r-s); background: linear-gradient(90deg, transparent, var(--panel) 30%);
+  opacity: 0; transition: opacity 0.15s var(--ease);
+}
+.notes-v16 .sn:hover .sn-act, .notes-v16 .sn.is-hover .sn-act, .notes-v16 .sn:focus-within .sn-act { opacity: 1; }
+.notes-v16 .sn-ico {
+  display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  border: 0; border-radius: var(--r-s); background: none; color: var(--text-2);
+}
+.notes-v16 .sn-ico:hover { color: var(--text); background: color-mix(in srgb, var(--line-3) 8%, transparent); }
+.notes-v16 .sn-ico.fire:hover { color: var(--orange-2); }
+.notes-v16 .sn-ico.delete:hover,.notes-v16 .sn-ico.delete:focus-visible { color: var(--red-2); background: color-mix(in srgb, var(--red) 10%, transparent); }
+.notes-v16 .sn-delete-confirm { background: var(--red); border-color: var(--red); color: var(--bg); }
+.notes-v16 .sn-delete-confirm:hover { background: var(--red-2); border-color: var(--red-2); color: var(--bg); }
+/* 保存失败：退回原文，红色描边提示一次 */
+.notes-v16 .sn.is-failed { border-color: color-mix(in srgb, var(--red) 70%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 15%, transparent), 0 14px 28px -18px color-mix(in srgb, #000 90%, transparent); transform: rotate(0deg); }
+
+/* 空白便签：记新念头的入口 */
+.notes-v16 .sn-pad {
+  display: grid; align-content: space-between; gap: var(--s-5); width: 100%; min-height: 150px;
+  padding: var(--s-5); border: 1.5px dashed var(--line-3); border-radius: var(--r-s);
+  background: color-mix(in srgb, var(--bg) 35%, transparent); color: var(--muted); text-align: left; font: inherit; cursor: text;
+}
+.notes-v16 .sn-pad:hover { border-color: color-mix(in srgb, var(--yellow) 55%, transparent); color: var(--text-2); }
+.notes-v16 .sn-pad-hint { display: inline-flex; align-items: center; gap: var(--s-2); font-size: var(--fs-read); }
+.notes-v16 .sn-pad-key { justify-self: end; font: 500 var(--fs-small) var(--mono); color: var(--faint); }
+/* 编辑中：唯一亮起来的便签（暖黄） */
+.notes-v16 .sn-pad.editing {
+  cursor: auto; border: 1px solid color-mix(in srgb, var(--yellow) 75%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--yellow) 18%, transparent), color-mix(in srgb, var(--yellow) 9%, transparent)), var(--panel-2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--yellow) 10%, transparent), 0 24px 48px -24px color-mix(in srgb, var(--yellow) 45%, transparent);
+  color: var(--text);
+}
+.notes-v16 .sn-edit { display: grid; gap: var(--s-2); min-height: 120px; font-size: var(--fs-read); line-height: 1.65; outline: none; }
+.notes-v16 .sn-edit p { margin: 0; }
+.notes-v16 .sn-caret { display: inline-block; width: 2px; height: 1.2em; margin-left: 1px; vertical-align: -3px; background: var(--yellow); }
+.notes-v16 .sn-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; padding-top: var(--s-3); border-top: 1px solid color-mix(in srgb, var(--yellow) 20%, transparent); }
+.notes-v16 .sn-tools .sn-ico.on { color: var(--text); background: color-mix(in srgb, var(--yellow) 12%, transparent); }
+.notes-v16 .sn-ink b { font: 800 var(--fs-title) var(--sans); }
+.notes-v16 .sn-tools .sn-ico.ink-red { color: var(--red); }
+.notes-v16 .sn-tools .sn-ico.ink-blue { color: var(--blue); }
+.notes-v16 .sn-tools .sn-ico.ink-green { color: var(--lcd); }
+.notes-v16 .sn-tools .sn-ico.ink-yellow { color: var(--yellow); }
+.notes-v16 .sn-tools .sn-ico.ink-gray { color: var(--muted); }
+.notes-v16 .sn-ink.on { box-shadow: inset 0 -3px 0 currentColor; }
+.notes-v16 .sn-ink-pick { display: none; width: 56px; gap: 2px; grid-auto-flow: column; }
+.notes-v16 .sn-ink-pick b { font: 800 var(--fs-title) var(--sans); box-shadow: inset 0 -3px 0 currentColor; }
+.notes-v16 .sn-sep { width: 1px; height: 22px; margin: 0 var(--s-2); background: color-mix(in srgb, var(--yellow) 25%, transparent); }
+.notes-v16 .sn-tools-end { display: inline-flex; align-items: center; gap: var(--s-3); margin-left: auto; }
+.notes-v16 .sn-key { font: 500 var(--fs-small) var(--mono); color: var(--muted); }
+.notes-v16 .sn-post {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 var(--s-5);
+  border: 0; border-radius: var(--r); background: var(--yellow); color: var(--orange-ink); font-weight: 700; font-size: var(--fs-body);
+}
+
+/* 保存失败提示 */
+.notes-v16 .sn-toast {
+  position: fixed; right: var(--s-6); bottom: var(--s-6); z-index: 40;
+  display: inline-flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-2) 0 var(--s-4);
+  border: 1px solid color-mix(in srgb, var(--red) 55%, transparent); border-radius: var(--r); background: var(--panel-2);
+  color: var(--red-2); font-size: var(--fs-body); box-shadow: 0 18px 40px -18px color-mix(in srgb, #000 90%, transparent);
+}
+
+@media (max-width: 1180px) {
+  .notes-v16 .sn-wall, .notes-v16 .sn-top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .notes-v16 .sn-wall { display: none; }
+  .notes-v16 .sn-list { display: grid; gap: var(--s-5); }
+  .notes-v16 .sn-top { grid-template-columns: 1fr; }
+  .notes-v16 .sn-top .sn-pad { grid-column: auto; }
+  .notes-v16 .sn-act { position: static; justify-content: flex-end; margin: calc(var(--s-3) * -1) calc(var(--s-3) * -1) calc(var(--s-3) * -1) 0; padding: 0; background: none; opacity: 1; }
+  .notes-v16 .sn-pad { min-height: 96px; }
+  .notes-v16 .sn-tools { position: sticky; bottom: 0; background: linear-gradient(color-mix(in srgb, var(--yellow) 10%, transparent), color-mix(in srgb, var(--yellow) 10%, transparent)), var(--panel-2); }
+  .notes-v16 .sn-tools { flex-wrap: nowrap; }
+  .notes-v16 .sn-tools .sn-ink, .notes-v16 .sn-key { display: none; }
+  .notes-v16 .sn-ink-pick { display: inline-grid; }
+  .notes-v16 .sn-pad.editing { padding: var(--s-4); }
+  .notes-v16 .sn-toast { left: var(--s-4); right: var(--s-4); bottom: var(--s-4); }
+}
+/* 一份DOM的瀑布流；不同宽度仅调整列，不复制正文。 */
+.notes-v16 .sn-wall { grid-auto-rows: 8px; grid-auto-flow: row dense; align-items: start; }
+.notes-v16 .sn-cell { align-self: start; min-width: 0; }
+.notes-v16 .sn-cell.editing { grid-column: span 2; }
+.notes-v16 .sn-pad-enter { display:grid;align-content:space-between;gap:var(--s-5);width:100%;min-height:100%;text-align:left;background:none;border:0;color:inherit;font:inherit; }
+.notes-v16 .sn-line { display: flex; align-items: flex-start; min-height: 1.65em; }
+.notes-v16 .sn-line [data-note-text] { white-space: pre-wrap; overflow-wrap: anywhere; min-width:0; }
+.notes-v16 .sn-prefix { flex: none; min-width: 28px; color:var(--muted); font-family:var(--mono); }
+.notes-v16 .sn-line-task { min-height: 44px; align-items: center; gap:8px; }
+.notes-v16 .sn-line-task .sn-prefix { width:44px; }
+.notes-v16 .sn-line-task .sn-prefix button { display:grid;place-items:center;position:relative;width:44px;height:44px;background:none;border:0;color:var(--text);font-size:var(--fs-body); }
+.notes-v16 .sn-line-task .sn-prefix button::after { content:'';position:absolute;inset:13px;border:1.5px solid var(--text-2);border-radius:var(--r-xs); }
+.notes-v16 .sn-line-task.done [data-note-text] { text-decoration:line-through;color:var(--muted); }
+.notes-v16 .sn-editable { min-height:120px;outline:0;cursor:text; }
+.notes-v16 .sn-editable[data-empty=true] { position:relative; }
+.notes-v16 .sn-editable[data-empty=true]::before { content:attr(data-placeholder);position:absolute;pointer-events:none;color:var(--muted); }
+.notes-v16 .sn-tools { flex-wrap:nowrap;position:relative;min-width:0; }
+.notes-v16 .sn-tools > button,.notes-v16 .sn-color-wrap > button,.notes-v16 .sn-colors > button { min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;background:transparent;color:var(--text-2);border-radius:var(--r-s); }
+.notes-v16 .sn-tools .sn-post { margin-left:auto;background:var(--yellow);color:var(--bg);gap:6px;padding:0 12px;font-weight:600;white-space:nowrap; }
+.notes-v16 .sn-color-wrap { position:relative; }
+.notes-v16 .sn-colors { position:absolute;bottom:calc(100% + 8px);left:0;z-index:20;display:flex;background:var(--panel-2);padding:4px;border:1px solid var(--line-3);border-radius:var(--r-s);box-shadow:var(--shadow); }
+.notes-v16 .sn-more { min-height:44px; }
+.notes-v16 .sn-refined { display:flex;align-items:center;gap:6px;min-height:44px;max-width:65%;border:0;background:none;color:var(--orange);font-size:var(--fs-caption); }
+.notes-v16 .sn-refined b { overflow-wrap:anywhere; }
+.notes-v16 .sn-save-failure { display:flex;align-items:center;flex-wrap:wrap;gap:12px;border:1px solid var(--red);padding:12px;border-radius:var(--r-s); }
+.notes-v16 .sn-error { color:var(--red);font-size:var(--fs-caption); }
+.notes-v16 .sn-tools .ink-red,.notes-v16 [data-ink=red] {color:var(--red);}
+.notes-v16 .sn-tools .ink-blue,.notes-v16 [data-ink=blue] {color:var(--blue);}
+.notes-v16 .sn-tools .ink-green,.notes-v16 [data-ink=green] {color:var(--lcd);}
+.notes-v16 .sn-tools .ink-yellow,.notes-v16 [data-ink=yellow] {color:var(--yellow);}
+.notes-v16 .sn-tools .ink-gray,.notes-v16 [data-ink=gray] {color:var(--muted);}
+@media (max-width:1100px) { .notes-v16 .sn-wall {grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media (max-width:760px) {
+ .notes-v16 .sn-wall {display:grid;grid-template-columns:minmax(0,1fr);}
+ .notes-v16 .sn-cell.editing {grid-column:span 1;}
+ .notes-v16 .sn-tools {position:sticky;bottom:var(--keyboard-gap,0px);z-index:10;background:var(--panel-2);padding-bottom:env(safe-area-inset-bottom);}
+ .notes-v16 .sn-tools .sn-post {font-size:var(--fs-caption);padding:0 8px;gap:4px;}
+ .notes-v16 .sn-tools {gap:0;}
+}
+@media (prefers-reduced-motion:reduce) { .notes-v16 .sn,.notes-v16 .sn:hover {transform:none;transition:none;} .notes-v16 .sn * {animation:none;} }
+@media(max-width:360px){.notes-v16 .sn,.notes-v16 .sn-pad {padding:var(--s-4);}}
+
+.notes-v16 .sn-help {display:grid;place-items:center;min-width:44px;min-height:44px;width:44px;height:44px;background:none;border:1px solid var(--line-3);border-radius:50%;color:var(--text-2);}
+.notes-v16 .sn-mobile-color {display:none;}
+.notes-v16 .sn-ink {display:inline-flex;gap:2px;margin-left:var(--s-3);}
+.notes-v16 .sn-ink button {min-width:44px;min-height:44px;}
+.notes-v16 .sn-ul,.notes-v16 .sn-ol,.notes-v16 .sn-task {list-style:none;margin:0;padding:0;}
+.notes-v16 .sn-line {margin:0;}
+.notes-v16 .sn-task-hit {display:inline-grid;place-items:center;position:relative;width:44px;height:44px;}
+.notes-v16 .sn-task-hit input {position:absolute;inset:0;opacity:0;width:44px;height:44px;margin:0;cursor:pointer;}
+.notes-v16 .sn-task-hit .sn-box {display:grid;place-items:center;width:16px;height:16px;border:1px solid var(--line-3);border-radius:var(--r-xs);}
+.notes-v16 .sn-line.done .sn-box {background:var(--yellow);color:var(--bg);border-color:var(--yellow);}
+.notes-v16 .sn-task-hit:focus-within {outline:2px solid var(--cyan);outline-offset:2px;}
+.notes-v16 .sn-task-hit input:disabled {cursor:wait;}
+@media(max-width:640px){.notes-v16 .sn-mobile-color {display:block;} .notes-v16 .sn-tools .sn-ink,.notes-v16 .sn-tools .sn-key {display:none;} .notes-v16 .sn-tools-end {gap:0;}}
+
+/* 确认稿布局与可访问点击区分别约束。 */
+.notes-v16 .sn-pad-enter { padding:0; min-height:0; height:100%; }
+.notes-v16 .sn-editor-host { display:grid; gap:var(--s-5); min-width:0; }
+.notes-v16 .sn-editable > div { display:grid; gap:var(--s-2); }
+.notes-v16 .sn-refined { padding:0; background:none; border:0; }
+.notes-v16 .sn-line-task.done .sn-box { background:transparent; border-color:var(--text); color:var(--text); }
+.notes-v16 .sn-body .sn-ul,.notes-v16 .sn-body .sn-ol,.notes-v16 .sn-body .sn-task { list-style:none; padding:0; display:grid; gap:2px; }
+@media(min-width:1181px){.notes-v16 .sn-new.editing { grid-column:1/-1; }.notes-v16 .sn-new.editing > .sn-pad { width:calc((100% * 2 - var(--s-5))/3); }}
+@media(max-width:760px){.notes-v16 .sn-mobile-color{display:block;order:3}.notes-v16 .sn-tools > button:nth-of-type(1){order:0}.notes-v16 .sn-tools > button:nth-of-type(2){order:1}.notes-v16 .sn-tools > button:nth-of-type(3){order:2}.notes-v16 .sn-tools-end{order:4}.notes-v16 .sn-pad-enter{min-height:0}.notes-v16 .sn-color-wrap{position:static}.notes-v16 .sn-colors{left:0;right:0;justify-content:space-between}}
+.notes-v16 .sn-pad-key { color:var(--muted); }
+
+.notes-v16 .sn-ink button { font:800 var(--fs-title) var(--sans); }
+.notes-v16 .sn-ink button[aria-pressed=true] { box-shadow:inset 0 -3px 0 currentColor; }
+.notes-v16 .sn-ink { border-left:1px solid color-mix(in srgb,var(--yellow) 25%,transparent); padding-left:var(--s-3); }
+.notes-v16 .sn-line-p { display:block; }
+.notes-v16 .sn-editable > div > p:first-child { font-weight:700; }
+@keyframes sn-land {from{opacity:0;transform:translateY(-16px) rotate(var(--tilt,0deg))}to{opacity:1;transform:rotate(var(--tilt,0deg))}}
+@keyframes sn-stamp {from{opacity:0;transform:scale(1.3) rotate(-16deg)}to{opacity:1;transform:scale(1) rotate(-6deg)}}
+@keyframes sn-task {0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+.notes-v16 .sn-motion-land {animation:sn-land .32s var(--ease);}
+.notes-v16 .sn-motion-stamp .sn-seal {animation:sn-stamp .36s var(--ease-back);}
+.notes-v16 .sn-motion-task .sn-box {animation:sn-task .2s var(--ease-back);}
+@media(prefers-reduced-motion:reduce){.notes-v16 .sn,.notes-v16 .sn *{animation:none!important;}}
+
+.notes-v16 .title-row {display:flex;align-items:center;gap:var(--s-3);}
+.notes-v16 .sn-help {width:44px;height:44px;position:relative;padding:0;margin:-8px;border:0;cursor:help;font:700 var(--fs-caption) var(--mono);color:var(--muted);}
+.notes-v16 .sn-help::before {content:'';position:absolute;inset:8px;border:1px solid var(--line-3);border-radius:var(--r-pill);}
+.notes-v16 .en {font:600 var(--fs-label) var(--mono);letter-spacing:.22em;text-transform:uppercase;}
+
+.notes-v16 .sn-editable:focus-visible {outline:2px solid var(--cyan);outline-offset:4px;border-radius:var(--r-xs);}
+.notes-v16 .sn-body .sn-ul,.notes-v16 .sn-body .sn-ol {gap:0;}
+@media(min-width:761px){.notes-v16 .sn-pad:not(.editing) .sn-pad-enter {min-height:calc(150px - 2 * var(--s-5) - 3px);}}
+/* 少量便签按内容高度平衡两列；编辑时回到网格以保留跨列编辑卡。 */
+@media(min-width:761px){
+ .notes-v16 .sn-wall.compact:not(:has(.sn-cell.editing)){display:block;columns:2;column-gap:var(--s-5)}
+ .notes-v16 .sn-wall.compact:not(:has(.sn-cell.editing)) .sn-cell{display:block;break-inside:avoid;margin-bottom:var(--s-5)}
+}
+@media(min-width:1101px){.notes-v16 .sn-wall.compact:has(.sn-cell.editing){grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(min-width:1181px){.notes-v16 .sn-wall.compact .sn-new.editing > .sn-pad{width:100%;}}

@@ -41,7 +41,7 @@ test("只把当前版本最新反馈为需改进的未归档资产列为线索",
   assert.equal(pendingItems(s).length, 0);
 });
 
-test("知识任务、随手记和未设置目标的已检测 Agent 如实计数", () => {
+test("批准取消知识任务与随手记来源，仍精确统计未设置目标 Agent", () => {
   const s = seed();
   s.notes = [
     { id: "n1", text: "一", at: "2026-09-29T00:00:00.000Z" },
@@ -56,8 +56,43 @@ test("知识任务、随手记和未设置目标的已检测 Agent 如实计数"
     ],
     agentTargets: [{ agentId: "codex" }],
   };
-  const byId = Object.fromEntries(pendingItems(s).map((i) => [i.id, i]));
-  assert.match(byId["knowledge-tasks"].title, /^1 个知识整理任务/);
-  assert.match(byId["notes-local"].title, /^2 条随手记/);
+  const byId = Object.fromEntries(pendingItems(s,undefined,undefined,undefined,undefined,{loaded:true,noteIds:[]}).map((i) => [i.id, i]));
+  assert.equal(byId["knowledge-tasks"], undefined);
+  assert.equal(byId["notes-local"], undefined);
+  assert.equal(byId["notes-receipts-unknown"], undefined);
   assert.equal(byId["agents-untargeted"].title, "Hermes 已检测到，尚未设置管理目标");
+});
+
+test("v2 晨报待决策按 runId 只列一次，旧 v1 晨报不再进入待处理；读取失败保持未知", () => {
+  const state = seed();
+  const v1 = { items: [{ operationId: "legacy-1", nightDate: "2026-10-06" }], loaded: true };
+  const v2 = { items: [{ runId: "run-1", nightDate: "2026-10-06", readyAt: "2026-10-06T23:05:00.000Z",
+    decisionPending: true, counts: { completed: 1, partial: 1, failed: 0, notStarted: 0, unknown: 0 } }], loaded: true };
+  const items = pendingItems(state, undefined, undefined, undefined, v1, undefined, { nightV2Reports: v2 });
+  assert.deepEqual(items.filter(item => item.kind === "夜巡").map(item => item.id).sort(),
+    ["night-v2-morning-run-1"]);
+  assert.equal(items.find(item => item.nightRunId === "run-1")?.to, "night");
+  assert.equal(items.find(item => item.nightRunId === "run-1")?.triage, "需要决定");
+  assert.match(items.find(item => item.nightRunId === "run-1")?.detail || "", /完成1、部分1/);
+  const failed = pendingItems(state, undefined, undefined, undefined, v1, undefined,
+    { nightV2Reports: { items: [], error: "read failed", loaded: false } });
+  assert.equal(failed.some(item => item.id === "night-v2-error"), true);
+});
+
+test("今晚续跑槽移除后白天派单重新进入待处理", () => {
+  const state = seed();
+  const runId = "run-queued", slotId = "slot-1", operationId = "continue-1";
+  const reports = { items: [{ runId, nightDate: "2026-10-06", decisionPending: true }],
+    decisions: [
+      { runId, slotId, action: "day", status: "dispatched", at: "2026-10-07T00:00:00.000Z" },
+      { runId, slotId, action: "continue", status: "queued", operationId },
+    ] };
+  state.nightV2 = { slots: [{ continueFrom: { operationId } }] };
+  let items = pendingItems(state, undefined, undefined, undefined, undefined, undefined,
+    { nightV2Reports: reports });
+  assert.equal(items.some(item => item.id === `night-v2-day-${runId}-${slotId}`), false);
+  state.nightV2.slots = [];
+  items = pendingItems(state, undefined, undefined, undefined, undefined, undefined,
+    { nightV2Reports: reports });
+  assert.equal(items.some(item => item.id === `night-v2-day-${runId}-${slotId}`), true);
 });

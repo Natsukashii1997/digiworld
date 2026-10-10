@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { X, Layers, Quote, Workflow, Flame } from "lucide-react";
+import { X, Layers, Quote, Workflow, Flame, Plug } from "lucide-react";
 import { Pixel, StageBar } from "./pixel.jsx";
 import { Odometer } from "./Odometer.jsx";
 import { LcdText } from "./v14.jsx";
@@ -24,6 +24,7 @@ export const typeLabel = {
   Prompt: "Prompt",
   Workflow: "工作流",
   Rule: "规则",
+  MCP: "MCP 配置",
   // 焚决（切片 1.3b）：资产仓库第五种类型，数据仍在主库顶层 scrolls，不进 assets。
   Scroll: "焚决",
 };
@@ -32,6 +33,7 @@ export const typeCode = {
   Prompt: "PRM",
   Workflow: "WFL",
   Rule: "RUL",
+  MCP: "MCP",
   Scroll: "FJ",
 };
 // 规则的小角标用像素卷轴（用户 2026-09-30 与封面对调），尺寸与其他线条小图标一致。
@@ -45,7 +47,7 @@ export function TypeIcon({ type, size = 24, className = "" }) {
       />
     );
   const Icon =
-    type === "Skill" ? Layers : type === "Prompt" ? Quote : type === "Scroll" ? Flame : Workflow;
+    type === "Skill" ? Layers : type === "Prompt" ? Quote : type === "Scroll" ? Flame : type === "MCP" ? Plug : Workflow;
   return <Icon size={size} className={className || undefined} />;
 }
 export function Button({
@@ -61,6 +63,19 @@ export function Button({
     >
       {children}
     </button>
+  );
+}
+// 页头下一行的边界说明（UI v15）：把“只读 / 只存本机 / 需授权”收成小标签，正文里不再重复。
+export function Bounds({ items }) {
+  return (
+    <ul className="page-bounds" aria-label="边界">
+      {items.map((item) => (
+        // 以“!”开头的是需要授权的门禁，用灰色标记。
+        <li key={item} className={item.startsWith("!") ? "gate" : ""}>
+          {item.replace(/^!/, "")}
+        </li>
+      ))}
+    </ul>
   );
 }
 export function Badge({ children, tone = "" }) {
@@ -132,9 +147,11 @@ export function Empty({ icon: Icon, sprite = "egg", title, children, action }) {
   );
 }
 // 页头：编号、英文眉题、标题、一句话定位、成熟度，全部来自 pages.js。
-export function PageHeading({ page, eyebrow, title, description, action }) {
+// titleHidden：大标题只给读屏（页面另有醒目的主标题时用，如日历的大日期）。
+export function PageHeading({ page, eyebrow, title, description, action, titleHidden = false, help, bounds }) {
   const meta = page ? pageOf(page) : null;
   return (
+    <>
     <header className="page-heading">
       {page && MARKS[page] && (
         <Pixel sprite={MARKS[page]} size={210} className="page-mark" dots />
@@ -150,7 +167,7 @@ export function PageHeading({ page, eyebrow, title, description, action }) {
           )}
           {meta?.maturity && <Maturity level={meta.maturity} />}
         </div>
-        <h1>{title || meta?.title}</h1>
+        {help ? <div className="title-row"><h1 className={titleHidden ? "sr-only" : undefined}>{title || meta?.title}</h1>{help}</div> : <h1 className={titleHidden ? "sr-only" : undefined}>{title || meta?.title}</h1>}
         {(description || meta?.lead) && (
           <p className="page-lead">{description || meta.lead}</p>
         )}
@@ -158,9 +175,11 @@ export function PageHeading({ page, eyebrow, title, description, action }) {
       {action && <div className="page-heading-action">{action}</div>}
 
     </header>
+    {!description && (bounds || meta?.bounds) && <Bounds items={bounds || meta.bounds} />}
+    </>
   );
 }
-export function Dialog({ title, children, onClose, drawer = false }) {
+export function Dialog({ title, children, onClose, drawer = false, recoverFocus = false }) {
   const ref = useRef();
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
@@ -182,6 +201,11 @@ export function Dialog({ title, children, onClose, drawer = false }) {
           last = els[els.length - 1];
         if (!els.length) {
           e.preventDefault();
+          return;
+        }
+        if (recoverFocus && !ref.current.contains(document.activeElement)) {
+          e.preventDefault();
+          (e.shiftKey ? last : first).focus();
           return;
         }
         if (

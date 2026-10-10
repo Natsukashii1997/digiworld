@@ -1,0 +1,154 @@
+{
+  "reverse": [
+    {
+      "label": "色板",
+      "mark": "观察",
+      "texts": [],
+      "colors": [
+        {
+          "value": "#ece6da",
+          "name": "纸底"
+        },
+        {
+          "value": "#141414",
+          "name": "墨黑"
+        },
+        {
+          "value": "#f2542d",
+          "name": "朱橙"
+        },
+        {
+          "value": "#cfc8ba",
+          "name": "网格灰"
+        }
+      ],
+      "cases": []
+    },
+    {
+      "label": "字体",
+      "mark": "推断",
+      "texts": [
+        "SUMMER",
+        "Helvetica Neue · 900 · 字距 −4.5% · 两行齐左"
+      ],
+      "colors": [],
+      "cases": []
+    },
+    {
+      "label": "构图",
+      "mark": "观察",
+      "texts": [
+        "六栏网格；大圆偏右下占 60%；黑色斜条 −12°；标题压左上两行；信息条贴底"
+      ],
+      "colors": [],
+      "cases": []
+    },
+    {
+      "label": "质感与光影",
+      "mark": "推断",
+      "texts": [
+        "平涂无光影；纸底轻微颗粒；无描边无阴影"
+      ],
+      "colors": [],
+      "cases": []
+    },
+    {
+      "label": "生图提示词",
+      "mark": "推断",
+      "texts": [
+        "反向提示词：photo, 3d, gradient, glow, serif, clutter"
+      ],
+      "code": "Swiss style event poster, off-white paper #ECE6DA, large flat {主色} circle lower-right,\nblack diagonal band −12°, huge bold grotesk headline \"{标题}\" two lines top-left,\n6-column hairline grid, small mono info line \"{信息}\", flat, no gradient, no shadow",
+      "colors": [],
+      "cases": []
+    }
+  ],
+  "reverse-web": [
+    {
+      "label": "颜色令牌",
+      "mark": "观察",
+      "texts": [],
+      "colors": [
+        {
+          "value": "#0f1013",
+          "name": "bg"
+        },
+        {
+          "value": "#16171b",
+          "name": "surface"
+        },
+        {
+          "value": "#f7f8f8",
+          "name": "text"
+        },
+        {
+          "value": "#8a8f98",
+          "name": "muted"
+        },
+        {
+          "value": "#5e6ad2",
+          "name": "accent"
+        }
+      ],
+      "cases": []
+    },
+    {
+      "label": "字号与字重",
+      "mark": "观察",
+      "texts": [
+        "Inter · 22/600 标题 · 13/400 正文 · 11 等宽日期 · 行高 1.5"
+      ],
+      "colors": [],
+      "cases": []
+    },
+    {
+      "label": "间距与圆角",
+      "mark": "推断",
+      "texts": [
+        "4 的倍数；区块 52；圆角 6 / 胶囊 999；描边 1px #2a2c33"
+      ],
+      "colors": [],
+      "cases": []
+    },
+    {
+      "label": "版式",
+      "mark": "观察",
+      "texts": [
+        "日期栏 90px 左对齐 + 内容栏 300px；顶栏 34px；条目间距 52"
+      ],
+      "colors": [],
+      "cases": []
+    },
+    {
+      "label": "复刻页",
+      "mark": "推断",
+      "texts": [],
+      "code": "replica/index.html · 3.2 KB · 用上面的令牌写成，可直接在浏览器打开",
+      "colors": [],
+      "cases": []
+    }
+  ],
+  "reverse-fn": [
+    {
+      "label": "流程",
+      "mark": "观察",
+      "texts": [
+        "返回 Agent → 接着哪段会话 → 换一段 / 找更早 → 带到哪里继续 → 复制并打开"
+      ],
+      "colors": [],
+      "cases": []
+    },
+    {
+      "label": "边界",
+      "mark": "推断",
+      "texts": [
+        "目录不可读：红色提示条“Agent 会话目录不可读取”；不阻塞复制"
+      ],
+      "colors": [],
+      "cases": []
+    }
+  ],
+  "reverse-done": [],
+  "reverse-handoff": [],
+  "reverse-empty": []
+}

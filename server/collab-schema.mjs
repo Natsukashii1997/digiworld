@@ -50,7 +50,7 @@ export function validateCollabLog(state) {
       /[\x00-\x1f\x7f]/.test(r.projectName)
     )
       invalid("操作留痕项目名称");
-    if (!COLLAB_AGENT_IDS.includes(r.agent)) invalid("操作留痕 Agent");
+    if (!COLLAB_AGENT_IDS.includes(r.agent) && !(r.kind === "start" && r.agent === "openclaw")) invalid("操作留痕 Agent");
     if (r.stateId !== undefined && (typeof r.stateId !== "string" || !STATE_ID.test(r.stateId)))
       invalid("操作留痕状态编号");
     if (r.stage !== undefined && !COLLAB_STAGE_IDS.includes(r.stage))

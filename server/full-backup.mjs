@@ -8,6 +8,7 @@ import { basename, dirname, join, relative, resolve, isAbsolute } from "node:pat
 import { createHash, randomBytes } from "node:crypto";
 import { unzipSync, zipSync, strToU8, strFromU8 } from "fflate";
 import { openRepository } from "./repository.mjs";
+import { createBackupRecords } from "./backup-records.mjs";
 
 export const BACKUP_FORMAT = "workbench-full-backup";
 const LIMITS = { files: 100000, bytes: 1024 * 1024 * 1024, upload: 100 * 1024 * 1024 };
@@ -40,7 +41,7 @@ function safePath(path) {
 }
 
 // 遍历数据目录：只收普通文件；符号链接与其他类型不跟随，记入 skipped。
-async function walk(root) {
+async function walk(root, { omitSilver = false } = {}) {
   const files = [],
     skipped = [];
   async function visit(dir, prefix) {
@@ -48,6 +49,7 @@ async function walk(root) {
     for (const name of names) {
       const path = prefix ? `${prefix}/${name}` : name;
       if (excluded(path)) continue;
+      if(omitSilver && path === "silver"){skipped.push({path,reason:"银饰图片只存本机，不进入新完整备份"});continue;}
       const full = join(dir, name);
       const info = await lstat(full);
       if (info.isSymbolicLink()) skipped.push({ path, reason: "符号链接不跟随" });
@@ -80,7 +82,7 @@ function mainDatabase(read) {
 }
 
 export async function packDirectory(directory, { clock = Date.now } = {}) {
-  const { files: paths, skipped } = await walk(directory);
+  const { files: paths, skipped } = await walk(directory, { omitSilver:true });
   if (paths.length > LIMITS.files) throw fail("数据目录文件过多，无法打包", 413);
   const entries = {},
     files = [];
@@ -248,7 +250,7 @@ const stamp = (ms) => {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 };
 
-export function createFullBackup(repository, { clock = Date.now } = {}) {
+export function createFullBackup(repository, { clock = Date.now, records = createBackupRecords(repository.directory, { clock }) } = {}) {
   const directory = resolve(repository.directory);
   const previews = new Map();
   function prune() {
@@ -257,12 +259,16 @@ export function createFullBackup(repository, { clock = Date.now } = {}) {
   return {
     async create() {
       // 在主库写队列内打包，打包期间主库不会提交新修订。
-      const { bytes, manifest } = await repository.withSnapshot({}, () =>
-        packDirectory(directory, { clock }),
-      );
+      const { bytes, manifest, operation } = await repository.withSnapshot({}, async () => {
+        const packed = await packDirectory(directory, { clock });
+        inspectBackup(packed.bytes); // 服务端重新解包核对 SHA256，成功后才留生成回执。
+        const operation = await records.record({ sha256:sha(packed.bytes),bytes:packed.bytes.length,files:packed.manifest.files.length });
+        return { ...packed,operation };
+      });
       return {
         filename: `数码世界-完整备份-${stamp(clock())}.zip`,
         bytes,
+        operation,
         manifest: { createdAt: manifest.createdAt, totalBytes: manifest.totalBytes, files: manifest.files, skipped: manifest.skipped },
       };
     },

@@ -1,0 +1,14 @@
+.controlled-execution{display:grid;gap:18px;min-width:0}
+.controlled-execution section,.controlled-preview,.controlled-run{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel-2)}
+.controlled-execution h3,.controlled-execution p{margin:0}
+.controlled-execution p{line-height:1.65;overflow-wrap:anywhere}
+.controlled-execution label{display:grid;gap:7px}
+.controlled-execution label:has(input[type=checkbox]){display:flex;align-items:center;gap:8px;min-height:44px}
+.controlled-execution input:not([type=checkbox]),.controlled-execution select{width:100%;min-height:44px;padding:8px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--field);color:var(--text);font:inherit}
+.controlled-execution .button{justify-self:start;white-space:normal}
+.controlled-execution ol{display:grid;gap:8px;margin:0;padding-left:20px}
+.controlled-execution li{display:grid;gap:4px}
+.controlled-execution pre{max-height:320px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.controlled-execution code{overflow-wrap:anywhere}
+
+.controlled-execution summary{min-height:44px;min-width:44px;box-sizing:border-box;padding:10px 0;}

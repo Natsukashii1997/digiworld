@@ -1,6 +1,6 @@
 // 路线 v3 切片 1.3 / 1.3b：焚决是资产仓库的第五种类型（用户 2026-09-30 纠正），全部操作经由资产仓库——
 // 建卷、条目增删改移、标签筛选、复制计次、回收区恢复、卷置顶；“焚决”类型标签与计数、“全部”中的焚决卡、
-// 新建资产对话框五个类型、#scrolls 旧链接落到资产仓库焚决标签。
+// 新建资产对话框六个类型、#scrolls 旧链接落到资产仓库焚决标签。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import AxeBuilder from "@axe-core/playwright";
@@ -105,16 +105,16 @@ try {
     ["全部", "Skills", "Prompts", "工作流", "规则", "焚决"],
   );
   assert.equal(await tabCount(page, "焚决"), 0);
-  ok("资产类型标签第五个是“焚决”，空库计数 0");
+  ok("资产类型标签只保留常用类型与焚决，空库计数 0");
 
-  // 新建资产对话框：五个类型在 1440 宽同一行；在焚决标签下打开时默认选中焚决，只需填卷名。
-  await button(page, "新建资产").first().click();
+  // 新建资产对话框：六个类型在 1440 宽同一行；在焚决标签下打开时默认选中焚决，只需填卷名。
+  await button(page, "新建").first().click();
   const dialog = createDialog(page);
   await dialog.waitFor();
   const picker = dialog.locator(".type-picker button");
-  assert.deepEqual(await picker.allInnerTexts(), ["Skill", "Prompt", "工作流", "规则", "焚决"]);
+  assert.deepEqual(await picker.allInnerTexts(), ["Skill", "Prompt", "工作流", "规则", "MCP", "焚决"]);
   const tops = await picker.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
-  assert.equal(new Set(tops).size, 1, `五个类型应在同一行：${tops}`);
+  assert.equal(new Set(tops).size, 1, `六个类型应在同一行：${tops}`);
   assert.ok(await dialog.locator(".type-picker button.active", { hasText: "焚决" }).count());
   assert.equal(await dialog.getByLabel("一句话说明").count(), 0, "焚决只需卷名");
   await page.screenshot({ path: "test-results/scrolls-create-1440.png", fullPage: false });
@@ -126,12 +126,12 @@ try {
   await dialog.waitFor({ state: "detached" });
   await drawer(page).getByRole("heading", { name: "心法", level: 2 }).waitFor();
   await until(async () => !!(await scrollNamed("心法")), "建卷 心法");
-  ok("新建资产五个类型同一行；选焚决只填卷名即可创建，空名称不能提交，创建后直接打开该卷");
+  ok("新建资产六个类型同一行；选焚决只填卷名即可创建，空名称不能提交，创建后直接打开该卷");
 
   // 从“全部”标签新建第二卷：手动切到焚决类型，回车提交。
   await closeDrawer(page);
   await typeTab(page, "全部").click();
-  await button(page, "新建资产").first().click();
+  await button(page, "新建").first().click();
   await createDialog(page).waitFor();
   await button(createDialog(page), "焚决").click();
   await createDialog(page).getByLabel("卷名", { exact: true }).fill("prompt 碎片");
@@ -390,19 +390,21 @@ try {
   await page.screenshot({ path: "test-results/scrolls-all-1440.png", fullPage: false });
   ok("axe 1440 无违规（抽屉、焚决标签）");
 
-  // 首页资产行保留“含焚决 N 卷”。
+  // 第二版首页取消资产行；资产仓库入口与焚决数据仍须保留。
   await page.goto(`${app.url}/#home`);
-  await page.getByText(/含焚决 2 卷/).first().waitFor();
-  ok("首页资产行显示“含焚决 2 卷”");
+  await page.locator('.hx').waitFor();
+  await page.getByRole('button', {name:'新建'}).waitFor();
+  assert.equal((await app.repository.read()).scrolls.filter(s=>!s.deletedAt).length,2);
+  ok("首页新建资产入口保留，焚决 2 卷仍存于主库和资产仓库");
 
-  // 390 宽：新建资产五个类型自动换行；焚决抽屉无横向溢出，axe 无违规。
+  // 390 宽：新建资产六个类型自动换行；焚决抽屉无横向溢出，axe 无违规。
   const narrow = await open(390, 844);
-  await button(narrow, "新建资产").first().click();
+  await button(narrow, "新建").first().click();
   await createDialog(narrow).waitFor();
   const narrowTops = await createDialog(narrow)
     .locator(".type-picker button")
     .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
-  assert.ok(new Set(narrowTops).size > 1, "窄屏五个类型应换行");
+  assert.ok(new Set(narrowTops).size > 1, "窄屏六个类型应换行");
   assert.ok(
     (await narrow.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)) <= 0,
     "390 新建对话框横向溢出",

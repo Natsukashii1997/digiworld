@@ -118,7 +118,7 @@ try {
     });
     const navCount = page.locator(".nav-item", { hasText: "资产仓库" }).locator(".nav-count");
     const before = Number(await navCount.innerText());
-    await page.getByRole("button", { name: "新建资产", exact: true }).click();
+    await page.getByRole("button", { name: "新建", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Prompt", exact: true }).click();
     await page.getByLabel("名称", { exact: true }).fill("减动画计数");
     await page.getByLabel("提示词全文").fill("第一版");
@@ -151,8 +151,7 @@ try {
     });
     await page.goto(app.url + "/#home");
     const lcd = page.locator(".digivice-lcd canvas");
-    const title = page.locator("h2", { hasText: /^待处理 ·/ });
-    const count = async () => Number((await title.innerText()).replace(/\D/g, ""));
+    const count = async () => (await page.locator('.hx-qcount b').allInnerTexts()).reduce((n, text) => n + Number(text), 0);
     const a = page.getByRole("button", { name: /^A 键/ });
     await a.click();
     assert.equal(await lcd.getAttribute("data-view"), "number");
@@ -168,8 +167,8 @@ try {
     const frame0 = await lcd.evaluate((el) => el.toDataURL());
     release();
     await page.waitForFunction((n) => {
-      const h = [...document.querySelectorAll("h2")].find((el) => /^待处理 ·/.test(el.textContent));
-      return h && Number(h.textContent.replace(/\D/g, "")) !== n;
+      const counts = [...document.querySelectorAll('.hx-qcount b')].map(el => Number(el.textContent));
+      return counts.length === 3 && counts.reduce((sum, value) => sum + value, 0) !== n;
     }, first);
     await page.waitForTimeout(200);
     const frame1 = await lcd.evaluate((el) => el.toDataURL());

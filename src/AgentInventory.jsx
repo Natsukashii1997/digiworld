@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Copy, FolderSearch, RefreshCw } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
 import { Badge, Button, Dialog } from "./components.jsx";
 import { request } from "./api.js";
 import { copy } from "./Assets.jsx";
@@ -29,7 +29,6 @@ export function AgentInventory({
   labels,
   notify,
   onClose,
-  onInspectSkills,
   state,
   adoptState,
   onSelect,
@@ -276,22 +275,6 @@ export function AgentInventory({
                             </span>
                           </div>
                           <code>{skill.path}</code>
-                          {skill.status === "present" && (
-                            <Button
-                              secondary
-                              disabled={
-                                busy ||
-                                !!error ||
-                                !!incomplete ||
-                                home.status !== "present"
-                              }
-                              aria-label={`查看 Skill：${home.label} · ${skill.label}`}
-                              onClick={() => onInspectSkills(skill.path)}
-                            >
-                              <FolderSearch size={15} />
-                              查看 Skill
-                            </Button>
-                          )}
                         </div>
                       ))}
                     </section>

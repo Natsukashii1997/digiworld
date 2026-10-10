@@ -1,3 +1,4 @@
+import {planSkillVersion} from "../src/skill-version.js";
 import { randomUUID } from "node:crypto";
 import { failure, digest } from "./repository.mjs";
 import {
@@ -178,7 +179,7 @@ export function createSkillSources(repository, clock = Date.now) {
           );
           if (!version || source.archived)
             throw failure("来源版本不存在或已归档，请刷新后核对", 409);
-          validateSkillFiles(version.files);
+          planSkillVersion(version);
           const derived = {
             ...makeAsset({
               type: "Skill",
@@ -187,6 +188,7 @@ export function createSkillSources(repository, clock = Date.now) {
               content: version.content,
               tags: [...version.tags],
               files: structuredClone(version.files),
+              ...(version.mediaManifest===undefined?{}:{mediaManifest:structuredClone(version.mediaManifest)}),
               source: version.source,
             }),
             origin: {

@@ -17,9 +17,12 @@ export function createStubHelper({
   let seq = 0,
     tick = 0;
   // 回读篡改：下一次写入后，助手回读到的标题与写入不一致（模拟系统侧同时修改）。
-  let driftNextTitle = null;
+  let driftNextTitle = null, deleteReadbackFails = false;
   const stamp = () => new Date(now().getTime() + ++tick * 1000).toISOString();
   const out = (value) => ({ stdout: JSON.stringify(value) + "\n" });
+  const eventView = (event) => event.notes?.length > 2000
+    ? { ...event, notes: undefined, notesOverflow: true }
+    : { ...event };
   const denied = (kind) =>
     out({ ok: false, error: "denied", message: `${kind}未授权`, access });
   function run(command, input = {}) {
@@ -40,7 +43,7 @@ export function createStubHelper({
           access,
           events: store.events.filter(
             (e) => Date.parse(e.end) > from && Date.parse(e.start) < to,
-          ),
+          ).map(eventView),
         });
       }
       case "create-event": {
@@ -52,12 +55,13 @@ export function createStubHelper({
           title: driftNextTitle ?? input.title,
           start: input.start,
           end: input.end,
-          allDay: false,
+          allDay: input.allDay ?? false,
+          ...(Object.hasOwn(input, "notes") ? { notes: input.notes } : {}),
           modified: stamp(),
         };
         driftNextTitle = null;
         store.events.push(event);
-        return out({ ok: true, access, event });
+        return out({ ok: true, access, event: eventView(event) });
       }
       case "update-event": {
         if (access.calendar !== "authorized") return denied("日历");
@@ -66,18 +70,39 @@ export function createStubHelper({
         if (!event.workbench)
           return out({ ok: false, error: "readonly", message: "只能修改“工作台”日历里的条目" });
         if (event.modified !== input.expectedModified)
-          return out({ ok: false, error: "conflict", message: "系统日历里已被修改", current: event });
+          return out({ ok: false, error: "conflict", message: "系统日历里已被修改", current: eventView(event) });
         Object.assign(event, {
+          ...(Object.hasOwn(input, "allDay") ? { allDay: input.allDay } : {}),
           title: input.title,
           start: input.start,
           end: input.end,
+          ...(Object.hasOwn(input, "notes") ? { notes: input.notes } : {}),
           modified: stamp(),
         });
-        return out({ ok: true, access, event });
+        return out({ ok: true, access, event: eventView(event) });
+      }
+      case "lookup-event": {
+        if (access.calendar !== "authorized") return denied("日历");
+        const event = store.events.find((e) => e.id === input.id);
+        return out({ ok: true, access, found: !!event, ...(event ? { event: eventView(event) } : {}) });
+      }
+      case "delete-event": {
+        if (access.calendar !== "authorized") return denied("日历");
+        if (input.confirmed !== true) return out({ ok: false, error: "invalid", message: "需要确认" });
+        const index = store.events.findIndex((e) => e.id === input.id);
+        if (index < 0) return out({ ok: false, error: "not_found", message: "找不到规划块" });
+        const event = store.events[index];
+        if (!event.workbench || event.calendar !== "工作台") return out({ ok: false, error: "readonly", message: "其他日历只读" });
+        if (event.modified !== input.expectedModified) return out({ ok: false, error: "conflict", message: "日历已变化", current: eventView(event) });
+        store.events.splice(index, 1);
+        if (deleteReadbackFails) { deleteReadbackFails = false; return out({ ok: false, error: "failed", message: "合成删除后回读失败" }); }
+        return out({ ok: true, access, deleted: true, verified: true });
       }
       case "reminders":
         if (access.reminders !== "authorized") return denied("提醒事项");
-        return out({ ok: true, access, list: "工作台", reminders: store.todos });
+        return out({ ok: true, access, list: "工作台", reminders: store.todos.filter(todo =>
+          !todo.completed || !todo.completedAt || Date.parse(todo.completedAt) >= now().getTime() - 24 * 60 * 60 * 1000,
+        ) });
       case "create-reminder": {
         if (access.reminders !== "authorized") return denied("提醒事项");
         const reminder = {
@@ -85,6 +110,7 @@ export function createStubHelper({
           title: input.title,
           completed: false,
           due: input.due ?? null,
+          dueHasTime: !!input.due,
           modified: stamp(),
         };
         store.todos.push(reminder);
@@ -98,6 +124,8 @@ export function createStubHelper({
           return out({ ok: false, error: "conflict", message: "提醒事项里已被修改", current: reminder });
         for (const key of ["title", "completed", "due"])
           if (key in input) reminder[key] = input[key];
+        if ("completed" in input) reminder.completedAt = input.completed ? stamp() : null;
+        if ("due" in input) reminder.dueHasTime = !!input.due;
         reminder.modified = stamp();
         return out({ ok: true, access, reminder });
       }
@@ -110,7 +138,7 @@ export function createStubHelper({
     calls,
     access,
     store,
-    writes: () => calls.filter((c) => /^(create|update)-/.test(c.command)),
+    writes: () => calls.filter((c) => /^(create|update|delete)-/.test(c.command)),
     external: {
       editEvent(id, patch) {
         Object.assign(store.events.find((e) => e.id === id), patch, { modified: stamp() });
@@ -121,6 +149,7 @@ export function createStubHelper({
       driftNextTitle(title) {
         driftNextTitle = title;
       },
+      deleteReadbackFailsOnce() { deleteReadbackFails = true; },
     },
   };
 }

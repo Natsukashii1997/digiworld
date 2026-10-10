@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import {guardCapabilityFilesystem} from "./guarded-capability-filesystem.mjs";
 import { constants } from "node:fs";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -264,7 +265,8 @@ export function createConfigJournal(
         (a, b) => b.at.localeCompare(a.at) || a.id.localeCompare(b.id),
       );
     },
-    async prepare(record) {
+    async prepare(record, {guard} = {}) {
+      if (guard) return createConfigJournal(directory, {filesystem:guardCapabilityFilesystem(filesystem,guard),folder:name,validate,label,readLimit}).prepare(record);
       validate(record);
       const rows = await api.list();
       if (rows.length >= 500)
@@ -275,7 +277,8 @@ export function createConfigJournal(
       await store(record.id, record);
       return api.get(record.id);
     },
-    async complete(id, at) {
+    async complete(id, at, {guard} = {}) {
+      if (guard) return createConfigJournal(directory, {filesystem:guardCapabilityFilesystem(filesystem,guard),folder:name,validate,label,readLimit}).complete(id,at);
       if (!instant(at) || !(await read(id))) throw bad();
       if (!(await read(id, true))) await store(id, { schema: 1, id, at }, true);
       return api.get(id);

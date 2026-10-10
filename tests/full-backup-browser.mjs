@@ -3,7 +3,7 @@
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import AxeBuilder from "@axe-core/playwright";
-import { mkdir, readFile, writeFile, rm, stat } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rm, stat, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { unzipSync, strFromU8 } from "fflate";
 import { fixture } from "./fixture.mjs";
@@ -42,9 +42,12 @@ try {
   page.setDefaultTimeout(10000);
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${app.url}/#settings`);
-  await page.getByText("完整备份（整个数据目录）").waitFor();
-  const exportButton = button(page, "导出完整备份");
-  await atLeast44(exportButton, "导出完整备份");
+  await page.getByRole("radio",{name:"数据与备份",exact:true}).click();
+  await page.getByText("最近完整备份 / 恢复",{exact:true}).waitFor();
+  await page.getByText(/不含银饰原图，原图请另行保留/).waitFor();
+  await button(page, "导出可合并数据 JSON").waitFor();
+  const exportButton = button(page, "下载恢复包 ZIP");
+  await atLeast44(exportButton, "下载恢复包 ZIP");
   const [download] = await Promise.all([page.waitForEvent("download"), exportButton.click()]);
   // 文件名由 HTTP 单元测试核对（full-backup.test.mjs）；无头 Chromium 对共用 download() 助手报告的建议名不可靠。
   const file = join("test-results", "full-backup.zip");
@@ -61,9 +64,17 @@ try {
   await page.getByLabel("选择完整备份文件").setInputFiles(file);
   const dialog = page.getByRole("dialog", { name: "完整备份恢复预览" });
   await dialog.waitFor();
+  await dialog.getByText("恢复包不含银饰原图；恢复银饰记录后，原图仍需从你另行保留的文件找回。",{exact:true}).waitFor();
   const count = (label) => dialog.locator(".backup-summary > div", { hasText: label }).locator("strong").innerText();
   assert.equal(await count("冲突"), "1");
-  assert.equal(await count("缺失"), "1");
+  const receiptNames = (await readdir(join(directory,"backup-records"))).sort();
+  assert.equal(receiptNames.length, 2, "本次完整备份只新增一份prepared和一份回读回执");
+  assert.ok(receiptNames.some(n => /^[a-f0-9-]{36}\.json$/.test(n)));
+  assert.ok(receiptNames.some(n => /^[a-f0-9-]{36}\.receipt\.json$/.test(n)));
+  assert.equal(await count("缺失"), "3", "备份完成后留痕的两文件加op-2，恰为3");
+  await dialog.locator("summary", {hasText:"缺失"}).click();
+  for(const path of ["config-operations/op-2.json", ...receiptNames.map(n=>"backup-records/"+n)])
+    await dialog.getByText(path,{exact:true}).waitFor();
   assert.equal(await count("新增"), "0");
   await dialog.locator("summary", { hasText: "冲突" }).click();
   await dialog.getByText("config-operations/op-1.json").waitFor();
@@ -73,7 +84,7 @@ try {
   await atLeast44(dialog.locator("summary").first(), "路径列表展开");
   await axe(page, "full backup preview");
   await page.screenshot({ path: "test-results/full-backup-preview-1440.png" });
-  ok("恢复前预览：新增 0、冲突 1、缺失 1，可展开路径，显示新目录位置");
+  ok("恢复前预览：新增 0、冲突 1、缺失 3（两份生成回执+新增op-2），可展开路径，显示新目录位置");
 
   await button(dialog, "恢复到新目录").click();
   const done = page.locator(".full-backup-done");
@@ -90,11 +101,21 @@ try {
   const mobile = await (await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" })).newPage();
   mobile.on("pageerror", (e) => errors.push(e.message));
   await mobile.goto(`${app.url}/#settings`);
-  await mobile.getByText("完整备份（整个数据目录）").waitFor();
+  await mobile.getByRole("radio",{name:"数据与备份",exact:true}).click();
+  await mobile.getByText("最近完整备份 / 恢复",{exact:true}).waitFor();
   const over = await mobile.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   assert.ok(over <= 0, `390 settings 横向溢出 ${over}px`);
-  await atLeast44(button(mobile, "导出完整备份"), "390 导出完整备份");
+  await atLeast44(button(mobile, "下载恢复包 ZIP"), "390 导出完整备份");
   await axe(mobile, "settings 390");
+  await mobile.getByLabel("选择完整备份文件").setInputFiles(file);
+  const mobilePreview=mobile.getByRole("dialog",{name:"完整备份恢复预览"});await mobilePreview.waitFor();
+  for(const width of [390,320]){
+    await mobile.setViewportSize({width,height:844});
+    const action=button(mobilePreview,"恢复到新目录"),box=await action.boundingBox(),dialogBox=await mobilePreview.boundingBox();
+    assert.ok(box&&dialogBox&&box.y>=dialogBox.y&&box.y+box.height<=dialogBox.y+dialogBox.height&&box.y+box.height<=844,"restore action visible before scrolling "+width);
+    await atLeast44(action,"restore "+width);await axe(mobile,"restore "+width);
+  }
+  await button(mobilePreview,"取消").click();
   await mobile.context().close();
   ok("390 宽：设置页无横向溢出，按钮 44px，axe 通过");
   assert.deepEqual(errors, []);

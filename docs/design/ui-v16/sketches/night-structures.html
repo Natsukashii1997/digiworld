@@ -1,0 +1,49 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>夜巡 · 结构草图</title>
+<style>
+body{margin:0;padding:24px;background:#fff;color:#111;font:13px/1.45 -apple-system,"PingFang SC",sans-serif}
+h1{font-size:18px;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.opt{border:2px solid #111;padding:14px}
+.opt>h2{margin:0 0 4px;font-size:16px}.opt>p{margin:0 0 10px;color:#444}
+.b{border:1.5px solid #111;padding:6px 8px;border-radius:4px}.d{border:1.5px dashed #111;padding:6px 8px;border-radius:4px;color:#555}
+.f{background:#111;color:#fff;padding:6px 8px;border-radius:4px}
+.row{display:flex;gap:8px}.col{display:flex;flex-direction:column;gap:8px}.g{flex:1}
+small{color:#666}.t{font-weight:700}
+.chip{border:1.5px solid #111;border-radius:10px 10px 3px 3px;padding:8px 6px;text-align:center;width:70px}
+.slot{border:2px solid #111;border-radius:6px;height:92px;display:flex;align-items:center;justify-content:center;flex:1}
+.flip{display:flex;gap:6px}.flip>div{flex:1;min-height:110px}
+</style></head><body>
+<h1>夜巡 · 四种结构（只看结构，不看样式）</h1>
+<div class="grid">
+
+<section class="opt"><h2>A · 芯片插槽</h2><p>每种任务是一枚“夜巡芯片”（prompt + 产出约定）。今晚的容量 = 几个插槽（由时间和额度决定）。</p>
+<div class="col">
+ <div class="row"><div class="chip">学习</div><div class="chip">测试</div><div class="chip">推进</div><div class="chip">审查</div><div class="chip">依赖</div><div class="chip d">＋自定</div></div>
+ <small>↓ 拖进插槽</small>
+ <div class="row"><div class="slot"><span class="t">学习 · Agent</span></div><div class="slot"><span class="t">推进 · 首页</span></div><div class="slot d">空槽</div><div class="slot d">空槽</div></div>
+ <div class="row"><div class="b g"><span class="t">打开芯片</span>：左 prompt 编辑 ｜ 右 明早产出样张</div></div>
+ <small>早上：插槽里的芯片亮起，点开就是它的产出</small>
+</div></section>
+
+<section class="opt"><h2>B · 委托书 + 数码兽出征</h2><p>每种任务是一张委托书（正文就是 prompt）；你把数码兽派到委托上；早上它带回“卷宗”。</p>
+<div class="col">
+ <div class="row"><div class="b g"><span class="t">委托：深度学习</span><br><small>正文=prompt（可编辑）<br>交付：学习报告</small><br>▢ 派：机械暴龙兽</div><div class="b g"><span class="t">委托：测试白天功能</span><br><small>正文=prompt<br>交付：测试报告</small><br>▢ 派：机械邪龙兽</div><div class="d g">委托：继续跑项目<br><small>未接</small></div></div>
+ <div class="f">今晚出征：2 位 · 预计 3h</div>
+ <div class="row"><div class="b g">早上归来 · 卷宗 ①</div><div class="b g">卷宗 ②</div></div>
+</div></section>
+
+<section class="opt"><h2>C · 三栏 Prompt 工作台</h2><p>prompt 是主角。左选类型，中间编辑，右边看明早会拿到什么。</p>
+<div class="col">
+ <div class="f">今晚阵容：☑学习 ☑测试 ☐推进 ☐审查</div>
+ <div class="row" style="min-height:150px"><div class="b" style="width:22%"><span class="t">类型</span><br>学习●<br>测试●<br>推进<br>审查<br>依赖</div><div class="b g"><span class="t">Prompt 编辑器</span><br><small>[模板段 · 长期]<br>…<br>[今晚补充 · 一次性]<br>…</small></div><div class="b" style="width:28%"><span class="t">明早产出样张</span><br><small>学习报告：<br>过程 / 洞见 / 建议</small></div></div>
+ <div class="row"><div class="b g">早上：产出列表 → 全屏阅读</div></div>
+</div></section>
+
+<section class="opt"><h2>D · 双面卡（入夜翻面）</h2><p>每张任务卡正面是今晚的 prompt，背面是明早的产出；夜里过去，卡就翻面。</p>
+<div class="col">
+ <div class="row"><div class="b g"><span class="t">正面 · 今晚</span><br>深度学习<br><small>prompt 摘要…[编辑]</small><br><small>交付：学习报告</small></div><div style="align-self:center">⟲</div><div class="b g"><span class="t">背面 · 明早</span><br>学习报告<br><small>过程 5 步 · 洞见 3 · 建议 4</small><br><small>[阅读]</small></div></div>
+ <div class="row"><div class="b g">测试 · 正面</div><div class="b g">推进 · 正面</div><div class="d g">＋ 选一种</div></div>
+ <small>同一张卡，晚上看它要做什么，早上看它交回什么</small>
+</div></section>
+
+</div></body></html>

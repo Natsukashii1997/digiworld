@@ -1,3 +1,4 @@
+import {openAgentInventory,agentInventoryEntry} from "./agents-v16-helpers.mjs";
 import { createRequire } from "node:module";
 import {
   mkdtemp,
@@ -14,10 +15,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import assert from "node:assert/strict";
 import AxeBuilder from "@axe-core/playwright";
-import { unzipSync } from "fflate";
 import { startServer } from "../server/http.mjs";
 import { inspectAgentInventory as inspectRealInventory } from "../server/agent-inventory.mjs";
-import { seed, current } from "../src/store.js";
+import { seed } from "../src/store.js";
 import { parse, stringify } from "../src/serialization.js";
 
 const require = createRequire(import.meta.url);
@@ -100,7 +100,7 @@ try {
   app = await startServer({
     directory: join(temporary, "database"),
     port: 0,
-    staticRoot: join(import.meta.dirname, "../dist"),
+    staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
     discovery: {
       defaultRoots: () => [join(temporary, "projects")],
       detectAgents: async () => ({
@@ -190,9 +190,9 @@ try {
     if (pathname === "/api/skill-sources/discover") calls.scans++;
   });
   await page.goto(app.url + "/#agents");
-  await page.getByRole("button", { name: /Codex/ }).waitFor();
+  await agentInventoryEntry(page);
   const beforeInventory = await getState();
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   const dialog = page.getByRole("dialog", { name: "Codex", exact: true });
   await dialog.getByText("目录与资产", { exact: true }).waitFor();
   await dialog.getByText("默认 Home", { exact: true }).waitFor();
@@ -244,84 +244,22 @@ try {
       name: "查看 Skill：默认 Home · 个人 Skill 目录",
       exact: true,
     });
-  await viewSkills().click();
-  await page
-    .getByRole("dialog", { name: "收录本机 Skill", exact: true })
-    .waitFor();
-  assert.equal(await page.getByRole("dialog").count(), 1);
-  assert.equal(
-    await page.getByLabel("扫描目录", { exact: true }).inputValue(),
-    skills,
-  );
+  assert.equal(await viewSkills().count(), 0);
+  assert.match(await dialog.getByRole("region", { name: "默认 Home" }).innerText(), /个人 Skill 目录/);
   assert.equal(calls.scans, 0);
-  await page.getByRole("button", { name: "取消", exact: true }).click();
+  assert.equal((await getState()).assets.length, 0);
+  assert.equal(await readFile(join(home, "config.toml"), "utf8"), sentinel);
+  assert.equal(await readFile(join(skill, "SKILL.md"), "utf8"), sourceContent);
+  await page.getByRole("button", { name: "关闭", exact: true }).click();
+  await openAgentInventory(page);
   await dialog.getByText("默认 Home", { exact: true }).waitFor();
   assert.equal(await page.getByRole("dialog").count(), 1);
   assert.deepEqual(calls.inventory, ["codex", "codex"]);
   assert.equal(calls.scans, 0);
-  await viewSkills().click();
-  await page.getByRole("button", { name: "扫描目录", exact: true }).click();
-  await page
-    .getByRole("button", { name: "预览 agent-sample", exact: true })
-    .click();
-  await page.getByRole("region", { name: "完整包预览", exact: true }).waitFor();
-  assert.equal(calls.scans, 1);
-  assert.equal((await getState()).assets.length, 0);
-  await page.getByLabel("收录名称", { exact: true }).fill("从 Agent 目录收录");
-  assert.deepEqual(
-    (
-      await new AxeBuilder({ page })
-        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-        .analyze()
-    ).violations,
-    [],
-  );
-  for (const width of [320, 375, 393, 430]) {
-    await page.setViewportSize({ width, height: 900 });
-    assert.equal(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth > innerWidth,
-      ),
-      false,
-      `source body overflow at ${width}`,
-    );
-    assert.equal(
-      await page
-        .locator(".modal")
-        .evaluate((el) => el.scrollWidth > el.clientWidth),
-      false,
-      `source modal overflow at ${width}`,
-    );
-  }
-  await page.getByRole("button", { name: "确认收录", exact: true }).click();
-  await page.getByRole("dialog", { name: "资产详情", exact: true }).waitFor();
-  assert.equal(await page.getByRole("dialog").count(), 1);
-  assert.equal(new URL(page.url()).hash, "#assets");
-  const imported = (await getState()).assets[0];
-  assert.equal(current(imported).title, "从 Agent 目录收录");
-  assert.equal(current(imported).content, sourceContent);
-  assert.equal(imported.origin.location, await realpath(skill));
-  const downloadPromise = page.waitForEvent("download");
-  await page
-    .getByRole("button", { name: "导出完整 Skill 包", exact: true })
-    .click();
-  const bytes = [];
-  for await (const chunk of await (await downloadPromise).createReadStream())
-    bytes.push(chunk);
-  const unpacked = unzipSync(Buffer.concat(bytes));
-  assert.equal(
-    Buffer.from(unpacked["SKILL.md"]).toString("utf8"),
-    sourceContent,
-  );
-  assert.deepEqual([...unpacked["assets/raw.bin"]], [0, 128, 255]);
-  assert.equal(await readFile(join(home, "config.toml"), "utf8"), sentinel);
-  assert.equal(await readFile(join(skill, "SKILL.md"), "utf8"), sourceContent);
+  assert.equal(await viewSkills().count(), 0);
   console.log(
-    "PASS 限定 Skill 目录不自动扫描；取消回 Agent 后重新读取；明确扫描→完整收录→单一资产详情→完整 ZIP",
+    "PASS Agent 目录仅展示 Skill 路径；无本机 Skill 收录入口；重开仍只读",
   );
-  await page.getByRole("button", { name: "关闭", exact: true }).click();
-  await page.goto(app.url + "/#agents");
-  await page.getByRole("button", { name: /Codex/ }).click();
   await dialog.getByText("默认 Home", { exact: true }).waitFor();
   const beforeFailedRefresh = await getState();
   const countBeforeRefresh = calls.inventory.length;
@@ -335,7 +273,7 @@ try {
   assert.match(await dialog.innerText(), /合成目录服务不可用/);
   assert.match(await dialog.innerText(), /默认 Home/);
   assert.match(await dialog.innerText(), /备用 Home/);
-  assert.equal(await viewSkills().isDisabled(), true);
+  assert.equal(await viewSkills().count(), 0);
   assert.deepEqual(await getState(), beforeFailedRefresh);
   await page.locator(".toast").waitFor({ state: "hidden", timeout: 6000 });
   await page.setViewportSize({ width: 320, height: 900 });
@@ -366,15 +304,15 @@ try {
     .locator("[role=status]")
     .filter({ hasText: "检查于" })
     .waitFor();
-  assert.equal(await viewSkills().isDisabled(), false);
+  assert.equal(await viewSkills().count(), 0);
   assert.equal(
     await page.getByText("上次结果 · 刷新未成功", { exact: true }).count(),
     0,
   );
   assert.deepEqual(await getState(), beforeFailedRefresh);
-  assert.equal(calls.scans, 1);
+  assert.equal(calls.scans, 0);
   console.log(
-    "PASS 刷新失败保留并标记旧目录、禁用旧 Skill 入口；重试恢复可用，主库无额外写入，三状态 axe 与四档布局通过",
+    "PASS 刷新失败保留并标记旧目录；重试恢复可用且始终无导入入口，主库无额外写入，三状态 axe 与四档布局通过",
   );
   for (const partialMode of ["partial-error", "partial-truncated"]) {
     inventoryMode = partialMode;
@@ -401,7 +339,7 @@ try {
     if (partialMode === "partial-error")
       assert.match(await dialog.innerText(), /无 Profile 枚举权限/);
     else assert.match(await dialog.innerText(), /目录较多，检查未完成/);
-    assert.equal(await viewSkills().isDisabled(), true);
+    assert.equal(await viewSkills().count(), 0);
     if (partialMode === "partial-error") {
       await dialog
         .getByRole("heading", { name: "目录与资产", exact: true })
@@ -431,7 +369,7 @@ try {
       await dialog.getByText("备用 Home", { exact: true }).count(),
       0,
     );
-    assert.equal(await viewSkills().isDisabled(), false);
+    assert.equal(await viewSkills().count(), 0);
     assert.equal(
       await dialog
         .getByText("上次结果 · 目录检查未完成", { exact: true })
@@ -443,12 +381,12 @@ try {
     await dialog.getByText("备用 Home", { exact: true }).waitFor();
   }
   console.log(
-    "PASS HTTP200 部分错误或截断不覆盖上次目录，展示本次问题并禁用入口；完整刷新接纳新状态",
+    "PASS HTTP200 部分错误或截断不覆盖上次目录，展示本次问题且无导入入口；完整刷新接纳新状态",
   );
   for (const partialMode of ["partial-error", "partial-truncated"]) {
     await page.getByRole("button", { name: "关闭", exact: true }).click();
     inventoryMode = partialMode;
-    await page.getByRole("button", { name: /Codex/ }).click();
+    await openAgentInventory(page);
     await dialog
       .getByRole("status")
       .filter({ hasText: "检查未完成 · 仅显示部分结果" })
@@ -461,24 +399,24 @@ try {
       await dialog.getByText("备用 Home", { exact: true }).count(),
       0,
     );
-    assert.equal(await viewSkills().isDisabled(), true);
+    assert.equal(await viewSkills().count(), 0);
     if (partialMode === "partial-error")
       assert.match(await dialog.innerText(), /无 Profile 枚举权限/);
     else assert.match(await dialog.innerText(), /目录较多，检查未完成/);
     inventoryMode = "success";
     await page.getByRole("button", { name: "刷新目录", exact: true }).click();
     await dialog.getByText("备用 Home", { exact: true }).waitFor();
-    assert.equal(await viewSkills().isDisabled(), false);
+    assert.equal(await viewSkills().count(), 0);
   }
   console.log(
-    "PASS 首次目录响应有顶层错误或截断时展示部分结果但禁用 Skill；单项受阻不误伤完整响应",
+    "PASS 首次目录响应有顶层错误或截断时展示部分结果；单项受阻不误伤完整响应",
   );
   await page.getByRole("button", { name: "关闭", exact: true }).click();
   inventoryMode = "actual-inspector";
   const actualFullResponse = page.waitForResponse((response) =>
     response.url().endsWith("/api/agent-inventory"),
   );
-  await page.getByRole("button", { name: /Hermes/ }).click();
+  await openAgentInventory(page,"hermes","Hermes");
   const actualFull = await (await actualFullResponse).json();
   assert.deepEqual(actualFull.errors, []);
   assert.equal(actualFull.truncated, false);
@@ -494,7 +432,7 @@ try {
     name: "查看 Skill：Profile · work · Skills",
     exact: true,
   });
-  assert.equal(await profileSkills.isDisabled(), false);
+  assert.equal(await profileSkills.count(), 0);
   const profileRoot = join(inspectorHome, ".hermes", "profiles");
   const preservedProfiles = join(inspectorHome, ".hermes", "profiles-complete");
   await rename(profileRoot, preservedProfiles);
@@ -521,7 +459,7 @@ try {
       .count(),
     1,
   );
-  assert.equal(await profileSkills.isDisabled(), true);
+  assert.equal(await profileSkills.count(), 0);
   await unlink(profileRoot);
   await rename(preservedProfiles, profileRoot);
   await page.getByRole("button", { name: "刷新目录", exact: true }).click();
@@ -529,17 +467,17 @@ try {
     .getByRole("status")
     .filter({ hasText: "检查于" })
     .waitFor();
-  assert.equal(await profileSkills.isDisabled(), false);
+  assert.equal(await profileSkills.count(), 0);
   assert.deepEqual(await getState(), beforeFailedRefresh);
   console.log(
-    "PASS 实际 inspector 读取临时 Hermes Profiles，链接受阻产生HTTP200顶层partial，UI保留旧Profile并在真实恢复后重新启用",
+    "PASS 实际 inspector 读取临时 Hermes Profiles，链接受阻产生 HTTP200 部分结果，UI 保留旧 Profile 并在目录恢复后更新",
   );
   await page.getByRole("button", { name: "关闭", exact: true }).click();
   inventoryMode = "pending";
   const pendingStarted = new Promise((resolve) => {
     onInventoryPending = resolve;
   });
-  await page.getByRole("button", { name: /Codex/ }).click();
+  await openAgentInventory(page);
   await pendingStarted;
   await dialog
     .getByRole("status")
@@ -548,7 +486,7 @@ try {
   await page.keyboard.press("Escape");
   assert.equal(await page.getByRole("dialog").count(), 0);
   inventoryMode = "success";
-  await page.getByRole("button", { name: /Hermes/ }).click();
+  await openAgentInventory(page,"hermes","Hermes");
   const hermesDialog = page.getByRole("dialog", {
     name: "Hermes",
     exact: true,
@@ -597,12 +535,12 @@ try {
   assert.equal(await page.getByRole("dialog").count(), 0);
   assert.equal(
     await page
-      .getByRole("button", { name: /Hermes/ })
+      .locator(".agent-discovery-card").filter({has:page.locator("strong",{hasText:/^Hermes$/})})
       .evaluate((element) => element === document.activeElement),
     true,
   );
   assert.deepEqual(await getState(), beforeFailedRefresh);
-  assert.equal(calls.scans, 1);
+  assert.equal(calls.scans, 0);
   assert.equal(await readFile(join(home, "config.toml"), "utf8"), sentinel);
   assert.deepEqual(errors, []);
   console.log(

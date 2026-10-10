@@ -74,7 +74,7 @@ export function validateRevisionCandidates(state) {
     byId.set(c.id, c);
     const asset = assets.get(c.assetId);
     if (!asset) invalid("改版候选所属资产不存在");
-    if (asset.type === "Skill") invalid("Skill 不支持改版候选");
+    if (["Skill", "MCP"].includes(asset.type)) invalid("Skill 与 MCP 结构化资产不支持正文改版候选");
     if (!asset.versions.some((v) => v.id === c.baseVersionId))
       invalid("改版候选的基准版本不存在");
     paragraph(c.content, "改版候选正文", CANDIDATE_LIMITS.content);

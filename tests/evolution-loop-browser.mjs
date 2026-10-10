@@ -97,6 +97,10 @@ const pendingCount = async (page) =>
 
 try {
   const page = await open(1440);
+  // 新来源在抽屉读回后就绪；先读回稳定状态，再验证候选严格 +1/-1。
+  await page.locator(".topbar-inbox").click();
+  await page.getByRole("button",{name:/个人说明 MCP 未运行/}).waitFor();
+  await button(page,"关闭待处理").click();
   const v1 = current(prompt);
 
   // 0. 没有“需改进”反馈时不出现任务包入口；Skill 不提供改版任务包。

@@ -1,0 +1,131 @@
+.settings-v14 {
+  min-width: 0;
+}
+.settings-v14 .settings-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--s-6);
+}
+.settings-v14 .settings-nav {
+  display: grid;
+  gap: var(--s-2);
+  position: sticky;
+  top: var(--s-4);
+}
+.settings-v14 .settings-nav button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--s-3) var(--s-4);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: var(--r-s);
+  color: var(--muted);
+}
+.settings-v14 .settings-nav button[aria-checked="true"] {
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: inset 3px 0 var(--cyan);
+}
+.settings-v14 .settings-content {
+  min-width: 0;
+}
+.settings-v14 .settings-panel,
+.settings-v14 .settings-row {
+  margin: 0 0 var(--s-5);
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+}
+.settings-v14 .settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+}
+.settings-v14 h2 {
+  margin: 0;
+  font-size: var(--fs-title);
+}
+.settings-v14 p {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.settings-v14 .settings-row > div,
+.settings-v14 .setting-row > div {
+  min-width: 0;
+}
+.settings-v14 .storage-path {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  overflow: visible;
+  white-space: normal;
+}
+.settings-v14 .setting-row {
+  flex-wrap: wrap;
+  gap: var(--s-4);
+}
+.settings-v14 .settings-missing {
+  font-size: var(--fs-meta);
+  margin-bottom: var(--s-5);
+}
+.settings-v14 .drawer .settings-panel {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.settings-v14 .drawer .form-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (max-width: 900px) {
+  .settings-v14 .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-v14 .settings-nav {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.settings-v14 .settings-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+.settings-v14 .settings-switch {
+  min-width: 56px;
+  min-height: 44px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-l);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: var(--fs-meta);
+}
+.settings-v14 .settings-switch[aria-pressed="true"] {
+  background: var(--lcd);
+  color: var(--lcd-ink);
+  border-color: var(--lcd);
+}
+.settings-v14 summary {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Claude 165 设计评审：面板换成全站面板材质；说明段落收窄到约 72 字宽、13px，标题与操作更突出。 */
+.settings-v14 .settings-panel,
+.settings-v14 .settings-row {
+  padding: var(--s-5);
+  border: 0;
+  background: var(--m-panel);
+  box-shadow: var(--m-panel-edge);
+}
+.settings-v14 p {
+  max-width: 72ch;
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+}

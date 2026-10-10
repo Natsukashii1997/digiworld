@@ -3,11 +3,11 @@
 // sprite 为 null 表示素材还没到，显示字母牌；head 可选 [x, y, w, h] 手动指定头像裁切。
 
 export const CHARACTERS = {
-  metalgreymon: { name: "机械暴龙兽", sprite: null },
-  // “机械系”图纸：背负双炮的灰色机械龙，按机械邪龙兽使用（待用户确认）。
-  machinedramon: { name: "机械邪龙兽", sprite: "mecha" },
-  agumon: { name: "亚古兽", sprite: "agumon" },
-  gabumon: { name: "加布兽", sprite: null },
+  metalgreymon: { name: "机械暴龙兽", sprite: "metalgreymon16" },
+  // 四位角色映射与图纸已由用户2026-10-05确认。
+  machinedramon: { name: "机械邪龙兽", sprite: "machinedramon16" },
+  agumon: { name: "亚古兽", sprite: "agumon16" },
+  gabumon: { name: "加布兽", sprite: "gabumon16" },
 };
 
 // 顺序即名册顺序。aliases 用于从 CURRENT 写入者、角色卡 ID 等文字里认出 Agent。

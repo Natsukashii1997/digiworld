@@ -10,7 +10,11 @@ class KnowledgeFileError extends Error {
     this.status = status;
   }
 }
-const fail = (message, status) => new KnowledgeFileError(message, status);
+const fail = (message, status, code) => {
+  const error = new KnowledgeFileError(message, status);
+  if (code) error.code = code;
+  return error;
+};
 function sanitized(error) {
   if (error instanceof KnowledgeFileError) return error;
   if (["ENOENT", "ENOTDIR"].includes(error?.code))
@@ -21,11 +25,11 @@ function sanitized(error) {
 }
 function ordinaryDirectory(info) {
   if (info.isSymbolicLink() || !info.isDirectory())
-    throw fail("知识路径必须是真实目录，不能经过链接或特殊文件");
+    throw fail("知识路径必须是真实目录，不能经过链接或特殊文件", 403, "KNOWLEDGE_UNSAFE_PATH");
 }
 function ordinaryFile(info) {
   if (info.isSymbolicLink() || !info.isFile() || info.nlink !== 1)
-    throw fail("仅允许普通单链接 Markdown 文件，已跳过链接或特殊文件");
+    throw fail("仅允许普通单链接 Markdown 文件，已跳过链接或特殊文件", 403, "KNOWLEDGE_UNSAFE_PATH");
 }
 const excluded = (name) =>
   name.startsWith(".") ||
@@ -159,7 +163,7 @@ export function createKnowledgeFiles({
       throw fail("知识连接无效，请重新连接", 400);
     const current = await inspectRoot(source.root);
     if (current.root !== source.root || current.identity !== source.identity)
-      throw fail("知识目录身份已变化，请重新确认连接", 409);
+      throw fail("知识目录身份已变化，请重新确认连接", 409, "KNOWLEDGE_ROOT_IDENTITY_CHANGED");
     return current;
   }
   async function directoryChain(source, relativePath) {
@@ -180,8 +184,12 @@ export function createKnowledgeFiles({
       throw safe;
     }
   }
+  function denied(source,path) {
+    const folded=value=>value.normalize("NFC").toLowerCase();
+    return source.rootBlocked === true || (source.excludedFolders || []).some(folder=>folded(path)===folded(folder)||folded(path).startsWith(folded(folder)+"/"));
+  }
   // folder（可选）：只扫描来源内的一个子文件夹（个人说明读取用），路径规则与正文读取相同。
-  async function scan(source, { folder = "" } = {}) {
+  async function scan(source, { folder = "", sharedBudget } = {}) {
     if (
       typeof folder !== "string" ||
       (folder &&
@@ -190,6 +198,7 @@ export function createKnowledgeFiles({
           folder.split("/").some((part) => !part || part === ".." || excluded(part))))
     )
       throw fail("扫描文件夹必须是来源内可见的相对路径", 400);
+    if(denied(source,folder))throw fail("该目录已被排除",403);
     await authorized(source);
     const files = [],
       issues = [];
@@ -230,11 +239,12 @@ export function createKnowledgeFiles({
           )
             throw fail("扫描期间目录身份发生变化，请重新扫描", 409);
           while (budget(path)) {
+            if(sharedBudget && !sharedBudget.takeEntry()){issues.push({path,message:"统一元数据扫描达到上限，剩余范围未知"});stopped=true;break;}
             const entry = await directory.read();
             if (!entry) break;
             visited++;
             const child = path ? `${path}/${entry.name}` : entry.name;
-            if (excluded(entry.name)) {
+            if (excluded(entry.name) || denied(source,child)) {
               skipped++;
               continue;
             }
@@ -262,6 +272,7 @@ export function createKnowledgeFiles({
             }
             try {
               documentPath(child);
+              if(sharedBudget && !sharedBudget.takeFile()){issues.push({path:child,message:"统一Markdown元数据达到上限，剩余范围未知"});stopped=true;break;}
               const info = await fs.lstat(join(source.root, child));
               ordinaryFile(info);
               files.push({
@@ -304,6 +315,7 @@ export function createKnowledgeFiles({
   async function read(source, selected) {
     try {
       const path = documentPath(selected?.path);
+      if(denied(source,path))throw fail("该原文范围已被排除",403);
       if (!/^[a-f0-9]{64}$/.test(selected?.fingerprint || ""))
         throw fail("文件凭证无效，请重新扫描后选择", 400);
       const chain = await directoryChain(
@@ -388,6 +400,7 @@ export function createKnowledgeFiles({
   async function current(source, relativePath) {
     try {
       const path = documentPath(relativePath);
+      if(denied(source,path))throw fail("该原文范围已被排除",403);
       const parent = path.split("/").slice(0, -1).join("/");
       const chain = await directoryChain(source, parent);
       const info = await fs.lstat(join(source.root, path));

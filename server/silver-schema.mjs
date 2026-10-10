@@ -75,7 +75,7 @@ const day = (v) => {
 };
 
 export function validateSilver(silver) {
-  keys(silver, ["wall", "categories", "items"]);
+  keys(silver, ["wall", "categories", "items", "targets", "wishes"]);
   const { wall, categories, items } = silver;
   array(wall, "欣赏墙数量", SILVER_LIMITS.wall);
   array(categories, "收藏品类数量", SILVER_LIMITS.categories);
@@ -84,9 +84,10 @@ export function validateSilver(silver) {
   unique(categories.map((c) => c?.id), "品类 ID");
   unique(items.map((i) => i?.id), "收藏 ID");
   for (const w of wall) {
-    keys(w, ["id", "image", "author", "source", "sourceUrl", "note", "createdAt", "updatedAt", "deletedAt"]);
+    keys(w, ["id", "name", "image", "author", "source", "sourceUrl", "note", "createdAt", "updatedAt", "deletedAt"]);
     id(w.id);
     image(w.image);
+    if(w.name!==undefined)line(w.name,"灵感名称",SILVER_LIMITS.itemName);
     line(w.author, "作者", SILVER_LIMITS.author);
     line(w.source, "来源", SILVER_LIMITS.source);
     if (w.sourceUrl !== undefined) httpUrl(w.sourceUrl);
@@ -111,6 +112,7 @@ export function validateSilver(silver) {
     keys(i, [
       "id",
       "categoryId",
+      "categoryKey",
       "image",
       "silhouette",
       "silhouetteSource",
@@ -123,8 +125,9 @@ export function validateSilver(silver) {
       "deletedAt",
     ]);
     id(i.id);
-    id(i.categoryId);
-    if (!categoryIds.has(i.categoryId)) invalid("收藏所属品类不存在");
+    if((i.categoryId!==undefined)===(i.categoryKey!==undefined))invalid("收藏必须恰有一种品类归属");
+    if(i.categoryId!==undefined){id(i.categoryId);if(!categoryIds.has(i.categoryId))invalid("收藏所属品类不存在");}
+    else if(!SILVER_KEYS.includes(i.categoryKey))invalid("固定品类不存在");
     image(i.image);
     if (i.silhouette !== undefined) {
       image(i.silhouette, "剪影引用");
@@ -149,6 +152,33 @@ export function validateSilver(silver) {
     optionalDate(i.updatedAt);
     optionalDate(i.deletedAt);
   }
+  if(silver.targets!==undefined){keys(silver.targets,SILVER_KEYS);for(const v of Object.values(silver.targets))if(!Number.isInteger(v)||v<1||v>SILVER_LIMITS.target)invalid("固定品类目标数量");}
+  if(silver.wishes!==undefined){
+    array(silver.wishes,"心愿数量",2000);unique(silver.wishes.map(w=>w?.id),"心愿ID");
+    const live=[],fulfilled=[];
+    for(const w of silver.wishes){
+      keys(w,["id","wallId","categoryKey","createdAt","updatedAt","deletedAt","fulfilledItemId","fulfilledAt"]);id(w.id);id(w.wallId);
+      if(!wall.some(r=>r.id===w.wallId))invalid("心愿来源不存在");if(!SILVER_KEYS.includes(w.categoryKey))invalid("心愿品类不存在");
+      date(w.createdAt);optionalDate(w.updatedAt);optionalDate(w.deletedAt);
+      if(!w.deletedAt)live.push(w.wallId+":"+w.categoryKey);
+      if((w.fulfilledItemId!==undefined)!==(w.fulfilledAt!==undefined))invalid("心愿实现信息必须成对");
+      if(w.fulfilledItemId!==undefined){id(w.fulfilledItemId);date(w.fulfilledAt);const item=items.find(i=>i.id===w.fulfilledItemId);if(!item||silverItemKey(silver,item)!==w.categoryKey)invalid("心愿实现藏品归属不符");fulfilled.push(w.fulfilledItemId);}
+    }unique(live,"活动心愿来源与品类");unique(fulfilled,"心愿实现藏品");
+  }
+}
+
+export const SILVER_KEYS=["ring","necklace","bangle","pendant"];
+const SILVER_NAMES=new Map([["戒指","ring"],["项链","necklace"],["手镯","bangle"],["吊坠","pendant"]]);
+const silverItemKey=(s,i)=>i.categoryKey||SILVER_NAMES.get(s.categories.find(c=>c.id===i.categoryId)?.name);
+export function validateSilverHistory(previous,next,{allowImport=false,equivalent}={}){
+ if(!previous)return;next=next||{wall:[],categories:[],items:[]};
+ const equal=equivalent||((a,b)=>JSON.stringify(a)===JSON.stringify(b)),oldWishes=previous.wishes||[],newWishes=next.wishes||[];
+ for(const old of oldWishes){const newer=newWishes.find(w=>w.id===old.id);if(!newer)invalid("心愿必须软删保留历史");for(const k of ["id","wallId","categoryKey","createdAt"])if(old[k]!==newer[k])invalid("心愿身份不可改写");if(old.fulfilledItemId&&(old.fulfilledItemId!==newer.fulfilledItemId||old.fulfilledAt!==newer.fulfilledAt))invalid("已实现心愿关联不可改写");}
+ for(const w of newWishes){const old=oldWishes.find(v=>v.id===w.id);if(!old&&!allowImport&&next.wall.find(v=>v.id===w.wallId)?.deletedAt)invalid("新心愿来源已回收");if(w.fulfilledItemId&&!old?.fulfilledItemId&&!allowImport){const item=next.items.find(v=>v.id===w.fulfilledItemId);if(previous.items.some(v=>v.id===w.fulfilledItemId)||item?.deletedAt||w.deletedAt)invalid("实现心愿必须原子收录新活动藏品");}}
+ const readonly=new Set(previous.categories.filter(c=>!SILVER_NAMES.has(c.name)).map(c=>c.id));
+ for(const old of previous.categories.filter(c=>readonly.has(c.id)))if(!equal(old,next.categories.find(c=>c.id===old.id)))invalid("其他旧品类只读");
+ for(const old of previous.items){const newer=next.items.find(i=>i.id===old.id);if(readonly.has(old.categoryId)&&!equal(old,newer))invalid("其他旧品类藏品只读");if(newer&&(old.categoryId!==newer.categoryId||old.categoryKey!==newer.categoryKey))invalid("藏品归属不可改写");}
+ if(!allowImport&&next.items.some(i=>readonly.has(i.categoryId)&&!previous.items.some(v=>v.id===i.id)))invalid("其他旧品类不能新增藏品");
 }
 
 // 智能体角色卡：只为主力（Codex、Claude Code、Hermes）与附属（OpenClaw、豆包工作）建卡（D26、D28）。

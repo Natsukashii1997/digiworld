@@ -1,3 +1,5 @@
+import {createCapabilitySettings} from '../server/capability-settings.mjs';
+import {authorizeCapability} from './capability-fixture.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -8,6 +10,8 @@ import { inspectAgentInventory } from "../server/agent-inventory.mjs";
 
 async function fixture(t, options = {}) {
   const f = await copyFixture();
+  await authorizeCapability(f,'agent');
+  const settings=createCapabilitySettings(f.repository);
   t.after(() => f.close());
   const path = join(f.home, "config.toml");
   const text =
@@ -21,6 +25,7 @@ async function fixture(t, options = {}) {
   let now = Date.now();
   const manager = createAgentConfig(f.repository, adapters, {
     clock: () => now,
+    settings,
     ...options,
   });
   const input = {
@@ -35,6 +40,7 @@ async function fixture(t, options = {}) {
     text,
     adapters,
     manager,
+    settings,
     input,
     advance: (ms) => {
       now += ms;
@@ -129,7 +135,7 @@ test("Unknown or restarted previews and unreadable existing operations cannot cl
     (error) => error.status === 409 && error.operationNotStarted !== true,
   );
   const preview = await f.manager.preview(f.input);
-  const restarted = createAgentConfig(f.repository, f.adapters);
+  const restarted = createAgentConfig(f.repository, f.adapters,{settings:f.settings});
   await assert.rejects(
     restarted.apply({ token: preview.token, revision: preview.revision }),
     (error) => error.status === 409 && error.operationNotStarted !== true,
@@ -202,7 +208,7 @@ test("A preview expiring while its durable prepared record is saved never writes
   assert.equal(configWrites, 0);
   assert.equal(await fs.readFile(f.path, "utf8"), f.text);
   assert.equal((await fs.stat(f.path)).ino, before.ino);
-  const reopened = createAgentConfig(f.repository, f.adapters);
+  const reopened = createAgentConfig(f.repository, f.adapters,{settings:f.settings});
   assert.equal(
     (await reopened.apply({ token: p.token, revision: p.revision })).status,
     "matches_before",
@@ -461,7 +467,7 @@ test("An ambiguous prepared-record save is checked after restart instead of repl
     { status: 503, operationNotStarted: true },
   );
   assert.equal(configWrites, 0);
-  const reopened = createAgentConfig(f.repository, f.adapters);
+  const reopened = createAgentConfig(f.repository, f.adapters,{settings:f.settings});
   const checked = await reopened.apply({
     token: p.token,
     revision: p.revision,
@@ -649,7 +655,7 @@ test("Receipt failure after file write stays recoverable and repeating the opera
   assert.equal(Object.hasOwn(result, "operationNotStarted"), false);
   assert.equal(JSON.stringify(result).includes("PRIVATE_RECEIPT_ERROR"), false);
   const before = await fs.stat(f.path);
-  const reopened = createAgentConfig(f.repository, f.adapters);
+  const reopened = createAgentConfig(f.repository, f.adapters,{settings:f.settings});
   const repeated = await reopened.apply({
     token: p.token,
     revision: p.revision,
@@ -699,7 +705,7 @@ test("Restart recovery checks the same operation without replay; explicit restor
     value: false,
   });
   await f.manager.apply({ token: preview.token, revision: preview.revision });
-  const reopened = createAgentConfig(f.repository, f.adapters);
+  const reopened = createAgentConfig(f.repository, f.adapters,{settings:f.settings});
   assert.equal(
     (await reopened.apply({ token: preview.token, revision: preview.revision }))
       .status,

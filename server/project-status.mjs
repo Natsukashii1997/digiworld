@@ -7,6 +7,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { dirname, join } from "node:path";
 import { failure } from "./repository.mjs";
+import { inferStage, parseStateHeadings, latestHeading } from "./collab-board.mjs";
 import {
   projectDirectory,
   assertDirectoryConfirmed,
@@ -508,6 +509,7 @@ export function createProjectStatus(
     const blocked = (message) => ({
       ...item,
       current: { state: "error", path: "CURRENT.md", message },
+      stage: {id:"unknown",label:"未知",basis:"",keyword:""},
       activity: { state: "unknown" },
       safety: { checks: unknownChecks(message), issues: [] },
     });
@@ -545,6 +547,7 @@ export function createProjectStatus(
     return {
       ...item,
       current,
+      stage: projectCurrentStage(file, current),
       activity,
       safety: { checks, issues: safetyIssues(checks, clock()) },
     };
@@ -584,20 +587,35 @@ export function createProjectStatus(
       }, revision(input));
     },
     settings(input) {
-      exactKeys(input, ["stallDays", "revision"]);
-      if (
+      exactKeys(input, ["stallDays", "revision", "savepointWarnDays", "savepointDangerDays"]);
+      if (input.stallDays !== undefined && (
         !Number.isSafeInteger(input.stallDays) ||
         input.stallDays < 1 ||
         input.stallDays > 365
-      )
+      ))
         throw failure("停滞阈值需要 1–365 之间的整数天");
+      const hasSavepoint=input.savepointWarnDays!==undefined||input.savepointDangerDays!==undefined;
+      if(input.stallDays===undefined&&!hasSavepoint)throw failure("请提供要保存的设置");
+      if (hasSavepoint && (![input.savepointWarnDays,input.savepointDangerDays].every(v=>Number.isSafeInteger(v)&&v>=1&&v<=365)||input.savepointWarnDays>=input.savepointDangerDays))
+        throw failure("未存档阈值必须为1–365整数，成对提供且黄小于红");
       return repository.updateConnections(
         (c) => {
           if (!c) throw failure("请先扫描项目", 409);
-          return { ...c, projectStallDays: input.stallDays };
+          return { ...c, ...(input.stallDays===undefined?{}:{projectStallDays: input.stallDays}), ...(hasSavepoint?{projectSavepointWarnDays:input.savepointWarnDays,projectSavepointDangerDays:input.savepointDangerDays}:{}) };
         },
         revision(input),
       );
     },
   };
+}
+
+// 同一次已校验Current读取派生阶段，与协同共用判定，不增加扫描/写入。
+export function projectCurrentStage(file, current) {
+  if (file?.state !== "read" || !["ok", "partial"].includes(current?.state))
+    return {id:"unknown",label:"未知",basis:"",keyword:""};
+  const headings = parseStateHeadings(file.text);
+  const matched = headings.filter(h=>h.stateId===current.fields?.stateId);
+  // 有界前缀没覆盖当前state标题时，不用旧状态标题推断本轮阶段。
+  const heading = file.truncated && !matched.length ? null : latestHeading(headings, current.fields?.stateId);
+  return inferStage({writer:current.fields?.writer, heading:heading?.title, handoff:current.fields?.handoff?.text});
 }

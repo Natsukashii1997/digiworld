@@ -1,5 +1,5 @@
-// 路线 v3 切片 1.2：导航两区重排——今日 / 工作区 / 生活区 / 系统；改名；版本归档下移 + 资产详情“历史”标签；
-// 能力体检并入智能体群（#health 仍可访问）；生活区 AI HOT、学习成长已开发，银饰计划仍是规划中；390 宽无横溢；键盘可达；axe。
+// 路线 v3 切片 1.2：导航两区重排——今日 / 工作区 / 生活区 / 系统；改名；存档点下移 + 资产详情“历史”标签；
+// 能力体检并入智能体群（#health 仍可访问）；生活区 AI HOT、收藏已开发，银饰计划仍是规划中；390 宽无横溢；键盘可达；axe。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import AxeBuilder from "@axe-core/playwright";
@@ -13,28 +13,29 @@ const browser = await chromium.launch();
 const errors = [];
 const ok = (s) => console.log("PASS", s);
 
-// 产品定义 v1.2 §2.1 的分区、分组与顺序；版本归档在系统分组最下方。
+// 产品定义 v1.2 §2.1 的分区、分组与顺序；存档点在系统分组最下方。
 const EXPECTED = [
   ["今日", [["", ["世界总览"]]]],
   [
     "工作区",
     [
-      ["资产", ["资产仓库", "逆向工程"]],
-      ["目标", ["智能体群", "项目空间"]],
-      ["运行", ["协同", "夜巡"]],
-      ["知识", ["知识仓库"]],
+      // 用户 2026-10-04：侧栏删去“资产/目标/运行/知识”小标题，只保留板块名；分组顺序不变。
+      ["", ["资产仓库", "逆向工程"]],
+      ["", ["智能体群", "项目空间"]],
+      ["", ["协同", "夜巡"]],
+      ["", ["知识仓库"]],
     ],
   ],
-  ["生活区", [["", ["日历", "随手记", "AI HOT", "学习成长", "银饰计划"]]]],
-  ["系统", [["", ["模型设置", "版本归档"]]]],
+  ["生活区", [["", ["日历", "随手记", "AI HOT", "收藏", "银饰计划"]]]],
+  ["系统", [["", ["设置", "存档点"]]]],
 ];
 const OLD_NAMES = ["知识中枢", "逆向参考", "随手速记"];
-// 路线 v3 切片 5.3、5.4：AI HOT 与学习成长已开发；银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”。
+// 路线 v3 切片 5.3、5.4：AI HOT 与收藏已开发；银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”。
 // 集成后生活区这三页都不再是规划页（日历不在本段检查范围内，与基点一致）。
 const LIFE_PLANNED = [];
 const LIFE_BUILT = [
   ["aihot", "AI HOT"],
-  ["learning", "学习成长"],
+  ["learning", "收藏"],
 ];
 
 async function open(width, hash = "home", height = 1000) {
@@ -83,8 +84,31 @@ const readStructure = (page) =>
     ]),
   );
 
+
+// 派单155 C02：每项真正命中区44px，1000px视口滚动后中心点仍可命中；不得只量offscreen节点。
+async function navigationHits(page, label) {
+  for (const item of await nav(page).locator('.nav-item').all()) {
+    await item.scrollIntoViewIfNeeded();
+    const size = await item.evaluate(e => {
+      const r=e.getBoundingClientRect(),clip=e.closest('.sidebar').getBoundingClientRect();
+      const x=r.left+r.width/2,y=r.top+r.height/2;
+      return {width:r.width,height:r.height,centerVisible:y>=Math.max(clip.top,0)&&y<=Math.min(clip.bottom,innerHeight),hit:document.elementFromPoint(x,y)?.closest('.nav-item')===e};
+    });
+    assert(size.width>=44&&size.height>=44,`${label} ${await item.innerText()} ${JSON.stringify(size)}`);
+    assert(size.centerVisible&&size.hit,`${label} 条目滚入后中心点可命中 ${await item.innerText()}`);
+  }
+  if (await page.evaluate(()=>innerWidth>960)) {
+    assert(await nav(page).evaluate(e=>e.scrollTop>0),'1000px视口导航滚到底部');
+    await nav(page).evaluate(e=>{e.scrollTop=0;});
+    assert.equal(await nav(page).evaluate(e=>e.scrollTop),0,'截图前导航复位');
+    const first=navItem(page,'世界总览');
+    assert(await first.evaluate(e=>{const r=e.getBoundingClientRect(),n=e.closest('nav').getBoundingClientRect();return r.top>=n.top&&r.bottom<=n.bottom;}),'复位后世界总览全文在导航窗口内');
+  }
+}
+
 try {
   const page = await open(1440);
+  await navigationHits(page, "1440×1000");
 
   // 1. 四段分区与顺序
   assert.deepEqual(await readStructure(page), EXPECTED);
@@ -114,12 +138,12 @@ try {
   );
   assert.equal(
     await nav(page).locator(".nav-item").last().locator("span").first().innerText(),
-    "版本归档",
-    "版本归档应在导航最下方",
+    "存档点",
+    "存档点应在导航最下方",
   );
   for (const hidden of ["能力体检", "NAS 照片", ...OLD_NAMES])
     assert.equal(await navItem(page, hidden).count(), 0, `导航不应有 ${hidden}`);
-  ok("侧栏四段：今日 / 工作区（资产、目标、运行、知识）/ 生活区 / 系统，顺序正确，版本归档在最下");
+  ok("侧栏四段：今日 / 工作区（资产、目标、运行、知识）/ 生活区 / 系统，顺序正确，存档点在最下");
 
   // 2. 三个改名：导航、页头、面包屑一致
   for (const name of ["知识仓库", "逆向工程", "随手记"]) {
@@ -137,9 +161,9 @@ try {
   await page.keyboard.press("Escape");
   ok("改名：知识仓库、逆向工程、随手记（导航、页头、面包屑、搜索浮层）");
 
-  // 3. 版本归档页仍可达；资产详情抽屉有“历史”标签并复用 AssetHistory
-  await navItem(page, "版本归档").click();
-  await page.locator("main h1", { hasText: "版本归档" }).waitFor();
+  // 3. 存档点页仍可达；资产详情抽屉有“历史”标签并复用 AssetHistory
+  await navItem(page, "存档点").click();
+  await page.locator("main h1", { hasText: "存档点" }).waitFor();
   await navItem(page, "资产仓库").click();
   await page.locator(".asset-card").first().waitFor();
   await page.getByRole("button", { name: "查看 设计的最后一公里", exact: true }).click();
@@ -150,7 +174,7 @@ try {
   await drawer.getByLabel("查看版本", { exact: true }).waitFor();
   await drawer.getByLabel("比较到", { exact: true }).waitFor();
   await page.keyboard.press("Escape");
-  ok("版本归档页可达；资产详情“历史”标签显示版本查看与比较");
+  ok("存档点页可达；资产详情“历史”标签显示版本查看与比较");
 
   // 4. #health 不死链：跳到智能体群的能力体检分区
   await page.goto(`${app.url}/#health`);
@@ -162,8 +186,9 @@ try {
     await health.getByRole("heading", { name: "能力体检" }).count(),
     1,
   );
-  assert.match(await health.innerText(), /规划中/);
-  assert.match(await health.innerText(), /尚未开发，这个页面不会执行任何动作/);
+  assert.doesNotMatch(await health.innerText(), /规划中/);
+  assert.match(await health.innerText(), /尚未体检/);
+  assert.equal(await health.getByRole("button",{name:"检查全部支持体检的已登记 Agent",exact:true}).count(),1);
   assert.equal(
     await navItem(page, "智能体群").getAttribute("aria-current"),
     "page",
@@ -177,10 +202,10 @@ try {
     "agent-health",
     "跳转后焦点应落在能力体检分区",
   );
-  // 分区里没有无效按钮：只有跳转链接
+  // 分区里没有无效按钮：已实现的检查入口
   assert.equal(
     await health.locator("button").count(),
-    await health.locator(".plan-link").count(),
+    1,
   );
   await axe(page, "agents#health");
   // 站内跳转（搜索浮层“能力体检”）同样落到分区
@@ -190,7 +215,7 @@ try {
   await page.getByRole("dialog").getByRole("button", { name: /能力体检/ }).first().click();
   await page.locator("#agent-health").waitFor();
   assert.equal(await page.locator("main h1").first().innerText(), "智能体群");
-  ok("#health 与站内跳转都落到智能体群的“能力体检”分区（规划中），焦点与视口正确，axe 通过");
+  ok("#health 与站内跳转都落到智能体群的“能力体检”分区，焦点与视口正确，axe 通过");
 
   // 5. 生活区三个规划中页面可达，如实标注，不放无效按钮
   for (const [id, name] of LIFE_PLANNED) {
@@ -217,33 +242,20 @@ try {
     assert.equal(await page.evaluate(() => location.hash), `#${id}`);
   }
   await axe(page, "learning");
-  ok("生活区 AI HOT、学习成长可达且不再标注规划中；银饰计划已可用（由 silver-agents-browser 覆盖），axe 通过");
+  ok("生活区 AI HOT、收藏可达且不再标注规划中；银饰计划已可用（由 silver-agents-browser 覆盖），axe 通过");
 
-  // 6. 世界总览结构地图同步为两区
+  // 6. 第二版首页以四区中枢承接信息，完整页面导航仍留在侧栏。
   await page.goto(`${app.url}/#home`);
-  await page.locator(".today-hero").waitFor();
-  // 首页各区块只出现一次（防止结构地图替换时重复拼接）
-  assert.equal(await page.locator("main h2", { hasText: "能力地图" }).count(), 1);
-  assert.equal(await page.locator("main h2", { hasText: /^待处理 ·/ }).count(), 1);
-  const map = page.locator(".structure-map");
-  for (const zone of ["工作区", "生活区"])
-    await map.getByRole("heading", { name: zone }).waitFor();
-  const mapText = await map.innerText();
-  for (const name of ["逆向工程", "知识仓库", "随手记", "AI HOT", "学习成长", "银饰计划", "版本归档"])
-    assert.ok(mapText.includes(name), `结构地图应含 ${name}`);
-  assert.equal(
-    await map.locator(".manage-row strong", { hasText: "能力体检" }).count(),
-    0,
-    "结构地图不应单列能力体检",
-  );
-  assert.match(
-    await map.locator(".manage-row", { hasText: "智能体群" }).innerText(),
-    /含能力体检（规划中）/,
-  );
+  await page.locator(".hx").waitFor();
+  for (const [id, title] of [["a", "今日"], ["b", "待处理"], ["c", "协同"], ["d", "在推进"]])
+    assert.equal(await page.locator(`.hx-mod-${id}`).getByRole("heading", { name: new RegExp(title) }).count(), 1);
+  assert.equal(await page.locator(".structure-map, section.home-hot").count(), 0);
+  for (const name of ["逆向工程", "知识仓库", "随手记", "AI HOT", "收藏", "银饰计划", "存档点"])
+    await navItem(page, name).waitFor();
   await axe(page, "home");
-  ok("世界总览结构地图按工作区 / 生活区展示");
+  ok("世界总览四区中枢只出现一次；原页面入口保留在侧栏");
 
-  // 7. 键盘可达：从世界总览向下 Tab 到版本归档并用回车打开
+  // 7. 键盘可达：从世界总览向下 Tab 到存档点并用回车打开
   await navItem(page, "世界总览").focus();
   let reached = false;
   for (let i = 0; i < 30; i += 1) {
@@ -251,15 +263,15 @@ try {
     const label = await page.evaluate(
       () => document.activeElement?.querySelector("span")?.textContent,
     );
-    if (label === "版本归档") {
+    if (label === "存档点") {
       reached = true;
       break;
     }
   }
-  assert.ok(reached, "Tab 应能到达版本归档");
+  assert.ok(reached, "Tab 应能到达存档点");
   await page.keyboard.press("Enter");
-  await page.locator("main h1", { hasText: "版本归档" }).waitFor();
-  ok("键盘可逐项到达侧栏最底部的版本归档");
+  await page.locator("main h1", { hasText: "存档点" }).waitFor();
+  ok("键盘可逐项到达侧栏最底部的存档点");
   await page.context().close();
 
   // 8. 390 宽：抽屉导航、44px、无横溢、axe
@@ -275,10 +287,11 @@ try {
   await toggle.click();
   await nav(mobile).locator(".nav-zone-title", { hasText: "生活区" }).waitFor();
   assert.deepEqual(await readStructure(mobile), EXPECTED);
-  for (const label of ["世界总览", "随手记", "版本归档"]) {
+  for (const label of ["世界总览", "随手记", "存档点"]) {
     const box = await navItem(mobile, label).boundingBox();
     assert.ok(box.height >= 44, `${label} 抽屉内高度 ${box.height}`);
   }
+  await navigationHits(mobile,"390抽屉");
   await noOverflow(mobile, "390 抽屉");
   await axe(mobile, "390 drawer");
   await navItem(mobile, "银饰计划").click();
@@ -289,6 +302,13 @@ try {
   );
   ok("390 宽：抽屉导航四段可用、条目 44px、无横向溢出、axe 通过");
 
+  // 窄屏最小宽度也逐项验证，不把390结果外推到320。
+  const narrow = await open(320, "home", 1000);
+  await narrow.getByRole("button", {name:"打开导航",exact:true}).click();
+  await navigationHits(narrow,"320抽屉");
+  await noOverflow(narrow,"320抽屉");
+  await axe(narrow,"320 drawer");
+  await narrow.context().close();
   assert.deepEqual(errors, []);
   console.log("nav-zones-browser: all passed");
 } finally {

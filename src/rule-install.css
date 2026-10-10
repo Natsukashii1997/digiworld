@@ -5,7 +5,7 @@
 }
 .rule-install h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-read);
 }
 .rule-target {
   display: grid;
@@ -18,7 +18,7 @@
   display: grid;
   gap: 6px;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--fs-caption);
 }
 .rule-target select {
   min-height: 44px;
@@ -38,7 +38,7 @@
 }
 .rule-installed h4 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .rule-installed ul {
   display: grid;

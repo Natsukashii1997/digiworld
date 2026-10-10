@@ -71,6 +71,26 @@ export function validateSkillFiles(files) {
 }
 
 export function buildSkillZip(files) {
+  for (const f of files.filter(
+    (f) => f.text && /(^|\/)media-manifest\.json$/.test(f.path),
+  )) {
+    let manifest;
+    try {
+      manifest = JSON.parse(f.data);
+    } catch {
+      fail("媒体清单JSON无效，不能生成缺图包");
+    }
+    if (manifest?.kind !== "guiji-local-media/v1") continue;
+    const root = f.path.slice(0, -"media-manifest.json".length);
+    if (!Array.isArray(manifest.entries)) fail("Skill媒体清单无效");
+    for (const m of manifest.entries) {
+      const image = files.find(
+        (x) => x.path === root + m.path && !x.directory && !x.text,
+      );
+      if (!image || fileBytes(image).length !== m.size)
+        fail("媒体尚未展开；请用本机交付复制完整Skill，不能导出缺图包");
+    }
+  }
   validateSkillFiles(files);
   const entries = Object.create(null);
   for (const f of [...files].sort((a, b) => (a.path < b.path ? -1 : 1))) {

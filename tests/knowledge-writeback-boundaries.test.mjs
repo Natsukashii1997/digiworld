@@ -1,3 +1,4 @@
+import {createCapabilitySettings} from '../server/capability-settings.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -87,7 +88,9 @@ for (const scenario of [
       });
       const version = received.state.knowledgeTasks[0].candidates[0];
       const journal = createKnowledgeWriteJournal(repository.directory);
+      const settings=createCapabilitySettings(repository,{clock});const authorization=await settings.preview({capability:'vault',enabled:true,options:{sourceId:source.id,notesFolder:'00 待整理',profileFolders:[]}});await settings.apply({token:authorization.token,operationId:authorization.operationId,confirmed:true});
       const service = createKnowledgeWriteback(repository, {
+        settings,
         files,
         clock,
         journal: {

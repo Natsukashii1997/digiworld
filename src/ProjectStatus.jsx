@@ -1,31 +1,24 @@
 // 路线 v3 切片 2.1/2.2：在推进项目的状态卡、停滞雷达与安全体检。
 // 全部只读：状态来自项目自己的 CURRENT.md 与 Git，工作台不另存第二份 Current，不修改项目文件。
-import React, { useEffect, useState } from "react";
-import { RefreshCw, Flag, Play } from "lucide-react";
+import React, { useState } from "react";
+import { createPortal } from "react-dom";
+import { Flag, Play } from "lucide-react";
 import { Button, Badge } from "./components.jsx";
 import { request } from "./api.js";
-import { startPrompt, linkText } from "./collab.js";
+import { startPrompt, linkText, COLLAB_AGENTS } from "./collab.js";
 import { usePromptCopy, PromptDialog, AgentPicker, staleNote } from "./Collab.jsx";
-import { GithubBlock, useGithubPanel } from "./ProjectGithub.jsx";
+import { AgentSprite } from "./v14.jsx";
 import "./project-status.css";
 
 const SOFT_LIMIT = 7;
-const day = (value) =>
-  value
-    ? new Date(value).toLocaleString("zh-CN", {
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "未知";
-
 // 项目详情里的“在推进”开关。写入走专用接口并带当前 revision，冲突时如实提示。
-export function ActiveToggle({ project, state, adoptState, notify }) {
+export function ActiveToggle({ project, state, adoptState, notify, launch=false, onPrepare, onMarked }) {
   const [busy, setBusy] = useState(false);
   const active = project.active === true;
   const count = (state.connections?.projects || []).filter((p) => p.active).length;
-  async function toggle() {
+  async function toggle(event) {
+    if(busy)return;
+    onPrepare?.(event);
     setBusy(true);
     try {
       const next = await request("/project-status/mark", {
@@ -34,6 +27,7 @@ export function ActiveToggle({ project, state, adoptState, notify }) {
         revision: state.revision,
       });
       adoptState(next);
+      if(!active)onMarked?.();
       const total = next.connections.projects.filter((p) => p.active).length;
       notify(
         !active
@@ -50,6 +44,7 @@ export function ActiveToggle({ project, state, adoptState, notify }) {
       setBusy(false);
     }
   }
+  if(launch)return <button type="button" className="pj-cs-new" aria-label={`开新档：${project.name}`} disabled={busy} onClick={toggle}>{busy?"保存中…":"开新档"}<Play size={15}/></button>;
   return (
     <section className="project-active-toggle" aria-label="在推进">
       <div>
@@ -73,15 +68,8 @@ export function ActiveToggle({ project, state, adoptState, notify }) {
   );
 }
 
-function StallBadge({ activity, days }) {
-  if (activity?.state === "stalled")
-    return <Badge tone="danger">停滞 {activity.idleDays} 天</Badge>;
-  if (activity?.state === "active")
-    return <Badge tone="success">{days} 天内有更新</Badge>;
-  return <Badge tone="muted">活动时间未知</Badge>;
-}
-
-function CurrentBlock({ current }) {
+export function CurrentBlock({ current, omitSummary = false }) {
+  if (!current || current.state === "loading") return <p role="status">CURRENT 读取中…</p>;
   if (current.state === "absent")
     return (
       <div className="status-empty">
@@ -111,11 +99,11 @@ function CurrentBlock({ current }) {
     );
   const f = current.fields;
   const rows = [
-    ["状态编号", f.stateId],
-    ["当前写入者", f.writer],
-    ["唯一下一步", f.next && linkText(f.next)],
+    ["stateId", "状态编号", f.stateId],
+    ["writer", "当前写入者", f.writer],
+    ["next", "唯一下一步", f.next && linkText(f.next)],
     [
-      "最新交接",
+      "handoff", "最新交接",
       f.handoff && (
         <>
           <span>{f.handoff.text}</span>
@@ -127,8 +115,8 @@ function CurrentBlock({ current }) {
   return (
     <>
       <dl className="status-fields">
-        {rows.map(([label, value]) => (
-          <div key={label}>
+        {rows.filter(([key]) => !omitSummary || key === "handoff").map(([key, label, value]) => (
+          <div key={key}>
             <dt>{label}</dt>
             <dd>{value || <span className="status-missing">缺少此项</span>}</dd>
           </div>
@@ -170,7 +158,7 @@ function checkText(key, check) {
   return ["muted", "未知"];
 }
 
-function SafetyBlock({ safety }) {
+export function SafetyBlock({ safety }) {
   const { checks, issues } = safety;
   return (
     <div className="status-safety" aria-label="安全体检">
@@ -207,7 +195,7 @@ function SafetyBlock({ safety }) {
 
 // 路线 v3 切片 2.4 一键开工：选 Agent，生成开工口令（项目路径、先读 AGENTS.md 与 CURRENT.md、唯一下一步），
 // 确认后复制；复制成功计入协同留痕。项目路径只用服务端校验过的登记目录，不自动打开或执行 Agent。
-export function StartWork({ item, adoptState, notify, label = "生成开工口令" }) {
+export function StartWork({ item, adoptState, notify, label = "生成开工口令", variant = "default" }) {
   const [agent, setAgent] = useState("codex");
   const [prompt, setPrompt] = useState(null);
   const copier = usePromptCopy({ adoptState, notify });
@@ -226,19 +214,7 @@ export function StartWork({ item, adoptState, notify, label = "生成开工口�
       notify(e.message, "error");
     }
   }
-  return (
-    <div className="status-start" aria-label="一键开工" role="group">
-      <AgentPicker
-        id={`start-${item.projectId}`}
-        label="开工 Agent"
-        value={agent}
-        onChange={setAgent}
-      />
-      <Button secondary disabled={blocked} onClick={open}>
-        <Play size={16} />
-        {label}
-      </Button>
-      {prompt && (
+  const dialog = prompt && (
         <PromptDialog
           title={`开工口令：${item.name}`}
           stale={staleNote(prompt, item.current.fields?.stateId)}
@@ -257,140 +233,30 @@ export function StartWork({ item, adoptState, notify, label = "生成开工口�
             if (done) setPrompt(null);
           }}
         />
+      );
+  return (
+    <div className={`status-start ${variant === "save" ? "project-save-start" : ""}`} aria-label="一键开工" role="group">
+      {variant === "save" ? (
+        <div className="project-save-picker">
+          <span>开工 Agent · {COLLAB_AGENTS.find((a) => a.id === agent)?.label}</span>
+          <div role="group" aria-label="开工 Agent">
+            {COLLAB_AGENTS.map((choice) => (
+              <button key={choice.id} type="button" aria-label={choice.label} title={choice.label}
+                aria-pressed={agent === choice.id} onClick={() => setAgent(choice.id)}>
+                <span aria-hidden="true"><AgentSprite agent={choice.id} /></span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <AgentPicker id={`start-${item.projectId}`} label="开工 Agent" value={agent} onChange={setAgent} />
       )}
+      <Button secondary disabled={blocked} onClick={open}>
+        <Play size={16} />
+        {label}
+      </Button>
+      {variant === "save" && dialog ? createPortal(dialog, document.body) : dialog}
     </div>
   );
 }
 
-function StatusCard({ item, days, adoptState, notify, github, githubLoading }) {
-  const stalled = item.activity.state === "stalled";
-  return (
-    <article
-      className={`project-status-card ${stalled ? "stalled" : ""}`}
-      aria-label={`项目状态卡：${item.name}`}
-    >
-      <header>
-        <h3>{item.name}</h3>
-        <StallBadge activity={item.activity} days={days} />
-      </header>
-      {item.root && <small className="status-root">{item.root}</small>}
-      <CurrentBlock current={item.current} />
-      <small className="status-note">
-        最近活动：
-        {item.activity.latestAt
-          ? `${day(item.activity.latestAt)}（${item.activity.source === "Git" ? "Git 提交" : "CURRENT 修改"}）`
-          : "未知，不当作停滞"}
-      </small>
-      <SafetyBlock safety={item.safety} />
-      <GithubBlock github={github} loading={githubLoading} />
-      <StartWork item={item} adoptState={adoptState} notify={notify} />
-    </article>
-  );
-}
-
-// 项目空间顶部的“在推进”区：状态卡、停滞阈值与重新体检。
-export function ActiveProjects({ state, adoptState, notify, status, refresh }) {
-  const active = (state.connections?.projects || []).filter((p) => p.active);
-  const saved = state.connections?.projectStallDays || 7;
-  const [days, setDays] = useState(String(saved));
-  const [busy, setBusy] = useState(false);
-  useEffect(() => setDays(String(saved)), [saved]);
-  // 项目空间第二批：GitHub 面板只查在推进项目；集合为空时不发请求。
-  const activeIds = active.length ? active.map((p) => p.id).join(",") : "";
-  const [github, loadGithub] = useGithubPanel(activeIds);
-  const githubOf = (id) => github.items.find((g) => g.projectId === id)?.github;
-  if (!active.length)
-    return (
-      <section className="active-projects" aria-label="在推进项目">
-        <div className="active-projects-head">
-          <h2>在推进 · 0</h2>
-          <small>在项目详情里“标为在推进”，这里会显示状态卡、停滞与安全体检。</small>
-        </div>
-      </section>
-    );
-  async function saveDays(e) {
-    e.preventDefault();
-    const value = Number(days);
-    setBusy(true);
-    try {
-      const next = await request("/project-status/settings", {
-        stallDays: value,
-        revision: state.revision,
-      });
-      adoptState(next);
-      notify(`停滞阈值已保存为 ${value} 天`);
-    } catch (err) {
-      notify(err.message, "error");
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <section className="active-projects" aria-label="在推进项目">
-      <div className="active-projects-head">
-        <h2>在推进 · {active.length}</h2>
-        <small>只读取项目自己的 CURRENT.md 与 Git；不修改项目文件。</small>
-        <div className="active-projects-tools">
-          <form className="stall-form" onSubmit={saveDays}>
-            <label>
-              停滞阈值（天）
-              <input
-                type="number"
-                min={1}
-                max={365}
-                step={1}
-                required
-                value={days}
-                onChange={(e) => setDays(e.target.value)}
-              />
-            </label>
-            <Button secondary type="submit" disabled={busy || Number(days) === saved}>
-              保存阈值
-            </Button>
-          </form>
-          <Button secondary disabled={!status.loaded} onClick={refresh}>
-            <RefreshCw size={16} className={status.loaded ? "" : "spinning"} />
-            重新体检
-          </Button>
-          <Button secondary disabled={!github.loaded} onClick={() => loadGithub(true)}>
-            <RefreshCw size={16} className={github.loaded ? "" : "spinning"} />
-            刷新 GitHub
-          </Button>
-        </div>
-      </div>
-      {active.length > SOFT_LIMIT && (
-        <p className="scan-notice warning" role="status">
-          已有 {active.length} 个在推进项目。通常同时推进 1–3 个；超过 {SOFT_LIMIT} 个时，停滞和体检提示会变多，建议收窄。
-        </p>
-      )}
-      {status.error && (
-        <p className="inline-error" role="alert">
-          状态与体检读取失败：{status.error}
-        </p>
-      )}
-      {github.error && (
-        <p className="detail-footnote" role="status">
-          GitHub 面板读取失败：{github.error}。GitHub 情况按未知处理。
-        </p>
-      )}
-      {!status.loaded && !status.items.length && (
-        <p className="detail-footnote" role="status">
-          正在读取在推进项目的状态与体检…
-        </p>
-      )}
-      <div className="project-status-grid">
-        {status.items.map((item) => (
-          <StatusCard
-            key={item.projectId}
-            item={item}
-            days={status.stallDays || saved}
-            adoptState={adoptState}
-            notify={notify}
-            github={githubOf(item.projectId)}
-            githubLoading={!github.loaded}
-          />
-        ))}
-      </div>
-    </section>
-  );
-}

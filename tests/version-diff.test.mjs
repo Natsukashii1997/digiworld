@@ -156,13 +156,12 @@ test("换行风格变化单独标记，末尾换行与空行不被抹除", () =>
   ]);
 });
 
-test("超过字符、行数或比较单元预算时明确退回全文，不生成不完整差异", () => {
+test("超过字符或5000行上限时明确退回全文，不生成不完整差异", () => {
   for (const [before, after] of [
     ["甲".repeat(100001), "乙"],
     ["", "乙".repeat(100001)],
-    ["行\n".repeat(1001), ""],
-    ["", "行\n".repeat(1001)],
-    ["甲\n".repeat(500), "乙\n".repeat(500)],
+    ["行\n".repeat(5001), ""],
+    ["", "行\n".repeat(5001)],
   ])
     assert.deepEqual(diffText(before, after), {
       mode: "full",
@@ -172,7 +171,11 @@ test("超过字符、行数或比较单元预算时明确退回全文，不生�
   assert.equal(diffText("甲".repeat(100000), "乙").mode, "lines");
   assert.equal(diffText("行\n".repeat(1000), "").mode, "lines");
   assert.equal(diffText("甲\n".repeat(499), "乙\n".repeat(499)).mode, "lines");
-  assert.deepEqual(diffText("行\r\n".repeat(1001), "行\n".repeat(1001)), {
+  const large = diffText("甲\n".repeat(500), "乙\n".repeat(500));
+  assert.equal(large.mode,"lines");
+  assert.equal(large.rows.filter(r=>r.type==="removed").length,500);
+  assert.equal(large.rows.filter(r=>r.type==="added").length,500);
+  assert.deepEqual(diffText("行\r\n".repeat(5001), "行\n".repeat(5001)), {
     mode: "full",
     rows: [],
     formatOnly: true,

@@ -16,7 +16,7 @@
   gap: 12px;
   min-width: 0;
   padding: 16px;
-  border-radius: 15px;
+  border-radius: var(--r-l);
   border: 1px solid var(--line);
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
 }
@@ -31,7 +31,7 @@
 }
 .agent-contents-top h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--fs-title);
 }
 .agent-contents-health {
   display: flex;
@@ -40,7 +40,7 @@
   gap: 6px;
   margin: 0;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
 }
 .agent-contents-body {
   display: grid;
@@ -54,7 +54,7 @@
 }
 .agent-contents-body h4 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .agent-contents-body h4 small {
   color: var(--muted);
@@ -74,7 +74,7 @@
   min-width: 0;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 11px;
+  border-radius: var(--r);
   background: var(--panel);
 }
 .agent-content-main {
@@ -88,12 +88,12 @@
   overflow-wrap: anywhere;
 }
 .agent-content-item code {
-  font-size: 12px;
+  font-size: var(--fs-small);
   color: var(--muted);
   overflow-wrap: anywhere;
 }
 .agent-content-match {
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   line-height: 1.6;
 }
 .agent-content-match.warn,
@@ -102,7 +102,7 @@
 }
 .agent-contents-state {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
   line-height: 1.7;
   color: var(--muted);
   overflow-wrap: anywhere;
@@ -122,7 +122,7 @@
 }
 .agent-toggle-plan dt {
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--fs-meta);
 }
 .agent-toggle-plan dd {
   margin: 0 0 6px;
@@ -132,6 +132,11 @@
   margin: 0;
   padding: 10px 12px;
   border: 1px dashed var(--line-3);
-  border-radius: 11px;
+  border-radius: var(--r);
   font-weight: 600;
+}
+
+/* UI v14e：内容清单与下一区块之间留出区块间距 */
+.v14 .agent-contents {
+  margin-bottom: var(--s-7);
 }

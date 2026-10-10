@@ -109,13 +109,14 @@ export async function buildBoardProjects(base, now = Date.now()) {
   return paths;
 }
 
-export async function collabBoardFixture({ visibility = fakeVisibility } = {}) {
+export async function collabBoardFixture({ visibility = fakeVisibility, clock = Date.now } = {}) {
   const dir = await realpath(await mkdtemp(join(tmpdir(), "guiji-board-")));
   const paths = await buildBoardProjects(dir);
   const app = await startServer({
+    clock,
     directory: join(dir, "data"),
     port: 0,
-    staticRoot: join(import.meta.dirname, "../dist"),
+    staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
     discovery: {
       defaultRoots: () => [paths.projects],
       scanGitHub: async () => ({

@@ -1,3 +1,4 @@
+import { SkillSourceUpdate } from "./SkillSourceUpdate.jsx";
 import React, { useEffect, useRef, useState } from "react";
 import { FolderSearch, GitFork, RefreshCw } from "lucide-react";
 import { Badge, Button, Dialog, Steps } from "./components.jsx";
@@ -500,6 +501,7 @@ export function SkillOrigin({ asset, state, adoptState, notify, onSelect }) {
       ) : (
         <p className="detail-footnote">此资产没有结构化来源记录。</p>
       )}
+      {origin && <SkillSourceUpdate key={`${asset.id}:${version.id}`} asset={asset} adoptState={adoptState} notify={notify} />}
       {editing ? (
         <form className="skill-origin-form" onSubmit={derive} aria-busy={busy}>
           <div className="form-row">

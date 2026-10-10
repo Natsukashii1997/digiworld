@@ -1,0 +1,151 @@
+/* 派单155：只在详情中把编辑入口和复制放同行，不改变资产主卡墙。 */
+.detail-content .workflow-delivery > .heading-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: var(--s-3);
+  align-items: stretch;
+}
+.detail-content .workflow-delivery > .heading-actions > .button {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.detail-content .workflow-delivery > .heading-actions > .button:first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+.detail-content .workflow-delivery > .heading-actions > .outlined-icon {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+
+/* 协同模板是工作流版本的一部分；普通工作流仍用原有正文与引用表单。 */
+.workflow-template-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: rgba(77, 227, 255, 0.035);
+}
+.workflow-template-toggle p,
+.workflow-template-detail > p {
+  margin: 4px 0 0;
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  line-height: 1.55;
+}
+.workflow-template-editor {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+}
+.workflow-template-editor legend {
+  padding: 0 7px;
+  font-weight: 800;
+}
+.workflow-template-options,
+.workflow-template-stage-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+.workflow-template-options > label,
+.workflow-template-stage-fields > label {
+  min-width: 0;
+}
+.workflow-template-stage-fields > label:nth-child(n+3):nth-child(-n+5) {
+  grid-column: 1 / -1;
+}
+.workflow-template-stages {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.workflow-template-stage {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: rgba(255, 255, 255, 0.025);
+}
+.workflow-template-stage summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.workflow-template-stage summary small {
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 400;
+}
+.workflow-template-stage-fields {
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+.workflow-template-skip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.workflow-template-skip input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.workflow-template-add,
+.workflow-template-remove {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+}
+.workflow-template-add:disabled,
+.workflow-template-remove:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+.workflow-template-detail {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+}
+.workflow-template-detail h3 { margin: 0; }
+.workflow-template-detail ol {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.workflow-template-detail li {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  overflow-wrap: anywhere;
+}
+.workflow-template-detail li small { color: var(--muted); }
+.workflow-template-detail li span { color: var(--text-2); font-size: var(--fs-caption); }
+@media (max-width: 390px) {
+  .workflow-template-toggle > .button { width: 100%; }
+  .workflow-template-editor { padding: 10px; }
+}

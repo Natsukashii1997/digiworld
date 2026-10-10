@@ -1,10 +1,11 @@
 import * as fs from "node:fs/promises";
-import { basename, join, relative, resolve } from "node:path";
+import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { homedir } from "node:os";
 import { digest, failure } from "./repository.mjs";
 
+import { readGitUpdate } from "./project-update.mjs";
 const exec = promisify(execFile);
 export function githubKey(url) {
   if (typeof url !== "string") return "";
@@ -141,14 +142,14 @@ const statusRow = (path, status, message) => ({
 const directoryIdentity = (info) =>
   digest(JSON.stringify([info.dev, info.ino, info.birthtimeMs]));
 
-async function observe(root, path, filesystem) {
+async function observe(root, path, filesystem, update) {
   if (!root)
     return {
       entries: [],
       observation: statusRow(path, "out_of_scope", "不在有效扫描范围内"),
     };
   try {
-    return await observeDirectory(root, path, filesystem);
+    return await observeDirectory(root, path, filesystem, update);
   } catch (error) {
     return {
       entries: [],
@@ -193,7 +194,7 @@ async function directoryChain(root, path, filesystem) {
   return chain;
 }
 
-async function observeDirectory(root, path, filesystem) {
+async function observeDirectory(root, path, filesystem, update) {
   const chain = await directoryChain(root, path, filesystem);
   const entries = await filesystem.readdir(path, { withFileTypes: true });
   const marker = MARKERS.find(([name]) =>
@@ -208,6 +209,17 @@ async function observeDirectory(root, path, filesystem) {
       ? await gitMetadata(path)
       : { repoKey: "", branch: "" };
   const signature = digest(JSON.stringify(chain));
+  let recentUpdate;
+  if (update) {
+    if (git && !blockedGit) {
+      const canonical = await filesystem.realpath(path);
+      const within = relative(chain[0][2], canonical);
+      if (isAbsolute(within) || within === ".." || within.startsWith("../") ||
+          digest(JSON.stringify(await directoryChain(root, path, filesystem))) !== signature)
+        throw Object.assign(new Error("目录发生变化"), { code: "ESTALE" });
+      recentUpdate = await update(canonical);
+    } else recentUpdate = {state:"unknown",source:"Git",checkedAt:new Date().toISOString(),reason:"目录不是可读取的Git仓库"};
+  }
   try {
     if (
       digest(JSON.stringify(await directoryChain(root, path, filesystem))) !==
@@ -225,6 +237,7 @@ async function observeDirectory(root, path, filesystem) {
         git || marker ? "present" : blockedGit ? "unknown" : "unrecognized",
       checkedAt: new Date().toISOString(),
       identity: chain.at(-1)[1],
+      ...(recentUpdate ? {recentUpdate} : {}),
       scopeSignature: signature,
       ...(git || marker
         ? { ...metadata, kind: git ? "Git" : marker[1] }
@@ -252,8 +265,12 @@ export async function scanLocalProjects(
     maxDirectories = 5000,
     maxDepth = 6,
     filesystem = fs,
+    runGit,
+    maxUpdateReads = 500,
   } = {},
 ) {
+  if (!Number.isSafeInteger(maxUpdateReads) || maxUpdateReads < 0 || maxUpdateReads > 500) throw failure("时间读取预算无效");
+  let updateReads=0;
   const normalizedRoots = validateRoots(roots);
   if (
     !Number.isSafeInteger(maxDirectories) ||
@@ -289,7 +306,10 @@ export async function scanLocalProjects(
       return [];
     }
     visited++;
-    const { observation, entries } = await observe(root, path, filesystem);
+    const { observation, entries } = await observe(root, path, filesystem, async target => {
+      if (updateReads >= maxUpdateReads) {truncated=true;return {state:"unknown",source:"Git",checkedAt:new Date().toISOString(),reason:"时间读取预算已用尽，结果不完整"};}
+      updateReads++;return readGitUpdate(target, {run:runGit});
+    });
     locations.push(observation);
     if (observation.message) errors.push(`${path}：${observation.message}`);
     if (observation.identity && seenIdentities.has(observation.identity))
@@ -306,6 +326,7 @@ export async function scanLocalProjects(
         kind: observation.kind,
         branch: observation.branch,
         localSeenAt: observation.checkedAt,
+        recentUpdate: observation.recentUpdate,
       });
     }
     return entries;

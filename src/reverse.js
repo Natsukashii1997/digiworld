@@ -123,6 +123,7 @@ export function buildPack(record) {
     "只返回一个 ```json 代码块，代码块外不要写其他内容。字段如下：",
     "- report.summary：一句话总结。",
     "- report.structure / report.techniques / report.reusable：分别对应三个拆解要点，每项是 {mark, text} 数组，mark 只能是 “原文观察”“推断”“已验证”。",
+    "- 每条批注可选 quote：逐字引用素材原文，不改空白或标点。重复出现时可选 occurrence（从1开始），工作台只做精确定位，匹配不到或不唯一即标未定位。",
     "- candidates：候选资产数组。type 只能是 \"scroll\"（焚决条目：一句心法、句式或 prompt 碎片，填 text）或 \"prompt\"（完整可用的 Prompt，填 title、content，可选 description）；都可带 tags 数组，并用 mark 标注依据。",
     "",
     "```json",
@@ -162,7 +163,19 @@ function points(list, key) {
     if (!MARKS.includes(p.mark)) fail(`${where}的标注不是“原文观察 / 推断 / 已验证”之一`);
     const text = str(p.text);
     if (!text?.trim()) fail(`${where}的内容为空`);
-    return { mark: p.mark, text };
+    const anchor = {};
+    if (p.quote !== undefined) {
+      if (typeof p.quote !== "string" || !p.quote.trim() || p.quote.length > 5000)
+        fail(`${where}的精确引用句无效`);
+      if (/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(p.quote)) throw new Error("引用句包含不支持的控制字符");
+      anchor.quote = p.quote;
+    }
+    if (p.occurrence !== undefined) {
+      if (!anchor.quote || !Number.isSafeInteger(p.occurrence) || p.occurrence < 1 || p.occurrence > 1000)
+        fail(`${where}的引用序号无效`);
+      anchor.occurrence = p.occurrence;
+    }
+    return { mark: p.mark, text, ...anchor };
   });
 }
 function candidate(c, index) {
@@ -234,12 +247,34 @@ export function saveReply(state, id, reply) {
   const text = clean(reply);
   if (text.length > REVERSE_LIMITS.reply) fail(`回复超过 ${REVERSE_LIMITS.reply} 字，无法保存`);
   return mapRecord(state, id, (r) => {
+    if (r.stage === "draft" || !r.pack) fail("请先生成拆解任务包");
     if (r.imports?.length) fail("这条记录已入库，回复不能再修改；如需重新拆解请新建一条记录");
     return { ...r, reply: text, updatedAt: now() };
   });
 }
 
+export const COPY_AGENTS = ["codex", "claude-code", "hermes"];
+export function createDraft(material, why = "") {
+  return { ...createRecord(material, why), pack: "", stage: "draft" };
+}
+export function generateRecordPack(state, id) {
+  return mapRecord(state, id, r => {
+    if (r.pack) return r;
+    if (r.stage !== "draft") fail("这条记录不是素材草稿");
+    return { ...r, pack: buildPack(r), stage: "prepared", updatedAt: now() };
+  });
+}
+export function recordPackCopy(state, id, { agentId, at = now() } = {}) {
+  if (!COPY_AGENTS.includes(agentId)) fail("请选择接收任务包的 Agent");
+  if (!Number.isFinite(Date.parse(at))) fail("复制时间无效");
+  return mapRecord(state, id, r => {
+    if (!r.pack || r.stage === "draft") fail("请先生成拆解任务包");
+    if ((r.copies || []).length >= 2000) fail("复制回执已达上限");
+    return { ...r, copies: [...(r.copies || []), { id: uid(), agentId, at }], updatedAt: at };
+  });
+}
 export function recordStatus(record) {
+  if (record.stage === "draft") return "素材草稿";
   if (record.imports?.length) return `已入库 ${record.imports.length} 项`;
   return record.reply ? "待入库" : "待回收";
 }

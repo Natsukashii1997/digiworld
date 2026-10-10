@@ -1,10 +1,15 @@
+import { validateSkillSourceAdoptions, validateSkillSourceAdoptionHistory } from "./skill-source-updates-schema.mjs";
 import { validateActivity, validateActivityHistory } from "./asset-activity-schema.mjs";
 import { validateCollabLog, validateCollabHistory } from "./collab-schema.mjs";
 import { validateBriefReads, validateBriefHistory } from "./brief-schema.mjs";
 import { safePath } from "../src/store.js";
-import { stringify } from "../src/serialization.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
+import { validateMcpVersion } from "../src/mcp-config.js";
+import { stringify } from "../src/serialization.js";
+import {planSkillVersion} from "../src/skill-version.js";
+import { validateNightV2 } from "../src/night-v2-model.js";
 import { REVERSE_LIMITS } from "../src/reverse.js";
+import {validateRecipeRecord,validateReverseSettings,validateReverseHistory,validateForgeReferences} from './reverse-schema.mjs';
 import {
   validateKnowledgeTasks,
   validateKnowledgeHistory,
@@ -14,7 +19,7 @@ import {
   validateProfileProposals,
   validateProfileHistory,
 } from "./knowledge-profile-schema.mjs";
-import { validateSilver, validateAgentRoles } from "./silver-schema.mjs";
+import { validateSilver, validateSilverHistory, validateAgentRoles } from "./silver-schema.mjs";
 import {
   validateRevisionCandidates,
   validateCandidateHistory,
@@ -65,6 +70,62 @@ const httpUrl = (v) => {
 // 除换行与制表符外的控制字符。
 const CONTROL = /[\x00-\x08\x0b-\x1f\x7f]/;
 const NOTE_MAX = 20000;
+const COLLAB_ACTORS = new Set(["claude-code", "codex", "hermes", "user"]);
+function validateWorkflowTemplate(value) {
+  keys(value, ["schema", "stages", "defaultPace", "escalationAfter"]);
+  if (value.schema !== 1 || !["per-run", "continuous"].includes(value.defaultPace) ||
+      !Number.isInteger(value.escalationAfter) || value.escalationAfter < 1 || value.escalationAfter > 10)
+    invalid("协同模板设置");
+  array(value.stages, "协同模板阶段", 20);
+  if (!value.stages.length) invalid("协同模板至少需要一站");
+  for (const [index, stage] of value.stages.entries()) {
+    keys(stage, ["number", "label", "defaultActor", "method", "artifact", "gate", "skippable"]);
+    if (stage.number !== index + 1 || !COLLAB_ACTORS.has(stage.defaultActor) ||
+        typeof stage.skippable !== "boolean") invalid("协同模板阶段编号或执行者");
+    for (const [key, max] of [["label", 80], ["method", 2000], ["artifact", 200], ["gate", 1000]]) {
+      text(stage[key], `协同模板${key}`, max);
+      if (!stage[key].trim() || CONTROL.test(stage[key])) invalid(`协同模板${key}`);
+      if (["label", "artifact"].includes(key) && /[\r\n]/.test(stage[key])) invalid(`协同模板${key}不能换行`);
+    }
+  }
+}
+function validateCollabRunSettings(settings, assets) {
+  array(settings, "协同运行设置", 1000);
+  const seen = new Set(), rounds = new Map();
+  for (const setting of settings) {
+    keys(setting, ["projectId", "runId", "round", "issuesPath", "templateAssetId", "templateVersionId", "pace", "functionOnly", "actorOverrides"]);
+    id(setting.projectId);
+    if (typeof setting.runId !== "string" || !/^[\w.-]{1,80}$/.test(setting.runId)) invalid("协同运行编号");
+    const key = `${setting.projectId}:${setting.runId}`;
+    if (seen.has(key)) invalid("协同运行设置重复");
+    seen.add(key);
+    text(setting.round, "协同轮次", 100);
+    if (!setting.round.trim() || CONTROL.test(setting.round)) invalid("协同轮次");
+    text(setting.issuesPath, "待议清单路径", 500);
+    if (setting.issuesPath &&
+        (!setting.issuesPath.startsWith("docs/") || !setting.issuesPath.endsWith(".md") ||
+         !safePath(setting.issuesPath) || setting.issuesPath.split("/").some((part) => part.startsWith("."))))
+      invalid("待议清单仅可指向项目 docs 内的 Markdown");
+    const roundKey = `${setting.projectId}:${setting.round}`;
+    if (rounds.has(roundKey) && rounds.get(roundKey) !== setting.issuesPath) invalid("同一轮次的待议清单不一致");
+    rounds.set(roundKey, setting.issuesPath);
+    id(setting.templateAssetId);
+    id(setting.templateVersionId);
+    const asset = assets.find((item) => item.id === setting.templateAssetId && item.type === "Workflow");
+    const version = asset?.versions.find((item) => item.id === setting.templateVersionId);
+    if (!version?.workflowTemplate) invalid("协同运行所锁模板版本不存在");
+    if (!["per-run", "continuous"].includes(setting.pace) || typeof setting.functionOnly !== "boolean")
+      invalid("协同运行节奏或任务类型");
+    array(setting.actorOverrides, "协同替换执行者", 20);
+    unique(setting.actorOverrides.map((item) => item?.phase), "替换执行者阶段");
+    for (const override of setting.actorOverrides) {
+      keys(override, ["phase", "actor"]);
+      if (!Number.isInteger(override.phase) || override.phase < 1 ||
+          override.phase > version.workflowTemplate.stages.length || !COLLAB_ACTORS.has(override.actor))
+        invalid("协同替换执行者");
+    }
+  }
+}
 // 焚决（路线 v3 切片 1.3）：顶层集合 scrolls。卷与条目都是可变记录，不做版本；
 // 删除写 deletedAt 进回收区；数组顺序即条目顺序。旧库缺失该集合时按空处理。
 export const SCROLL_LIMITS = {
@@ -183,13 +244,22 @@ export function validateLearning(learning) {
   unique(learning.folders.map((f) => f.path), "书架目录");
   unique(learning.books.map((b) => b?.id), "书 ID");
   for (const b of learning.books) {
-    keys(b, ["id", "root", "path", "name", "status", "updatedAt"]);
+    keys(b, ["id", "root", "path", "name", "status", "updatedAt", "progress"]);
     id(b.id);
     absolutePath(b.root, "书架目录");
     if (!safePath(b.path) || b.path.length > LEARNING_LIMITS.path || /[\x00-\x1f\x7f]/.test(b.path))
       invalid("书的路径");
     line(b.name, "书名", LEARNING_LIMITS.name);
-    if (!LEARNING_STATUS.includes(b.status)) invalid("学习状态");
+    if (b.progress !== undefined) {
+      keys(b.progress, ["unit", "value", "updatedAt"]);
+      if (b.progress.unit === "percent") {
+        if (typeof b.progress.value !== "number" || !Number.isFinite(b.progress.value) || b.progress.value < 0 || b.progress.value > 100)
+          invalid("阅读百分比");
+      } else if (b.progress.unit === "chapter") line(b.progress.value, "阅读位置", 100);
+      else invalid("阅读进度单位");
+      date(b.progress.updatedAt);
+    }
+    if (b.status !== undefined ? !LEARNING_STATUS.includes(b.status) : b.progress === undefined) invalid("学习状态");
     date(b.updatedAt);
   }
   unique(learning.links.map((l) => l?.id), "链接 ID");
@@ -243,6 +313,9 @@ export function validateReverseRecords(records) {
       "pack",
       "reply",
       "imports",
+      "stage",
+      "copies",
+      "type", "recipe", "recipeReply", "referenceMedia", "replicas", "replicaDraft", "variations", "forge",
     ]);
     id(r.id);
     text(r.title, "逆向标题", REVERSE_LIMITS.title);
@@ -256,11 +329,25 @@ export function validateReverseRecords(records) {
     if (CONTROL.test(r.material.text)) invalid("逆向素材原文");
     text(r.material.url, "逆向素材链接", REVERSE_LIMITS.url);
     httpUrl(r.material.url);
-    if (!r.material.text.trim() && !r.material.url) invalid("逆向素材为空");
+    if (!r.material.text.trim() && !r.material.url && !r.referenceMedia?.length) invalid("逆向素材为空");
+    if(r.type!==undefined)validateRecipeRecord(r);
+    else if(['recipe','recipeReply','referenceMedia','replicas','replicaDraft','variations','forge'].some(k=>r[k]!==undefined))invalid('旧逆向记录不接受新字段');
     text(r.why, "好在哪里", REVERSE_LIMITS.why);
     if (CONTROL.test(r.why)) invalid("好在哪里");
     text(r.pack, "拆解任务包", REVERSE_LIMITS.pack);
-    if (!r.pack.trim()) invalid("拆解任务包为空");
+    if (r.stage !== undefined && !["draft", "prepared"].includes(r.stage)) invalid("逆向阶段");
+    if (r.stage === "draft") {
+      if (r.pack !== "" || r.reply !== undefined || r.imports?.length || r.copies?.length)
+        invalid("素材草稿不能包含任务包、回复、入库或复制回执");
+    } else if (!r.pack.trim()) invalid("拆解任务包为空");
+    if (r.copies !== undefined) {
+      array(r.copies, "复制回执", 2000);
+      unique(r.copies.map(c => c?.id), "复制回执 ID");
+      for (const c of r.copies) {
+        keys(c, ["id", "agentId", "at"]); id(c.id); date(c.at);
+        if (!(r.type?["codex", "claude-code", "hermes","openclaw","doubao"]:["codex", "claude-code", "hermes"]).includes(c.agentId)) invalid("复制接收 Agent");
+      }
+    }
     if (r.reply !== undefined) {
       text(r.reply, "Agent 回复", REVERSE_LIMITS.reply);
       if (CONTROL.test(r.reply)) invalid("Agent 回复");
@@ -298,12 +385,14 @@ export function validateState(state) {
     "agents",
     "references",
     "night",
+    "nightV2",
     "model",
     "connections",
     "knowledgeTasks",
     "assetActivity",
     "scrolls",
     "collabLog",
+    "collabRunSettings",
     "briefReads",
     "learning",
     "knowledgeZones",
@@ -311,8 +400,11 @@ export function validateState(state) {
     "silver",
     "agentRoles",
     "reverseRecords",
+    "reverseSettings",
     "revisionCandidates",
+    "skillSourceAdoptions",
   ]);
+  if (state.skillSourceAdoptions !== undefined) validateSkillSourceAdoptions(state.skillSourceAdoptions,state.assets);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
   if (state.learning !== undefined) validateLearning(state.learning);
   if (state.knowledgeZones !== undefined)
@@ -324,6 +416,8 @@ export function validateState(state) {
   if (state.agentRoles !== undefined) validateAgentRoles(state.agentRoles);
   if (state.reverseRecords !== undefined)
     validateReverseRecords(state.reverseRecords);
+  validateForgeReferences(state);
+  if(state.reverseSettings!==undefined)validateReverseSettings(state.reverseSettings);
   if (state.knowledgeTasks !== undefined)
     validateKnowledgeTasks(state.knowledgeTasks);
   if (
@@ -376,7 +470,7 @@ export function validateState(state) {
         if (parent && parent.type !== "Skill") invalid("派生来源必须为 Skill");
       } else invalid("来源类型");
     }
-    if (!["Skill", "Prompt", "Workflow", "Rule"].includes(a.type)) invalid("资产类型");
+    if (!["Skill", "Prompt", "Workflow", "Rule", "MCP"].includes(a.type)) invalid("资产类型");
     for (const key of ["demo", "favorite", "archived"])
       if (typeof a[key] !== "boolean") invalid("资产状态");
     // 置顶（切片 1.1）：可选；旧库缺失即未置顶，不写迁移。favorite 仅作兼容保留。
@@ -409,6 +503,9 @@ export function validateState(state) {
         "references",
         "type",
         "candidateId",
+        "mediaManifest",
+        "workflowTemplate",
+        "mcpConfig",
       ]);
       id(v.id);
       if (v.references !== undefined) {
@@ -427,6 +524,13 @@ export function validateState(state) {
             invalid("引用只能指向 Skill 或 Prompt");
         }
       }
+      if (v.workflowTemplate !== undefined) {
+        if (a.type !== "Workflow") invalid("只有工作流可设置协同模板");
+        validateWorkflowTemplate(v.workflowTemplate);
+      }
+      if (a.type === "MCP") {
+        try { validateMcpVersion(v); } catch (error) { invalid(error.message); }
+      } else if (v.mcpConfig !== undefined) invalid("只有 MCP 资产可设置 MCP 配置");
       if (v.type !== undefined && v.type !== a.type) invalid("版本类型不一致");
       date(v.at);
       if (v.restoredFrom !== undefined) id(v.restoredFrom);
@@ -468,12 +572,15 @@ export function validateState(state) {
         !v.files.some((f) => /(^|\/)SKILL\.md$/.test(f.path))
       )
         invalid("Skill 缺少 SKILL.md");
+      if(v.mediaManifest!==undefined){if(a.type!=="Skill")invalid("只有Skill可有媒体清单");try{versionBytes=planSkillVersion(v).byteLength;}catch(e){invalid(e.message);}}
       if (versionBytes > 25 * 1024 * 1024) invalid("单版本文件超过 25 MB");
       totalBytes += versionBytes;
       if (totalBytes > 64 * 1024 * 1024)
         invalid("主库文件总量超过当前 64 MB 上限，请分批管理");
     }
   }
+  if (state.collabRunSettings !== undefined)
+    validateCollabRunSettings(state.collabRunSettings, state.assets);
   for (const n of state.notes) {
     keys(n, ["id", "text", "at", "format", "refined"]);
     id(n.id);
@@ -529,6 +636,10 @@ export function validateState(state) {
   )
     invalid("预算范围");
   text(state.night.task, "夜间任务");
+  if (state.nightV2 !== undefined) {
+    try { validateNightV2(state.nightV2); }
+    catch (error) { invalid(`夜巡 v2 计划：${error.message}`); }
+  }
   keys(state.model, ["provider", "model", "endpoint"]);
   for (const k of ["provider", "model", "endpoint"])
     text(state.model[k], `模型 ${k}`, 2000);
@@ -548,7 +659,12 @@ export function validateState(state) {
       "agentTargets",
       "skillCopies",
       "knowledgeSources",
+      "knowledgeSourceHealth",
       "projectStallDays",
+      "projectSavepointWarnDays",
+      "projectSavepointDangerDays",
+      "projectCatalog",
+      "projectExclusions",
     ]);
     // 停滞雷达阈值（路线 v3 切片 2.1）：可选；缺失按默认 7 天。
     if (
@@ -558,6 +674,11 @@ export function validateState(state) {
         c.projectStallDays > 365)
     )
       invalid("停滞阈值");
+    if (c.projectSavepointWarnDays !== undefined || c.projectSavepointDangerDays !== undefined) {
+      const warn=c.projectSavepointWarnDays, danger=c.projectSavepointDangerDays;
+      if (![warn,danger].every(v=>Number.isSafeInteger(v)&&v>=1&&v<=365)||warn>=danger)
+        invalid("未存档阈值必须为1–365整数，成对提供且黄小于红");
+    }
     if (c.knowledgeSources !== undefined) {
       array(c.knowledgeSources, "知识来源", 20);
       unique(
@@ -578,8 +699,13 @@ export function validateState(state) {
           "identity",
           "generation",
           "connectedAt",
+          "agentSharing",
+          "excludedFolders",
+          "feishuSpaceId",
+          "feishuVerifiedAt",
+          "feishuPrincipalHash",
         ]);
-        if (s.schema !== 1 || !["obsidian", "markdown"].includes(s.kind))
+        if (s.schema !== 1 || !["obsidian", "markdown", "feishu"].includes(s.kind))
           invalid("知识来源版本或类型");
         id(s.id);
         id(s.generation);
@@ -587,14 +713,53 @@ export function validateState(state) {
         if (!s.name.trim() || /[\x00-\x1f\x7f]/.test(s.name))
           invalid("知识来源名称");
         text(s.root, "知识来源目录", 2000);
-        if (!s.root.startsWith("/") || /[\x00-\x1f\x7f]/.test(s.root))
+        if ((s.kind === "feishu"
+          ? !/^feishu:\/\/(?:wiki\/[A-Za-z0-9_-]{6,128}|space\/[0-9]{1,30})$/.test(s.root)
+          : !s.root.startsWith("/")) || /[\x00-\x1f\x7f]/.test(s.root))
           invalid("知识来源目录");
+        if (s.kind === "feishu") {
+          if (!(s.feishuSpaceId === null || (typeof s.feishuSpaceId === "string" && /^[0-9]{1,30}$/.test(s.feishuSpaceId))))
+            invalid("飞书空间身份");
+          if (!(s.feishuVerifiedAt === null || typeof s.feishuVerifiedAt === "string"))
+            invalid("飞书核验时间");
+          if (s.feishuVerifiedAt !== null) date(s.feishuVerifiedAt);
+          if ((s.feishuSpaceId === null) !== (s.feishuVerifiedAt === null))
+            invalid("飞书范围核验状态");
+          if (!(s.feishuPrincipalHash === null || (typeof s.feishuPrincipalHash === "string" && /^[a-f0-9]{64}$/.test(s.feishuPrincipalHash))) ||
+              (s.feishuSpaceId === null) !== (s.feishuPrincipalHash === null))
+            invalid("飞书本人身份绑定");
+          if (s.feishuSpaceId === null && s.agentSharing === true)
+            invalid("未核验飞书来源不能开放给 Agent");
+          if (s.excludedFolders?.length) invalid("飞书来源应改用更小的明确节点范围");
+        } else if (s.feishuSpaceId !== undefined || s.feishuVerifiedAt !== undefined || s.feishuPrincipalHash !== undefined)
+          invalid("本地知识源不能携带飞书状态");
         if (
           typeof s.identity !== "string" ||
           !/^[a-f0-9]{64}$/.test(s.identity)
         )
           invalid("知识来源身份");
+        if (s.agentSharing !== undefined && typeof s.agentSharing !== "boolean") invalid("知识共享状态");
+        if (s.excludedFolders !== undefined) {
+          array(s.excludedFolders,"排除目录",20);unique(s.excludedFolders,"排除目录");
+          for(const f of s.excludedFolders) if(typeof f!=="string" || !f || f.length>200 || /[\\:*?\x00-\x1f\x7f-\x9f\u2028\u2029]/.test(f) || f.split('/').some(p=>!p||p!==p.trim()||p.startsWith('.')||/^(?:node_modules|vendor|dist|build|target|cache|caches|keychains|secrets?|credentials?|tokens?|passwords?|private[-_]?keys?)(?:[._-]|$)/i.test(p))) invalid("排除目录");
+        }
         date(s.connectedAt);
+      }
+    }
+    if (c.knowledgeSourceHealth !== undefined) {
+      array(c.knowledgeSourceHealth, "知识源状态", 20);
+      unique(c.knowledgeSourceHealth.map((h) => h?.sourceId), "知识源状态 ID");
+      for (const h of c.knowledgeSourceHealth) {
+        keys(h, ["sourceId", "status", "detectedAt", "confirmedAt", "beforeIdentity", "afterIdentity"]);
+        id(h.sourceId);
+        if (!["needs_reconfirmation", "confirmed"].includes(h.status)) invalid("知识源状态");
+        date(h.detectedAt);
+        if (!(h.confirmedAt === null || typeof h.confirmedAt === "string")) invalid("知识源确认时间");
+        if (h.confirmedAt !== null) date(h.confirmedAt);
+        if (!/^[a-f0-9]{64}$/.test(h.beforeIdentity) || !(h.afterIdentity === null || /^[a-f0-9]{64}$/.test(h.afterIdentity))) invalid("知识源身份回执");
+        if (h.status === "needs_reconfirmation" && (h.confirmedAt !== null || h.afterIdentity !== null)) invalid("知识源待确认状态");
+        if (h.status === "confirmed" && (h.confirmedAt === null || h.afterIdentity === null)) invalid("知识源确认回执");
+        if (!c.knowledgeSources?.some((s) => s.id === h.sourceId)) invalid("知识源状态与连接不匹配");
       }
     }
     if (c.agentTargets !== undefined) {
@@ -742,6 +907,8 @@ export function validateState(state) {
         "description",
         "language",
         "updatedAt",
+        "githubPushedAt",
+        "recentUpdate",
         "localSeenAt",
         "githubSeenAt",
         "seenThisScan",
@@ -750,11 +917,23 @@ export function validateState(state) {
         "aliases",
         "identityConflict",
         "active",
+        "manual",
       ]);
+      if (p.githubPushedAt !== undefined) date(p.githubPushedAt);
+      if (p.recentUpdate !== undefined) {
+        const u=p.recentUpdate;keys(u,["state","source","checkedAt","at","reason"]);
+        if (!["ok","partial","unknown"].includes(u.state) || !["Git","GitHub"].includes(u.source)) invalid("项目更新时间状态");
+        date(u.checkedAt);if (u.at !== undefined) date(u.at);
+        if (u.state !== "unknown" && !u.at) invalid("已核实更新时间缺失");
+        if (u.state === "unknown" && u.at !== undefined) invalid("未知更新时间不能带时间");
+        if (u.reason !== undefined) text(u.reason,"时间未知原因",1000);
+      }
       id(p.id);
       // 在推进标记（路线 v3 切片 2.1）：可选布尔；旧库缺失即未标记。
       if (p.active !== undefined && typeof p.active !== "boolean")
         invalid("在推进标记");
+      if (p.manual !== undefined && typeof p.manual !== "boolean")
+        invalid("手工项目标记");
       if (p.relationVersion !== undefined) id(p.relationVersion);
       if (
         p.identityConflict !== undefined &&
@@ -831,6 +1010,38 @@ export function validateState(state) {
       )
         invalid("GitHub URL");
     }
+    if (c.projectExclusions !== undefined) {
+      array(c.projectExclusions, "项目排除身份", 1000);
+      unique(c.projectExclusions, "项目排除身份");
+      for (const entry of c.projectExclusions) {
+        text(entry, "项目排除身份", 2100);
+        if (!/^(?:id:[a-zA-Z0-9_-]{1,100}|repo:[a-z0-9_.-]+\/[a-z0-9_.-]+|path:\/[^\x00-\x1f\x7f]*)$/.test(entry))
+          invalid("项目排除身份格式");
+      }
+    }
+    if (c.projectCatalog !== undefined) {
+      array(c.projectCatalog, "项目展示目录", 1000);
+      unique(c.projectCatalog.map((item) => item?.projectId), "项目展示目录");
+      const projectIds = new Set(c.projects.map((p) => p.id));
+      const views = new Set(["main", "asset", "task", "candidate", "component", "hidden"]);
+      const sections = new Set(["business", "personal", "knowledge", "tools", "completed", "pending", "remote", "sources"]);
+      for (const item of c.projectCatalog) {
+        keys(item, ["projectId", "displayName", "section", "view", "parentId", "note"]);
+        id(item.projectId);
+        if (!projectIds.has(item.projectId)) invalid("项目展示目录引用不存在的项目");
+        text(item.displayName, "项目展示名", 120);
+        if (!item.displayName.trim()) invalid("项目展示名为空");
+        if (!sections.has(item.section) || !views.has(item.view)) invalid("项目展示分区");
+        if (item.view === "main" && !["business", "personal", "knowledge", "tools", "completed"].includes(item.section))
+          invalid("主项目分区");
+        if (item.parentId !== undefined) {
+          id(item.parentId);
+          if (!projectIds.has(item.parentId) || item.parentId === item.projectId)
+            invalid("项目附属关系");
+        }
+        if (item.note !== undefined) text(item.note, "项目说明", 1000);
+      }
+    }
     for (const a of c.agents) {
       keys(a, [
         "id",
@@ -876,12 +1087,53 @@ export function canonical(value) {
 }
 export const equivalent = (a, b) =>
   JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+
+function validateNightV2History(previous, next) {
+  const oldPlan = previous?.nightV2;
+  if (oldPlan === undefined) return;
+  const plan = next.nightV2;
+  if (plan === undefined) invalid("夜巡 v2 计划不能删除");
+  if (!equivalent(oldPlan, plan) && plan.revision <= oldPlan.revision)
+    invalid("夜巡 v2 计划修改必须递增 revision");
+
+  const chips = new Map(plan.chips.map((chip) => [chip.id, chip]));
+  for (const oldChip of oldPlan.chips) {
+    const chip = chips.get(oldChip.id);
+    if (!chip) {
+      // 自定义芯片只有在最终计划里不再占用插槽时才能删除。
+      if (oldChip.origin !== "custom" || plan.slots.some((slot) => slot.chipId === oldChip.id))
+        invalid("夜巡芯片不能删除或仍被插槽使用");
+      continue;
+    }
+    if (chip.kind !== oldChip.kind || chip.origin !== oldChip.origin ||
+        chip.code !== oldChip.code || chip.templateRevision < oldChip.templateRevision)
+      invalid("夜巡芯片身份或模板 revision 不能回退");
+    for (let index = 0; index < oldChip.templateHistory.length; index += 1) {
+      if (!equivalent(chip.templateHistory[index], oldChip.templateHistory[index]))
+        invalid("夜巡芯片模板历史不能改写");
+    }
+  }
+
+  const slots = new Map(plan.slots.map((slot) => [slot.id, slot]));
+  for (const oldSlot of oldPlan.slots) {
+    const slot = slots.get(oldSlot.id);
+    if (slot && (slot.chipId !== oldSlot.chipId || slot.chipRevision !== oldSlot.chipRevision))
+      invalid("夜巡现存插槽的芯片及锁定版本不能改写");
+  }
+
+  if (plan.supplementArchive.length < oldPlan.supplementArchive.length ||
+      oldPlan.supplementArchive.some((entry, index) => !equivalent(entry, plan.supplementArchive[index])))
+    invalid("夜巡今晚补充归档只能追加");
+}
+
 export function validateHistory(
   previous,
   next,
   {
     allowConnections = false,
     allowOrigins = false,
+    allowAssetDelete = false,
+    restrictAssetDeletion = false,
     allowKnowledge = false,
     allowActivity = false,
     allowCollab = false,
@@ -889,8 +1141,13 @@ export function validateHistory(
     allowLearningFolders = false,
     allowProfile = false,
     allowCandidateImport = false,
+    allowSkillSourceAdoptions = false,
+    allowSilverImport = false,
   } = {},
 ) {
+  validateReverseHistory(previous,next);
+  validateSilverHistory(previous?.silver,next.silver,{allowImport:allowSilverImport,equivalent});
+  validateNightV2History(previous, next);
   if (
     !allowLearningFolders &&
     !equivalent(previous?.learning?.folders || [], next.learning?.folders || [])
@@ -915,6 +1172,7 @@ export function validateHistory(
   validateActivityHistory(previous?.assetActivity || [], next.assetActivity || [], allowActivity);
   validateCollabHistory(previous?.collabLog || [], next.collabLog || [], allowCollab);
   validateBriefHistory(previous?.briefReads || [], next.briefReads || [], allowBriefs);
+  validateSkillSourceAdoptionHistory(previous?.skillSourceAdoptions || [], next.skillSourceAdoptions || [], allowSkillSourceAdoptions);
   if (
     !allowKnowledge &&
     !equivalent(previous?.knowledgeTasks || [], next.knowledgeTasks || [])
@@ -932,6 +1190,14 @@ export function validateHistory(
       invalid("来源只能通过专用收录或派生操作建立");
   }
   if (!previous) return;
+  for (const old of previous.scrolls || []) {
+    const scroll = next.scrolls?.find(item => item.id === old.id);
+    if (!scroll) invalid("卷历史不能直接移除");
+    if (!old.deletedAt && scroll.deletedAt && (
+      previous.reverseRecords?.some(record => record.imports?.some(item => item.kind === "scroll" && item.scrollId === old.id)) ||
+      previous.notes?.some(note => note.refined?.scrollId === old.id)
+    )) invalid("卷仍被随手记或逆向记录引用，无法删除");
+  }
   const protectedDemos = retainedDemoIds(
     previous.assets,
     previous.connections?.skillCopies,
@@ -942,8 +1208,8 @@ export function validateHistory(
     if (!asset) {
       if (protectedDemos.has(old.id))
         invalid("示例被工作流历史或派生来源引用，或存在目标副本关联，不能移除");
-      if (old.demo) continue;
-      invalid("资产只能归档，不能直接移除历史");
+      if (old.demo && !restrictAssetDeletion) continue;
+      invalid("资产只能通过仓库删除入口归档，不能直接移除历史");
     }
     if (
       asset.type !== old.type ||
@@ -952,6 +1218,8 @@ export function validateHistory(
     )
       invalid("资产身份不可更改");
     if (!equivalent(asset.origin, old.origin)) invalid("来源关系不可更改");
+    if (!old.archived && asset.archived && restrictAssetDeletion && !allowAssetDelete)
+      invalid("资产删除只能通过专用操作核对引用后执行");
     if (
       asset.versions.length < old.versions.length ||
       !old.versions.every((v, i) => equivalent(v, asset.versions[i]))

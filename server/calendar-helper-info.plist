@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key><string>cn.personal-ai-workbench.calendar-helper</string>
+  <key>CFBundleName</key><string>数码世界日历助手</string>
+  <key>CFBundleDisplayName</key><string>数码世界日历助手</string>
+  <key>CFBundleExecutable</key><string>CalendarHelper</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>LSUIElement</key><true/>
+  <key>NSCalendarsFullAccessUsageDescription</key><string>在数码世界中查看日程，并仅在“工作台”日历中创建和修改规划。</string>
+  <key>NSRemindersFullAccessUsageDescription</key><string>在数码世界中查看并更新“工作台”提醒事项。</string>
+  <key>NSCalendarsUsageDescription</key><string>在数码世界中查看日程，并仅在“工作台”日历中创建和修改规划。</string>
+  <key>NSRemindersUsageDescription</key><string>在数码世界中查看并更新“工作台”提醒事项。</string>
+</dict>
+</plist>

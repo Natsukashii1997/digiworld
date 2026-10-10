@@ -118,6 +118,7 @@ export function createKnowledgeWriteback(
     writer = createKnowledgeWriteFiles(),
     journal = createKnowledgeWriteJournal(repository.directory),
     clock = Date.now,
+    settings,
   },
 ) {
   const previews = new Map();
@@ -140,6 +141,14 @@ export function createKnowledgeWriteback(
     if (JSON.stringify(current) !== JSON.stringify(source))
       throw failure("保存目标授权已变化，请重新连接并预览", 409);
   }
+  async function authorizeVault(state,source,plan){
+    if(!settings)throw failure('Vault 写入默认关闭，请先在设置授权',409);
+    const gate=await settings.assertEnabled('vault');authorized(state,source);
+    if(gate.options.sourceId!==source.id)throw failure('候选写入须使用当前明确授权的Vault来源',409);
+    const optionsHash=knowledgeTextHash(JSON.stringify(gate.options));
+    if(plan&&(clock()>=plan.expires||gate.generation!==plan.authorizationGeneration||optionsHash!==plan.authorizationOptionsHash))throw failure('Vault授权代次或范围已变化，请重新预览',409);
+    return{authorizationGeneration:gate.generation,authorizationOptionsHash:optionsHash};
+  }
   function chosen(state, taskId, versionId) {
     const task = state.knowledgeTasks?.find((item) => item.id === taskId);
     const version = task?.candidates.find((item) => item.id === versionId);
@@ -152,7 +161,7 @@ export function createKnowledgeWriteback(
   async function evidence(task) {
     for (const item of task.evidence) {
       const document = await files.read(
-        { root: item.root, identity: item.identity },
+        { id: item.sourceId, generation: item.generation, root: item.root, identity: item.identity },
         {
           path: item.path,
           bytes: item.bytes,
@@ -194,7 +203,7 @@ export function createKnowledgeWriteback(
     let status = "unknown",
       current = null;
     try {
-      authorized(state, row.source);
+      await authorizeVault(state,row.source);
       current = await writer.inspect(row.source, row.path);
       if (!current) {
         const absent = await writer.preview(row.source, row.path);
@@ -262,6 +271,7 @@ export function createKnowledgeWriteback(
       return repository.withSnapshot({}, async (state) => {
         const { task, version } = chosen(state, input.taskId, input.versionId);
         const source = sourceOf(state, input.targetSourceId);
+        const authorization=await authorizeVault(state,source);
         await evidence(task);
         await noPendingTarget(source, path);
         const target = await writer.preview(source, path);
@@ -282,7 +292,7 @@ export function createKnowledgeWriteback(
           createdAt,
         };
         return {
-          ...remember({ kind: "apply", row }),
+          ...remember({ kind: "apply", row, ...authorization }),
           operationId: row.id,
           path,
           root: source.root,
@@ -299,7 +309,7 @@ export function createKnowledgeWriteback(
         const { task, version } = chosen(state, row.taskId, row.versionId);
         if (version.sha256 !== row.versionHash)
           throw failure("候选版本已变化", 409);
-        authorized(state, row.source);
+        await authorizeVault(state,row.source,plan);
         await evidence(task);
         await noPendingTarget(row.source, row.path);
         const target = await writer.preview(row.source, row.path);
@@ -311,7 +321,7 @@ export function createKnowledgeWriteback(
         await journal.prepare(row);
         if (clock() >= plan.expires)
           throw failure("持久化准备期间预览过期，请核对记录；未写入候选", 409);
-        const written = await writer.create(row.source, target, row.content);
+        const written = await writer.create(row.source, target, row.content,{guard:()=>authorizeVault(state,row.source,plan)});
         try {
           await evidence(task);
         } catch {
@@ -349,8 +359,9 @@ export function createKnowledgeWriteback(
       exact(input, ["operationId"]);
       identifier(input.operationId);
       return repository.withSnapshot({}, async (state) => {
-        const record = await operation(input.operationId),
-          result = await observe(record, state);
+        const record = await operation(input.operationId);
+        const authorization=await authorizeVault(state,record.row.source);
+        const result = await observe(record, state);
         if (!result.canRollback)
           throw failure(
             "文件已变化、归属不明或存在未决撤回，不能自动撤回",
@@ -366,6 +377,7 @@ export function createKnowledgeWriteback(
           ...result,
           ...remember({
             kind: "rollback",
+            ...authorization,
             operationId: record.row.id,
             expected,
           }),
@@ -375,8 +387,9 @@ export function createKnowledgeWriteback(
     async rollback(input) {
       const plan = consume(input, "rollback");
       return repository.withSnapshot({}, async (state) => {
-        const record = await operation(plan.operationId),
-          result = await observe(record, state);
+        const record = await operation(plan.operationId);
+        await authorizeVault(state,record.row.source,plan);
+        const result = await observe(record, state);
         if (!result.canRollback || clock() >= plan.expires)
           throw failure("撤回预览已失效，请重新核对", 409);
         await journal.receipt(
@@ -387,7 +400,7 @@ export function createKnowledgeWriteback(
         );
         if (clock() >= plan.expires)
           throw failure("撤回准备期间预览过期，请核对记录；未删除候选", 409);
-        await writer.remove(record.row.source, plan.expected);
+        await writer.remove(record.row.source, plan.expected,{guard:()=>authorizeVault(state,record.row.source,plan)});
         await journal.receipt(
           record.row.id,
           "rolled-back",

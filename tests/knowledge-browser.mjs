@@ -35,12 +35,11 @@ async function axe(state) {
   report.axe.push({ state, violations: result.violations });
   assert.deepEqual(result.violations, []);
 }
-const button = (name) => page.getByRole("button", { name, exact: true });
-const source = (name) =>
-  page
-    .getByRole("navigation", { name: "知识源", exact: true })
-    .getByRole("button")
-    .filter({ hasText: name });
+const button = (name) => name === "连接知识源" ? {click: async () => {await closeSource();await page.getByRole("button",{name:"接入知识库",exact:true}).first().click();}} : page.getByRole("button", { name, exact: true });
+async function closeSource(){ const close=page.getByRole('dialog').getByRole('button',{name:'关闭',exact:true});if(await page.getByRole('dialog').locator('.knowledge-workspace').count())await close.click(); }
+async function activateSource(name){ await closeSource();await page.locator('.kh-srcs .kh-src').filter({hasText:name}).click();await page.getByRole('dialog',{name,exact:true}).waitFor(); }
+
+const source = (name) => { const locator=page.locator('.kh-srcs .kh-src').filter({hasText:name});const click=locator.click.bind(locator);locator.click=async()=>{await closeSource();await click();};return locator;};
 async function fillConnection(name, path) {
   await button("连接知识源").click();
   await page.getByLabel("来源名称", { exact: true }).fill(name);
@@ -50,7 +49,7 @@ async function fillConnection(name, path) {
 async function connect(name, path) {
   await fillConnection(name, path);
   await button("确认连接").click();
-  await page.getByRole("heading", { name, exact: true }).waitFor();
+  await activateSource(name);
 }
 async function scan() {
   await page
@@ -67,14 +66,12 @@ async function screenshot(name) {
 try {
   await page.clock.install({ time: new Date() });
   await page.goto(app.url + "/#knowledge");
-  await page.getByRole("button", { name: "连接知识源", exact: true }).click();
+  await button("连接知识源").click();
   await page.getByLabel("来源名称", { exact: true }).fill("合成知识库");
   await page.getByLabel("目录绝对路径", { exact: true }).fill(app.root);
   await page.getByLabel("我确认仅只读访问此目录", { exact: true }).check();
   await page.getByRole("button", { name: "确认连接", exact: true }).click();
-  await page
-    .getByRole("heading", { name: "合成知识库", exact: true })
-    .waitFor();
+  await activateSource("合成知识库");
   await page.getByRole("button", { name: "扫描文件", exact: true }).click();
   await page
     .getByRole("button", { name: "专题/判断原则.md", exact: true })
@@ -113,15 +110,14 @@ try {
   await page.getByLabel("按文件名或路径筛选", { exact: true }).fill("");
   assert.equal(await page.locator(".knowledge-file").count(), 2);
   await page.reload();
+  await activateSource("合成知识库");
   await page
     .getByText("尚未扫描 · 点击扫描文件后查询。", { exact: true })
     .waitFor();
   assert.equal(await page.locator(".knowledge-original").count(), 0);
   await app.restart();
   await page.goto(app.url + "/#knowledge");
-  await page
-    .getByRole("heading", { name: "合成知识库", exact: true })
-    .waitFor();
+  await activateSource("合成知识库");
   assert.equal(await source("合成知识库").count(), 1);
   report.flows.push(
     "仅按文件名/路径筛选与零命中；浏览器刷新和服务重启保留连接但不保留索引或正文",
@@ -258,7 +254,7 @@ try {
       ".knowledge-workspace",
       ".knowledge-preview",
       ".knowledge-original",
-      ".knowledge-sources",
+      ".kh-srcs",
     ])
       assert.equal(
         await page
@@ -411,20 +407,17 @@ try {
     revisionRoot,
   );
   await button("确认连接").click();
-  await page
-    .getByRole("heading", { name: "版本冲突后重试", exact: true })
-    .waitFor();
+  await activateSource("版本冲突后重试");
   report.flows.push("跨客户端版本冲突禁止旧写入，刷新保留草稿后显式重试");
 
   await source("合成知识库").click();
   await scan();
   const parked = await app.replaceRoot();
   await button("重新扫描").click();
-  await page
-    .getByRole("alert")
-    .filter({ hasText: /身份已变化/ })
-    .waitFor();
+  await page.locator(".kh-srcs .kh-src").filter({ hasText: "合成知识库" })
+    .getByText("需重新确认目录 · 读取暂停", { exact: true }).waitFor();
   assert.equal(await page.locator(".knowledge-file").count(), 0);
+  await source("合成知识库").click();
   await button("重新确认目录").click();
   await page.getByLabel("我确认仅只读访问此目录", { exact: true }).check();
   await button("确认重新连接").click();

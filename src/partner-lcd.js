@@ -331,6 +331,7 @@ export function createPartnerLcd(canvas, { mode = "roam", cols: fixedCols, rows:
         if (Math.abs(Math.sin(k * Math.PI * 2)) < 0.15) [sx, sy] = [1.12, 0.86];
       }
     }
+    // 首页静止时沿用确认过的原蛋轮廓；只有动作脚本中的落地帧才会压扁。
     const egg = rasterEgg(angle, { sx, sy });
     const baseY = (mode === "roam" ? ground - 1 : rows - 1) - egg.bottom;
     const ox = Math.round(pose.x),
@@ -423,7 +424,7 @@ export function createPartnerLcd(canvas, { mode = "roam", cols: fixedCols, rows:
   function render() {
     const w = cols * dot,
       h = rows * dot,
-      size = dot - (dot > 2 ? 1 : 0);
+      size = mode === "stage" ? dot : dot - (dot > 2 ? 1 : 0);
     ctx.clearRect(0, 0, w, h);
     const flash = lightning > 0;
     if (flash) lightning--;

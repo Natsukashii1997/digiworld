@@ -24,6 +24,8 @@ export function useReducedMotion() {
     }
     const sync = () => setReduced(query.matches);
     query.addEventListener?.("change", sync);
+    // 初次渲染与 effect 订阅之间可能已经切换偏好，不能依赖补发 change。
+    sync();
     return () => query.removeEventListener?.("change", sync);
   }, []);
   return reduced;
@@ -198,7 +200,7 @@ function headCrop(rows) {
   return [Math.max(0, Math.min(W - c, Math.round(sx / Math.max(n, 1) - c / 2))), 0, c, c];
 }
 const LETTER = { head: 36, body: 60, dossier: 120 };
-export function AgentSprite({ agent, mode = "head", className = "" }) {
+export function AgentSprite({ agent, mode = "head", className = "", fit }) {
   const cast = castOf(agent);
   const character = cast && CHARACTERS[cast.character];
   const art = character?.sprite && SPRITES[character.sprite];
@@ -215,7 +217,7 @@ export function AgentSprite({ agent, mode = "head", className = "" }) {
     );
   }
   const crop = mode === "head" ? character.head || headCrop(art.frames[0]) : undefined;
-  return <Pixel sprite={character.sprite} crop={crop} scale={mode === "dossier" ? 3 : 1} className={`agent-sprite ${className}`} />;
+  return <Pixel sprite={character.sprite} crop={crop} scale={fit ? undefined : mode === "dossier" ? 3 : 1} fit={fit} className={`agent-sprite ${className}`} />;
 }
 
 // ---------- 背景数据微尘：46 颗像素慢慢上浮；减少动态效果或页面隐藏时不画 ----------
