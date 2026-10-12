@@ -1040,3 +1040,34 @@
 @media (max-width:760px) {
   .page-agents.v16 .agent-scroll-cue { display:block; margin:var(--s-2) 0 0; font-size:var(--fs-caption); color:var(--text-2); }
 }
+
+/* 伙伴状态屏复用现有屏幕材质与液晶读数。 */
+.page-agents.v16 .stage { align-content:center; align-items:center; gap:var(--s-6); }
+.page-agents.v16 .role-status-screen { position:relative; width:100%; padding:var(--s-4); border:1px solid var(--line-2); border-radius:var(--r-l); background:var(--hw-pit); }
+.page-agents.v16 .role-status-screen > .en { color:var(--cyan); }
+.page-agents.v16 .role-status-grid { display:grid; gap:var(--s-4); margin:var(--s-5) 0; }
+.page-agents.v16 .role-status-grid > div { display:flex; justify-content:space-between; align-items:center; gap:var(--s-2); }
+.page-agents.v16 .role-status-grid dt { color:var(--text-2); font-size:var(--fs-small); }
+.page-agents.v16 .role-status-grid dt .en { display:block; color:var(--muted); margin-top:var(--s-2); }
+.page-agents.v16 .role-status-grid dd { margin:0; }
+.page-agents.v16 .role-status-state { margin:0; color:var(--muted); font-size:var(--fs-small); }
+.page-agents.v16 .facts > .role-missing { min-height:64px; align-items:center; }
+@media (min-width:1200px) {
+  .page-agents.v16 .select [role="radiogroup"] { display:flex; align-items:flex-end; gap:var(--s-4); }
+  .page-agents.v16 .cast { flex:1; min-width:0; }
+  .page-agents.v16 .others { flex-wrap:wrap; max-width:180px; margin-top:0; }
+}
+/* 窄屏仍保持档案外框稳定，状态屏与名牌按内容留足高度。 */
+@media (max-width:760px) {
+  .page-agents.v16 .stage { grid-template-columns:minmax(0,1fr); padding:var(--s-4); gap:var(--s-4); }
+  .page-agents.v16 .role-status-screen { min-width:0; padding:var(--s-3); }
+  .page-agents.v16 .role-status-grid { gap:var(--s-3); margin:var(--s-3) 0; }
+  .page-agents.v16 .stage-plate { position:static; min-width:0; }
+  .page-agents.v16 .stage-plate h2 { font-size:var(--fs-title); }
+}
+@media (max-width:640px) {
+  .page-agents.v16 .archive { grid-template-rows:248px minmax(0,1fr); }
+  .page-agents.v16 .stage { height:248px; justify-items:stretch; align-content:center; gap:var(--s-3); }
+  .page-agents.v16 .role-status-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .page-agents.v16 .role-status-grid > div { flex-direction:column; align-items:flex-start; }
+}

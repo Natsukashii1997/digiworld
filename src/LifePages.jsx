@@ -1,3 +1,6 @@
+import { motionOrigin } from './scan-motion.js';
+import { flyData } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 // 生活区：AI HOT（路线 v3 切片 5.3）与学习成长（切片 5.4），以及世界总览“今日热点”卡和设置里的两个面板。
 // AI HOT 的内容来自 aihot.news 公开接口，服务端已按白名单清洗；这里仍只把它当文本渲染，链接只在 http/https 时生成。
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -58,7 +61,9 @@ export function useAiHot() {
 
 async function collect(state, save, notify, item) {
   if (!httpLink(item.url)) throw new Error("这条没有有效的原文链接，不能收藏");
+  const from=motionOrigin();
   const result=await request('/collection/notes/manual',{...item,origin:'aihot'});
+  flyData(from);
   notify(result.created ? '已收藏到收藏画布' : '已收藏过，在收藏画布里');
   return result.notes;
 }
@@ -72,7 +77,7 @@ function HotTag({ category }) {
   return tag ? <span title={tag.label} className={`ah-tag ${tag.tone}`}>{tag.label}</span> : null;
 }
 function HotMeta({ item }) {
-  return <footer className="mono">{item.source}{item.source && item.publishedAt ? " · " : ""}{item.publishedAt && <time dateTime={item.publishedAt}>{new Date(item.publishedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</time>}</footer>;
+  return <footer className="mono">{item.source && <span>{item.source}</span>}{item.publishedAt && <span className="ah-meta-time">{item.source ? " · " : ""}<time dateTime={item.publishedAt}>{new Date(item.publishedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</time></span>}</footer>;
 }
 function HotOpen({ item }) {
   const href = httpLink(item.url);
@@ -86,13 +91,14 @@ export function AiHot({ state, save, notify, navigate }) {
   const lock = useRef(false), collectLock = useRef(false);
   const reduced = useReducedMotion();
   const [refreshed,setRefreshed] = useState(0);
+  const [refreshReady,setRefreshReady] = useState(false);
   useEffect(()=>{if(reduced)setRefreshed(0);},[reduced]);
   const settings=data?.settings, cache=data?.cache, selected=cache?.sections.selected?.items.slice(0,10)||[], hot=cache?.sections.hot?.items.slice(0,10)||[];
   const first=settings?.enabled && !settings.acknowledged, canFetch=settings?.enabled, date=aihotDate(cache), hasItems=selected.length>0 || hot.length>0;
   async function refresh() {
     if(lock.current)return;
-    lock.current=true;setBusy(true);
-    try { const result=await request("/aihot/refresh",{});setData(result);if(result.cache?.status==="ok"&&!reduced)setRefreshed(n=>n+1); }
+    lock.current=true;setRefreshReady(false);setBusy(true);
+    try { const result=await request("/aihot/refresh",{});setData(result);setRefreshReady(result.cache?.status==="ok");if(result.cache?.status==="ok"&&!reduced)setRefreshed(n=>n+1); }
     catch(e) { notify(e.message||"拉取未完成","error"); }
     finally { lock.current=false;setBusy(false); }
   }
@@ -105,12 +111,14 @@ export function AiHot({ state, save, notify, navigate }) {
   }
   const star=item=><HotStar item={item} notes={collectionNotes} busy={collecting} collectItem={collectItem}/>;
   return <div className="aihot-v16">
-    <PageHeading page="aihot" bounds={["aihot.news 公开接口", Number.isInteger(settings?.intervalHours) ? `每 ${settings.intervalHours} 小时更新` : "更新间隔未知"]} help={<button className="page-help" aria-label="这页怎么用" onClick={()=>setHelp(true)}>?</button>} action={<div className="ah-head-act">{canFetch && <button className="icon-button" aria-label="立即刷新" onClick={refresh} disabled={busy || first}><RefreshCw size={18}/></button>}<a className="button" href="https://aihot.news/" target="_blank" rel="noopener noreferrer">去 aihot.news <ArrowUpRight size={16}/></a></div>}/>
+    <ReadReveal pending={!data&&!error} ready={!!data&&!error}/>
+    <ReadReveal pending={busy} ready={refreshReady}/>
+    <PageHeading page="aihot" bounds={["aihot.news 公开接口", Number.isInteger(settings?.intervalHours) ? `每 ${settings.intervalHours} 小时更新` : "更新间隔未知"]} help={<button className="page-help" aria-label="这页怎么用" onClick={()=>setHelp(true)}>?</button>} action={<div className="ah-head-act">{canFetch && <button className="icon-button" aria-label="立即刷新" onClick={refresh} disabled={busy || first}><RefreshCw size={18}/></button>}<a className={`button${first ? " secondary" : ""}`} href="https://aihot.news/" target="_blank" rel="noopener noreferrer">去 aihot.news <ArrowUpRight size={16}/></a></div>}/>
     {error && <p role="alert" className="inline-error">读取本机缓存失败：{error} <Button secondary onClick={reload}>重新读取缓存</Button></p>}
     {!data && !error && <Scanning label="读取本机缓存"/>}
     {data && <>
       {!canFetch && <p className="ah-disabled" role="status">网络访问已关闭 <button className="text-button" onClick={()=>navigate("settings")}>去设置开启</button></p>}
-      {busy && <p className="ah-busy" role="status">正在拉取…</p>}
+      {busy && <p className="ah-busy" role="status"><Reading mini label="正在拉取公开资讯"/></p>}
       {first ? <div className="ah-screen-empty"><RadioTower size={28}/><p>第一次使用需要你确认</p><small>点“开始拉取”后才会访问 aihot.news 公开接口，之后每 {settings.intervalHours} 小时自动更新，结果缓存在本机</small><Button onClick={refresh} disabled={busy}><Globe size={16}/>开始拉取</Button></div> : hasItems ? <>
         <div className="ah-date">{refreshed>0&&<span key={refreshed} className="ah-date-scan" aria-hidden="true" onAnimationEnd={()=>setRefreshed(0)}/>}<h2>{date ? <><b className="mono">{date.month}</b>月<b className="mono">{date.day}</b>日</> : "缓存日期未知"}<span>今日精选</span></h2><span className={`ah-upd${cache.status==="failed"?" bad":""}`} role="status">{cache.status==="failed"&&<i aria-hidden="true"/>}{aihotUpdateText(cache,settings.intervalHours)}</span><button className="ah-fav" onClick={()=>navigate("learning")}><Star size={13}/>已收藏 <b className="mono">{collectionNotes.filter(note=>note.origin==='aihot').length}</b> · 去收藏看 →</button></div>
         <div className="ah-board"><div className="ah-wall" aria-label="今日精选">
@@ -135,6 +143,7 @@ export function HomeHot({ navigate }) {
   const items = pool.filter((i) => i.url).slice(0, 5);
   return (
     <section className="home-section home-hot" aria-labelledby="home-hot-title">
+      <ReadReveal pending={!data&&!error} ready={!!data&&!error}/>
       <div className="v14-sh">
         <h2 id="home-hot-title">今日热点</h2>
         <span className="v14-sub">来自 AI HOT 的本机缓存</span>
@@ -142,7 +151,7 @@ export function HomeHot({ navigate }) {
       {error ? (
         <p className="recent-empty">读取 AI HOT 缓存失败：{error}</p>
       ) : !data ? (
-        <p className="recent-empty">正在读取本机缓存…</p>
+        <p className="recent-empty"><Reading label="正在读取本机缓存"/></p>
       ) : !items.length ? (
         <p className="recent-empty">
           {cache.status === "never" ? "尚未拉取。" : "缓存里暂时没有带原文链接的热点。"}
@@ -232,7 +241,7 @@ export function AiHotSettings({ notify, onChanged }) {
                 }),
               );
               setDraft(null);
-              notify("已保存 AI HOT 设置");
+              notify("已保存 AI HOT 设置"); flyData();
               onChanged?.();
             } catch (err) {
               notify(err.message || "保存失败", "error");

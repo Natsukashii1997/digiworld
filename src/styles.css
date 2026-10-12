@@ -1032,26 +1032,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   flex: none;
   color: var(--cyan);
 }
-/* 一道很淡的扫描光掠过，呼应液晶屏质感；减少动态效果时关闭。 */
-.topbar-search::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  width: 40%;
-  background: linear-gradient(90deg, transparent, rgba(77, 227, 255, 0.16), transparent);
-  transform: translateX(-120%);
-  animation: search-sheen 6s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes search-sheen {
-  0%,
-  70% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(320%);
-  }
-}
 .topbar-search:hover,
 .topbar-search:focus-visible {
   border-color: rgba(77, 227, 255, 0.62);
@@ -1237,10 +1217,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   flex: none;
   border-radius: 50%;
   background: var(--lcd);
-  animation: pulse 2.6s infinite;
 }
 .save-dot.busy {
   background: var(--yellow);
+  animation: pulse 2.6s infinite;
 }
 .save-dot.error {
   background: var(--red);
@@ -1329,13 +1309,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   margin-inline: auto;
   padding: 36px 40px 96px;
   outline: none;
-  animation: page-in 0.45s var(--ease);
-}
-@keyframes page-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
 }
 .sidebar-scrim {
   display: none;
@@ -1765,13 +1738,6 @@ details.scan-notice {
   max-height: min(88vh, 900px);
   padding: 0 24px 24px;
   border-radius: 18px;
-  animation: modal-in 0.35s var(--ease);
-}
-@keyframes modal-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.98);
-  }
 }
 .drawer-overlay {
   place-items: stretch end;
@@ -1782,12 +1748,6 @@ details.scan-notice {
   height: 100%;
   padding: 0 24px 28px;
   border-radius: 18px;
-  animation: drawer-in 0.5s var(--ease);
-}
-@keyframes drawer-in {
-  from {
-    transform: translateX(calc(100% + 24px));
-  }
 }
 .dialog-top {
   position: sticky;

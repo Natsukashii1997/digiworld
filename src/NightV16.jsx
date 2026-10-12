@@ -1,7 +1,8 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Copy, GripVertical, LockKeyhole, Moon, Plus, Settings2, Trash2, Wifi, X } from 'lucide-react';
 import { PageHeading } from './components.jsx';
-import { prefersReduced } from './v14.jsx';
+import { prefersReduced, LcdText } from './v14.jsx';
 import { CrestIcon, Pixel } from './pixel.jsx';
 import { request } from './api.js';
 import { NIGHT_V2_CRESTS, NIGHT_V2_CREST_NAMES } from './night-v2-crests.js';
@@ -99,17 +100,24 @@ function AgentTag({ id, role }) {
   const agent = AGENTS.find(value => value.id === id);
   return agent ? <span className="nv-agent"><Pixel sprite={agent.sprite} fit={18} /><span>{agent.label}</span>{role && <small>{role}</small>}</span> : <span className="nv-agent nv-muted">不复核</span>;
 }
-function Chip({ chip, index, slot, usedIndex, onClick, onDragStart, inSlot = false, focus = false, readOnly = false }) {
+function Chip({ chip, index, slot, usedIndex, onClick, onDragStart, onDragEnd, dragging = false, inSlot = false, focus = false, readOnly = false }) {
   const isCustomEntry = chip?.kind === 'custom-entry';
   const chipId = chip?.id || 'custom';
   return <button
-    type="button" className={`nt-chip${isCustomEntry ? ' custom' : ''}${usedIndex ? ' used' : ''}${inSlot ? ' in-slot' : ''}${focus ? ' focus' : ''}`}
+    type="button" className={`nt-chip${isCustomEntry ? ' custom' : ''}${usedIndex ? ' used' : ''}${inSlot ? ' in-slot' : ''}${focus ? ' focus' : ''}${dragging ? ' nv-dragging' : ''}`}
     data-chip-id={chipId} style={{...rgbaHue(chip), '--crest-step': Number.isFinite(index) ? index : 0}}
     draggable={!readOnly && !isCustomEntry && !inSlot}
     disabled={readOnly && isCustomEntry}
-    onDragStart={onDragStart} onClick={onClick}
+    onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={onClick}
     aria-label={`${chip.name}芯片${usedIndex ? `，已插入第 ${usedIndex} 槽` : ''}${readOnly ? isCustomEntry ? '，夜间不可新建' : '，只读查看 Prompt' : inSlot ? '，编辑插槽' : '，打开设置'}`}
   >
+    {inSlot ? <span className="nv-chip-reverse">
+      <span className="nv-reverse-top nv-mono"><span>{codeOf(chip, index)}</span><span>{enOf(chip)}</span></span>
+      <strong className="nv-reverse-name" title={chip.name}>{chip.name}</strong>
+      <span className="nv-reverse-purpose"><small>今晚做什么</small><span title={slot?.goal || slot?.topic || chip.name}>{slot?.goal || slot?.topic || chip.name}</span></span>
+      <span className="nv-reverse-delivery">明早交回 · {outputCaption(chip)}</span>
+      <span className="nv-reverse-duration nv-mono">{durationOf(chip, slot)} · 已插入</span>
+    </span> : <>
     <span className="nv-chip-top"><span className="nv-mono">{codeOf(chip, index)}</span><span className="nv-mono">{enOf(chip)}</span></span>
     <span className="nv-chip-face"><Glyph name={iconOf(chip)} size={inSlot ? 42 : 54} /></span>
     <span className="nv-chip-name">{chip.name}</span>
@@ -117,6 +125,7 @@ function Chip({ chip, index, slot, usedIndex, onClick, onDragStart, inSlot = fal
     {!inSlot && <span className={`nv-chip-meta nv-mono${isCustomEntry ? ' placeholder' : ''}`} aria-hidden={isCustomEntry || undefined}>{isCustomEntry ? '\u00a0' : <>{durationOf(chip)}{chip.network === 'readonly' && <Wifi size={11} />}</>}</span>}
     {usedIndex > 0 && !inSlot && <span className="nv-chip-used nv-mono">#{usedIndex}</span>}
     <span className="nv-pins" aria-hidden="true">{Array.from({ length: 9 }, (_, i) => <i key={i} />)}</span>
+    </>}
   </button>;
 }
 
@@ -272,6 +281,7 @@ function NightPlanner({ state, save, notify, navigate, morningTarget, onMorningC
   const [showMorning, setShowMorning] = useState(true);
   const [morningRetry, setMorningRetry] = useState(0);
   const dragged = useRef(null);
+  const [draggingId, setDraggingId] = useState(null), [dropIndex, setDropIndex] = useState(null);
   const opener = useRef(null);
   const morningChangeRef = useRef(onMorningChange);
   morningChangeRef.current = onMorningChange;
@@ -449,11 +459,16 @@ function NightPlanner({ state, save, notify, navigate, morningTarget, onMorningC
     try { await commit(reorderSlots(state, from, to, { expectedRevision: model.revision }), '今晚执行顺序已更新'); }
     catch (cause) { setError(fieldError(cause)); }
   }
+  function canDropAt(at, value = dragged.current) {
+    if (!value || planLocked || busy) return false;
+    return value.kind === 'slot' || (slots.length < 4 && at === slots.length);
+  }
   function onDrop(event, at) {
     event.preventDefault();
     const value = dragged.current;
     dragged.current = null;
-    if (!value || planLocked) return;
+    setDraggingId(null); setDropIndex(null);
+    if (!canDropAt(at, value)) return;
     if (value.kind === 'slot') { move(value.index, Math.min(at, slots.length - 1)); return; }
     const chip = byId.get(value.id);
     if (chip && slots.length < 4) openEditor(chip);
@@ -487,7 +502,6 @@ function NightPlanner({ state, save, notify, navigate, morningTarget, onMorningC
   const checkPassedCount = Number.isFinite(runtime?.checks?.passed) ? runtime.checks.passed : checkItems.filter(checkPassed).length;
   const checkTotal = Number.isFinite(runtime?.checks?.total) ? runtime.checks.total : checkItems.length;
   const quotaEstimate = typeof runtime?.quotaEstimatePercent === 'number' && Number.isFinite(runtime.quotaEstimatePercent) ? runtime.quotaEstimatePercent : null;
-  const quotaLabel = quotaEstimate === null ? '待检查' : `≈${quotaEstimate.toFixed(1)}%`;
   const elapsedMinutes = elapsedMinutesOf(runtime);
   const usedTime = elapsedMinutes === null ? null : durationTotal(elapsedMinutes);
   const displayMorning = showReady && morning.kind === 'ready' &&
@@ -510,33 +524,41 @@ function NightPlanner({ state, save, notify, navigate, morningTarget, onMorningC
     }
     setShowMorning(false);
   }
+  const libraryView = (<section className="nv-library" data-testid="night-library" data-locked={planLocked ? 'true' : 'false'} aria-label={planLocked ? '芯片库，只读' : '芯片库'}><header className="nv-section-title"><h2>芯片库</h2><span className="nv-mono nv-muted">{displayMorning ? '当前库模板仅供参考；昨夜锁版以晨报为准' : planLocked ? '夜里只能看 Prompt，不能换芯片' : `${library.length} 种 · ${slots.length ? '点开看 prompt 与产出' : '先点开一枚，看看它会做什么、明早交回什么'}`}</span></header><div className="nv-lib-row">{library.map((chip, index) => <Chip chip={chip} index={index} key={chip.id} usedIndex={displayMorning ? 0 : usedIndex(chip.id)} readOnly={planLocked} dragging={draggingId === chip.id} onDragEnd={() => { dragged.current = null; setDraggingId(null); setDropIndex(null); }} onClick={() => openEditor(chip)} onDragStart={event => { if (planLocked) return; dragged.current = { kind: 'library', id: chip.id }; setDraggingId(chip.id); event.dataTransfer.effectAllowed = 'copy'; event.dataTransfer.setData('text/plain', chip.id); }} />)}</div></section>);
   const openOutput = slotId => { window.location.hash = `#night/report/${encodeURIComponent(morning.report.runId)}/${encodeURIComponent(slotId)}`; };
-  return <div className="night-v16" data-testid="night-v2" data-run-status={showReady ? runtime?.status : load}>
+  return <div className={`night-v16${showReady && !displayMorning && !morningTarget ? ' nv-board-layout' : ''}`} data-testid="night-v2" data-run-status={showReady ? runtime?.status : load}>
     <PageHeading page="night" description={displayMorning ? '昨夜芯片已翻面，逐项核对交付、缺口与新发现。' : isRunning ? '夜里自己跑，你去睡。这里可查看进度或停止今晚。' : runtime?.status === 'paused' ? '夜巡暂停中，服务端仍可在窗口内续跑；这里可停止今晚。' : '选择芯片，保存计划；是否开跑请看实际运行状态。'} help={<>{showReady && planLocked && <span className={`nv-run-state${isRunning ? ' running' : isBlocked ? ' blocked' : ''}`} role="status">{displayMorning ? '晨报待决策' : isRunning ? '运行中' : isBlocked ? '开工受阻' : runtime.status === 'paused' ? '限流暂停' : runtime.status === 'ready' ? '待执行' : runtime.status === 'announced' ? '已预告' : runtime.status === 'stopping' ? '停止中' : runtime.status === 'stopped' ? '已停止' : '状态待核对'}</span>}<button type="button" className="nv-help" aria-label="这页怎么用" onClick={() => setInfo('help')}>?</button></>} action={<div className="nv-head-actions"><button type="button" className="nv-icon-btn" aria-label="刹车与额度说明" onClick={() => setInfo('brakes')}><Settings2 size={18} /></button></div>} />
     <ul className="page-bounds"><li>{displayMorning ? '晨报仅在本机回读' : showReady && planLocked ? '夜巡状态仅在本机' : '只在本机规划'}</li><li>不合并、不推送</li><li>每周额度 ≤ 20%</li></ul>
-    {load === 'loading' && <div data-testid="night-loading" role="status" aria-busy="true"><section className="nv-bay nv-loading" aria-label="读取夜巡计划中"><div className="nv-bay-top"><div><span className="nv-sk nv-w30" /><span className="nv-sk nv-h28 nv-w50" /></div><span className="nv-sk nv-w40" /></div><div className="nv-slots">{Array.from({ length: 4 }, (_, index) => <div className="nt-slot" key={index}><div className="nv-slot-well"><span className="nv-sk nv-chip-sk" /></div><div className="nv-slot-mouth"><span className="nv-led off" /><span className="nv-sk nv-w40" /></div></div>)}</div></section><section className="nv-library"><h2>芯片库</h2><div className="nv-lib-row">{Array.from({ length: 7 }, (_, index) => <span className="nv-sk nv-chip-sk" key={index} />)}</div></section></div>}
+    <ReadReveal pending={load==='loading'} ready={load==='ready'}/>
+    <ReadReveal pending={morning.kind==='loading'} ready={morning.kind==='ready'} target=".nv-morning,.nv-report-shell"/>
+    {load === 'loading' && <section data-testid="night-loading" className="nv-loading" aria-busy="true"><Reading label="读取夜巡计划与运行状态"/></section>}
     {load === 'error' && <section data-testid="night-error" className="nv-load-error" role="alert"><h2>夜巡计划或运行状态暂时读不到</h2><p>{loadError}</p><button className="nv-nbtn pri" type="button" onClick={loading}>重试读取</button></section>}
     {showReady && <>
       {morning.kind === 'ready' && !morningTarget && <div className="nv-morning-switch" role="group" aria-label="夜巡晨报与今晚计划"><button type="button" className="nv-nbtn" aria-pressed={displayMorning} onClick={() => setShowMorning(true)}>查看昨夜晨报</button><button type="button" className="nv-nbtn pri" aria-pressed={!displayMorning} disabled={busy || !canPlanTonight} onClick={planTonight}>规划今晚</button></div>}
       {error && !editor && <p className="nv-save-error" role="alert">{error}</p>}
-      {displayMorning ? <NightMorningView report={morning.report} onOpen={openOutput} onDecisionChange={onMorningChange} /> : morningTarget ? <section className="nv-morning-state" role={morning.kind === 'unknown' ? 'alert' : 'status'}><h2>{morning.kind === 'loading' ? '正在回读晨报' : '晨报暂时无法确认'}</h2><p>{morning.message || '正在读取服务端已生成的晨报；不会用当前计划代替昨夜锁定结果。'}</p><button type="button" className="nv-nbtn" onClick={() => setMorningRetry(value => value + 1)}>重新读取</button></section> : <>
+      {displayMorning ? <NightMorningView report={morning.report} onOpen={openOutput} onDecisionChange={onMorningChange} /> : morningTarget ? <section className="nv-morning-state" role={morning.kind === 'unknown' ? 'alert' : 'status'}><h2>{morning.kind === 'loading' ? <Reading label="正在回读晨报"/> : '晨报暂时无法确认'}</h2><p>{morning.message || '正在读取服务端已生成的晨报；不会用当前计划代替昨夜锁定结果。'}</p><button type="button" className="nv-nbtn" onClick={() => setMorningRetry(value => value + 1)}>重新读取</button></section> : <>
       {morning.kind === 'not_due' && <p className="nv-morning-state" role="status">晨报尚未到服务端翻面时间（{clockOf(morning.readyAt)}）；页面打开时约每 30 秒复核一次。</p>}
       {morning.kind === 'unknown' && <p className="nv-morning-state" role="alert">{morning.message}<button type="button" className="nv-nbtn" onClick={() => setMorningRetry(value => value + 1)}>重新读取晨报</button></p>}
+      {libraryView}
       <section className={`nv-bay${isRunning ? ' running' : isPaused ? ' paused' : isBlocked ? ' blocked' : planLocked ? ' locked' : ''}`} aria-label={isRunning ? '正在巡逻' : isPaused ? '夜巡限流暂停' : '今晚插槽'} data-testid="night-slots"><div className="nv-stars" aria-hidden="true">{STARS.map((style, index) => <i key={index} style={style} />)}</div>
         {isRunning && <span className="nv-moon-big" aria-hidden="true"><Moon size={28} /></span>}
-        <header className="nv-bay-top" data-testid={isRunning ? 'night-running' : undefined}><div><span className="nv-mono nv-muted">{isRunning ? `PATROLLING · ${clockOf(runtime.serverNow)} · ${remainingOf(runtime.serverNow, model.window?.end || '07:00')}` : `TONIGHT · ${model.window?.start || '23:00'} → ${model.window?.end || '07:00'}`}</span><h2>{isRunning ? <>正在巡逻{currentSlotIndex >= 0 && <> · 第 <b className="nv-mono">{currentSlotIndex + 1}</b> 枚芯片</>}</> : slots.length ? <>今晚插了 <b className="nv-mono">{slots.length}</b> 枚芯片</> : '今晚还没插芯片'}</h2></div><div className="nv-meters"><div><span>插槽</span><b className="nv-mono">{slots.length}<small>/4</small></b></div><div><span>{isRunning ? '时长' : '计划时长'}</span><span className="nv-meter"><i style={{ width: `${isRunning ? Math.min(100, (elapsedMinutes || 0) / 450 * 100) : Math.min(100, minutes / 450 * 100)}%` }} /></span><b className="nv-mono">{isRunning ? `已用 ${usedTime || '待回读'}` : `${minutes ? durationTotal(minutes) : '0'} / 7h30`}</b></div><div><span>本周额度</span><span className="nv-meter quota"><i style={{ width: `${quotaEstimate === null ? 0 : Math.min(100, Math.max(0, quotaEstimate / 20 * 100))}%` }} /></span><b className="nv-mono">{quotaLabel} / 20%</b></div></div></header>
+        <header className="nv-bay-top" data-testid={isRunning ? 'night-running' : undefined}><div><span className="nv-mono nv-muted">{isRunning ? `PATROLLING · ${clockOf(runtime.serverNow)} · ${remainingOf(runtime.serverNow, model.window?.end || '07:00')}` : `TONIGHT · ${model.window?.start || '23:00'} → ${model.window?.end || '07:00'}`}</span><h2>{isRunning ? <>正在巡逻{currentSlotIndex >= 0 && <> · 第 <b className="nv-mono">{currentSlotIndex + 1}</b> 枚芯片</>}</> : slots.length ? <>今晚插了 <b className="nv-mono">{slots.length}</b> 枚芯片</> : '今晚还没插芯片'}</h2></div><div className="nv-meters">
+          <div><span>插槽</span><b className="nv-mono"><LcdText text={slots.length} px={2} label={`插槽 ${slots.length}`} /><small>/4</small></b></div>
+          <div><span>{isRunning ? '已用时长' : '计划时长'}</span><b className="nv-mono">{isRunning && !usedTime ? <span>待回读</span> : <><span aria-hidden="true">{(isRunning ? elapsedMinutes : minutes) >= 60 ? '≈' : null}</span><LcdText text={(isRunning ? usedTime : minutes ? durationTotal(minutes) : '0').replace('≈', '')} px={2} label={isRunning ? `已用 ${usedTime}` : `计划时长 ${minutes ? durationTotal(minutes) : '0'}`} /></>}<small>/ 7h30</small></b></div>
+          <div><span>本周额度</span><b className="nv-mono">{quotaEstimate === null ? <span>待检查</span> : <><span aria-hidden="true">≈</span><LcdText text={`${quotaEstimate.toFixed(1)}%`} px={2} label={`本周额度约 ${quotaEstimate.toFixed(1)}%`} /></>}<small>/ 20%</small></b></div>
+        </div></header>
         {!planLocked && <p className="nv-run-unknown" data-testid="night-plan-notice" role="status"><b>{slots.length ? "计划已保存" : "当前仅规划"}</b>{planExecutionNotice}</p>}
         {isBlocked && <div className="nv-block-banner" data-testid="night-blocked" role="alert"><X size={18} aria-hidden="true" /><div className="nv-block-copy"><b>开工检查未通过，今晚不开跑</b><p>{failedChecks.length ? failedChecks.map(item => item.reason || `${CHECK_LABELS[item.id] || item.id}未通过`).join('；') : '失败项待回读'} · 已通过 {checkPassedCount}/{checkTotal} 项。{runtime.canRecheck ? `修复后可在 ${clockOf(runtime.recheckUntil)} 前重新检查。` : `当前不可重新检查；截止 ${clockOf(runtime.recheckUntil)}。`}</p><details className="nv-check-details" data-testid="night-check-list"><summary>查看 {checkTotal || 6} 类开工检查的逐槽明细</summary><ul>{checkItems.map(item => <li key={`${item.id}:${item.slotId || ''}`}><span>{CHECK_LABELS[item.id] || item.id}{item.slotId ? ` · 槽 ${checkSlotNumber(item.slotId) || '待核对'}` : ''}</span><b className={checkPassed(item) ? 'passed' : 'failed'}>{checkPassed(item) ? '通过' : item.status === 'unknown' ? '未知' : '未通过'}</b>{item.reason && <small>{item.reason}</small>}</li>)}</ul></details></div><button className="nv-nbtn pri" type="button" data-testid="night-recheck" disabled={runtime.canRecheck !== true || Boolean(runAction)} onClick={() => actOnRun('recheck')}><Check size={15} />{runAction === 'recheck' ? '检查并回读中…' : '重新检查'}</button></div>}
         {planLocked && !isRunning && !isBlocked && <p className="nv-run-unknown" role="status">{runtime.status === 'stopped' ? '今晚已停止，状态已由服务端回读。' : runtime.status === 'stopping' ? '停止请求已记录，等待安全收场。' : runtime.status === 'paused' ? '夜巡因限流暂停，仍可能在窗口内续跑；可停止今晚。' : runtime.status === 'ready' ? '开工检查已通过，等待服务端开始下一槽。' : runtime.status === 'announced' ? '今晚已预告，等待开工检查。' : '夜巡状态待确认，计划暂时锁定；请重新读取运行回执。'} <button type="button" className="nv-nbtn" onClick={loading}>重新读取</button></p>}
         {snapshotMismatch && <p className="nv-run-error" role="alert">计划与运行快照不一致，锁定内容待核对。当前工作台槽位只供辨认，不代表本轮实际执行内容。</p>}
         {runError && <p className="nv-run-error" role="alert">{runError}<button type="button" className="nv-nbtn" onClick={loading}>重新读取</button></p>}
-        <div className="nv-slots">{Array.from({ length: 4 }, (_, index) => {
+        <div className="nv-slots" tabIndex={0} role="region" aria-label="今晚四个插槽，可横向滚动">{Array.from({ length: 4 }, (_, index) => {
           const slot = slots[index], chip = slot ? chipAtRevision(byId.get(slot.chipId), slot) : null;
           const live = slot ? runtimeSlots.get(slot.id) || { slotId: slot.id, status: 'queued' } : null;
           const phase = isBlocked ? 'err' : isPaused && live?.status === 'paused' ? 'warn' : isRunning || isPaused ? phaseOf(live, runtime) : 'ok';
-          return <div key={slot?.id || index} className={`nt-slot${slot ? ` st-${phase}` : ' vacant'}`} data-testid={`night-slot-${index + 1}`} style={chip ? rgbaHue(chip) : undefined} tabIndex={slot && !planLocked ? 0 : undefined} aria-label={slot && !planLocked ? `插槽 ${index + 1}：${chip?.name || '芯片'}；左右方向键换序` : undefined} onKeyDown={event => { if (!slot || planLocked) return; if (event.key === 'ArrowLeft') { event.preventDefault(); move(index, index - 1); } if (event.key === 'ArrowRight') { event.preventDefault(); move(index, index + 1); } }} draggable={Boolean(slot) && !planLocked} onDragStart={event => { if (!slot || planLocked) return; dragged.current = { kind: 'slot', index }; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', slot.id); }} onDragEnd={() => { dragged.current = null; }} onDragOver={event => { if (!planLocked) event.preventDefault(); }} onDrop={event => onDrop(event, index)}>
+          return <div key={slot?.id || index} className={`nt-slot${slot ? ` st-${phase}` : ' vacant'}${dropIndex === index ? ' nv-drop-target' : ''}`} data-testid={`night-slot-${index + 1}`} style={chip ? rgbaHue(chip) : undefined} tabIndex={slot && !planLocked ? 0 : undefined} aria-label={slot && !planLocked ? `插槽 ${index + 1}：${chip?.name || '芯片'}；左右方向键换序` : undefined} onKeyDown={event => { if (!slot || planLocked) return; if (event.key === 'ArrowLeft') { event.preventDefault(); move(index, index - 1); } if (event.key === 'ArrowRight') { event.preventDefault(); move(index, index + 1); } }} draggable={Boolean(slot) && !planLocked} onDragStart={event => { if (!slot || planLocked) return; dragged.current = { kind: 'slot', index }; setDraggingId(slot.chipId); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', slot.id); }} onDragEnd={() => { dragged.current = null; setDraggingId(null); setDropIndex(null); }} onDragOver={event => { if (canDropAt(index)) { event.preventDefault(); setDropIndex(index); } else setDropIndex(null); }} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget)) setDropIndex(null); }} onDrop={event => onDrop(event, index)}>
             {slot && !planLocked && <div className="nv-slot-tools"><button type="button" aria-label={`将槽 ${index + 1} 前移`} disabled={index === 0 || busy} onClick={() => move(index, index - 1)}><ChevronLeft size={15} /></button><GripVertical size={15} aria-hidden="true" /><button type="button" aria-label={`将槽 ${index + 1} 后移`} disabled={index === slots.length - 1 || busy} onClick={() => move(index, index + 1)}><ChevronRight size={15} /></button></div>}
-            <div className="nv-slot-well">{chip ? <Chip chip={chip} index={chips.findIndex(item => item.id === chip.id)} slot={slot} inSlot readOnly={planLocked} onClick={() => openEditor(chip, slot.id)} /> : planLocked ? <span className="nv-slot-hint nv-locked-hint"><LockKeyhole size={18} /><b>{isRunning ? '夜里不能换芯片' : '暂不可换芯片'}</b><small>{isRunning ? '07:05 之后再排' : '等待检查或运行结果'}</small></span> : <button type="button" className="nv-slot-hint" aria-label={`打开芯片库，为槽 ${index + 1} 选芯片`} onClick={() => document.querySelector('[data-testid="night-library"]')?.scrollIntoView({ behavior: prefersReduced() ? 'instant' : 'smooth' })}><Plus size={18} /><b>点选芯片，也可拖入</b>{index === 0 && !slots.length && <small>先到下方芯片库选一枚</small>}{slots.length > 0 && <small>还能放 {4 - slots.length} 枚</small>}</button>}
+            <div className="nv-slot-well">{chip ? <Chip chip={chip} index={chips.findIndex(item => item.id === chip.id)} slot={slot} inSlot readOnly={planLocked} onClick={() => openEditor(chip, slot.id)} /> : planLocked ? <span className="nv-slot-hint nv-locked-hint"><LockKeyhole size={18} /><b>{isRunning ? '夜里不能换芯片' : '暂不可换芯片'}</b><small>{isRunning ? '07:05 之后再排' : '等待检查或运行结果'}</small></span> : <button type="button" className="nv-slot-hint" aria-label={`打开芯片库，为槽 ${index + 1} 选芯片`} onClick={() => document.querySelector('[data-testid="night-library"]')?.scrollIntoView({ behavior: prefersReduced() ? 'instant' : 'smooth' })}><Plus size={18} />{index === slots.length && <b>点选芯片，也可拖入</b>}</button>}
               {isRunning && chip && phase === 'run' && <div className="nv-run-over" data-testid="night-slot-progress"><div className="nv-run-row"><span className="nv-mono">{Number.isFinite(live.round) && Number.isFinite(live.maxRounds) ? `R${live.round}/${live.maxRounds}` : '执行中'}</span><span>验收待回读</span></div><span className="nv-run-bar"><i style={{ width: Number.isFinite(live.round) && Number.isFinite(live.maxRounds) && live.maxRounds > 0 ? `${Math.min(100, Math.max(0, live.round / live.maxRounds * 100))}%` : '0%' }} /></span></div>}
               {isRunning && chip && phase === 'done' && <div className="nv-run-over done">已交回 · 07:05 翻面</div>}
               {isRunning && chip && phase === 'wait' && <div className="nv-run-over wait">排队 · 开始时间待回读</div>}
@@ -554,7 +576,7 @@ function NightPlanner({ state, save, notify, navigate, morningTarget, onMorningC
           {showStop && <button type="button" className="nv-nbtn nv-stop" data-testid="night-stop" disabled={Boolean(runAction) || !canStop} onClick={() => actOnRun('stop')}><X size={15} />{runtime.stopRequestedAt ? '停止请求已记录' : runAction === 'stop' ? '停止并回读中…' : '停止今晚'}</button>}
         </footer>
       </section></>}
-      <section className="nv-library" data-testid="night-library" data-locked={planLocked ? 'true' : 'false'} aria-label={planLocked ? '芯片库，只读' : '芯片库'}><header className="nv-section-title"><h2>芯片库</h2><span className="nv-mono nv-muted">{displayMorning ? '当前库模板仅供参考；昨夜锁版以晨报为准' : planLocked ? '夜里只能看 Prompt，不能换芯片' : `${library.length} 种 · ${slots.length ? '点开看 prompt 与产出' : '先点开一枚，看看它会做什么、明早交回什么'}`}</span></header><div className="nv-lib-row">{library.map((chip, index) => <Chip chip={chip} index={index} key={chip.id} usedIndex={displayMorning ? 0 : usedIndex(chip.id)} readOnly={planLocked} onClick={() => openEditor(chip)} onDragStart={event => { if (planLocked) return; dragged.current = { kind: 'library', id: chip.id }; event.dataTransfer.effectAllowed = 'copy'; event.dataTransfer.setData('text/plain', chip.id); }} />)}</div></section>
+      {(displayMorning || morningTarget) && libraryView}
     </>}
     {editor && draft && <Drawer key={`${editor.chipId}:${editor.custom ? 'template' : 'slot'}:${editor.slotId || ''}`} chip={editor.isNewCustom ? { id: 'custom', name: '自定义芯片', kind: 'custom-entry', color: draft.color, icon: draft.icon, output: draft.output } : byId.get(editor.chipId)} index={editor.slotIndex >= 0 ? editor.slotIndex : chips.findIndex(chip => chip.id === editor.chipId)} slot={slots.find(slot => slot.id === editor.slotId)} draft={draft} setDraft={setDraft} onClose={closeEditor} onSave={saveEditor} onTemplateSave={saveTemplate} onDuplicate={duplicateCurrent} onDelete={editor.custom ? deleteCurrent : removeCurrent} onHistory={item => setInfo(`rev ${item.revision}: ${item.prompt}`)} onManage={() => { const chip = byId.get(editor.chipId); if (chip) openEditor(chip, null, null, chip.origin === 'custom'); }} onUseChip={() => { const chip = byId.get(editor.chipId); if (chip) openEditor(chip); }} busy={busy} error={error} state={state} custom={editor.custom} />}
     {viewing && byId.get(viewing.chipId) && <ReadOnlyDrawer key={`${viewing.chipId}:${viewing.slotId || 'library'}`} chip={byId.get(viewing.chipId)} slot={slots.find(slot => slot.id === viewing.slotId)} index={viewing.slotId ? slots.findIndex(slot => slot.id === viewing.slotId) : chips.findIndex(chip => chip.id === viewing.chipId)} unverified={snapshotMismatch} onClose={() => setViewing(null)} />}

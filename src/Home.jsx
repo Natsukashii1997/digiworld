@@ -2,7 +2,7 @@ import React from "react";
 import {
   Layers, Bot, Folder, BookOpen, PenLine, Moon, GitBranch, ScanLine,
   Settings2, Inbox, Stethoscope, Handshake, CalendarDays, Newspaper,
-  Bookmark, Gem,
+  Bookmark,
 } from "lucide-react";
 import { HomeV16 } from "./HomeV16.jsx";
 
@@ -10,7 +10,7 @@ export const ICONS = {
   inbox: Inbox, assets: Layers, references: ScanLine, history: GitBranch,
   agents: Bot, projects: Folder, health: Stethoscope, collab: Handshake,
   calendar: CalendarDays, night: Moon, knowledge: BookOpen, notes: PenLine,
-  aihot: Newspaper, learning: Bookmark, silver: Gem, settings: Settings2,
+  aihot: Newspaper, learning: Bookmark, settings: Settings2,
 };
 
 // Kept as a pure registry projection for existing consumers and compatibility tests.
@@ -34,19 +34,8 @@ export function homeFacts(state, zoneLatest) {
     notes: state.notes.length + " 条本机草稿",
     aihot: "精选 · 热点 · 日报 · 本机缓存",
     learning: "收藏画布 · 本机收录",
-    silver: silverSummary(state.silver),
     settings: state.model?.provider ? "模型配置：" + state.model.provider + " · 凭据与连通性未核验" : "模型尚未配置 · 连接测试在设置中",
   };
-}
-
-function silverSummary(silver) {
-  if (!silver) return "还没有收录";
-  const live = list => list.filter(r => !r.deletedAt);
-  const categories = live(silver.categories);
-  const ids = new Set(categories.map(c => c.id));
-  const target = categories.reduce((n, c) => n + c.target, 0);
-  const filled = live(silver.items).filter(i => ids.has(i.categoryId)).length;
-  return live(silver.wall).length + " 张欣赏图 · 已填 " + filled + "/" + target + " 格";
 }
 
 export function Home(props) {

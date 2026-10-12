@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { constants } from "node:fs";
 import { join, resolve, parse } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
-import { sniffImage } from "./silver.mjs";
+import { sniffImage } from "./image-type.mjs";
 import { validateMedia } from "../src/reverse-recipe.js";
 import { failure } from "./repository.mjs";
 const mime = { png: "image/png", jpg: "image/jpeg", webp: "image/webp" };

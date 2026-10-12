@@ -373,6 +373,10 @@ try {
       permissions: ["clipboard-write"],
     });
     p.setDefaultTimeout(5000);
+    await p.addInitScript(() => {
+      window.__successFeedback = 0;
+      addEventListener("guiji:data-caught", () => window.__successFeedback++);
+    });
     const b = (name) => p.getByRole("button", { name, exact: true });
     const key = `workbench-activity-${a.id}`;
     const pending = () =>
@@ -488,8 +492,10 @@ try {
         await p.getByText(/记录结果未知/).waitFor();
         await p.unroute("**/api/asset-activity?*");
         await p.unroute("**/api/asset-activity");
+        await p.evaluate(() => { window.__successFeedback = 0; });
         await b("查询记录").click();
         await p.getByText(/尚未找到反馈记录/).waitFor();
+        assert.equal(await p.evaluate(() => window.__successFeedback), 0, "未找到反馈记录不播放成功反馈");
         assert.equal(await b("补记记录").count(), 0);
         await b("暂不保存此记录").click();
         await b("好用").click();
@@ -502,6 +508,7 @@ try {
         );
       } else if (scenario === "feedback-archived") {
         await p.getByText(/资产不存在或已归档，本次记录未保存/).waitFor();
+        assert.equal(await p.evaluate(() => window.__successFeedback), 0, "已归档且记录未保存不播放成功反馈");
         assert.equal(
           await p.getByLabel("反馈备注（可选）").inputValue(),
           "合成反馈草稿 A/B",

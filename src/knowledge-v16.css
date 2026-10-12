@@ -940,3 +940,10 @@
   }
   .page-knowledge.v16 .kh-hub-head h2 { white-space: nowrap; }
 }
+
+.page-knowledge.v16 .kh-search-row { display:flex; align-items:center; gap:var(--s-4); }
+.page-knowledge.v16 .kh-search-row .kh-search { flex:1; min-width:0; }
+.page-knowledge.v16 .kh-search-row > .button { flex:none; }
+.page-knowledge.v16 .kh-agent:not(.on) { opacity:.68; filter:saturate(.35); }
+.page-knowledge.v16 .kh-agent:not(.on):hover { opacity:1; }
+@media (max-width:760px) { .page-knowledge.v16 .kh-search-row { flex-wrap:wrap; justify-content:flex-end; } .page-knowledge.v16 .kh-search-row .kh-search { flex-basis:100%; } }

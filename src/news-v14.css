@@ -2,7 +2,7 @@
    改用全站的无衬线标题、屏幕 / 面板材质与生活区青蓝强调，读起来是同一台掌机里的一页。 */
 .news-v14 { min-width: 0; }
 /* 生活区主按钮用青蓝（与日历、随手记一致）。 */
-.news-v14 .button:not(.secondary) { background:linear-gradient(180deg,color-mix(in srgb,var(--cyan) 62%,#fff),var(--cyan)); color:var(--px-ink); border-color:transparent; box-shadow:0 10px 28px -12px rgba(77,227,255,.9), inset 0 1px 0 rgba(255,255,255,.6); }
+.news-v14 .button:not(.secondary) { background:var(--primary-fill); color:var(--orange-ink); border-color:transparent; box-shadow:var(--glow-orange); }
 .news-v14 .button:not(.secondary):disabled { opacity:.55; box-shadow:none; }
 .news-v14 .news-mast { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:var(--s-3) var(--s-5); margin-bottom:var(--s-4); padding:var(--s-4) var(--s-5); border-radius:var(--r-xl); background:var(--m-screen); box-shadow:var(--m-screen-edge); }
 .news-v14 .news-mast h2 { margin:0; font:700 var(--fs-display-s)/1.2 var(--sans); letter-spacing:0.02em; color:var(--text); }

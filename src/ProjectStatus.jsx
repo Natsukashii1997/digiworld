@@ -1,3 +1,4 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 // 路线 v3 切片 2.1/2.2：在推进项目的状态卡、停滞雷达与安全体检。
 // 全部只读：状态来自项目自己的 CURRENT.md 与 Git，工作台不另存第二份 Current，不修改项目文件。
 import React, { useState } from "react";
@@ -68,8 +69,11 @@ export function ActiveToggle({ project, state, adoptState, notify, launch=false,
   );
 }
 
-export function CurrentBlock({ current, omitSummary = false }) {
-  if (!current || current.state === "loading") return <p role="status">CURRENT 读取中…</p>;
+export function CurrentBlock(props) {
+  return <><ReadReveal pending={!props.current||props.current.state==="loading"} ready={!!props.current&&!["loading","error","unparsed","partial"].includes(props.current.state)}/><CurrentBody {...props}/></>;
+}
+function CurrentBody({ current, omitSummary = false }) {
+  if (!current || current.state === "loading") return <p role="status"><Reading mini label="CURRENT 读取中"/></p>;
   if (current.state === "absent")
     return (
       <div className="status-empty">

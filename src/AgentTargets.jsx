@@ -1,3 +1,5 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
+import { flyData } from './data-flight.js';
 import React, { useEffect, useRef, useState } from "react";
 import { Plus, RefreshCw } from "lucide-react";
 import { Badge, Button } from "./components.jsx";
@@ -109,6 +111,7 @@ export function AgentTargets({
       });
       // A completed write updates the common state even if this drawer closed meanwhile.
       adoptState(next);
+      if (action === "save") flyData();
       if (sequence.current !== ticket) return;
       setDraft(null);
       setRemoving(null);
@@ -139,12 +142,13 @@ export function AgentTargets({
       aria-busy={!!busy}
     >
       <div className="workflow-reference-heading">
+        <ReadReveal pending={busy==="check"} ready={!error}/>
         <h3>
           管理目标 <small>{targets.length}</small>
         </h3>
         <Button secondary disabled={!!busy} onClick={refresh}>
-          <RefreshCw size={15} className={busy === "check" ? "spinning" : ""} />
-          {busy === "check" ? "检查中…" : "检查版本与目标"}
+          {busy === "check" ? <Reading mini label="检查版本与目标"/> : <RefreshCw size={15}/>}
+          {busy === "check" ? null : "检查版本与目标"}
         </Button>
       </div>
       <p className="detail-footnote" role="status">

@@ -1,3 +1,5 @@
+import { flyDataOnce } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React,{useEffect,useRef,useState} from 'react';
 import {Button,Dialog} from './components.jsx';
 import {request} from './api.js';
@@ -26,15 +28,16 @@ export function VaultWriteDialog({noteId,proposalId,onClose,navigate}){
  async function loadHistory(){setHistoryError('');try{setRows((await call('/history')).items);}catch(e){setHistoryError(e.message);}}
  async function apply(){if(!plan||unresolved)return;const operationId=plan.operationId;
   const value=await run(()=>call('/apply',{token:plan.token,operationId,confirmed:true}));
-  if(value){setResult({...value,operationId:value.operationId||operationId});setUnresolved(value.status==='unknown');setPlan(null);}
+  if(value){if(value.status==='verified')flyDataOnce(`vault:${value.operationId||operationId}`);setResult({...value,operationId:value.operationId||operationId});setUnresolved(value.status==='unknown');setPlan(null);}
   else if(a.lastError.current&&!a.lastError.current.operationNotStarted){setResult({status:'unknown',operationId,reason:a.lastError.current.message});setUnresolved(true);setPlan(null);}
  }
- async function check(){if(!result?.operationId)return;const value=await run(()=>call('/check',{operationId:result.operationId}));if(value){setResult({...value,operationId:value.operationId||result.operationId});setUnresolved(value.status==='unknown');}}
+ async function check(){if(!result?.operationId)return;const value=await run(()=>call('/check',{operationId:result.operationId}));if(value){if(unresolved&&value.status==='verified')flyDataOnce(`vault:${value.operationId||result.operationId}`);setResult({...value,operationId:value.operationId||result.operationId});setUnresolved(value.status==='unknown');}}
  function enter(e){if(e.key!=='Enter')return;e.preventDefault();if(e.nativeEvent.isComposing||e.nativeEvent.keyCode===229||composing.current||lock.current||unresolved)return;e.currentTarget.form.requestSubmit();}
  return <Dialog recoverFocus title={profile?'写回个人说明':'随手记写入 Obsidian'} onClose={()=>!lock.current&&!historyBusy.current&&onClose()}>
   <div className="capability-console vault-write-console">
+   <ReadReveal pending={loading} ready={!!configuration&&!a.error}/>
    <p>{profile?'只使用已采纳的建议，在设置允许的个人说明目录里替换唯一原段落。':'只使用这条已保存随手记的正文，在设置允许的子目录独占新建 Markdown 文件。'}预览后确认，先备份，写后回读；结果未知时先查询。</p>
-   {loading&&<p role="status">正在读取本机 Vault 写入授权…</p>}
+   {loading&&<Reading label="正在读取本机Vault写入授权"/>}
    {!loading&&!configuration&&<p role="status">本机授权无法确认，写入保持关闭。</p>}
    {configuration&&!configuration.enabled&&<div className="vault-write-off"><p>Vault 写入默认关闭。先到设置选择已登记的知识源与相对子目录，并审阅授权预览。</p>
     <Button type="button" secondary onClick={()=>{onClose();if(navigate)navigate('settings');else location.hash='settings';}}>去设置 Vault 写入</Button></div>}

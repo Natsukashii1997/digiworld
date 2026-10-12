@@ -282,6 +282,13 @@
 .night-v16 .nv-agent small{font-size:var(--fs-small);color:var(--muted)}
 .night-v16 .nv-rev-note{font-size:var(--fs-micro);color:var(--yellow)}
 .night-v16 .nv-slot-hint{font:inherit;cursor:pointer;text-align:center}
+/* 351 P2: empty slots retain their socket material, with a single guidance label. */
+.night-v16 .nv-slots { align-items:end; }
+.night-v16 .nv-slots:not(:has(> .nt-slot:not(.vacant))) { align-items:stretch; grid-auto-rows:1fr; }
+.night-v16 .nt-slot.vacant .nv-slot-well { height:auto; min-height:72px; flex:1; }
+/* Keep the original 8px overlap into the socket without shrinking the guidance icon. */
+.night-v16 .nt-slot.vacant .nv-slot-hint { height:calc(100% + 8px); min-height:72px; padding:var(--s-3) var(--s-2); }
+.night-v16 .nv-meters b small { font-size:var(--fs-label); }
 .night-v16 .nv-slot-hint:hover{background:rgba(168,145,255,.08)}
 .night-v16 .nv-lib-row > .nv-chip-sk{aspect-ratio:.76;height:auto}
 .night-v16 .nv-loading .nv-slot-well{height:236px}
@@ -490,4 +497,51 @@
 .nv-drawer .nv-pick small,
 .nv-drawer .nv-dw-field h3 small {
   color: var(--muted);
+}
+
+/* 362 · 左库右板：只作用于今晚主板，晨报与结果区沿用原布局。 */
+.night-v16.nv-board-layout{display:grid;grid-template-columns:332px minmax(0,1fr);column-gap:24px;align-items:start}
+.night-v16.nv-board-layout> :not(.nv-library):not(.nv-bay){grid-column:1/-1;min-width:0}
+.night-v16.nv-board-layout>.nv-library{grid-column:1;margin:0;padding:20px 16px;border-radius:var(--r-l);background:linear-gradient(180deg,var(--panel-2),var(--field));box-shadow:inset 0 0 0 1px var(--line)}
+.night-v16.nv-board-layout>.nv-bay{grid-column:2;margin:0;position:sticky;top:76px;min-width:0}
+.nv-board-layout .nv-library .nv-section-title{flex-wrap:wrap;row-gap:4px;margin-bottom:12px}
+.nv-board-layout .nv-library .nv-section-title .nv-mono{flex-basis:100%}
+.nv-board-layout .nv-library .nv-lib-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;overflow:visible}
+.nv-board-layout .nv-library .nt-chip{width:auto;min-width:0}
+.nv-board-layout .nv-bay-top{flex-direction:column;align-items:flex-start;row-gap:12px}
+.nv-board-layout .nv-meters{flex-wrap:wrap;gap:14px}
+.nv-board-layout .nv-meters>div{gap:8px}
+.nv-board-layout .nv-meters b{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.nv-board-layout .nv-meters .lcd-num{display:inline-flex;color:var(--lcd)}
+.nv-board-layout .nv-meters small{font-size:var(--fs-label);font-weight:500}
+.night-v16.nv-board-layout .nv-slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;min-width:0;align-items:start}
+.nv-board-layout .nv-slots:focus-visible{outline:2px solid var(--cyan);outline-offset:4px;border-radius:var(--r)}
+.nv-board-layout .nv-slot-well{height:220px;padding:0}
+.nv-board-layout .nv-slot-well .nt-chip.in-slot{position:absolute;inset:10px;width:calc(100% - 20px);height:calc(100% - 20px);aspect-ratio:auto;transform:none;padding:0;background:linear-gradient(180deg,var(--panel-3),var(--panel));border-radius:var(--r);box-shadow:inset 0 0 0 1px rgba(var(--h),.45),0 0 18px -6px rgba(var(--h),.6);cursor:pointer;overflow:hidden}
+.night-v16.nv-board-layout[data-run-status] .nt-slot .nt-chip.in-slot:hover{transform:none}
+.nv-board-layout .nv-slot-well .nt-chip.in-slot:before,.nv-board-layout .nv-slot-well .nt-chip.in-slot:after{display:none}
+.nv-board-layout .nv-chip-reverse{display:flex;flex-direction:column;gap:8px;padding:12px;min-width:0;width:100%;height:100%}
+.nv-board-layout .nv-reverse-top{display:flex;justify-content:space-between;gap:5px;font-size:var(--fs-micro);letter-spacing:.04em;color:rgb(var(--h))}
+.nv-board-layout .nv-reverse-top>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.nv-board-layout .nv-reverse-name{font-size:var(--fs-read);line-height:1.3;color:var(--text)}
+.nv-board-layout .nv-reverse-purpose{display:flex;flex-direction:column;gap:4px;font-size:var(--fs-caption);line-height:1.4;color:var(--text-2)}
+.nv-board-layout .nv-reverse-purpose small{font-size:var(--fs-label);color:var(--muted)}
+.nv-board-layout .nv-reverse-purpose>span,.nv-board-layout .nv-reverse-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere}
+.nv-board-layout .nv-reverse-name,.nv-board-layout .nv-reverse-purpose>span{-webkit-line-clamp:2}
+.nv-board-layout .nv-reverse-delivery{font-size:var(--fs-label);line-height:1.4;color:var(--muted)}
+.nv-board-layout .nv-reverse-duration{margin-top:auto;color:var(--lcd);font-size:var(--fs-small);line-height:1.3}
+.nv-board-layout .nt-slot.vacant .nv-slot-well{height:220px;min-height:220px;max-height:220px;flex:0 0 220px;padding:0;border:1.5px dashed color-mix(in srgb,var(--violet) 28%,transparent);border-radius:var(--r);background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 4%,transparent),transparent)}
+.nv-board-layout .nv-slot-hint{gap:10px;padding:12px;width:100%;height:100%;margin:0;border:0;background:transparent;min-height:44px}
+.nv-board-layout .nv-slot-foot{flex-wrap:wrap;justify-content:flex-start;gap:6px}
+.nv-board-layout .nv-slot-hint b{font-size:var(--fs-small);font-weight:500;line-height:1.5;max-width:9em}
+.nv-board-layout .nv-library .nt-chip.nv-dragging:before{background:var(--orange)}
+.nv-board-layout .nv-library .nt-chip.nv-dragging{filter:drop-shadow(0 0 10px color-mix(in srgb,var(--orange) 55%,transparent))}
+.night-v16.nv-board-layout .nt-slot.nv-drop-target .nv-slot-well{border-color:var(--orange);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--orange) 80%,transparent),0 0 20px -4px color-mix(in srgb,var(--orange) 60%,transparent)}
+@media(max-width:1200px){
+ .night-v16.nv-board-layout{display:flex;flex-direction:column;gap:0}
+ .night-v16.nv-board-layout> :not(.nv-library):not(.nv-bay){order:0;width:100%}
+ .night-v16.nv-board-layout>.nv-bay{position:relative;top:auto;order:1;width:100%;margin-bottom:24px}
+ .night-v16.nv-board-layout>.nv-library{order:2;width:100%}
+ .night-v16.nv-board-layout .nv-slots{grid-template-columns:repeat(4,minmax(180px,1fr));gap:14px;max-width:100%;overflow-x:auto;padding-bottom:8px;scrollbar-width:thin;scrollbar-color:var(--line-3) transparent}
+ .nv-board-layout .nv-bay-top{align-items:flex-start}
 }

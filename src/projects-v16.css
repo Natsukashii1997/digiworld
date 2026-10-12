@@ -70,7 +70,7 @@
 .projects-v16 { --px-cut: polygon(0 0, calc(100% - 15px) 0, calc(100% - 15px) 5px, calc(100% - 10px) 5px, calc(100% - 10px) 10px, calc(100% - 5px) 10px, calc(100% - 5px) 15px, 100% 15px, 100% 100%, 0 100%); }
 /* 空存档 */
 .projects-v16 .pj-save.pj-vacant {
-  isolation: isolate; grid-template-rows: auto 1fr; min-height: 300px; border: 0; border-radius: 0; box-shadow: none;
+  isolation: isolate; grid-template-rows: auto auto; align-self: start; min-height: 0; height: auto; border: 0; border-radius: 0; box-shadow: none;
   background: var(--line-3); clip-path: var(--px-cut);
   color: var(--muted); text-align: left; font: inherit; cursor: pointer;
 }
@@ -183,7 +183,7 @@
 @media (max-width: 760px) {
   .projects-v16 section + section { margin-top: var(--s-6); }
   .projects-v16 .pj-saves { grid-template-columns: 1fr; }
-  .projects-v16 .pj-save.pj-vacant { min-height: 120px; }
+  .projects-v16 .pj-save.pj-vacant { min-height: 0; }
   .projects-v16 .pj-save-main { grid-template-columns: 76px minmax(0, 1fr); }
   .projects-v16 .pj-filter { overflow-x: auto; max-width: 100%; }
   .projects-v16 .pj-search { width: 100%; }
@@ -290,6 +290,9 @@
 
 /* 无在推进项目时，手机先露出可选项目；有项目后保持现有存档槽。 */
 @media (max-width:760px) {
-  .projects-v16 .pj-no-active .pj-vacant { min-height:148px; }
+  .projects-v16 .pj-no-active .pj-vacant { min-height:0; }
   .projects-v16 .pj-no-active .pj-vacant ~ .pj-vacant { display:none; }
 }
+
+.projects-v16 .pj-cs-code { align-self:center; min-height:28px; margin:var(--s-2); padding:0 var(--s-2); border:1px solid currentColor; border-radius:var(--r-s); background:none; color:var(--cyan); }
+.projects-v16 .pj-cs.git .pj-cs-code { color:var(--violet-2); }

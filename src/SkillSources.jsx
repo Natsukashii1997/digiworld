@@ -1,3 +1,6 @@
+import { motionOrigin } from './scan-motion.js';
+import { flyData } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import { SkillSourceUpdate } from "./SkillSourceUpdate.jsx";
 import React, { useEffect, useRef, useState } from "react";
 import { FolderSearch, GitFork, RefreshCw } from "lucide-react";
@@ -148,6 +151,7 @@ export function SkillSourceImport({
       });
       if (!alive.current) return;
       adoptState(value.state);
+      flyData();
       notify(
         value.alreadyImported
           ? "已找到相同来源快照，未重复收录"
@@ -171,6 +175,7 @@ export function SkillSourceImport({
   return (
     <Dialog title="收录本机 Skill" onClose={close}>
       <form className="asset-form" onSubmit={confirm} aria-busy={!!busy}>
+        <ReadReveal pending={busy==="loading"||busy==="scan"||busy.startsWith("preview:")} ready={!busy&&!error}/>
         <div className="import-head">
           <Steps
             items={["扫描目录", "预览完整包", "确认收录"]}
@@ -206,9 +211,9 @@ export function SkillSourceImport({
           >
             <FolderSearch size={16} />
             {busy === "loading"
-              ? "读取目录…"
+              ? <Reading mini label="读取目录"/>
               : busy === "scan"
-                ? "扫描中…"
+                ? <Reading mini label="扫描目录"/>
                 : "扫描目录"}
           </Button>
         </div>
@@ -279,7 +284,7 @@ export function SkillSourceImport({
                           onClick={() => inspect(item)}
                         >
                           <RefreshCw size={15} />
-                          {busy === `preview:${item.id}` ? "读取中…" : "预览"}
+                          {busy === `preview:${item.id}` ? <Reading mini label="读取Skill来源预览"/> : "预览"}
                         </Button>
                       </div>
                     )}
@@ -431,6 +436,7 @@ export function SkillOrigin({ asset, state, adoptState, notify, onSelect }) {
   const lock = useRef(false);
 
   async function derive(e) {
+    const from=motionOrigin();
     e.preventDefault();
     if (lock.current || !title.trim()) return;
     lock.current = true;
@@ -444,6 +450,7 @@ export function SkillOrigin({ asset, state, adoptState, notify, onSelect }) {
         title: title.trim(),
       });
       adoptState(result.state);
+      flyData(from);
       notify("个人改版已创建，源资产未改动");
       setEditing(false);
       onSelect(result.assetId);

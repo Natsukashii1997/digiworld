@@ -1,10 +1,11 @@
+import { flyData } from './data-flight.js';
 // 仅资产详情抽屉使用；明确点击才核验本机来源，不后台读取来源目录。
 import React,{useRef,useState} from 'react';import {request} from './api.js';import {Button} from './components.jsx';
 export function SkillSourceUpdate({asset,adoptState,notify}){
  const [preview,setPreview]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),lock=useRef(false);
  async function run(adopting=false){if(lock.current)return;lock.current=true;setBusy(true);setError('');
   try{
-   if(adopting){const result=await request('/skill-source-updates/adopt',{token:preview.token,revision:preview.revision});adoptState(result.state);setPreview(null);notify(result.alreadyAdopted?'已记录过此来源采用确认':'已记录本人采用确认；个人版本未替换');}
+   if(adopting){const result=await request('/skill-source-updates/adopt',{token:preview.token,revision:preview.revision});adoptState(result.state);flyData();setPreview(null);notify(result.alreadyAdopted?'已记录过此来源采用确认':'已记录本人采用确认；个人版本未替换');}
    else setPreview(await request('/skill-source-updates/check',{assetId:asset.id}));
   }catch(e){setError(e.message||'来源更新核验失败');}finally{lock.current=false;setBusy(false);}
  }

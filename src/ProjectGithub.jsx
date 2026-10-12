@@ -1,3 +1,4 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 // 项目空间第二批：GitHub 面板。只读显示在推进项目的打开 PR、最近合并、打开 Issue 与默认分支 CI。
 // 数据来自服务端用本机 gh 做的只读查询（带缓存与查询时间）；查不到就如实写“未知”，不要求登录。
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -96,12 +97,15 @@ const link = (item, extra = "") =>
     </span>
   );
 
-export function GithubBlock({ github, loading, onRefresh }) {
+export function GithubBlock(props) {
+  return <><ReadReveal pending={!!props.loading} ready={!!props.github&&props.github.state!=="unknown"}/><GithubBody {...props}/></>;
+}
+function GithubBody({ github, loading, onRefresh }) {
   if (!github)
     return (
       <div className="status-github" aria-label="GitHub">
         <h4>GitHub</h4>
-        <p className="gh-muted">{loading ? "正在读取 GitHub 情况…" : "未知 · 没有读取结果"}</p>
+        <p className="gh-muted">{loading ? <Reading label="正在读取GitHub情况"/> : "未知 · 没有读取结果"}</p>
       </div>
     );
   if (github.state === "none")
@@ -113,7 +117,7 @@ export function GithubBlock({ github, loading, onRefresh }) {
     );
   const refresh = onRefresh && (
     <Button secondary disabled={loading} onClick={onRefresh}>
-      <RefreshCw size={16} className={loading ? "spinning" : ""} />
+      <RefreshCw size={16}  />
       刷新 GitHub
     </Button>
   );

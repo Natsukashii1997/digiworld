@@ -31,7 +31,6 @@ const routes = [
   "calendar",
   "aihot",
   "learning",
-  "silver",
 ];
 const app = await fixture();
 const browser = await chromium.launch();
@@ -96,17 +95,6 @@ try {
         if (chipLayout.titleLines > 1.5) problems.push(`${width} night library title wraps`);
         if (chipLayout.cards.some(card => card.faceOverName || card.nameOverOut || card.clipped))
           problems.push(`${width} night library chip content overlaps or clips`);
-      }
-      if (route === "silver" && width <= 390) {
-        const emptyWall = await page.evaluate(() => {
-          const card = document.querySelector('.silver-v16 .canvas.empty .pile.ghost .pile-cards');
-          const caption = document.querySelector('.silver-v16 .canvas.empty .canvas-empty');
-          if (!card || !caption) return null;
-          const a = card.getBoundingClientRect(), b = caption.getBoundingClientRect();
-          return { gap: b.top - a.bottom, left: b.left, right: b.right };
-        });
-        if (!emptyWall || emptyWall.gap < 8 || emptyWall.left < 0 || emptyWall.right > width)
-          problems.push(`${width} silver empty caption overlaps or escapes ghost card`);
       }
       if (route === "settings" && width === 1024) {
         const rows = await page.locator(".settings-v16 .st-tr:not(.st-th)").evaluateAll(elements =>

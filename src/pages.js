@@ -208,23 +208,9 @@ export const PAGES = [
     title: "收藏",
     eyebrow: "COLLECTION",
     maturity: "partial",
-    lead: "",
+    lead: "把刷到的好帖子摊在桌上，随手分组。",
     bounds: ["收藏保存在本机"],
     stage: "收录 · 整理",
-  },
-  {
-    id: "silver",
-    group: "生活",
-    code: "12",
-    label: "银饰计划",
-    title: "银饰计划",
-    eyebrow: "SILVER",
-    // 路线 v3 5.5（云端提前开发）：欣赏墙、收藏格、白色描边剪影；自动抠图只在 macOS 上可用，需本机验证。
-    // 用户 2026-10-03：视觉待改版，先标“部分可用”。
-    maturity: "partial",
-    lead: "银饰的欣赏墙和个人收藏格，只给自己看。",
-    bounds: ["图片只存本机", "不进备份，也不上传"],
-    stage: "欣赏 · 收藏",
   },
   {
     id: "settings",
@@ -268,6 +254,7 @@ export const ZONES = [
 // 焚决（切片 1.3b）：用户 2026-09-30 纠正，焚决是资产仓库第五种类型；#scrolls 落到资产仓库“焚决”标签。
 const RETIRED = {
   scrolls: { route: "assets", anchor: null, filter: "Scroll" },
+  silver: { route: "home", anchor: null },
 };
 
 // 并入其他页面的旧路由（如 #health）落到哪里：返回实际页面、页内锚点，以及要选中的资产类型标签（如有）。
@@ -302,6 +289,6 @@ export const LAYERS = [
     zone: "life",
     en: "LIFE",
     question: "我的日子",
-    pages: ["calendar", "notes", "aihot", "learning", "silver"],
+    pages: ["calendar", "notes", "aihot", "learning"],
   },
 ];

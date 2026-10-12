@@ -1,3 +1,4 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, ChevronRight, GitBranch, History } from 'lucide-react';
 import { CrestIcon, Pixel } from './pixel.jsx';
@@ -191,7 +192,6 @@ export function NightOutputDetail({ runId, slotId, onBack, onDecisionChange }) {
     load();
     return () => { alive = false; };
   }, [runId, slotId]);
-  if (state.kind === 'loading') return <section className="nv-report-loading" role="status" data-testid="night-output-loading">正在读取锁定产出与晨报…</section>;
-  if (state.kind === 'error') return <section className="nv-report-incomplete" role="alert" data-testid="night-output-error"><h2>报告暂时读不到</h2><p>{state.message}</p><button type="button" className="nv-nbtn" onClick={() => backRef.current?.()}>返回晨报</button></section>;
-  return <DetailDocument morning={state.morning} slot={state.slot} outputView={state.outputView} onBack={onBack} onDecisionChange={onDecisionChange} />;
+  const content = state.kind === 'loading' ? <section className="nv-report-loading" role="status" data-testid="night-output-loading"><Reading label="正在读取锁定产出与晨报"/></section> : state.kind === 'error' ? <section className="nv-report-incomplete" role="alert" data-testid="night-output-error"><h2>报告暂时读不到</h2><p>{state.message}</p><button type="button" className="nv-nbtn" onClick={() => backRef.current?.()}>返回晨报</button></section> : <DetailDocument morning={state.morning} slot={state.slot} outputView={state.outputView} onBack={onBack} onDecisionChange={onDecisionChange} />;
+  return <><ReadReveal pending={state.kind==='loading'} ready={state.kind==='ready'} target=".nv-report-shell"/>{content}</>;
 }

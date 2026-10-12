@@ -1,6 +1,7 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, ArrowUpRight, Check, RotateCw } from "lucide-react";
-import { Dialog } from "./components.jsx";
+import { Dialog, SourceReadError } from "./components.jsx";
 import { request } from "./api.js";
 import { addDays, dueText, eventsOfDay, startOfDay, todoIsDue, ymd } from "./calendar.js";
 import { useCalendarData } from "./Calendar.jsx";
@@ -150,27 +151,34 @@ function Module({ id, code, english, title, navigate, destination, className = "
           {destination} <ArrowUpRight size={13} aria-hidden="true" />
         </button>
       </header>
-      {children}
+      <div className="hx-module-body">{children}</div>
     </section>
   );
 }
 
-function TodayScreen({ calendar, day, calendarTodos, calendarNow, navigate }) {
+function TodayScreen({ calendar, day, calendarTodos, calendarNow, navigate, refreshCalendarTodos }) {
+  const previousTodos = useRef([]);
+  useEffect(() => {
+    if (!calendarTodos?.error) previousTodos.current = calendarTodos?.loaded ? calendarTodos.reminders || [] : [];
+  }, [calendarTodos]);
   const access = calendar.status?.access?.calendar;
   const verified = !calendar.error && calendar.status?.available && access === "authorized" &&
     calendar.week?.available && Array.isArray(calendar.week?.events);
-  const segments = verified ? eventsOfDay(calendar.week.events, day).timed : [];
+  const hasSnapshot = access === "authorized" && calendar.week?.available && Array.isArray(calendar.week?.events);
+  const segments = hasSnapshot ? eventsOfDay(calendar.week.events, day).timed : [];
   const visible = segments.filter(item => item.bottom > 8 * 60 && item.top < 20 * 60);
   const currentMinute = minute(day);
   const active = segments.find(item => item.top <= currentMinute && item.bottom > currentMinute);
   const next = segments.find(item => item.top > currentMinute);
-  const todos = calendarTodos?.loaded && !calendarTodos.error
-    ? (calendarTodos.reminders || []).filter(item => !item.completed).slice().sort((a, b) =>
+  // 只在本卡保留上次只读前像；待处理计数仍消费 App 的当前读取结果。
+  const reminderSnapshot = calendarTodos?.error ? previousTodos.current : calendarTodos?.reminders;
+  const todos = (calendarTodos?.loaded || calendarTodos?.error)
+    ? (reminderSnapshot || []).filter(item => !item.completed).slice().sort((a, b) =>
         (a.due || "9999").localeCompare(b.due || "9999") || a.title.localeCompare(b.title)).slice(0, 2)
     : [];
   const marker = Math.min(100, Math.max(0, (currentMinute - 480) / 720 * 100));
   let calendarMessage = "";
-  if (calendar.error) calendarMessage = "日历读取失败，今天的安排待核实";
+  if (calendar.error) calendarMessage = "";
   else if (!calendar.status) calendarMessage = "正在读取日历…";
   else if (!calendar.status.available) calendarMessage = calendar.status.reason || "本机日历未接入";
   else if (access !== "authorized") calendarMessage = "日历尚未授权，今天的安排待核实";
@@ -178,11 +186,18 @@ function TodayScreen({ calendar, day, calendarTodos, calendarNow, navigate }) {
   else if (!verified) calendarMessage = calendar.week.reason || "今天的安排读取不完整";
   else if (!segments.length) calendarMessage = "今天没有已读取的安排";
   let todoMessage = "";
-  if (calendarTodos?.error) todoMessage = "提醒事项读取失败，Todo 待核实";
+  if (calendarTodos?.error) todoMessage = "";
   else if (!calendarTodos?.loaded) todoMessage = "提醒事项未读取，Todo 待核实";
   else if (!todos.length) todoMessage = "没有未完成的 Todo";
   return (
     <>
+      <ReadReveal pending={calendarMessage.startsWith("正在读取")} ready={verified&&!calendar.error}/>
+      <ReadReveal pending={!calendarTodos?.loaded&&!calendarTodos?.error} ready={!!calendarTodos?.loaded&&!calendarTodos.error}/>
+      <SourceReadError title={calendar.error && calendarTodos?.error ? "日历与提醒事项" : "日历"} error={calendar.error}
+        retained={visible.length > 0 || Boolean(hasSnapshot && (active || next)) || Boolean(calendar.error && calendarTodos?.error && todos.length)}
+        onRetry={() => Promise.all([calendar.reload(), refreshCalendarTodos?.()])} />
+      {!calendar.error && <SourceReadError title="提醒事项" error={calendarTodos?.error} retained={todos.length > 0} onRetry={refreshCalendarTodos} />}
+      <div className={`hx-today-data${calendar.error ? " read-failed" : ""}`}>
       <div className="hx-tl" role="group" aria-label="今日 8 点至 20 点时间轴">
         <div className="hx-tl-axis" aria-hidden="true"><span>8</span><span>12</span><span>16</span><span>20</span></div>
         <div className="hx-tl-bar" aria-hidden="true">
@@ -195,25 +210,34 @@ function TodayScreen({ calendar, day, calendarTodos, calendarNow, navigate }) {
           <span className="hx-now" style={{ left: marker + "%" }} />
         </div>
       </div>
-      {verified && (active || next) &&
+      {hasSnapshot && (active || next) &&
         <p className="hx-nowline"><b className="mono">{clockText(day)}</b>
-          {active ? "正在 " + active.event.title : "现在没有进行中的安排"}
-          {next ? " · 下一个 " + clockText(new Date(next.event.start)) + " " + next.event.title : ""}
+          {calendar.error ? "上次读取：" : ""}
+          {active ? (calendar.error ? "原安排 " : "正在 ") + active.event.title : calendar.error ? "原记录中没有此时安排" : "现在没有进行中的安排"}
+          {next ? (calendar.error ? " · 原后续 " : " · 下一个 ") + clockText(new Date(next.event.start)) + " " + next.event.title : ""}
         </p>}
-      {calendarMessage && <p className="hx-state" role={calendar.error ? "alert" : "status"}>{calendarMessage}</p>}
-      {calendarTodos?.loaded && !calendarTodos.error && !!todos.length &&
-        <ul className="hx-todo">{todos.map(item =>
+      </div>
+      {calendarMessage && <p className="hx-state" role={calendar.error ? "alert" : "status"}>{calendarMessage.startsWith("正在读取") ? <Reading mini label={calendarMessage}/> : calendarMessage}</p>}
+      {!calendar.error && calendar.status?.available && access !== "authorized" &&
+        <button type="button" className="hx-authorize" onClick={() => navigate("calendar")}>授权日历 <ArrowRight size={14} aria-hidden="true" /></button>}
+      {!!todos.length &&
+        <ul className={`hx-todo${calendarTodos?.error ? " read-failed" : ""}`}>{todos.map(item =>
           <li key={item.id} className={todoIsDue(item, calendarNow) ? "due" : ""}>
             <span className="hx-box" aria-hidden="true" />
             <b>{item.title}</b>
             <small>{item.due ? dueText(item.due) : "未设时间"}</small>
           </li>)}</ul>}
-      {todoMessage && <p className="hx-state" role={calendarTodos?.error ? "alert" : "status"}>{todoMessage}</p>}
+      {todoMessage && <p className="hx-state" role={calendarTodos?.error ? "alert" : "status"}>{!calendarTodos?.error && !calendarTodos?.loaded ? <Reading mini label={todoMessage}/> : todoMessage}</p>}
     </>
   );
 }
 
 function InboxScreen({ pending, unresolved, navigate }) {
+  const sourceActions = {
+    "calendar-read-error": "核实提醒事项状态",
+    "collab-read-error": "核实协同协议",
+    "project-status-error": "核实项目状态与体检",
+  };
   const groups = inboxSummary(pending);
   const ordered = groups.flatMap(group =>
     pending.filter(item => group.key === "intel"
@@ -230,20 +254,23 @@ function InboxScreen({ pending, unresolved, navigate }) {
       ? <ul className="hx-q">{ordered.slice(0, 3).map(item =>
           <li key={item.id} className={item.triage === "需要决定" ? "main" : item.triage === "等你确认" ? "side" : "intel"}>
             <button type="button" onClick={() => navigate("inbox", { itemId: item.id })}
-              aria-label={"在待处理打开：" + item.title}>
-              <b>{item.title}</b><ArrowRight size={14} aria-hidden="true" />
+              aria-label={"在待处理打开：" + (sourceActions[item.id] || item.title)}>
+              <b>{sourceActions[item.id] || item.title}</b><ArrowRight size={14} aria-hidden="true" />
             </button>
           </li>)}</ul>
       : !unresolved && <p className="hx-empty">已读取的来源里没有要你处理的事</p>}
   </>;
 }
 
-function CollabScreen({ board, current, navigate }) {
-  if (!board?.loaded) return <p className="hx-state" role="status">正在读取协同协议…</p>;
-  if (board.error) return <p className="hx-state" role="alert">协同协议读取失败：{board.error}</p>;
+function CollabScreen(props) {
+  return <><ReadReveal pending={!props.board?.loaded} ready={!!props.board?.loaded&&!props.board.error}/><CollabBody {...props}/></>;
+}
+function CollabBody({ board, current, navigate, refresh }) {
+  if (!board?.loaded) return <p className="hx-state" role="status"><Reading label="正在读取协同协议"/></p>;
+  const error = <SourceReadError title="协同协议" error={board.error} retained={Boolean(current)} onRetry={refresh} />;
   if (!current) {
     const unknown = (board.items || []).some(item => !item.protocol || !["ok", "partial", "absent"].includes(item.protocol.state));
-    return <p className="hx-empty">{unknown ? "协同协议待核实" : "还没有运行中的协同"}</p>;
+    return <>{error}<p className="hx-empty">{board.error || unknown ? "协同协议待核实" : "还没有运行中的协同"}</p></>;
   }
   const { item, run } = current;
   const phase = run.phase?.number || 0;
@@ -251,9 +278,10 @@ function CollabScreen({ board, current, navigate }) {
   const skipped = stages.filter((stage) => stage.status === "skipped").map((stage) => stage.number);
   const step = stages.length > 1 ? 280 / (stages.length - 1) : 0;
   const at = (index) => 10 + index * step;
-  const blocked = run.conflict || run.copyBlocked || item.protocol?.copyBlocked || !run.isCurrent || !phase || !item.root;
+  const blocked = board.error || run.conflict || run.copyBlocked || item.protocol?.copyBlocked || !run.isCurrent || !phase || !item.root;
   const actor = run.holder || stages[Math.max(0, phase - 1)]?.actor || "unknown";
   return <>
+    {error}<div className={board.error ? "hx-collab-data read-failed" : "hx-collab-data"}>
     <p className="hx-run">{item.name} · {run.title} <span className="mono">{phase || "?"}/{stages.length || "?"}</span></p>
     {!stages.length ? <p className="hx-state" role="alert">锁定模板版本待核实，协同线路不可用</p> : <>
     <svg className="hx-mini-line" viewBox="0 0 300 28" preserveAspectRatio="none" role="img"
@@ -291,16 +319,22 @@ function CollabScreen({ board, current, navigate }) {
     </>}
     {run.partial && <small className="hx-state">部分协议未核实；继续时仍以协同页最新校验为准</small>}
     {blocked && <small className="hx-state">当前协议需核对；到协同页查看详情</small>}
+    {!!run.events?.length && <ol className="hx-activity" aria-label="最近协同活动">{run.events.filter(e => e.at).slice(-2).reverse().map((event, index) =>
+      <li key={event.id || index}><time className="mono" dateTime={event.at}>{new Date(event.at).toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })}</time>
+        <span>{event.result || stages.find(stage => stage.number === event.phase)?.label || "协议记录"}</span></li>)}</ol>}
+    </div>
   </>;
 }
 
-function ProjectsScreen({ state, rows, projectStatus, navigate }) {
+function ProjectsScreen({ state, rows, projectStatus, navigate, refresh }) {
   const active = (state.connections?.projects || []).filter(p => p.active);
   if (!active.length) return <p className="hx-empty">还没有在推进的项目</p>;
   return <>
-    {!projectStatus?.loaded && <p className="hx-state" role="status">正在读取项目状态…</p>}
-    {projectStatus?.error && <p className="hx-state" role="alert">项目状态读取失败，进度待核实</p>}
-    <ol className="hx-proj-list">{rows.map((row, index) =>
+    <ReadReveal pending={!projectStatus?.loaded} ready={!!projectStatus?.loaded&&!projectStatus.error}/>
+    {!projectStatus?.loaded && <p className="hx-state" role="status"><Reading label="正在读取项目状态"/></p>}
+    <SourceReadError title="项目状态" error={projectStatus?.error}
+      retained={rows.some(row => projectStatus?.items?.some(item => item.projectId === row.projectId))} onRetry={refresh} />
+    <ol className={`hx-proj-list${projectStatus?.error ? " read-failed" : ""}`}>{rows.map((row, index) =>
       <li key={row.projectId} className={row.stalled ? "sleep" : ""}>
         <button type="button" onClick={() => navigate("projects", { projectId: row.projectId })}
           aria-label={"打开项目：" + row.name}>
@@ -321,6 +355,7 @@ export function HomeV16({
   ruleInstalls, projectStatus, agentContents, healthAudit, nightV2Reports,
   vaultReceipts, savepointReads, knowledgeStatus, calendarTodos, calendarNow,
   collabStatus,
+  refreshCollabStatus, refreshProjectStatus, refreshCalendarTodos,
 }) {
   const date = new Date(calendarNow || Date.now());
   const [clockNow, setClockNow] = useState(Date.now);
@@ -348,7 +383,7 @@ export function HomeV16({
     const first = startOfDay(new Date(dateKey + "T12:00:00"));
     return { from: first.toISOString(), to: addDays(first, 1).toISOString() };
   }, [dateKey]);
-  const calendar = useCalendarData(range);
+  const calendar = useCalendarData(range, { retainOnError: true });
   useEffect(() => {
     const refresh = () => { if (document.visibilityState === "visible") calendar.reload(); };
     window.addEventListener("focus", refresh);
@@ -367,6 +402,7 @@ export function HomeV16({
   );
   const groups = inboxSummary(pending);
   const current = currentHomeRun(collabStatus);
+  const displayCurrent = current || (collabStatus?.error ? currentHomeRun({ ...collabStatus, error: "" }) : null);
   const rows = homeProjectRows(state, projectStatus, savepointReads, calendarNow || Date.now());
   const dueTodos = calendarTodos?.loaded && !calendarTodos.error
     ? (calendarTodos.reminders || []).filter(item => todoIsDue(item, calendarNow))
@@ -454,7 +490,7 @@ export function HomeV16({
     <div className="hx-col-l">
       <Module id="a" code="A" english="TODAY" title="今日" destination="日历" navigate={() => navigate("calendar")}
         cardRefs={cardRefs} setActive={setActivePort}>
-        <TodayScreen calendar={calendar} day={date} calendarTodos={calendarTodos} calendarNow={calendarNow} navigate={navigate} />
+        <TodayScreen calendar={calendar} day={date} calendarTodos={calendarTodos} calendarNow={calendarNow} navigate={navigate} refreshCalendarTodos={refreshCalendarTodos} />
       </Module>
       <Module id="b" code="B" english="QUESTS" title="待处理" destination="全部" navigate={() => navigate("inbox")}
         cardRefs={cardRefs} setActive={setActivePort}>
@@ -503,19 +539,19 @@ export function HomeV16({
       </form>
       {noteStatus && <p className="hx-note-status" role="alert">{noteStatus}</p>}
       <div className="hx-quick">
-        <button type="button" onClick={() => navigate("agents")}>接力</button><i aria-hidden="true" />
-        <button type="button" onClick={() => navigate("knowledge", { anchor: "k-sources" })}>查知识</button><i aria-hidden="true" />
+        <button type="button" onClick={() => navigate("agents")}>接力</button>
+        <button type="button" onClick={() => navigate("knowledge", { anchor: "k-sources" })}>查知识</button>
         <button type="button" onClick={() => openCreate?.("Skill")}>新建资产</button>
       </div>
     </div>
     <div className="hx-col-r">
       <Module id="c" code="C" english="WORKFLOW" title="协同" destination="线路图" navigate={() => navigate("collab")}
         cardRefs={cardRefs} setActive={setActivePort}>
-        <CollabScreen board={collabStatus} current={current} navigate={navigate} />
+        <CollabScreen board={collabStatus} current={displayCurrent} navigate={navigate} refresh={refreshCollabStatus} />
       </Module>
       <Module id="d" code="D" english="SAVE DATA" title="在推进" destination="项目空间" navigate={() => navigate("projects")}
         cardRefs={cardRefs} setActive={setActivePort}>
-        <ProjectsScreen state={state} rows={rows} projectStatus={projectStatus} navigate={navigate} />
+        <ProjectsScreen state={state} rows={rows} projectStatus={projectStatus} navigate={navigate} refresh={refreshProjectStatus} />
         {(state.connections?.projects || []).some(project => project.active) &&
           <button className="hx-brief-link" type="button" onClick={() => setBriefOpen(true)}>
             今日项目简报 <ArrowUpRight size={14} aria-hidden="true" />

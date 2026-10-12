@@ -35,6 +35,8 @@
   position: sticky;
   top: var(--s-5);
 }
+.settings-v16 .settings-scroll { position:sticky; top:var(--s-5); align-self:start; }
+.settings-v16 .settings-scroll .st-nav { position:static; }
 .settings-v16 .st-nav button {
   display: flex;
   align-items: center;
@@ -251,6 +253,7 @@
   color: var(--red-2);
 }
 @media (max-width: 1180px) {
+  .settings-v16 .settings-scroll { position:static; }
   .settings-v16 .st-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--s-4);
@@ -272,6 +275,7 @@
   }
 }
 @media (max-width: 760px) {
+  .settings-v16 .settings-scroll { min-width:0; }
   .settings-v16 .st-nav {
     display: flex;
     overflow-x: auto;
@@ -486,3 +490,10 @@
 .modal .full-backup-restore{display:flex;flex-direction:column;min-height:0;gap:16px;}
 .full-backup-restore-body{display:grid;gap:16px;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;}
 .full-backup-restore-actions{flex-shrink:0;margin-top:0;padding-top:12px;border-top:1px solid var(--line);}
+
+/* 固定操作列与44px按钮，压缩桌面表行。 */
+.settings-v16 .st-last{white-space:nowrap}
+.settings-v16 .st-act{width:132px;display:flex;justify-content:flex-end}
+.settings-v16 .st-act .button{width:132px;justify-content:center}
+.settings-v16 .st-th>:last-child{text-align:right;justify-self:end}
+@media(min-width:761px){.settings-v16 .st-tr{grid-template-columns:minmax(0,1fr) 100px 124px 132px;min-height:68px;padding-top:var(--s-3);padding-bottom:var(--s-3)}}

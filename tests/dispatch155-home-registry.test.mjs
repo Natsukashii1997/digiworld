@@ -12,7 +12,7 @@ const out=join(import.meta.dirname,'../test-results/dispatch155-home');await mkd
 await build({absWorkingDir:join(import.meta.dirname,'..'),entryPoints:['src/Home.jsx'],outfile:join(out,'Home.mjs'),bundle:true,platform:'node',format:'esm',packages:'external',logLevel:'silent'});
 const {Home,homeFacts}=await import(pathToFileURL(join(out,'Home.mjs')));
 test('C05 十三页成熟度按局部闭环注册，冻结三页标签保持',()=>{
- const expected={home:'ready',inbox:'ready',assets:'ready',references:'ready',agents:'partial',health:'partial',projects:'ready',collab:'partial',knowledge:'partial',calendar:'partial',notes:'ready',aihot:'partial',settings:'partial',history:'ready',night:'planned',learning:'partial',silver:'partial'};
+ const expected={home:'ready',inbox:'ready',assets:'ready',references:'ready',agents:'partial',health:'partial',projects:'ready',collab:'partial',knowledge:'partial',calendar:'partial',notes:'ready',aihot:'partial',settings:'partial',history:'ready',night:'planned',learning:'partial'};
  assert.deepEqual(Object.fromEntries(PAGES.map(p=>[p.id,p.maturity])),expected);
 });
 test('C10 首页协同/模型配置仅来自本机事实，不把意向当连接或未开发',()=>{

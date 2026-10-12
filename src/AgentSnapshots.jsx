@@ -1,3 +1,4 @@
+import { flyDataOnce } from './data-flight.js';
 import React, { useState } from 'react';
 import { Button } from './components.jsx';
 import { request } from './api.js';
@@ -24,7 +25,7 @@ export function AgentSnapshots({ targetId, targetTuple, snapshot, action, disabl
       targetId, revision: snapshot.revision, sourceSha256: snapshot.sha256, sourceIdentity: snapshot.sourceIdentity, operationId,
     }));
     if (value) {
-      setSaved(value); setRows(null);
+      setSaved(value); setRows(null); flyDataOnce(`snapshot:${operationId}`);
       if (clearPending(operationId)) setMessage('白名单快照已保存并回读；后续创建完整备份时将包含它。');
     } else if (action.lastError.current?.operationNotStarted) {
       onInvalidate?.();
@@ -35,7 +36,7 @@ export function AgentSnapshots({ targetId, targetTuple, snapshot, action, disabl
     const value = await action.run(() => call('resolve', {targetId, operationId:pending.id}));
     if (!value) return;
     if (value.status === 'saved') {
-      setSaved(value.snapshot); setRows(null);
+      setSaved(value.snapshot); setRows(null); flyDataOnce(`snapshot:${pending.id}`);
       if (clearPending()) setMessage('已从本机记录回读；这是历史状态，Agent 运行采用尚未验证。');
     } else if (value.status === 'not_saved') {
       onInvalidate?.(); setSaved(null);

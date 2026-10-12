@@ -1,5 +1,5 @@
+import { flyDataOnce } from './data-flight.js';
 import React, { useEffect, useRef, useState } from "react";
-import { flyData } from "./data-flight.js";
 import { transferFeedback } from "./transfer.js";
 import { request } from "./api.js";
 import { usageOf, usageTime } from "./asset-usage.js";
@@ -40,17 +40,18 @@ export function useAssetActivity(asset, state, adoptState) {
     }
   }
   const [confirmedFeedback, setConfirmedFeedback] = useState(null);
-  function accept(result) {
+  function accept(result, { feedback = true } = {}) {
     if (result.record.kind === "feedback")
       setConfirmedFeedback(result.record.id);
     adoptState(result.state);
+    if (feedback) flyDataOnce(`asset-activity:${result.record.id}`);
     remember(null);
     setAbsentRevision(null);
     setMessage(
       result.record.kind === "feedback" ? "反馈已保存" : "使用记录已保存",
     );
   }
-  async function query(value = pending) {
+  async function query(value = pending, { feedback = true } = {}) {
     if (!value) return "unknown";
     setAbsentRevision(null);
     try {
@@ -62,7 +63,7 @@ export function useAssetActivity(asset, state, adoptState) {
           throw new Error("Incomplete activity result");
         if (Object.entries(value).some(([k, v]) => result.record[k] !== v))
           throw new Error("Activity ID mismatch");
-        accept(result);
+        accept(result, { feedback });
         return true;
       };
       const unavailableAsset = (result) => {
@@ -146,16 +147,16 @@ export function useAssetActivity(asset, state, adoptState) {
   useEffect(() => {
     if (pending) runQuery();
   }, []);
-  async function submit(payload, revision) {
+  async function submit(payload, revision, feedback = true) {
     try {
       const result = await request("/asset-activity", {
         ...payload,
         expectedRevision: revision,
       });
-      accept(result);
+      accept(result, { feedback });
       return true;
     } catch (error) {
-      const outcome = await query(payload);
+      const outcome = await query(payload, { feedback });
       if (outcome === "absent" && error.status === 400) {
         // Definitive validation rejection: keep the editable feedback draft.
         remember(null);
@@ -198,10 +199,11 @@ export function useAssetActivity(asset, state, adoptState) {
     if (origin)
       setTimeout(() => {
         transferFeedback(origin);
-        flyData(origin);
+        
       }, 0);
     try {
-      return await submit(payload, latest.current.revision);
+      // copyText already reports the successful copy; its automatic usage record shares that feedback.
+      return await submit(payload, latest.current.revision, !fromCopy);
     } finally {
       locked.current = false;
       setBusy(false);

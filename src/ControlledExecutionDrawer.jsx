@@ -1,3 +1,4 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Dialog } from './components.jsx';
 import { request, session } from './api.js';
@@ -156,8 +157,9 @@ export function ControlledExecutionDrawer({ open, onClose, projectId, targetId }
   }
   return <Dialog drawer title="受控执行" onClose={close}>
     <div className="controlled-execution">
+      <ReadReveal pending={!loaded&&!error} ready={!!loaded&&!error}/>
       <p>单目标验证任务 · 工作流 C。每一步都有状态、停止与产物回收；两步任务需要你确认第一步后才会开放第二步。</p>
-      {!loaded && <p role="status">正在读取本机运行记录…</p>}
+      {!loaded && <p role="status"><Reading label="正在读取本机运行记录"/></p>}
       {capabilities && <p role="status" className={capabilities.enabled ? '' : 'inline-error'}>
         {capabilities.reason}。当前不是生产运行验收。
       </p>}

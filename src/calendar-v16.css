@@ -33,6 +33,8 @@
 .calendar-v16 .todo-add label { min-width:0; flex:1; }
 .calendar-v16 .todo-add input { width:100%; min-width:0; border:0; background:none; padding:0 var(--s-2); font-size:var(--fs-caption); }
 .calendar-v16 .todo-add .button { width:44px; padding:0; flex:none; border:0; background:none; box-shadow:none; }
+.calendar-v16 .scroll-fade { margin:calc(var(--s-1) * -1); }
+.calendar-v16 .scroll-fade .todo-list { margin:0; }
 .calendar-v16 .cal-grid { --hour-h:48px; --gutter:64px; border:1px solid var(--line-2); border-radius:var(--r-l); background:var(--bg-2); overflow:clip; }
 .calendar-v16 .cal-heads { background:var(--panel); }
 .calendar-v16 .cal-head-days button,.calendar-v16 .cal-day-head { min-height:54px; padding:var(--s-3) 0; flex-direction:row; align-items:center; justify-content:center; gap:6px; border-radius:0; }
@@ -134,3 +136,13 @@
 .calendar-v16 .calendar-block-form .form-row label:nth-child(2) {order:3;}
 .calendar-v16 .calendar-block-form .form-row label:nth-child(3) {order:2;}
 .calendar-v16 .calendar-block-form .form-row label:nth-child(4) {order:4;}
+
+/* 周视图只画一条贯穿七日的夜巡带，仍保留单日视图窗口。 */
+.calendar-v16 .cal-source-legend{display:flex;gap:var(--s-3);list-style:none;margin:0 var(--s-3) 0 0;padding:0;color:var(--muted);font-size:var(--fs-small)}
+.calendar-v16 .cal-source-legend li{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.calendar-v16 .cal-source-legend li::before{content:'';width:6px;height:6px;border-radius:var(--r-pill);background:var(--cyan)}
+.calendar-v16 .cal-source-legend li.mine::before{background:var(--orange)}
+.calendar-v16 .cal-body{position:relative}
+.calendar-v16 .cal-week-night{position:absolute;left:var(--gutter);right:0;pointer-events:none;background:color-mix(in srgb,var(--violet) 6%,transparent);border-top:1px solid color-mix(in srgb,var(--violet) 25%,transparent);border-bottom:1px solid color-mix(in srgb,var(--violet) 25%,transparent)}
+.calendar-v16 .cal-week-night>span{display:block;padding:6px 8px;font-size:var(--fs-small);color:var(--muted)}
+@media(max-width:760px){.calendar-v16 .cal-source-legend{margin-left:auto;order:3}}

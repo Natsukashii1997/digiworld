@@ -174,7 +174,7 @@ async function checkLibraryCrests(page) {
         rects: svg?.querySelectorAll('rect').length || 0,
         strokeWidth: svg && getComputedStyle(svg).strokeWidth,
         iconWidth: svg && Number(svg.getAttribute('width')),
-        faceTop: face?.top || 0, faceHeight: face?.height || 0,
+        faceTop: face?.top || 0, faceOffset: face ? face.top - chip.getBoundingClientRect().top : 0, faceHeight: face?.height || 0,
         contained: Boolean(face && icon && icon.left >= face.left - 1 && icon.right <= face.right + 1 && icon.top >= face.top - 1 && icon.bottom <= face.bottom + 1),
       };
     }));
@@ -194,8 +194,8 @@ async function checkLibraryCrests(page) {
   if (page.viewportSize().width >= 761) {
     const brief = crests.find(item => item.chipId === 'brief');
     const custom = crests.find(item => item.chipId === 'custom');
-    assert.ok(Math.abs(brief.faceTop - custom.faceTop) <= 1 && Math.abs(brief.faceHeight - custom.faceHeight) <= 1,
-      `custom and standard chip faces align: ${JSON.stringify({brief, custom})}`);
+    assert.ok(Math.abs(brief.faceOffset - custom.faceOffset) <= 1 && Math.abs(brief.faceHeight - custom.faceHeight) <= 1,
+      `custom and standard chip faces align within their cards across library rows: ${JSON.stringify({brief, custom})}`);
   }
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const moving = await page.locator('[data-testid="night-library"] .nv-glyph').evaluateAll(icons =>

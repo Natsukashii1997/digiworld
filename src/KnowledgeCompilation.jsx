@@ -1,3 +1,5 @@
+import { flyData } from './data-flight.js';
+import { copyText } from './data-flight.js';
 import React, { useEffect, useRef, useState } from "react";
 import { Archive, Copy, FileText, RefreshCw, Upload, X } from "lucide-react";
 import { Badge, Button, Dialog, Steps } from "./components.jsx";
@@ -113,6 +115,7 @@ export function KnowledgeCompilation({
         clearDraft();
         setOpenedId(result.taskId);
         setArchived(false);
+        flyData();
         notify("整理任务已创建，尚未交给 Codex");
       }
     } catch (failure) {
@@ -434,7 +437,7 @@ function CompilationDetail({
         setPacket(result.text);
         if (mode === "copy") {
           try {
-            await navigator.clipboard.writeText(result.text);
+            await copyText(result.text);
             if (current()) notify("任务文本已复制，尚未启动 Codex");
           } catch {
             if (current())
@@ -487,7 +490,7 @@ function CompilationDetail({
               .find((entry) => entry.id === task.id)
               .candidates.at(-1).id,
           );
-          notify("候选已保存，尚未审阅或写回知识库");
+          notify("候选已保存，尚未审阅或写回知识库"); flyData();
         }
       }
     } catch (failure) {

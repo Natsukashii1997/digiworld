@@ -1,3 +1,6 @@
+import { flyData } from '../../../data-flight.js';
+import { motionOrigin } from '../../../scan-motion.js';
+import { copyText } from '../../../data-flight.js';
 import { request } from '../../../api.js';
 import type { Note } from '../types/xiaohongshu';
 
@@ -15,13 +18,15 @@ export async function getLocalServiceHealth():Promise<LocalServiceHealth> { try 
 export async function getLocalSetupInfo():Promise<LocalSetupInfo> { return call('/setup'); }
 export async function getDeskWorkspace() { const result=await call('/desk-workspace'); deskRevision=result.revision; return result; }
 export function saveDeskWorkspace(workspace:unknown, expectedRevision?:number) {
+  const source=motionOrigin();
   return serialize(async()=>{
     const result=await call('/desk-workspace',{workspace,expectedRevision:expectedRevision??deskRevision},'PUT'); deskRevision=result.revision;
+    flyData(source);
     return result;
   });
 }
 export function updateNoteCategories(updates:Record<string,string>) {
-  return serialize(async()=>{const result=await call('/notes/categories',{updates},'PATCH');return result.notes.map(normalize);});
+  const source=motionOrigin();return serialize(async()=>{const result=await call('/notes/categories',{updates},'PATCH');const notes=result.notes.map(normalize);flyData(source);return notes;});
 }
 export async function importSharedNote(input:string) {
   await mutation;
@@ -40,6 +45,7 @@ export async function importSharedNote(input:string) {
   const workspace=await getDeskWorkspace();
   const notes=payload.notes.map(normalize), note=notes.find((n:Note)=>n.id===operation.noteId);
   if (!note) throw new Error('收藏已保存，返回结果不完整，请刷新核对');
+  if(operation.created===false)flyData();
   return {notes,note,workspace,created:operation.created};
 }
 export function deleteStoredNote(id:string) { return serialize(async()=>{const result=await call(`/notes/${encodeURIComponent(id)}`,undefined,'DELETE');const workspace=await getDeskWorkspace();return {...result,workspace,notes:result.notes.map(normalize)};}); }
@@ -56,7 +62,7 @@ export async function revokeExtension() { return call('/extension/revoke',{}); }
 export async function connectLocalAgent(client:AgentClient) {
   const info=await getLocalSetupInfo();
   const configuration={mcpServers:{'digital-world-collection':{command:info.agent.nodePath,args:[info.agent.serverPath],env:{COLLECTION_DATA_DIRECTORY:info.agent.dataDirectory}}}};
-  await navigator.clipboard.writeText(JSON.stringify(configuration,null,2));
+  await copyText(JSON.stringify(configuration,null,2));
   return {ok:true,message:`${client==='codex'?'Codex':'Claude Code'} 收藏 MCP 配置已复制；尚未写入该客户端配置`};
 }
 export function formatNumber(value:number):string {return value>=10000 ? (value/10000).toFixed(1)+'w' : value>=1000 ? (value/1000).toFixed(1)+'k' : String(value);}

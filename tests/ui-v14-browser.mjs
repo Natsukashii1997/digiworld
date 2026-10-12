@@ -1,5 +1,5 @@
 // UI v14e 公共层与知识仓库（docs/design/ui-v14）：一次局部反馈、ZONE MONITOR、减少动态效果（含运行中切换）、
-// 320/390 逐元素无横向溢出、控件至少 44px、axe、银饰页不加 v14 手感。只用临时合成 Vault 与隔离数据目录。
+// 320/390 逐元素无横向溢出、控件至少 44px、axe。只用临时合成 Vault 与隔离数据目录。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import AxeBuilder from "@axe-core/playwright";
@@ -198,13 +198,6 @@ try {
     await narrow.context().close();
   }
   ok("320/390：逐元素无横向溢出（含抽屉打开），控件至少 44px，axe 通过");
-
-  // 5. 银饰页保持原样：主区不挂 v14，不画背景微尘。
-  await page.goto(`${app.url}/#silver`);
-  await page.locator("main h1").first().waitFor();
-  assert.equal(await page.locator("main.v14").count(), 0);
-  assert.equal(await page.locator(".v14-motes").count(), 0);
-  ok("银饰页不加 v14 手感与背景微尘");
 
   assert.deepEqual(errors, []);
   console.log("ui-v14-browser 全部通过");

@@ -1,3 +1,5 @@
+import { flyDataOnce } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRight, Check, GitBranch, LockKeyhole, Search, X } from 'lucide-react';
 import { request } from './api.js';
@@ -104,6 +106,7 @@ export function useNightV2Operation(onResolved) {
       }
       if (!terminal.has(result.status)) throw new Error('原操作状态尚未可靠回读。');
       forget(pendingKey(mode, currentView.payload));
+      if (result.status === 'saved') flyDataOnce(`night-saved:${result.operationId}`);
       setView({ ...currentView, phase: 'done', result, error: previousError, visible: true });
       try { await onResolvedRef.current?.(result); } catch { /* 原操作已确认；列表可手动重读 */ }
     } catch (error) {
@@ -206,7 +209,8 @@ export function NightV2OperationDialog({ flow }) {
     <section ref={dialog} className="nv-action-dialog" role="dialog" aria-modal="true" aria-label={`${title}预览与确认`} data-testid={suggestion ? 'night-suggestion-dialog' : 'night-action-dialog'} onKeyDown={onKeyDown}>
       <header><div><span className="nv-mono">MORNING DECISION · {suggestion ? 'SUGGESTION' : view.payload.action?.toUpperCase()}</span><h2>{title}</h2></div><button ref={first} type="button" className="nv-action-close" aria-label="关闭预览" onClick={close}><X size={19} /></button></header>
       <div ref={body} className="nv-action-body" tabIndex={0} role="region" aria-label="操作预览与回读内容">
-        {view.phase === 'previewing' && <p role="status">正在读取服务端预览…</p>}
+        <ReadReveal pending={view.phase==='previewing'} ready={view.phase==='review'}/>
+         {view.phase === 'previewing' && <p role="status"><Reading label="正在读取服务端预览"/></p>}
         {view.phase === 'error' && <p role="alert" className="nv-action-warning">预览失败：{view.error}</p>}
         {view.phase === 'confirming' && <p role="status">已发送一次确认，正在查询原操作回执…</p>}
         {view.phase === 'querying' && <p role="status">正在查询原操作回执…</p>}

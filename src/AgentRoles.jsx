@@ -16,7 +16,7 @@ import {
   parseProjects,
   NOTE_MAX,
 } from "./agent-roles.js";
-import "./silver-agents.css";
+import "./agent-roles.css";
 
 function RoleEditor({ state, role, inferred, save, notify, onClose }) {
   const [strengths, setStrengths] = useState(role.strengths.join("，")),
@@ -197,6 +197,7 @@ export function AgentRoles({ state, save, notify, agents = [], results = {}, hea
   const g=results[role.agentId]?.groups;
   const inspected=healthAudit.items?.find(x=>x.agentId===role.agentId&&x.status==='checked')?.health;
   const inspectionIssues=inspected ? inspected.brokenLinks+inspected.drift+inspected.unreadable : null;
+  const missingFields=[!projects.length&&"常驻项目",!role.note&&"备注"].filter(Boolean);
   const steps={low:1,medium:3,high:5,unknown:0}[role.cost]||0;
   const pick=r=>{onPick(r.agentId);};
   useLayoutEffect(()=>{
@@ -235,11 +236,21 @@ export function AgentRoles({ state, save, notify, agents = [], results = {}, hea
     </section>
     {launch}
     <section className="archive" aria-labelledby="archive-title" style={{'--hue':hueOf(role.agentId)}}>
-      <div className="stage m-screen"><Corners/><span className="stage-floor"/><span className={`v16-hero${character?'':' placeholder'}`} key={role.agentId}>{character?<AgentSprite agent={role.agentId} mode="dossier" className={`sprite hero${['hermes','openclaw'].includes(role.agentId)?' rookie':''}`}/>:<span className="role-placeholder" aria-hidden="true">{role.name.slice(0,2)}</span>}</span><div className="stage-plate"><h2 id="archive-title">{character?.name||role.name}</h2><span id={`role-name-${role.agentId}`} className="en">{role.name} · {order.includes(role.agentId)?'主力':'伙伴'}</span></div></div>
+      <div className="stage m-screen"><Corners/>
+        <div className="role-status-screen" aria-label="伙伴状态屏">
+          <span className="en">PARTNER STATUS</span>
+          <dl className="role-status-grid">
+            {[["SKILL", "Skill数", g ? g.skills.items.length : "---"], ["PLUGIN", "插件数", g ? g.plugins.items.length : "---"], ["HEALTH", "体检问题数", inspectionIssues ?? "---"]].map(([code, label, value]) =>
+              <div key={code}><dt>{label}<span className="en">{code}</span></dt><dd><LcdCount value={value} px={3} pad={3} label={null}/><span className="sr-only">{value === "---" ? "未检查" : value}</span></dd></div>)}
+          </dl>
+          <p className="role-status-state">{inspectionIssues === null ? "体检未检查" : "已检查"} · {order.includes(role.agentId) ? "主力" : "伙伴"}</p>
+        </div>
+        <div className="stage-plate"><h2 id="archive-title">{character?.name||role.name}</h2><span id={`role-name-${role.agentId}`} className="en">{role.name} · {order.includes(role.agentId)?'主力':'伙伴'}</span></div>
+      </div>
       <div className={`dossier${canScroll?' has-more':''}`}>
         <div className="tabs" role="tablist" aria-label="档案" onKeyDown={e=>{const n=tabs.indexOf(tab),step={ArrowRight:1,ArrowLeft:-1}[e.key];if(!step&&e.key!=='Home'&&e.key!=='End')return;e.preventDefault();const i=e.key==='Home'?0:e.key==='End'?3:(n+step+4)%4;onTab(tabs[i]);e.currentTarget.querySelectorAll('[role="tab"]')[i].focus();}}>{tabs.map((t,i)=><button type="button" key={t} role="tab" id={`agent-tab-${i}`} aria-controls={`agent-panel-${i}`} aria-selected={t===tab} tabIndex={t===tab?0:-1} className={t===tab?'on':''} onClick={()=>onTab(t)}>{t}{t==='内容'&&g&&<span className="tab-n">{g.skills.items.length+g.plugins.items.length}</span>}{t==='体检'&&inspected&&<span className={`tab-n${inspectionIssues?' warn':''}`}>{inspectionIssues}</span>}</button>)}</div>
         <div role="tabpanel" ref={panelRef} className={tab==='档案'?'role-panel-profile':undefined} id={`agent-panel-${tabs.indexOf(tab)}`} aria-labelledby={`agent-tab-${tabs.indexOf(tab)}`} tabIndex={0}>
-          {tab==='档案'&&<><div className="role-profile-head">{!role.edited&&<small className="role-draft">草拟默认，未经你确认</small>}{base.some(r=>r.agentId===role.agentId)&&<button type="button" className="text-btn edit" aria-describedby={`role-name-${role.agentId}`} onClick={()=>setEditing(role.agentId)}><PenLine size={15}/>编辑角色卡</button>}</div><dl className="facts"><div><dt><span className="en">STRENGTHS</span>擅长</dt><dd className={role.strengths.length?'tags':'role-empty'}>{role.strengths.length?role.strengths.map(x=><span key={x}>{x}</span>):'—'}</dd></div><div><dt><span className="en">COST</span>成本</dt><dd className="cost">{[0,1,2,3,4].map(i=><i key={i} className={i<steps?'on':''} aria-hidden="true"/>)}<b>{COST_LABEL[role.cost]}</b></dd></div><div><dt><span className="en">PROJECTS</span>常驻项目</dt><dd className={projects.length?'mono':'role-empty'}>{projects.length?projects.map((x,i)=><React.Fragment key={x}>{i>0&&<br/>}{x}</React.Fragment>):'—'}{(!role.edited||!role.projects.length)&&inferred.length>0&&'（推断）'}</dd></div><div><dt><span className="en">NOTE</span>备注</dt><dd className={role.note?'':'role-empty'}>{role.note||'—'}</dd></div></dl></>}
+          {tab==='档案'&&<><div className="role-profile-head">{!role.edited&&<small className="role-draft">草拟默认，未经你确认</small>}{base.some(r=>r.agentId===role.agentId)&&<button type="button" className="text-btn edit" aria-describedby={`role-name-${role.agentId}`} onClick={()=>setEditing(role.agentId)}><PenLine size={15}/>编辑角色卡</button>}</div><dl className="facts"><div><dt><span className="en">STRENGTHS</span>擅长</dt><dd className={role.strengths.length?'tags':'role-empty'}>{role.strengths.length?role.strengths.map(x=><span key={x}>{x}</span>):'—'}</dd></div><div><dt><span className="en">COST</span>成本</dt><dd className="cost">{[0,1,2,3,4].map(i=><i key={i} className={i<steps?'on':''} aria-hidden="true"/>)}<b>{COST_LABEL[role.cost]}</b></dd></div>{projects.length>0&&<div><dt><span className="en">PROJECTS</span>常驻项目</dt><dd className="mono">{projects.map((x,i)=><React.Fragment key={x}>{i>0&&<br/>}{x}</React.Fragment>)}{(!role.edited||!role.projects.length)&&inferred.length>0&&'（推断）'}</dd></div>}{role.note&&<div><dt><span className="en">NOTE</span>备注</dt><dd>{role.note}</dd></div>}{missingFields.length>0&&<div className="role-missing"><dt>未填写</dt><dd>{missingFields.join("、")}</dd></div>}</dl></>}
           {tab==='内容'&&<><ContentCheck role={role} result={results[role.agentId]}/>{renderContents?.(role.agentId)}</>}
           {tab==='体检'&&renderHealth?.(role.agentId)}
           {tab==='配置'&&renderConfiguration?.(role.agentId)}

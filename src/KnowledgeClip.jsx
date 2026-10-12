@@ -1,3 +1,5 @@
+import { flyDataOnce } from './data-flight.js';
+import { flyData } from './data-flight.js';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './components.jsx';
 import { request, session } from './api.js';
@@ -90,7 +92,7 @@ export function KnowledgeClip({ row, document, revision, adoptState, notify, onB
         setPendingIds(old => old.filter(value => value !== operationId));
         setPreview(null);
         setConfirmed(false);
-        notify('待整理候选已保存到工作台本机主库；原文和 Vault 未改动');
+        notify('待整理候选已保存到工作台本机主库；原文和 Vault 未改动'); flyDataOnce(`knowledge-clip:${operationId}`);
       } else {
         const result = await request('/knowledge/clip/check', { operationId: id }, 'POST', false);
         if (!result.closed || !['saved', 'not_started'].includes(result.status))
@@ -102,7 +104,7 @@ export function KnowledgeClip({ row, document, revision, adoptState, notify, onB
         setPendingIds(old => old.filter(value => value !== id));
         if (result.status === 'saved') {
           setPreview(null); setConfirmed(false);
-          notify('已找回本机待整理候选');
+          flyDataOnce(`knowledge-clip:${id}`);notify('已找回本机待整理候选');
         } else {
           setPreview(null); setConfirmed(false);
           notify('原编号确认未开始且已封闭，可重新预览');

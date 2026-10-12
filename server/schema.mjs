@@ -19,7 +19,7 @@ import {
   validateProfileProposals,
   validateProfileHistory,
 } from "./knowledge-profile-schema.mjs";
-import { validateSilver, validateSilverHistory, validateAgentRoles } from "./silver-schema.mjs";
+import { validateAgentRoles } from "./agent-roles-schema.mjs";
 import {
   validateRevisionCandidates,
   validateCandidateHistory,
@@ -397,7 +397,6 @@ export function validateState(state) {
     "learning",
     "knowledgeZones",
     "profileProposals",
-    "silver",
     "agentRoles",
     "reverseRecords",
     "reverseSettings",
@@ -411,8 +410,7 @@ export function validateState(state) {
     validateKnowledgeZones(state.knowledgeZones);
   if (state.profileProposals !== undefined)
     validateProfileProposals(state.profileProposals);
-  // 路线 v3 5.5 / 4.3：银饰计划与智能体角色卡，旧库缺失按空处理。
-  if (state.silver !== undefined) validateSilver(state.silver);
+  // 角色卡独立于已撤销的银饰页面。
   if (state.agentRoles !== undefined) validateAgentRoles(state.agentRoles);
   if (state.reverseRecords !== undefined)
     validateReverseRecords(state.reverseRecords);
@@ -1142,11 +1140,9 @@ export function validateHistory(
     allowProfile = false,
     allowCandidateImport = false,
     allowSkillSourceAdoptions = false,
-    allowSilverImport = false,
   } = {},
 ) {
   validateReverseHistory(previous,next);
-  validateSilverHistory(previous?.silver,next.silver,{allowImport:allowSilverImport,equivalent});
   validateNightV2History(previous, next);
   if (
     !allowLearningFolders &&

@@ -1,3 +1,5 @@
+import { flyDataOnce } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import { FolderOpen } from "lucide-react";
 import { request } from "./api.js";
@@ -129,8 +131,10 @@ export function RuleInstall({ asset, state, installs, refresh, notify }) {
       setResult(value);
       if (value.completedAt) setUnconfirmed("");
       else setUnconfirmed(token);
-      if (value.status === "matches_after")
+      if (value.status === "matches_after") {
+        flyDataOnce(`rule-install:${value.id||token}`);
         notify(value.kind === "restore" ? "已撤回并回读核对" : "规则已写入并回读核对");
+      }
     } catch (e) {
       setError(e.message || "写入失败");
       // 服务端明确“未开始”才解除；其余情况写入可能已经开始，保留操作 ID，只允许核对。
@@ -144,11 +148,14 @@ export function RuleInstall({ asset, state, installs, refresh, notify }) {
     }
   }
   async function check(id) {
+    const isPendingWrite = unconfirmed === id;
     const value = await run("check", () =>
       request("/rule-templates/check", { id }),
     );
     if (value) {
       setResult(value);
+      if (isPendingWrite && value.status === "matches_after")
+        flyDataOnce(`rule-install:${id}`);
       if (value.completedAt || value.status !== "unknown") setUnconfirmed("");
       refresh();
     }
@@ -156,6 +163,7 @@ export function RuleInstall({ asset, state, installs, refresh, notify }) {
 
   return (
     <section className="config-panel rule-install" aria-label="装入项目">
+      <ReadReveal pending={busy === "preview"} ready={!!preview && !error} target={() => previewRef.current} />
       <div className="config-heading">
         <h3>装入项目</h3>
         <Badge tone="muted">只维护托管区块</Badge>
@@ -233,7 +241,7 @@ export function RuleInstall({ asset, state, installs, refresh, notify }) {
           </label>
           <Button secondary type="submit" disabled={locked || !root}>
             <FolderOpen size={16} />
-            {busy === "preview" ? "正在读取…" : `预览装入 v${asset.versions.length}.0`}
+            {busy === "preview" ? <Reading mini label="读取装入预览"/> : `预览装入 v${asset.versions.length}.0`}
           </Button>
         </form>
       )}
@@ -373,9 +381,10 @@ export function RuleInstall({ asset, state, installs, refresh, notify }) {
         </section>
       )}
       <div className="rule-installed">
+        <ReadReveal pending={loading} ready={!loadError}/>
         <h4>已装入 · {loadError || loading ? "…" : mine.length}</h4>
         {loading ? (
-          <p className="rule-empty" role="status">正在读取装入记录…</p>
+          <p className="rule-empty" role="status"><Reading label="正在读取装入记录"/></p>
         ) : loadError ? (
           <div className="inline-error rule-load-error" role="alert">
             <span>装入记录读取失败：{loadError}。升级提示暂不可用，这不代表没有装入。</span>
@@ -447,8 +456,9 @@ export function ProjectRules({ project, state, installs, refresh }) {
         <h3>规则模板</h3>
         <Badge tone="muted">只读 · 来自本机写入记录</Badge>
       </div>
+      <ReadReveal pending={loading} ready={!loadError}/>
       {loading ? (
-        <p className="rule-empty" role="status">正在读取装入记录…</p>
+        <p className="rule-empty" role="status"><Reading label="正在读取装入记录"/></p>
       ) : loadError ? (
         <div className="inline-error rule-load-error" role="alert">
           <span>装入记录读取失败：{loadError}。这不代表项目没有装入规则。</span>

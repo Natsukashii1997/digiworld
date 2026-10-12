@@ -26,7 +26,7 @@ export function useCollabProtocol(state, route, inboxOpen) {
       setValue(v);
       return v;
     }
-    setValue({ items: [], loaded: false, error: "", key });
+    setValue(previous => ({ items: previous.key === key ? previous.items : [], loaded: false, error: "", key }));
     try {
       const v = {
         ...(await request("/collab/protocol", {})),
@@ -43,7 +43,7 @@ export function useCollabProtocol(state, route, inboxOpen) {
         error: e.message || "协议读取失败",
         key,
       };
-      if (n === epoch.current && keyRef.current === key) setValue(v);
+      if (n === epoch.current && keyRef.current === key) setValue(previous => ({ ...v, items: previous.key === key ? previous.items : [] }));
       return v;
     }
   }, [key]);

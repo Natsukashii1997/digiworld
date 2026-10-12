@@ -24,7 +24,7 @@ export async function geometry(p, route, label) {
           s = getComputedStyle(e);
         if (!r.width && !r.height) continue;
         const name = e.tagName + "." + [...e.classList].join(".");
-        if (!e.closest(".page-agents.v16 .cast") && !e.parentElement?.closest(".settings-v16 .st-nav") && (r.left < -0.5 || r.right > innerWidth + 0.5))
+        if (!e.closest(".page-agents.v16 .cast") && !e.parentElement?.closest(".settings-v16 .st-nav,.sp-v16 .sp-dirs[tabindex='0'][role='region']") && (r.left < -0.5 || r.right > innerWidth + 0.5))
           bad.push(name + " 边界 " + r.left + ".." + r.right);
         if (
           ["hidden", "clip"].includes(s.overflowX) &&
@@ -66,12 +66,13 @@ export async function geometry(p, route, label) {
 }
 export async function axe(p, label) {
   await settle(p);
+  const results=await new AxeBuilder({ page: p })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  // Axe聚合会打开空白页；明确恢复被测页供后续截图和键盘操作。
+  await p.bringToFront();
   assert.deepEqual(
-    (
-      await new AxeBuilder({ page: p })
-        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-        .analyze()
-    ).violations.map(
+    results.violations.map(
       (v) => label + " " + v.id + " " + v.nodes.map((n) => n.target).join(" "),
     ),
     [],

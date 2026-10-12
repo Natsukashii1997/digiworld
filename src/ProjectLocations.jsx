@@ -1,3 +1,4 @@
+import { flyData } from './data-flight.js';
 import React, { useEffect, useRef, useState } from "react";
 import { Copy, Link2, RefreshCw } from "lucide-react";
 import { Button, Badge } from "./components.jsx";
@@ -157,6 +158,7 @@ export function ProjectLocations({ project, state, adoptState, notify }) {
         }
         const needsReview = preview.contextNeedsReview;
         adoptState(next);
+        flyData();
         setPending(false);
         setPreview(null);
         setConfirmed(false);

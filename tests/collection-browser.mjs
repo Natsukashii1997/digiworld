@@ -24,10 +24,11 @@ try {
     assert.ok(await page.locator('.collection-paper img').evaluateAll(images=>images.length===6&&images.every(image=>image.complete&&image.naturalWidth>0)));
     const typography=await page.locator('.collection-paper').evaluateAll(nodes=>nodes.map(node=>{
       const category=node.querySelector('.collection-card-category'),title=node.querySelector('.collection-card-title'),image=node.querySelector('img');
-      const labelStyle=getComputedStyle(category),titleStyle=getComputedStyle(title);
-      return {category:category.textContent.trim(),labelFont:parseFloat(labelStyle.fontSize),labelLine:parseFloat(labelStyle.lineHeight),labelHeight:category.clientHeight,labelScroll:category.scrollHeight,titleLine:parseFloat(titleStyle.lineHeight),titleHeight:title.clientHeight,filter:getComputedStyle(image).filter,paperHeight:node.clientHeight,paperScroll:node.scrollHeight};
+      const labelStyle=category?getComputedStyle(category):null,titleStyle=getComputedStyle(title);
+      return {category:category?.textContent.trim()??null,labelFont:labelStyle?parseFloat(labelStyle.fontSize):null,labelLine:labelStyle?parseFloat(labelStyle.lineHeight):null,labelHeight:category?.clientHeight,labelScroll:category?.scrollHeight,titleLine:parseFloat(titleStyle.lineHeight),titleHeight:title.clientHeight,filter:getComputedStyle(image).filter,paperHeight:node.clientHeight,paperScroll:node.scrollHeight};
     }));
-    assert.ok(typography.every(t=>t.category==='编程开发'&&t.labelFont>=12&&t.labelLine>=18&&t.labelScroll<=t.labelHeight),'分类字形不得被等高行盒裁剪');
+    assert.equal(typography.filter(t=>t.category!==null).length,looseIds.length,'分组内不重复显示分类，游离卡片保留分类');
+    assert.ok(typography.filter(t=>t.category!==null).every(t=>t.category==='编程开发'&&t.labelFont>=12&&t.labelLine>=18&&t.labelScroll<=t.labelHeight),'保留的分类字形不得被等高行盒裁剪');
     assert.ok(typography.every(t=>t.titleLine===19&&t.titleHeight===38&&t.filter==='none'&&t.paperHeight===212&&t.paperScroll<=t.paperHeight),'两行标题、原图和相纸边框应保留完整空间');
     const loose=page.locator(looseIds.map(id=>`.collection-card-position[data-note-id="${id}"]`).join(', '));
     const angles=await loose.evaluateAll(nodes=>nodes.map(node=>{const matrix=new DOMMatrix(getComputedStyle(node).transform);return Math.atan2(matrix.b,matrix.a);}));
@@ -36,7 +37,7 @@ try {
     await hoverCard.scrollIntoViewIfNeeded();const before=await geometry();await hoverCard.hover();await page.waitForTimeout(250);const after=await geometry();
     assert.ok(Math.abs(before.width-after.width)<0.1&&Math.abs(before.height-after.height)<0.1&&Math.abs(before.rotation-after.rotation)<0.001&&Math.abs(after.scale-1)<0.001,'悬停保留倾斜与字形尺寸，只轻微抬起');
     await page.getByLabel('搜索收藏').hover();
-    assert.equal(await page.getByRole('button',{name:'新建分组',exact:true}).evaluate(node=>getComputedStyle(node).position),'relative','新建分组应在画布末尾，不浮盖卡片');
+    assert.ok(await page.getByRole('button',{name:'新建分组',exact:true}).evaluate(node=>node.closest('.collection-toolbar') && !node.closest('.collection-canvas')),'新建分组应在上沿控制轨，不浮盖卡片');
     await axe(page,'canvas '+width);await page.screenshot({path:join(out,'stack-'+width+'.png'),fullPage:true});
     await page.getByRole('button',{name:/分组：/}).first().click();await noOverflow(page,'expanded '+width);
     const groupLabel=await page.locator('.collection-group').first().evaluate(node=>({height:node.clientHeight,lines:[...node.querySelectorAll(':scope > div > div')].map(n=>getComputedStyle(n).whiteSpace)}));

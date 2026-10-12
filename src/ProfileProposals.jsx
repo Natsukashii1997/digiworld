@@ -1,3 +1,5 @@
+import { flyData } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 // 待处理 · 个人说明修改建议（路线 v3 切片 3.3，D30）。Agent 通过本机 MCP 提交的建议在这里逐条处理：
 // 采纳 = 预览差异 → 本人勾选确认；拒绝需二次确认。两者都经专用接口写主库，不经通用保存。
 // 采纳记录保留原链路；已确认建议通过独立Vault入口预览、备份、写回与回读。
@@ -80,6 +82,7 @@ export function ProfileProposals({ state, adoptState, notify, navigate, inbox = 
         expectedRevision: latest.revision,
       });
       adoptState(next);
+      flyData();
       setPreview(null);
       notify("已确认采纳，可在最近处理里预览写回个人说明");
     });
@@ -91,15 +94,17 @@ export function ProfileProposals({ state, adoptState, notify, navigate, inbox = 
         expectedRevision: latest.revision,
       });
       adoptState(next);
+      flyData();
       setRejecting(null);
       setPreview(null);
       setPreviewFailed(null);
       notify("已拒绝这条建议，Vault 未改动");
     });
   if (inbox) return <><section className="ib-proposals" aria-label="个人说明修改建议">
+    <ReadReveal pending={busy==="refresh"||busy.startsWith("preview-")} ready={!error}/>
     <ul>{pending.map(p=><li key={p.id} data-item-id={`profile-${p.id}`} className={`ib-card${preview?.id===p.id || preview?.proposalId===p.id ? " open" : ""}`} aria-label={`建议：${p.path}`}>
       <button className="ib-card-btn" aria-expanded={preview?.proposalId===p.id || preview?.id===p.id} onClick={()=>preview?.proposalId===p.id || preview?.id===p.id ? setPreview(null) : openPreview(p)} disabled={!!busy}>
-        <span className="ib-card-main"><b>{p.proposer} 建议修改个人说明</b><small>{p.path} · {p.reason}</small></span><span className="ib-card-side"><time className="en" dateTime={p.createdAt}>{inboxTime(p.createdAt)}</time><span className="ib-go">{busy===`preview-${p.id}`?"读取中…":preview?.proposalId===p.id || preview?.id===p.id?"收起":"查看"} {preview?.proposalId===p.id || preview?.id===p.id ? <ChevronUp size={13}/> : <ArrowRight size={13}/>}</span></span>
+        <span className="ib-card-main"><b>{p.proposer} 建议修改个人说明</b><small>{p.path} · {p.reason}</small></span><span className="ib-card-side"><time className="en" dateTime={p.createdAt}>{inboxTime(p.createdAt)}</time><span className="ib-go">{busy===`preview-${p.id}`?<Reading mini label="读取建议差异"/>:preview?.proposalId===p.id || preview?.id===p.id?"收起":"查看"} {preview?.proposalId===p.id || preview?.id===p.id ? <ChevronUp size={13}/> : <ArrowRight size={13}/>}</span></span>
       </button>
       {(preview?.proposalId===p.id || preview?.id===p.id) && <div className="ib-diff" role="region" aria-label="预览个人说明修改">
         <div className="ib-diff-head"><span className="en">PROFILE · {p.path}</span><span>{p.proposer} 提出</span></div>
@@ -116,7 +121,7 @@ export function ProfileProposals({ state, adoptState, notify, navigate, inbox = 
     {error&&!preview&&!rejecting&&!previewFailed&&<p role="alert" className="inline-error">{error}</p>}
     </section>
     {children}
-    <details className="ib-proposal-records"><summary>建议记录与回读</summary><Button secondary disabled={!!busy} onClick={()=>refresh(true)}><RefreshCw size={16}/>{busy==="refresh"?"读取中…":"读回最新建议"}</Button>{decided.length>0&&<><h4>最近处理</h4><ul className="proposal-decided">{decided.map(p=><li key={p.id}><span>{p.path} · {p.proposer}</span><span>{DECIDED[p.status]}</span>{p.status==="confirmed"&&<VaultWriteEntry proposalId={p.id} navigate={navigate}/>}</li>)}</ul></>}</details>
+    <details className="ib-proposal-records"><summary>建议记录与回读</summary><Button secondary disabled={!!busy} onClick={()=>refresh(true)}><RefreshCw size={16}/>{busy==="refresh"?<Reading mini label="读取建议"/>:"读回最新建议"}</Button>{decided.length>0&&<><h4>最近处理</h4><ul className="proposal-decided">{decided.map(p=><li key={p.id}><span>{p.path} · {p.proposer}</span><span>{DECIDED[p.status]}</span>{p.status==="confirmed"&&<VaultWriteEntry proposalId={p.id} navigate={navigate}/>}</li>)}</ul></>}</details>
   </>;
   return (
     <section className="inbox-section" aria-labelledby="profile-proposals-title">
@@ -127,7 +132,7 @@ export function ProfileProposals({ state, adoptState, notify, navigate, inbox = 
       <div className="proposal-actions">
         <Button secondary disabled={!!busy} onClick={() => refresh(true)}>
           <RefreshCw size={16} />
-          {busy === "refresh" ? "读取中…" : "读回最新建议"}
+          <ReadReveal pending={busy==="refresh"} ready={!error}/>{busy === "refresh" ? <Reading mini label="读取建议"/> : "读回最新建议"}
         </Button>
       </div>
       {error && !preview && !rejecting && (
@@ -159,7 +164,7 @@ export function ProfileProposals({ state, adoptState, notify, navigate, inbox = 
               <div className="proposal-actions">
                 <Button disabled={!!busy} onClick={() => openPreview(p)}>
                   <Eye size={16} />
-                  {busy === `preview-${p.id}` ? "读取中…" : "预览差异"}
+                  <ReadReveal pending={busy===`preview-${p.id}`} ready={!!preview&&!error}/>{busy === `preview-${p.id}` ? <Reading mini label="读取建议差异"/> : "预览差异"}
                 </Button>
                 <Button secondary disabled={!!busy} onClick={() => setRejecting(p)}>
                   <X size={16} />

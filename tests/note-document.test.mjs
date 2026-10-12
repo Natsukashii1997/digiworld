@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  parseEditorDoc, serializeEditorDoc, visibleLine, docSelection,
+  parseEditorDoc, parseStoredNote, serializeEditorDoc, visibleLine, docSelection,
   replaceEditorText, deleteEditorText, applyEditorInk, applyEditorList,
   toggleEditorTask, boundedDoc,
 } from '../src/note-document.js';
@@ -135,4 +135,32 @@ test('17520k按序列化JS长度守门：格式标记计入、整事务拒绝、
   assert.throws(()=>parseEditorDoc(emoji+'x','md1'),/上限/);
   assert.throws(()=>replaceEditorText(md(emoji),selection(md(emoji),point(0,20000)),'x'),/20000/);
   assert.throws(()=>boundedDoc(md('甲\u0000乙')),/控制字符/);
+});
+
+test('362旧字色展示恢复，不解释旧列表，也不迁移或改写原文',()=>{
+ const note={id:'legacy',text:'- 旧前缀\n[文字]{red}\n空行后\n',at:'固定时间'};
+ const frozen=structuredClone(note),doc=parseStoredNote(note);
+ assert.equal(shown(doc),'- 旧前缀\n文字\n空行后\n');
+ assert.ok(doc.lines.every(line=>line.kind==='p'));
+ assert.equal(doc.lines[1].runs[0].ink,'red');
+ assert.equal(serializeEditorDoc(doc),note.text);
+ assert.deepEqual(note,frozen);
+ assert.equal(shown(parseEditorDoc(note.text)),note.text,'低层默认纯文契约保持');
+});
+test('362显式纯文、未知标记、超长旧笔记保持原文；md1仍保留任务语义',()=>{
+ for(const note of [{text:'[文字]{red}',format:'plain'},{text:'[文字]{purple}'},{text:'[文字]{red}'+ '长'.repeat(20001)}]){
+  const doc=parseStoredNote(note);assert.equal(shown(doc),note.text);assert.equal(serializeEditorDoc(doc),note.text);
+ }
+ const rich=parseStoredNote({text:'- [ ] [任务]{green}',format:'md1'});assert.equal(rich.lines[0].kind,'task');assert.equal(rich.lines[0].runs[0].ink,'green');
+});
+test('旧便签嵌套字色只展开显示：内层颜色优先，不漏标记原文，未改动时原样写回', () => {
+  for (const [text, runs] of [
+    ['[[文字]{blue}委屈啊等等]{red}', [['文字','blue'],['委屈啊等等','red']]],
+    ['[111[文字]{green}]{green}', [['111','green'],['文字','green']]],
+  ]) {
+    const doc = parseStoredNote({ text });
+    assert.deepEqual(doc.lines[0].runs.map(r => [r.text, r.ink]), runs);
+    assert.ok(!doc.lines[0].runs.some(r => /[\[\]{}]/.test(r.text)), '不显示 [ ] { } 原文');
+    assert.equal(serializeEditorDoc(doc), text);
+  }
 });

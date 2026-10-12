@@ -1,3 +1,5 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
+import { copyText } from './data-flight.js';
 import React, { useEffect, useState, useRef } from "react";
 import { Copy, Download, PenLine, RefreshCw } from "lucide-react";
 import { request } from "./api.js";
@@ -54,7 +56,7 @@ export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopy
       setDelivery(next);
       generatedId = next.id;
       try {
-        await navigator.clipboard.writeText(next.instructions);
+        await copyText(next.instructions);
       } catch {
         setError("复制失败：请选中下方口令手动复制，或允许剪贴板访问后重试。");
         return;
@@ -166,10 +168,11 @@ export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopy
         </label>
       )}
       <details className="delivery-links">
+        <ReadReveal pending={loading} ready={!listError}/>
         <summary>
           本机有效链接
           {loading
-            ? " · 读取中"
+            ? <Reading mini label="读取本机有效链接"/>
             : listError
               ? " · 状态未知"
               : ` · ${visibleLinks.length}`}

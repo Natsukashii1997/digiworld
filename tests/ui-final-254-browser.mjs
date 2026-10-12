@@ -13,7 +13,7 @@ const browser = await chromium.launch();
 const errors = [];
 const routes = ["home", "inbox", "assets", "agents", "projects", "knowledge", "notes",
   "history", "references", "night", "settings", "health", "collab", "calendar",
-  "aihot", "learning", "silver"];
+  "aihot", "learning"];
 
 function newPage(width) {
   return browser.newPage({ viewport: { width, height: 900 }, reducedMotion: "reduce" });

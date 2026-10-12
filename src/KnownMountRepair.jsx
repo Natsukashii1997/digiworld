@@ -1,3 +1,4 @@
+import { copyText } from './data-flight.js';
 import React,{useRef,useState} from 'react';
 import {Button} from './components.jsx';
 import {request} from './api.js';
@@ -29,7 +30,7 @@ export function KnownMountRepair({originalId,revision,onBusy}){
     if(value.closed!==true||value.canceled!==true){setError('取消结果未能确认，请查询原编号。');return;}
     if(!pending.setId('',id))setError('授权已取消并回读，但本机待查编号清理失败；请查询原编号。');
   });}
-  async function copyPending(){if(!pending.id)return;try{await navigator.clipboard.writeText(pending.id);setCopyMessage('完整原编号已复制。');}catch{setCopyMessage('复制失败，请展开核验详情手动复制完整编号。');}}
+  async function copyPending(){if(!pending.id)return;try{await copyText(pending.id);setCopyMessage('完整原编号已复制。');}catch{setCopyMessage('复制失败，请展开核验详情手动复制完整编号。');}}
   return <section className="capability-console known-mount-repair" aria-label="已知缺失 Skill 目录修复">
     <h4>工作台发布的独立 Skill 缺失修复</h4><p>仅核验原发布 #{short(originalId)} 及所有权回执；现有目录、断链与未知外部改动一律拒绝覆盖。修复后仍需在 Agent 原生环境核验加载。</p>
     {!plan&&!pending.id&&<Button secondary type="button" disabled={busy||!pending.ready||!!pending.error} onClick={preview}>预览原发布记录与缺失目录</Button>}

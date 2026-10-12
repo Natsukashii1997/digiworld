@@ -54,7 +54,7 @@
 
 .ib-layer { position: relative; z-index: 70; }
 .ib-drawer:focus { outline: none; }
-.ib-drawer { min-height: 0; grid-template-rows: auto auto minmax(0,1fr); animation: ib-slide var(--t-mid) ease-out; }
+.ib-drawer { min-height: 0; grid-template-rows: auto auto minmax(0,1fr); }
 .ib-head .icon-button { min-width: 44px; min-height: 44px; border: 1px solid var(--line-2); border-radius: var(--r-s); }
 .ib-body { min-height: 0; grid-row: 3; }
 .ib-drawer:not(:has(.ib-count)) .ib-body { grid-row: 2 / 4; }
@@ -74,7 +74,7 @@
 .ib-diff-act { flex-wrap: wrap; }
 .ib-diff .knowledge-confirm { min-height: 44px; font-size: var(--fs-small); }
 .ib-unclassified { color: var(--cyan); font-size: var(--fs-small); }
-@keyframes ib-slide { from { translate: 100% 0; } to { translate: 0 0; } }
+
 @media(max-width:760px) { .ib-drawer { width: 100vw; border-left: 0; } }
 @media(prefers-reduced-motion:reduce) { .ib-drawer,.ib-badge.red { animation: none; } }
 

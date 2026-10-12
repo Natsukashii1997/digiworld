@@ -1,3 +1,6 @@
+import { flyData } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
+import { copyText } from './data-flight.js';
 import React, { useEffect, useRef, useState } from "react";
 import {
   BookOpen,
@@ -358,7 +361,7 @@ export function KnowledgeV16({ state, adoptState, notify, navigate, onKnowledgeR
   }
   async function copy(text) {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setFallback("");
       notify("接入配置已复制");
     } catch {
@@ -461,6 +464,7 @@ export function KnowledgeV16({ state, adoptState, notify, navigate, onKnowledgeR
       );
       if (!valid(ticket)) return;
       adoptState(next);
+      if (["policy", "reconfirm", "connect", "feishu/connect", "feishu/connect-space"].includes(mode)) flyData();
       setDrawer(
         ["reconfirm", "policy", "feishu/verify"].includes(mode)
           ? {
@@ -721,17 +725,13 @@ export function KnowledgeV16({ state, adoptState, notify, navigate, onKnowledgeR
         </p>
       )}
       <section className="kh-search-sec" aria-label="跨库检索">
-        <Button secondary onClick={() => setDrawer({ mode: "clip/recovery" })}>
-          核对剪藏是否保存
-        </Button>
-        <span className="kh-clip-recovery-hint">仅在保存结果不明时使用</span>
         <form
           onSubmit={(e) => {
             e.preventDefault();
             search();
           }}
         >
-          <label className="kh-search">
+          <div className="kh-search-row"><label className="kh-search">
             <Search size={20} />
             <input
               type="search"
@@ -766,6 +766,9 @@ export function KnowledgeV16({ state, adoptState, notify, navigate, onKnowledgeR
               </button>
             )}
           </label>
+          <Button secondary title="仅在保存结果不明时使用" onClick={() => setDrawer({ mode: "clip/recovery" })}>
+            核对剪藏是否保存
+          </Button></div>
         </form>
         {busy === "search" && <p role="status">正在查询知识库…</p>}
         {result && (
@@ -984,7 +987,7 @@ export function KnowledgeV16({ state, adoptState, notify, navigate, onKnowledgeR
                     ? `MCP 运行中 · ${new URL(mcp.url).host}`
                     : summary.loaded
                       ? "MCP 未运行"
-                      : "MCP 状态读取中"}
+                      : <Reading mini label="MCP 状态读取中"/>}
               </span>
             </span>
             {pendingProposals > 0 && (
@@ -1030,8 +1033,8 @@ export function KnowledgeV16({ state, adoptState, notify, navigate, onKnowledgeR
               <span className="kh-agent-main">
                 <b>{CHARACTERS[a.character].name}</b>
                 <span className="kh-agent-st">
-                  <span className="kh-agent-st-full"><span className="kh-agent-ready">{connection[0]} · 复制配置</span><span className="kh-agent-use">调用：{usage[0]}</span></span>
-                  <span className="kh-agent-st-mobile" aria-hidden="true"><span className="kh-agent-ready">{connection[1]}</span><span className="kh-agent-use">{usage[1]}</span><em>复制配置</em></span>
+                  <span className="kh-agent-st-full"><span className="kh-agent-ready">{connection[0]} · 复制配置</span>{clientState === "ready" && <span className="kh-agent-use">调用：{!agentUse?.agents&&!agentUse?.error ? <Reading mini label="读取调用状态"/> : usage[0]}</span>}</span>
+                  <span className="kh-agent-st-mobile" aria-hidden="true"><span className="kh-agent-ready">{connection[1]}</span>{clientState === "ready" && <span className="kh-agent-use">{!agentUse?.agents&&!agentUse?.error ? <Reading mini label="读取调用状态"/> : usage[1]}</span>}<em>复制配置</em></span>
                 </span>
               </span>
             </button>
@@ -1188,7 +1191,7 @@ export function KnowledgeV16({ state, adoptState, notify, navigate, onKnowledgeR
                   onClick={previewProfile}
                 >
                   <BookOpen size={16} />
-                  {busy === "profile" ? "读取中…" : "预览个人说明"}
+                  {busy === "profile" ? <Reading mini label="读取个人说明"/> : "预览个人说明"}
                 </Button>
                 {document?.profile && (
                   <section aria-label="个人说明正文">
@@ -1272,6 +1275,7 @@ export function KnowledgeV16({ state, adoptState, notify, navigate, onKnowledgeR
                 </Button>
               </>
             )}
+            <ReadReveal pending={busy==="read"||busy==="profile"} ready={!!document&&!error}/>
             {drawer.mode === "note" &&
               (document ? (
                 <>
@@ -1300,7 +1304,7 @@ export function KnowledgeV16({ state, adoptState, notify, navigate, onKnowledgeR
                   )}
                 </>
               ) : busy === "read" ? (
-                <p role="status">正在读取所选原文…</p>
+                <p role="status"><Reading label="正在读取所选原文"/></p>
               ) : null)}
             {drawer.mode === "candidate" && <KnowledgeCandidate key={drawer.taskId}
               task={(state.knowledgeTasks || []).find(item => item.id === drawer.taskId)}

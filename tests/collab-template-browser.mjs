@@ -101,12 +101,13 @@ try {
   });
   assert.deepEqual(labelOverlaps, [], "1440 相邻站交付物/结果摘要不得叠压");
   assert.match(await page.locator(".cx-sum").innerText(), /锁定模板版本.*连续推进，最后一次验收/s);
-  assert.match(await page.locator(".cx-round").first().innerText(), /UI v16.*待议清单 1 条/s);
+  assert.match(await page.locator(".cx-round").first().innerText(), /待议清单 1 条/);
+  assert.match(await page.locator(".cx-sum-facts").innerText(), /UI v16/, "轮次保留在项目运行摘要中");
   await page.getByRole("tab", { name: /逆向工程/ }).click();
   assert.equal(await page.locator(".tm-s").count(), 8, "未绑定的其他运行仍使用旧八站");
   await page.getByRole("tab", { name: /随手记页/ }).click();
   assert.equal(await page.locator(".tm-s").count(), 9);
-  await page.locator(".cx-round").filter({ hasText: "UI v16" })
+  await page.locator(".cx-round").first()
     .getByRole("button", { name: /待议清单 1 条/ }).click();
   const issues = page.getByRole("dialog", { name: "UI v16 · 待议清单" });
   await issues.waitFor();

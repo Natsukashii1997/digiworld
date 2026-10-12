@@ -62,7 +62,7 @@ async function waitForState(readyCount, useCount) {
       document.querySelectorAll(".kh-agents .kh-agent.on").length === readyCount &&
       lines?.querySelectorAll("path.on").length === readyCount &&
       header.includes(`${readyCount}/4 位已核实就绪`) &&
-      cards.every((card) => card.querySelector(".kh-agent-st-full .kh-agent-use")?.textContent === fullUsage &&
+      cards.every((card) => !card.classList.contains("on") ? !card.querySelector(".kh-agent-st-full .kh-agent-use,.kh-agent-st-mobile .kh-agent-use") : card.querySelector(".kh-agent-st-full .kh-agent-use")?.textContent === fullUsage &&
         card.querySelector(".kh-agent-st-mobile .kh-agent-use")?.textContent === mobileUsage);
   }, { readyCount, useCount });
 }
@@ -118,11 +118,11 @@ try {
   assert.equal(await unknownCard.evaluate((element) => element.classList.contains("on")), false);
   assert.match(await unknownCard.getAttribute("aria-label"), /接入待核实 · 调用：近 7 天有调用/);
   assert.equal(await unknownCard.locator(".kh-agent-st-full .kh-agent-ready").textContent(), "接入待核实 · 复制配置");
-  assert.equal(await unknownCard.locator(".kh-agent-st-full .kh-agent-use").textContent(), "调用：近 7 天有调用");
+  assert.equal(await unknownCard.locator(".kh-agent-st-full .kh-agent-use").count(), 0, "未接入卡只显示一行状态；调用事实仍在可访问名中");
   assert.equal(await rightLines.locator("g").nth(ids.indexOf(unknownId)).locator("path.on,path.flow").count(), 0);
   assert.equal(await rightLines.locator("g").nth(ids.indexOf(unknownId)).locator("path.off").count(), 1);
   assert.equal(await rightLines.locator("path.broken").count(), 0);
-  report.scenarios.push("OpenClaw unknown，四端近 7 天有调用：未知卡与右线不亮，调用留痕仍展示");
+  report.scenarios.push("OpenClaw unknown，四端近 7 天有调用：未知卡与右线不亮，只显示一行状态且调用事实保留在可访问名");
   await checkWidths("one-unknown-used");
 
   assert.deepEqual(errors, []);

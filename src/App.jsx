@@ -1,3 +1,6 @@
+import { useScanMotion, useReadScan, Reading } from './ScanMotion.jsx';
+import { flyData } from './data-flight.js';
+import { motionOrigin } from './scan-motion.js';
 import React, {
   useCallback,
   useDeferredValue,
@@ -47,7 +50,6 @@ import { ScrollDetail } from "./Scrolls.jsx";
 import { AiHot } from "./LifePages.jsx";
 import { Collection } from "./Collection.jsx";
 import { NotesV16 } from "./NotesV16.jsx";
-import { SilverV16 } from "./SilverV16.jsx";
 import { scrollsOf, createScroll } from "./scrolls.js";
 import { PAGES, ZONES, resolveRoute } from "./pages.js";
 import {
@@ -115,9 +117,11 @@ export default function App() {
   useEffect(()=>{if(state)refreshNightV2Reports();},[route,state?.revision,refreshNightV2Reports]);
   const [saveError, setSaveError] = useState("");
   const partnerScreen = useRef();
-  // UI v14e 全站手感：主区（银饰页除外）的涟漪、微光、倾斜与阶梯浮现。
+  // UI v14e 全站手感：主区的涟漪、微光、倾斜与阶梯浮现。
   const mainRef = useRef();
   useV14Interactions(mainRef, `${route}:${state ? 1 : 0}`);
+  useScanMotion(mainRef, `${route}:${state ? 1 : 0}`);
+  useReadScan(mainRef,!state&&!error,!!state&&!error);
   const setSeason = useCallback((s) => setSeasonLabel(s.label), []);
   const toastTimer = useRef(),
     saveLock = useRef(false);
@@ -157,7 +161,7 @@ export default function App() {
         setProjectStatus({ ...result, error: "", loaded: true });
     } catch (e) {
       if (run === statusRun.current)
-        setProjectStatus({ items: [], error: e.message || "读取失败", loaded: true });
+        setProjectStatus(prev => ({ ...prev, error: e.message || "读取失败", loaded: true }));
     }
   }, []);
   // 只在“在推进”集合或停滞阈值变化时重读；没有在推进项目时不发请求。
@@ -238,7 +242,8 @@ export default function App() {
       tone === "error" ? 8000 : tone === "warning" ? 5500 : 4200,
     );
   }
-  async function save(next) {
+  async function save(next, { motion = true } = {}) {
+    const source = motionOrigin();
     if (saveLock.current) {
       notify("正在保存，请稍后再操作", "warning");
       return false;
@@ -249,6 +254,7 @@ export default function App() {
       const stored = await writeState(next);
       setState(stored);
       setSaveError("");
+      if (motion) flyData(source);
       return true;
     } catch (e) {
       notify(e.message || "保存失败，原数据未改变", "error");
@@ -324,7 +330,7 @@ export default function App() {
           <Pixel sprite="egg" size={46} className="boot-egg" />
         </Digivice>
         <h2>{error ? "本地数据暂时不可用" : "数码世界"}</h2>
-        <p>{error || "正在连接本机数据…"}</p>
+        {error ? <p>{error}</p> : <Reading label="正在连接本机数据"/>}
         {error && (
           <button className="button" onClick={() => location.reload()}>
             重新加载
@@ -340,7 +346,7 @@ export default function App() {
     <div className="app-shell">
       {veil && <div className="boot-veil" aria-hidden="true" />}
       <WorldDeco />
-      {route !== "silver" && <Motes />}
+      <Motes />
       <a
         href="#main-content"
         className="skip-link"
@@ -507,7 +513,7 @@ export default function App() {
         <main
           id="main-content"
           tabIndex={-1}
-          className={`main-content page-${route}${route === "silver" ? " v16" : ["home","agents","references","notes","history","knowledge"].includes(route) ? " v14 v16" : " v14"}`}
+          className={`main-content page-${route}${["home","agents","references","notes","history","knowledge"].includes(route) ? " v14 v16" : " v14"}`}
           key={route}
           ref={mainRef}
         >
@@ -554,7 +560,6 @@ export default function App() {
           {route === "collab" && <Collab {...common} navigate={navigate} collabJump={target.projectId && target.runId && target.launch ? {projectId:target.projectId,runId:target.runId,key:target.agentJumpKey} : null} />}
           {route === "aihot" && <AiHot {...common} navigate={navigate} />}
           {route === "learning" && <Collection />}
-          {route === "silver" && <SilverV16 {...common} />}
           {route === "calendar" && <CalendarPage {...common} />}
         </main>
       </div>

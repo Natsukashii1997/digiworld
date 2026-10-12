@@ -21,7 +21,7 @@
 .aihot-v16 .ah-card.no-summary { grid-template-rows: auto 1fr auto; }
 .aihot-v16 .ah-card:has(> .ah-open):hover { border-color: rgba(77, 227, 255, 0.45); box-shadow: 0 0 0 1px rgba(77, 227, 255, 0.15), 0 18px 36px -24px rgba(77, 227, 255, 0.5); }
 .aihot-v16 .ah-card.xl { grid-column: span 2; grid-row: span 2; padding: var(--s-6); border-color: rgba(77, 227, 255, 0.4);
-  background: radial-gradient(ellipse at 20% 0%, rgba(77, 227, 255, 0.16), transparent 60%), repeating-linear-gradient(0deg, rgba(77, 227, 255, 0.035) 0 1px, transparent 1px 3px), var(--hw-deep); }
+  background: radial-gradient(ellipse at 20% 0%, color-mix(in srgb, var(--cyan) 16%, transparent), transparent 60%), repeating-linear-gradient(0deg, rgba(77, 227, 255, 0.035) 0 1px, transparent 1px 3px), var(--hw-deep); }
 .aihot-v16 .ah-card.md { grid-column: span 2; }
 .aihot-v16 .ah-card header { display: flex; align-items: center; justify-content: space-between; }
 .aihot-v16 .ah-no { font-size: var(--fs-small); font-weight: 700; color: var(--cyan); letter-spacing: 0.08em; }
@@ -62,7 +62,7 @@
 .aihot-v16 .ah-tag.yellow { --hue: 255, 209, 102; }
 .aihot-v16 .ah-tag.lime { --hue: 166, 227, 110; }
 .aihot-v16 .ah-tag.pink { --hue: 255, 143, 184; }
-.aihot-v16 .ah-ghost { position: absolute; right: -10px; bottom: -40px; font-size: calc(var(--fs-display) * 100 / 17); font-weight: 900; line-height: 1; color: transparent; -webkit-text-stroke: 1px rgba(77, 227, 255, 0.16); pointer-events: none; }
+.aihot-v16 .ah-ghost { position: absolute; right: var(--s-3); bottom: var(--s-2); opacity: 0.35; font-size: calc(var(--fs-display) * 100 / 17); font-weight: 900; line-height: 1; color: transparent; -webkit-text-stroke: 1px color-mix(in srgb, var(--cyan) 16%, transparent); pointer-events: none; }
 .aihot-v16 .ah-card.xl > *:not(.ah-ghost) { position: relative; }
 .aihot-v16 .ah-card.md { border-color: var(--line); background: var(--panel); }
 .aihot-v16 .ah-more { grid-column: 1 / -1; padding: var(--s-4) var(--s-5) var(--s-2); border-radius: var(--r); background: rgba(6, 10, 22, 0.45); border: 1px solid var(--line); }
@@ -93,7 +93,9 @@
 
 
 .aihot-v16 { min-width: 0; }
-.aihot-v16 .button:not(.secondary) { background:linear-gradient(180deg,color-mix(in srgb,var(--cyan) 62%,#fff),var(--cyan));color:var(--px-ink);border-color:transparent; }
+.aihot-v16 .button:not(.secondary) { background:var(--primary-fill);color:var(--orange-ink);border-color:transparent;box-shadow:var(--glow-orange); }
+.aihot-v16 .ah-hot { position:sticky; top:72px; max-height:calc(100dvh - 96px); overflow-y:auto; overscroll-behavior:contain; }
+@media(max-width:1180px) { .aihot-v16 .ah-hot { position:static; max-height:none; overflow-y:visible; } }
 .aihot-v16 .ah-fav { background:none;border:0;padding:0;min-width:44px;min-height:44px; }
 .aihot-v16 .ah-fav:hover { color:var(--text); }
 .aihot-v16 .ah-star:disabled { opacity:.55;cursor:not-allowed; }
@@ -159,3 +161,5 @@
 .aihot-v16 .ah-card:has(> .ah-open):is(:hover,:focus-within) h3,
 .aihot-v16 .ah-more li:has(> .ah-open):is(:hover,:focus-within) b,
 .aihot-v16 .ah-hot li:has(> .ah-open):is(:hover,:focus-within) b{color:var(--cyan)}
+
+.aihot-v16 .ah-meta-time{white-space:nowrap}

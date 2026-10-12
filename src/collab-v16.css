@@ -939,7 +939,7 @@
   resize: vertical; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere;
   font: var(--fs-small)/1.7 var(--mono);
 }
-@media (max-width: 399px) {
+@media (max-width: 430px) {
   .collab-v16 .tm-head { flex-wrap: wrap; }
   .collab-v16 .tm-head > .en {
     flex: 1 1 100%;
@@ -948,3 +948,6 @@
   }
   .collab-v16 .tm-logbtn { margin-left: auto; }
 }
+
+.collab-v16 .cx-foot { justify-content:flex-start; align-items:center; gap:var(--s-5); }
+.collab-v16 .cx-foot button { padding:0; text-align:left; }

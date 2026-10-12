@@ -1,3 +1,5 @@
+import { flyData } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ShieldCheck,
@@ -8,7 +10,7 @@ import {
   Radio,
   Library,
 } from "lucide-react";
-import { Button, Dialog, PageHeading } from "./components.jsx";
+import { Button, Dialog, PageHeading, ScrollFade } from "./components.jsx";
 import { PageChoices } from "./PageChoices.jsx";
 import { request } from "./api.js";
 import { StoragePanel } from "./StoragePanel.jsx";
@@ -100,7 +102,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
       ? "状态未知"
       : settings
         ? `${rows.filter((r) => r.enabled).length} 项已开启`
-        : "读取中…",
+        : <Reading mini label="读取MCP状态"/>,
     `REV ${state.revision}`,
     `${c.roots?.length || 0} 个目录 · ${c.projectStallDays || 7} 天`,
     `${sources.length} 个来源`,
@@ -109,7 +111,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
       ? "读取失败"
       : aihot
         ? `${aihot.settings.enabled ? "已开启" : "已关闭"} · ${aihot.settings.intervalHours} 小时`
-        : "读取中…",
+        : <Reading mini label="读取MCP状态"/>,
   ];
   const close = () => {
     if (busy.current || policyBusy) return;
@@ -131,6 +133,9 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
   const source = sources.find((s) => s.id === panel?.id);
   return (
     <div className="settings-v16">
+      <ReadReveal pending={!summary.loaded} ready={summary.loaded&&!summary.loadError}/>
+      <ReadReveal pending={!aihot&&!aihotError} ready={!!aihot&&!aihotError}/>
+      <ReadReveal pending={!calendar} ready={!!calendar&&!calendar.error}/>
       <PageHeading
         page="settings"
         help={
@@ -145,7 +150,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
       />
       <p className="settings-scroll-cue">左右滑动查看分类 · {SETTINGS_CATEGORIES.findIndex(([id])=>id===category)+1} / {SETTINGS_CATEGORIES.length}</p>
       <div className="st-layout">
-        <PageChoices
+        <ScrollFade className="settings-scroll"><PageChoices
           label="设置分类"
           className="st-nav"
           value={category}
@@ -163,7 +168,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
               </React.Fragment>,
             ];
           })}
-        />
+        /></ScrollFade>
         <div className="st-content">
           {category === "security" && (
             <section>
@@ -345,7 +350,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
                     summary?.mcp?.url ||
                     summary?.loadError ||
                     summary?.mcp?.error ||
-                    "读取中…"
+                    <Reading mini label="读取MCP状态"/>
                   }
                 >
                   <span
@@ -411,7 +416,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
                       ? `读取配置失败：${aihotError}`
                       : aihot
                         ? `当前${aihot.settings.enabled ? "允许" : "关闭"}访问 · 每 ${aihot.settings.intervalHours} 小时更新`
-                        : "正在读取配置…"
+                        : <Reading mini label="正在读取配置"/>
                   }
                 >
                   <span
@@ -423,7 +428,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
                         ? aihot.settings.enabled
                           ? "已开启"
                           : "关闭"
-                        : "读取中…"}
+                        : <Reading mini label="读取MCP状态"/>}
                   </span>
                   <Button
                     secondary
@@ -518,6 +523,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
                       );
                       adoptState(next);
                       setPanel((old) => ({ ...old, revision: next.revision }));
+                      flyData();
                       notify("知识范围已保存");
                     } catch (e) {
                       setPolicyError(e.message);
@@ -596,7 +602,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
                 )
               ) : (
                 <p role="status">
-                  {calendar?.error || calendar?.reason || "正在读取权限…"}
+                  {calendar?.error || calendar?.reason || <Reading label="正在读取权限"/>}
                 </p>
               )}
               <p>撤销或更改权限：系统设置 → 隐私与安全性 → 日历 / 提醒事项。</p>
@@ -621,7 +627,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
               知识源与个人说明分别授权；存档点写入每次确认，日历与提醒权限由系统管理。最近使用只取本机实际调用留痕；没有记录显示从未使用，读取失败表示未知。
             </p>
             <p>
-              普通备份以合并方式导入，不覆盖历史。完整备份含主库、操作日志与逆向图片，不含银饰图片；恢复到新的目录并校验，保留原目录，切换由你完成。生成记录不证明下载文件已保存到磁盘。旧浏览器数据检查入口保留。
+              普通备份以合并方式导入，不覆盖历史。完整备份含主库、操作日志与逆向图片；恢复到新的目录并校验，保留原目录，切换由你完成。生成记录不证明下载文件已保存到磁盘。旧浏览器数据检查入口保留。
             </p>
             <p>
               AI HOT 只读公开接口并缓存，设置草稿须保存；学习书架只读索引 PDF /

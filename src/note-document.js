@@ -1,32 +1,53 @@
 // md1↔受限行文档。来源仅内存，未改行逐字返回；不规范化旧前缀/空行。
 import { INKS, NOTE_MAX } from './rich-note.js';
 const colors = new Set(INKS.map(([key])=>key));
-const inkPattern = /\[([^[\]\n]+)\]\{(red|blue|green|yellow|gray)\}/g;
 let sequence = 0;
 const identity = () => `line-${++sequence}`;
 const semantic = l => JSON.stringify([l.kind,l.number,l.checked,l.runs.map(r=>[r.text,r.ink||null])]);
 const textOf = l => l.runs.map(r=>r.text).join('');
 export const visibleLine = textOf;
+// 旧便签可能存有嵌套字色 [[文字]{blue}其余]{red}：由内向外展开为相邻片段，内层颜色优先。
+// 只用于显示与编辑起点；未改动的行仍按原文写回。
+const markPattern = /\[([^[\]\n]+)\]\{(red|blue|green|yellow|gray)\}/;
+function inkRuns(body) {
+  const marks=[];let text=body,m;
+  while ((m=markPattern.exec(text))) { marks.push({content:m[1],ink:m[2],raw:m[0]}); text=text.slice(0,m.index)+`\uE000${marks.length-1}\uE001`+text.slice(m.index+m[0].length); }
+  const runs=[];
+  const expand=(part,ink,top)=>{for (const piece of part.split(/(\uE000\d+\uE001)/)) {
+    if (!piece) continue;
+    const ref=/^\uE000(\d+)\uE001$/.exec(piece);
+    if (!ref) { runs.push({text:piece,ink}); continue; }
+    const mark=marks[ref[1]];
+    if (top && !mark.content.includes('\uE000')) runs.push({text:mark.content,ink:mark.ink,raw:mark.raw}); else expand(mark.content,mark.ink,false);
+  }};
+  expand(text,null,true);
+  return runs.length?runs:[{text:'',ink:null}];
+}
 export function parseEditorDoc(text, format = undefined) {
-  if (typeof text !== 'string' || text.length > (format==='md1'?NOTE_MAX:1000000)) throw Error('随手记长度超出对应格式上限');
-  const mode = format === 'md1' ? 'md1' : 'plain';
+  const rich = format === 'md1' || format === 'legacy-ink';
+  if (typeof text !== 'string' || text.length > (rich?NOTE_MAX:1000000)) throw Error('随手记长度超出对应格式上限');
+  const mode = rich ? 'md1' : 'plain';
   return { mode, lines: text.split('\n').map(raw=> {
     let kind='p',prefix='',body=raw,number=1,checked=false,m;
-    if (mode==='md1') {
+    if (format==='md1') {
       if ((m=/^(- \[( |x|X)\] ?)(.*)$/.exec(raw))) { kind='task';prefix=m[1];body=m[3];checked=m[2]!==' '; }
       else if ((m=/^([-*] )(.*)$/.exec(raw))) { kind='ul';prefix=m[1];body=m[2]; }
       else if ((m=/^(\d{1,4}\. )(.*)$/.exec(raw))) { kind='ol';prefix=m[1];body=m[2];number=Number.parseInt(prefix); }
     }
-    const runs=[];let last=0;
-    if (mode==='md1') for (const match of body.matchAll(inkPattern)) {
-      if (match.index>last) runs.push({text:body.slice(last,match.index),ink:null});
-      runs.push({text:match[1],ink:match[2],raw:match[0]});last=match.index+match[0].length;
-    }
-    if (last<body.length || !runs.length) runs.push({text:body.slice(last),ink:null});
+    const runs=mode==='md1'?inkRuns(body):[{text:body,ink:null}];
     const line={ id:identity(),kind,number,checked,runs };
     line.source={raw,prefix,kind,number,checked,semantic:semantic(line)};
     return line;
   }) };
+}
+// 旧便签曾直接保存字色标记而没有format。只恢复其行内字色，
+// 不把旧纯文的列表前缀重新解释，也不在读取时迁移或写回原文。
+export function parseStoredNote(note) {
+  const text=note?.text||'';
+  const legacy=note?.format==null && text.length<=NOTE_MAX && /\[[^[\]\n]+\]\{(?:red|blue|green|yellow|gray)\}/.test(text);
+  const doc=parseEditorDoc(text,legacy?'legacy-ink':note?.format);
+  if(legacy)doc.legacyInk=true;
+  return doc;
 }
 function prefixOf(line) {
   const old=line.source;

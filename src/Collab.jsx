@@ -1,3 +1,4 @@
+import { copyText } from './data-flight.js';
 import React, {useEffect,useRef,useState} from "react";
 import {Copy} from "lucide-react";
 import {Button,Dialog} from "./components.jsx";
@@ -33,7 +34,7 @@ export function usePromptCopy({ adoptState, notify, onRecorded, successMessage =
     setError("");
     try {
       try {
-        await navigator.clipboard.writeText(text);
+        await copyText(text);
       } catch {
         if (live.current)
           setError("复制失败，口令没有进入剪贴板，也没有计入留痕。可以手动选中上面的口令文本。");

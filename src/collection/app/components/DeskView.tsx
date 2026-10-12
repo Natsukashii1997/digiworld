@@ -1,3 +1,6 @@
+import { Reading, ReadReveal } from '../../../ScanMotion.jsx';
+import { flyData } from '../../../data-flight.js';
+import { copyText } from '../../../data-flight.js';
 /* Hallmark · component: search + setup dialog · genre: modern-minimal
  * states: default · hover · focus · active · disabled · loading · error · success
  * pre-emit critique: P5 H5 E4 S5 R5 V4
@@ -7,6 +10,9 @@
 import { memo, useCallback, useState, useEffect, useRef, useMemo, type DragEvent, type MouseEvent } from 'react';
 import { motion, AnimatePresence, styleOf } from '../../motion';
 import { useDialogFocus } from '../../useDialogFocus';
+import { PageHeading, ScrollFade } from '../../../components.jsx';
+import { AgentSprite, useReducedMotion } from '../../../v14.jsx';
+import { characterOf } from '../../../characters.js';
 import {
   X,
   Heart,
@@ -85,9 +91,9 @@ import {
 } from '../lib/desk-workspace.mjs';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const TITLEBAR_SAFE_TOP = 0;
-const TITLEBAR_SAFE_LEFT = 12;
 const DRAG_PAYLOAD_PREFIX = 'KANKAN_NOTE:';
+const GROUP_TAG_H = 44;
+const GROUP_TAG_GAP = 8;
 
 type ImportPhase = 'idle' | 'dragging' | 'recognized' | 'processing' | 'complete' | 'error';
 
@@ -150,6 +156,8 @@ type GroupLabel = {
   groupId: string;
   name: string;
   y: number;
+  // 铭牌上沿：位于本组纸堆或展开网格的实际底沿下方。
+  tagTop: number;
   x: number;
   color: string;
   kind: DeskGroup['kind'];
@@ -170,6 +178,10 @@ function readLocalDeskWorkspace(): DeskDraft | null {
 
 function setElementDragImage(event: DragEvent<HTMLElement>, element: HTMLElement) {
   const clone = element.cloneNode(true) as HTMLElement;
+  // The native drag preview is appended outside the page; preserve only its rendered appearance.
+  const appearance = window.getComputedStyle(element);
+  clone.classList.add('collection-module');
+  for (const key of ['width','height','padding','border','borderRadius','background','color','boxShadow','display','gap','alignItems'] as const) clone.style[key] = appearance[key];
   clone.style.position = 'absolute';
   clone.style.top = '-2000px';
   clone.style.left = '0';
@@ -220,13 +232,20 @@ function buildOrganized(
 
   const positions: Record<string, Pos> = {};
   const labels: OrgResult['labels'] = [];
+  let currentRow = 0, rowShift = 0, rowBottom = 0;
 
   visibleGroups.forEach((group, ci) => {
     const col = ci % clusterCols;
     const row = Math.floor(ci / clusterCols);
 
     const cx = clusterPadX + col * clusterW + clusterW / 2;
-    const cy = 20 + looseAreaH + row * clusterH + clusterH / 2;
+    const baseY = 20 + looseAreaH + row * clusterH + clusterH / 2;
+    if (row > currentRow) {
+      // 展开的多行卡片与铭牌占用空间后，下一行从其下方继续。
+      rowShift = Math.max(rowShift, rowBottom + 24 - (baseY - CARD_H / 2 - 40));
+      currentRow = row;
+    }
+    const cy = baseY + rowShift;
 
     const labelX = cx;
     const groupColor = group.kind === 'auto'
@@ -236,6 +255,7 @@ function buildOrganized(
       groupId: group.id,
       name: group.name,
       y: cy - 155,
+      tagTop: cy + CARD_H / 2 + GROUP_TAG_GAP,
       x: labelX,
       color: groupColor,
       kind: group.kind,
@@ -245,15 +265,22 @@ function buildOrganized(
     const catNotes = grouped[group.id];
     const isExpanded = group.id === activeGroupId;
 
+    let stackBottom = -Infinity;
     catNotes.forEach((note, i) => {
+      // 保留原有纸堆位置与倾斜。
+      const stackAngle = (i * 1.618) % (Math.PI * 2);
+      const stackRadius = Math.min(i * 3, 25) + (sr(i * 3 + ci) - 0.5) * 20;
+      const stackY = cy + Math.sin(stackAngle) * stackRadius * 0.6 + (sr(i * 11 + ci) - 0.5) * 15;
+      const stackRot = (sr(i * 13 + ci * 3 + 2) - 0.5) * 28;
       if (isExpanded) {
-        // 展开状态：以标签为中心向下进行网格平铺
+        // 展开状态：以纸堆中心向下进行网格平铺
         const cols = Math.max(1,Math.min(w > 600 ? 3 : 2,1+Math.floor(Math.max(0,w-48-CARD_W)/EXPANDED_GRID_GAP_X)));
         const gapX = EXPANDED_GRID_GAP_X;
         const gapY = EXPANDED_GRID_GAP_Y;
         const gridCol = i % cols;
         const gridRow = Math.floor(i / cols);
         const gridCenterX = getExpandedGridCenterX(cx, w, catNotes.length, cols);
+        labels[labels.length - 1].x = gridCenterX;
 
         const totalWidth = (Math.min(catNotes.length, cols) - 1) * gapX;
         const offsetX = gridCol * gapX - totalWidth / 2;
@@ -268,20 +295,22 @@ function buildOrganized(
         };
       } else {
         // 折叠状态：原本的自然凌乱堆叠
-        const angle = (i * 1.618) % (Math.PI * 2);
-        const radius = Math.min(i * 3, 25) + (sr(i * 3 + ci) - 0.5) * 20;
-        const offsetX = Math.cos(angle) * radius + (sr(i * 7 + ci) - 0.5) * 20;
-        const offsetY = Math.sin(angle) * radius * 0.6 + (sr(i * 11 + ci) - 0.5) * 15;
+        const offsetX = Math.cos(stackAngle) * stackRadius + (sr(i * 7 + ci) - 0.5) * 20;
 
         positions[note.id] = {
           x: cx + offsetX,
-          y: cy + offsetY,
-          rot: (sr(i * 13 + ci * 3 + 2) - 0.5) * 28,
+          y: stackY,
+          rot: stackRot,
           z: Math.floor(sr(i * 17 + ci * 2 + 3) * 20) + ci * 15,
           breathOffset: sr(i * 19 + ci) * 3
         };
       }
+      const placed = positions[note.id], tilt = Math.abs(placed.rot) * Math.PI / 180;
+      stackBottom = Math.max(stackBottom, placed.y + (CARD_H / 2) * Math.cos(tilt) + (CARD_W / 2) * Math.sin(tilt));
     });
+    const label = labels[labels.length - 1];
+    if (Number.isFinite(stackBottom)) label.tagTop = stackBottom + GROUP_TAG_GAP;
+    rowBottom = Math.max(rowBottom, label.tagTop + GROUP_TAG_H);
   });
 
   looseNotes.forEach((note, i) => {
@@ -319,14 +348,11 @@ function ExpandedCard({
   isDeleting: boolean;
 }) {
   const dialogRef = useDialogFocus(onClose);
-  const color = catColor(note.category);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [failedImageUrls, setFailedImageUrls] = useState<Set<string>>(() => new Set());
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [showOcr, setShowOcr] = useState(false);
-  const [readerTab, setReaderTab] = useState<'note' | 'transcript'>(
-    note.type === 'video' ? 'transcript' : 'note',
-  );
+  const rawContent = stripDuplicateTagSuffix(note.rawContent || '', note.tags);
+  const ocrText = (note.ocrText || '').trim();
   const [readerPage, setReaderPage] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const sourceImageUrls = Array.from(new Set(
@@ -335,8 +361,6 @@ function ExpandedCard({
   const imageUrls = sourceImageUrls.filter(imageUrl => !failedImageUrls.has(imageUrl));
   const resolvedImageIndex = Math.min(activeImageIndex, Math.max(imageUrls.length - 1, 0));
   const activeImageUrl = imageUrls[resolvedImageIndex];
-  const rawContent = stripDuplicateTagSuffix(note.rawContent || '', note.tags);
-  const ocrText = (note.ocrText || '').trim();
   const isVideo = note.type === 'video' && Boolean(note.videoUrl);
   const notePages = useMemo(
     () => paginatePlainText(rawContent || '这条笔记没有可见正文。') as string[],
@@ -350,12 +374,16 @@ function ExpandedCard({
     }>>,
     [note.transcriptSegments],
   );
+  const [readerTab, setReaderTab] = useState<'note' | 'transcript' | 'ocr'>(
+    note.type === 'video' && transcriptPages.length ? 'transcript'
+      : rawContent ? 'note' : ocrText ? 'ocr' : note.type === 'video' ? 'transcript' : 'note',
+  );
   const readerPages = readerTab === 'transcript'
     ? transcriptPages
     : notePages;
   const resolvedReaderPage = Math.min(readerPage, Math.max(readerPages.length - 1, 0));
 
-  const changeReaderTab = (tab: 'note' | 'transcript') => {
+  const changeReaderTab = (tab: 'note' | 'transcript' | 'ocr') => {
     setReaderTab(tab);
     setReaderPage(0);
   };
@@ -376,398 +404,70 @@ function ExpandedCard({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-      onClick={onClose}
-      style={styleOf({
-        position: 'fixed', inset: 0, zIndex: 300,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(225,221,214,0.9)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        padding: 24,
-      })}
-    >
-      <motion.div
-        ref={dialogRef}
-        className="collection-reader"
-        role="dialog"
-        aria-modal="true"
-        aria-label={note.title}
-        tabIndex={-1}
-        initial={{ scale: 0.92, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.94, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-        onClick={e => e.stopPropagation()}
-        style={styleOf({
-          background: '#FDFCFA',
-          borderRadius: 22,
-          width: '100%',
-          maxWidth: 1080,
-          height: 'min(86vh, 820px)',
-          overflow: 'hidden',
-          boxShadow: '0 32px 100px rgba(55,45,25,0.28), 0 12px 32px rgba(55,45,25,0.15)',
-          display: 'flex',
-        })}
-      >
-        {/* Visual gallery */}
-        <div style={styleOf({
-          flex: '0 0 58%',
-          display: 'flex',
-          borderRight: '1px solid rgba(0,0,0,0.06)',
-          background: '#EAE7E0',
-          minWidth: 0,
-          position: 'relative',
-        })}>
-          {!isVideo && imageUrls.length > 1 && (
-            <div style={styleOf({
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-              overflowY: 'auto',
-              padding: '18px 10px 18px 14px',
-              background: 'rgba(244,242,237,0.72)',
-              borderRight: '1px solid rgba(0,0,0,0.05)',
-              flexShrink: 0,
-            })}>
-              {imageUrls.map((imageUrl, index) => (
-                <button
-                  key={imageUrl}
-                  type="button"
-                  onClick={() => setActiveImageIndex(index)}
-                  aria-label={`查看第 ${index + 1} 张图片`}
-                  style={styleOf({
-                    width: 54,
-                    height: 68,
-                    padding: 0,
-                    flexShrink: 0,
-                    overflow: 'hidden',
-                    borderRadius: 9,
-                    border: index === resolvedImageIndex
-                      ? `2px solid ${color}`
-                      : '2px solid transparent',
-                    background: '#E8E5DE',
-                    cursor: 'pointer',
-                    opacity: index === resolvedImageIndex ? 1 : 0.68,
-                    boxShadow: index === resolvedImageIndex ? `0 4px 14px ${color}30` : 'none',
-                  })}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imageUrl}
-                    alt=""
-                    draggable={false}
-                    style={styleOf({ width: '100%', height: '100%', objectFit: 'cover', display: 'block' })}
-                    onError={() => markImageFailed(imageUrl)}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-          <div style={styleOf({
-            flex: 1,
-            minWidth: 0,
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 28,
-            overflow: 'hidden',
-          })}>
-            {isVideo ? (
-              <video
-                ref={videoRef}
-                src={note.videoUrl}
-                poster={note.coverUrl || undefined}
-                controls
-                playsInline
-                preload="metadata"
-                style={styleOf({
-                  width: '100%', height: '100%', objectFit: 'contain', display: 'block',
-                  background: '#171715', borderRadius: 12,
-                })}
-              />
-            ) : activeImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={activeImageUrl}
-                alt={note.title}
-                draggable={false}
-                style={styleOf({
-                  width: '100%', height: '100%', objectFit: 'contain', display: 'block',
-                  filter: 'saturate(0.9) contrast(1.02)',
-                })}
-                onError={() => markImageFailed(activeImageUrl)}
-              />
-            ) : (
-              <div style={styleOf({
-                width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: `linear-gradient(145deg, ${color}18, ${color}40)`,
-                color, fontFamily: '"Playfair Display", Georgia, serif', fontSize: 72, fontWeight: 600,
-              })}>
-                {note.title.slice(0, 1)}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="关闭"
-              style={styleOf({
-                position: 'absolute', top: 16, left: 16,
-                background: 'rgba(253,252,250,0.92)', backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(0,0,0,0.05)', borderRadius: '50%',
-                width: 36, height: 36, cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', boxShadow: '0 3px 12px rgba(0,0,0,0.1)',
-              })}
-            >
-              <X size={15} color="#404047" strokeWidth={2} />
-            </button>
-            {!isVideo && imageUrls.length > 1 && (
-              <div style={styleOf({
-                position: 'absolute', right: 16, bottom: 16, padding: '5px 10px', borderRadius: 999,
-                background: 'rgba(50,48,44,0.72)', color: '#fff', fontSize: 10.5,
-                backdropFilter: 'blur(8px)',
-              })}>
-                {resolvedImageIndex + 1} / {imageUrls.length}
-              </div>
-            )}
+    <motion.div className="collection-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+      <motion.div ref={dialogRef} className="collection-reader" role="dialog" aria-modal="true" aria-label={note.title} tabIndex={-1}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={e => e.stopPropagation()}>
+        <div className="collection-gallery">
+          {!isVideo && imageUrls.length > 0 && <span className="collection-image-page">{String(resolvedImageIndex + 1).padStart(2, '0')} / {String(imageUrls.length).padStart(2, '0')}</span>}
+          <div className="collection-media-stage">
+            {isVideo ? <video ref={videoRef} src={note.videoUrl} poster={note.coverUrl || undefined} controls playsInline preload="metadata" />
+              : activeImageUrl ? <img src={activeImageUrl} alt={note.title} draggable={false} onError={() => markImageFailed(activeImageUrl)} />
+              : <div className="collection-media-fallback">{note.title.slice(0, 1)}</div>}
           </div>
+          {!isVideo && imageUrls.length > 1 && <div className="collection-thumbnails" aria-label="图片列表">
+            {imageUrls.map((imageUrl, index) => <button key={imageUrl} type="button" onClick={() => setActiveImageIndex(index)}
+              className="collection-thumbnail" aria-label={`查看第 ${index + 1} 张图片`} aria-pressed={index === resolvedImageIndex}>
+              <img src={imageUrl} alt="" draggable={false} onError={() => markImageFailed(imageUrl)} />
+            </button>)}
+          </div>}
         </div>
-
-        {/* Original note */}
-        <div style={styleOf({
-          flex: 1,
-          minWidth: 0,
-          overflowY: 'auto',
-          padding: '30px 32px 34px',
-          background: '#FDFCFA',
-        })}>
-          <div style={styleOf({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 })}>
-            <div style={styleOf({
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '4px 9px', borderRadius: 999, background: `${color}14`,
-              color, fontSize: 10.5, fontWeight: 600,
-            })}>
-              <span style={styleOf({ width: 6, height: 6, borderRadius: '50%', background: color })} />
-              {note.category}
-            </div>
-            {confirmingDelete ? (
-              <div style={styleOf({ display: 'flex', alignItems: 'center', gap: 5 })}>
-                <button type="button" onClick={() => setConfirmingDelete(false)} disabled={isDeleting}
-                  style={styleOf({ border: 'none', background: 'transparent', color: '#8C8780', fontSize: 11, cursor: 'pointer', padding: '5px 7px' })}>
-                  取消
-                </button>
-                <button type="button" onClick={onDelete} disabled={isDeleting}
-                  style={styleOf({
-                    display: 'flex', alignItems: 'center', gap: 5, border: 'none', borderRadius: 999,
-                    background: 'rgba(181,106,91,0.11)', color: '#A85F52', fontSize: 11,
-                    cursor: isDeleting ? 'default' : 'pointer', padding: '6px 10px',
-                  })}>
-                  {isDeleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                  {isDeleting ? '删除中' : '确认删除'}
-                </button>
-              </div>
-            ) : (
-              <button type="button" onClick={() => setConfirmingDelete(true)}
-                style={styleOf({
-                  display: 'flex', alignItems: 'center', gap: 5, border: 'none', background: 'transparent',
-                  color: '#AAA49C', fontSize: 10.5, cursor: 'pointer', padding: '5px 4px',
-                })}>
-                <Trash2 size={12} strokeWidth={1.7} /> 删除
+        <div className="collection-reader-info">
+          <div className="collection-reader-bar">
+            <span className="collection-reader-category" title={note.category}>{note.category}</span>
+            {/^https?:\/\//i.test(note.sourceUrl||'') && <a className="collection-key collection-original-link" href={note.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label="查看原帖"><ExternalLink size={14}/>原帖</a>}
+            {confirmingDelete ? <div className="collection-delete-confirm">
+              <button type="button" className="collection-key" onClick={() => setConfirmingDelete(false)} disabled={isDeleting}>取消</button>
+              <button type="button" className="collection-key collection-danger" onClick={onDelete} disabled={isDeleting}>
+                {isDeleting ? <Reading mini label="处理收藏操作"/> : <Trash2 size={14}/>}{isDeleting ? '删除中' : '确认删除'}
               </button>
-            )}
+            </div> : <button type="button" className="collection-key collection-danger" onClick={() => setConfirmingDelete(true)}><Trash2 size={14}/>删除</button>}
+            <button type="button" className="collection-key collection-icon" onClick={onClose} aria-label="关闭"><X size={16}/></button>
           </div>
-
-          <h2 style={styleOf({
-            margin: '22px 0 10px', fontFamily: '"Playfair Display", Georgia, serif',
-            fontSize: 25, lineHeight: 1.38, fontWeight: 600, color: '#35343A', letterSpacing: '-0.02em',
-          })}>
-            {note.title}
-          </h2>
-          <div style={styleOf({ display: 'flex', alignItems: 'center', gap: 10, color: '#9A958D', fontSize: 11 })}>
-            <span>@{note.author.name}</span>
-            <span style={styleOf({ width: 3, height: 3, borderRadius: '50%', background: '#C7C2BA' })} />
-            <span>{formatDate(note.savedAt)}</span>
-            {/^https?:\/\//i.test(note.sourceUrl||'')&&<a className="collection-original-link" href={note.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label="查看原帖"><ExternalLink size={14}/>原帖</a>}
+          <h2 className="collection-reader-title">{note.title}</h2>
+          <div className="collection-reader-meta"><span>@{note.author.name}</span><span>{formatDate(note.savedAt)}</span>
+            <span><Heart size={13}/> {formatNumber(note.likes)}</span><span><BookMarked size={13}/> {formatNumber(note.collects)}</span>
           </div>
-
-          {note.type === 'video' ? (
-            <div style={styleOf({
-              display: 'flex', gap: 3, margin: '24px 0 22px', padding: 3,
-              borderRadius: 12, background: 'rgba(72,67,58,0.055)',
-            })}>
-              {([
-                ['note', '笔记正文'],
-                ['transcript', '视频文稿'],
-              ] as const).map(([tab, label]) => {
-                const active = readerTab === tab;
-                return (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => changeReaderTab(tab)}
-                    style={styleOf({
-                      flex: 1, height: 34, border: 'none', borderRadius: 9,
-                      background: active ? '#FDFCFA' : 'transparent',
-                      boxShadow: active ? '0 2px 9px rgba(62,54,41,0.08)' : 'none',
-                      color: active ? '#46433E' : '#99938B',
-                      fontSize: 11.5, fontWeight: active ? 600 : 500, cursor: 'pointer',
-                    })}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div style={styleOf({ height: 1, background: 'rgba(0,0,0,0.06)', margin: '24px 0' })} />
-          )}
-
-          {readerTab === 'note' && (
-            <p style={styleOf({
-              margin: 0, fontSize: 13.5, color: '#5E5A54', lineHeight: 1.9,
-              whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
-            })}>
-              {notePages[resolvedReaderPage] || '这条笔记没有可见正文。'}
-            </p>
-          )}
-
-          {readerTab === 'transcript' && (
-            transcriptPages.length > 0 ? (
-              <div style={styleOf({ display: 'flex', flexDirection: 'column', gap: 13 })}>
-                {transcriptPages[resolvedReaderPage]?.map((segment, index) => (
-                  <div key={`${segment.start}-${index}`} style={styleOf({ display: 'grid', gridTemplateColumns: '42px 1fr', gap: 10 })}>
-                    <button
-                      type="button"
-                      onClick={() => seekVideo(segment.start)}
-                      style={styleOf({
-                        alignSelf: 'start', border: 'none', borderRadius: 7, padding: '4px 0',
-                        background: `${color}14`, color, fontSize: 10, cursor: isVideo ? 'pointer' : 'default',
-                      })}
-                    >
-                      {formatMediaTime(segment.start)}
-                    </button>
-                    <p style={styleOf({ margin: 0, color: '#5E5A54', fontSize: 13.5, lineHeight: 1.8 })}>
-                      {segment.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={styleOf({ margin: 0, color: '#9A958D', fontSize: 12.5, lineHeight: 1.8 })}>
-                {note.videoError || '这条视频没有识别到可转写的语音。'}
-              </p>
-            )
-          )}
-
-          {readerPages.length > 1 && (
-            <div style={styleOf({
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14,
-              marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.05)',
-            })}>
-              <button
-                type="button"
-                aria-label="上一页"
-                onClick={() => setReaderPage((page) => Math.max(0, page - 1))}
-                disabled={resolvedReaderPage === 0}
-                style={styleOf({
-                  width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(0,0,0,0.06)',
-                  background: '#F8F6F2', color: '#777168', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', cursor: resolvedReaderPage === 0 ? 'default' : 'pointer',
-                  opacity: resolvedReaderPage === 0 ? 0.35 : 1,
-                })}
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <span style={styleOf({ color: '#AAA49C', fontSize: 10.5 })}>
-                {resolvedReaderPage + 1} / {readerPages.length}
-              </span>
-              <button
-                type="button"
-                aria-label="下一页"
-                onClick={() => setReaderPage((page) => Math.min(readerPages.length - 1, page + 1))}
-                disabled={resolvedReaderPage >= readerPages.length - 1}
-                style={styleOf({
-                  width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(0,0,0,0.06)',
-                  background: '#F8F6F2', color: '#777168', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', cursor: resolvedReaderPage >= readerPages.length - 1 ? 'default' : 'pointer',
-                  opacity: resolvedReaderPage >= readerPages.length - 1 ? 0.35 : 1,
-                })}
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          )}
-
-          {readerTab === 'note' && Array.isArray(note.tags) && note.tags.length > 0 && (
-            <div style={styleOf({
-              display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 22,
-            })}>
-              {note.tags.map((tag) => (
-                <span key={tag} style={styleOf({
-                  padding: '4px 8px', borderRadius: 6, background: 'rgba(0,0,0,0.035)',
-                  color: '#8D8881', fontSize: 10.5,
-                })}>#{tag}</span>
-              ))}
-            </div>
-          )}
-
-          {readerTab === 'note' && ocrText && (
-            <div style={styleOf({ marginTop: 26, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 18 })}>
-              <button type="button" onClick={() => setShowOcr((value) => !value)}
-                style={styleOf({
-                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  border: 'none', background: 'transparent', padding: 0, cursor: 'pointer',
-                  color: '#666159', fontSize: 12, fontWeight: 600,
-                })}>
-                <span>图片文字</span>
-                <span style={styleOf({ color: '#AAA49C', fontSize: 10.5, fontWeight: 400 })}>
-                  {showOcr ? '收起' : '展开 OCR'}
-                </span>
-              </button>
-              <AnimatePresence initial={false}>
-                {showOcr && (
-                  <motion.p
-                    initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    style={styleOf({
-                      margin: '14px 0 0', overflow: 'hidden', whiteSpace: 'pre-wrap',
-                      color: '#777168', fontSize: 12, lineHeight: 1.8,
-                    })}>
-                    {ocrText}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-
-          {note.mediaStatus === 'partial' && (
-            <p style={styleOf({ marginTop: 16, fontSize: 10.5, color: '#B56A5B', lineHeight: 1.5 })}>
-              {note.mediaError || '部分图片或文字未能完整保存。'}
-            </p>
-          )}
-
-          {note.videoStatus === 'partial' && note.videoError && readerTab === 'note' && (
-            <p style={styleOf({ marginTop: 16, fontSize: 10.5, color: '#B56A5B', lineHeight: 1.5 })}>
-              {note.videoError}
-            </p>
-          )}
-
-          <div style={styleOf({
-            display: 'flex', alignItems: 'center', gap: 18, marginTop: 28, paddingTop: 18,
-            borderTop: '1px solid rgba(0,0,0,0.05)', color: '#AAA49C', fontSize: 11,
-          })}>
-            <span style={styleOf({ display: 'flex', alignItems: 'center', gap: 5 })}>
-              <Heart size={13} strokeWidth={1.6} /> {formatNumber(note.likes)}
-            </span>
-            <span style={styleOf({ display: 'flex', alignItems: 'center', gap: 5 })}>
-              <BookMarked size={13} strokeWidth={1.6} /> {formatNumber(note.collects)}
-            </span>
+          <div className="collection-reader-tabs" role="radiogroup" aria-label="阅读内容" onKeyDown={event => {
+            const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+            if (!keys.includes(event.key)) return;
+            const radios = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
+            const current = radios.indexOf(event.target as HTMLButtonElement);
+            if (current < 0) return;
+            event.preventDefault();
+            const next = event.key === 'Home' ? 0 : event.key === 'End' ? radios.length - 1
+              : (current + (event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1) + radios.length) % radios.length;
+            radios[next].focus();
+            radios[next].click();
+          }}>
+            {rawContent && <button className="collection-key" role="radio" aria-checked={readerTab === 'note'} tabIndex={readerTab === 'note' ? 0 : -1} onClick={() => changeReaderTab('note')}>{note.type === 'video' ? '笔记正文' : '正文'}</button>}
+            {ocrText && <button className="collection-key" role="radio" aria-checked={readerTab === 'ocr'} tabIndex={readerTab === 'ocr' ? 0 : -1} onClick={() => changeReaderTab('ocr')}>图片文字</button>}
+            {transcriptPages.length > 0 && <button className="collection-key" role="radio" aria-checked={readerTab === 'transcript'} tabIndex={readerTab === 'transcript' ? 0 : -1} onClick={() => changeReaderTab('transcript')}>视频文稿</button>}
           </div>
+          {readerTab === 'note' && <p className="collection-reader-body">{notePages[resolvedReaderPage] || '这条笔记没有可见正文。'}</p>}
+          {readerTab === 'ocr' && <p className="collection-reader-body">{ocrText}</p>}
+          {readerTab === 'transcript' && (transcriptPages.length > 0 ? <div className="collection-transcript">
+            {transcriptPages[resolvedReaderPage]?.map((segment, index) => <div key={`${segment.start}-${index}`} className="collection-transcript-segment">
+              <button type="button" className="collection-key collection-timestamp" onClick={() => seekVideo(segment.start)}>{formatMediaTime(segment.start)}</button><p className="collection-reader-body">{segment.text}</p>
+            </div>)}
+          </div> : <p className="collection-notice">{note.videoError || '这条视频没有识别到可转写的语音。'}</p>)}
+          {readerTab !== 'ocr' && readerPages.length > 1 && <div className="collection-reader-pagination">
+            <button type="button" className="collection-key collection-icon" aria-label="上一页" onClick={() => setReaderPage(page => Math.max(0, page - 1))} disabled={resolvedReaderPage === 0}><ChevronLeft size={14}/></button>
+            <span>{resolvedReaderPage + 1} / {readerPages.length}</span>
+            <button type="button" className="collection-key collection-icon" aria-label="下一页" onClick={() => setReaderPage(page => Math.min(readerPages.length - 1, page + 1))} disabled={resolvedReaderPage >= readerPages.length - 1}><ChevronRight size={14}/></button>
+          </div>}
+          {readerTab === 'note' && Array.isArray(note.tags) && note.tags.length > 0 && <div className="collection-reader-tags">{note.tags.map(tag => <span key={tag}>#{tag}</span>)}</div>}
+          {note.mediaStatus === 'partial' && <p className="collection-notice">{note.mediaError || '部分图片或文字未能完整保存。'}</p>}
+          {note.videoStatus === 'partial' && note.videoError && readerTab !== 'transcript' && <p className="collection-notice">{note.videoError}</p>}
         </div>
       </motion.div>
     </motion.div>
@@ -776,8 +476,8 @@ function ExpandedCard({
 
 // ── Individual card ───────────────────────────────────────────────────────────
 const DeskCard = memo(function DeskCard({
-  note, pos, isDimmed, lightweight, isSelected, selectedCount,
-  onClick, onDragStart, onDragEnd
+  note, pos, isDimmed, lightweight, isSelected, selectedCount, claimEntrance, entranceReady, entranceIndex, newArrival,
+  showCategory = true, onClick, onDragStart, onDragEnd
 }: {
   note: Note;
   pos: Pos;
@@ -785,18 +485,27 @@ const DeskCard = memo(function DeskCard({
   lightweight?: boolean;
   isSelected?: boolean;
   selectedCount?: number;
+  claimEntrance: (id: string) => boolean;
+  entranceReady: boolean;
+  entranceIndex: number;
+  newArrival: boolean;
+  showCategory?: boolean;
   onClick: (note: Note, event: MouseEvent<HTMLDivElement>) => void;
   onDragStart?: (noteId: string, event: DragEvent<HTMLDivElement>) => void;
   onDragEnd?: () => void;
 }) {
-  const color = catColor(note.category);
-  const ring = `0 0 0 ${isSelected ? 2 : 1}px ${isSelected ? `${color}B8` : 'rgba(0,0,0,0.02)'}`;
-  const restingShadow = `0 2px 6px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.10), ${ring}`;
-  const liftedShadow = `0 3px 8px rgba(0,0,0,0.10), 0 10px 28px rgba(0,0,0,0.12), ${ring}`;
-
+  const reduced = useReducedMotion();
+  const [arriving,setArriving] = useState(false);
+  const [hovered,setHovered] = useState(false);
+  const entranceTimer = useRef<number|null>(null);
+  useEffect(() => () => {if(entranceTimer.current !== null)window.clearTimeout(entranceTimer.current);}, []);
+  useEffect(() => {if(!entranceReady || !claimEntrance(note.id) || reduced)return;setArriving(true);entranceTimer.current=window.setTimeout(() => {setArriving(false);entranceTimer.current=null;},600);}, [claimEntrance,entranceReady,note.id]);
+  useEffect(() => {if(reduced){setArriving(false);if(entranceTimer.current !== null)window.clearTimeout(entranceTimer.current);entranceTimer.current=null;}}, [reduced]);
   return (
     <motion.div
       className="collection-card-position"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       role="button"
       aria-hidden={isDimmed || undefined}
       inert={isDimmed || undefined}
@@ -805,7 +514,7 @@ const DeskCard = memo(function DeskCard({
       aria-pressed={!!isSelected}
       data-note-id={note.id}
       onKeyDown={event=>{if(!isDimmed && (event.key==='Enter' || event.key===' ')){event.preventDefault();onClick(note,event as any);}}}
-      initial={{ opacity: 0, scale: 0.8 }}
+      initial={false}
       animate={{
         x: Math.round(pos.x),
         y: Math.round(pos.y),
@@ -814,7 +523,7 @@ const DeskCard = memo(function DeskCard({
         opacity: isDimmed ? 0.35 : 1,
         scale: isDimmed ? 0.75 : 1,
       }}
-      transition={{ type: 'spring', stiffness: 220, damping: 24, mass: 0.8 }}
+      transition={{ duration: 0.24, delay: Math.min(entranceIndex * 0.03, 0.15), ease: 'easeOut' }}
       whileHover={isDimmed ? undefined : { y: Math.round(pos.y) - 4, zIndex: pos.z + 100, transition: { duration: 0.15 } }}
       onClick={isDimmed ? undefined : (event) => onClick(note, event)}
       data-desk-interactive="true"
@@ -829,62 +538,29 @@ const DeskCard = memo(function DeskCard({
       })}
     >
       <div
-        className="desk-native-drag"
+        className={`desk-native-drag collection-card-arrival${arriving ? " is-arriving" : ""}${newArrival ? " is-new" : ""}`}
+        data-arriving={arriving || undefined}
         draggable={!isDimmed}
         onMouseDown={() => window.getSelection()?.removeAllRanges()}
         onDragStartCapture={(event) => onDragStart?.(note.id, event)}
         onDragEndCapture={() => onDragEnd?.()}
-        style={styleOf({ width: '100%', height: '100%', cursor: isDimmed ? 'default' : 'grab' })}
+        style={styleOf({ '--arrival-delay': `${Math.min(entranceIndex * 40, 200)}ms` })}
       >
       <motion.div
         className="collection-card-breathe"
-        animate={lightweight ? undefined : { y: [0, -2, 0] }}
-        transition={lightweight ? undefined : { duration: 3, repeat: Infinity, ease: 'easeInOut', delay: pos.breathOffset }}
+        animate={lightweight || arriving || hovered ? { y: 0 } : { y: [0, -2, 0] }}
+        transition={lightweight || arriving || hovered ? { duration: 0 } : { duration: 3, repeat: Infinity, ease: 'easeInOut', delay: pos.breathOffset }}
         style={styleOf({ width: '100%', height: '100%' })}
       >
         {/* Keep the original float without continuously scaling the text raster. */}
-        <motion.div className="collection-paper"
-          animate={lightweight ? undefined : { boxShadow: [restingShadow, liftedShadow, restingShadow] }}
-          transition={lightweight ? undefined : { duration: 3, repeat: Infinity, ease: 'easeInOut', delay: pos.breathOffset }}
-          style={styleOf({
-          background: '#FDFCFA', borderRadius: 10,
-          padding: '7px 7px 20px',
-          position: 'relative',
-          boxShadow: restingShadow,
-          userSelect: 'none',
-        })}>
-          {isSelected && (
-            <span style={styleOf({
-              position: 'absolute', top: 13, left: 13, zIndex: 3,
-              width: 24, height: 24, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: color,
-              color: '#fff',
-              border: `1px solid ${color}`,
-              boxShadow: '0 3px 10px rgba(55,45,25,0.12)',
-              backdropFilter: 'blur(7px)',
-            })}>
-              <Check size={13} strokeWidth={2.5} />
-            </span>
-          )}
+        <div className="collection-paper" data-selected={isSelected || undefined}>
+          {isSelected && <span className="collection-selected-mark"><Check size={13} strokeWidth={2.5}/></span>}
           {isSelected && (selectedCount || 0) > 1 && (
-            <span style={styleOf({
-              position: 'absolute', top: -9, right: -9, zIndex: 4,
-              minWidth: 25, height: 25, padding: '0 7px', borderRadius: 999,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#4F6254', color: '#fff', fontSize: 10.5, fontWeight: 700,
-              border: '2px solid #EBE9E4', boxShadow: '0 5px 14px rgba(55,45,25,0.18)',
-            })}>
+            <span className="collection-selected-count">
               {selectedCount}
             </span>
           )}
-          <div style={styleOf({
-            borderRadius: 6,
-            overflow: 'hidden',
-            height: CARD_IMAGE_H,
-            background: '#f0f0f0',
-            position: 'relative',
-          })}>
+          <div className="collection-cover">
             {note.coverUrl ? (
               <>
                 {/* External note images cannot use Next Image without a stable host allowlist. */}
@@ -894,68 +570,31 @@ const DeskCard = memo(function DeskCard({
                   alt={note.title}
                   draggable={false}
                   decoding="async"
-                  style={styleOf({
-                    width: '100%', height: '100%',
-                    objectFit: 'cover', display: 'block',
-                    pointerEvents: 'none',
-                  })}
+                  className="collection-cover-image"
                   onError={e => { (e.target as HTMLImageElement).style.opacity = '0'; }}
                 />
               </>
             ) : (
-              <div style={styleOf({
-                width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: `linear-gradient(145deg, ${color}22, ${color}55)`,
-                color, fontFamily: '"Playfair Display", Georgia, serif', fontSize: 38, fontWeight: 600,
-              })}>
+              <div className="collection-cover-fallback">
                 {note.title.slice(0, 1)}
               </div>
             )}
             {note.type === 'video' && (
-              <span style={styleOf({
-                position: 'absolute', top: 7, right: 7, width: 23, height: 23,
-                borderRadius: '50%', background: 'rgba(42,40,36,0.72)', color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backdropFilter: 'blur(6px)', boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
-              })}>
-                <Play size={10} fill="currentColor" strokeWidth={1.5} style={styleOf({ marginLeft: 1 })} />
+              <span className="collection-video-mark">
+                <Play size={10} fill="currentColor" strokeWidth={1.5}  />
               </span>
             )}
           </div>
 
-          <div className="collection-card-copy" style={styleOf({ padding: '7px 3px 0' })}>
-            <span className="collection-card-category" style={styleOf({
-              display: 'inline-block',
-              fontSize: 8.5,
-              fontWeight: 600,
-              color,
-              background: `${color}18`,
-              borderRadius: 3,
-              padding: '1px 5px',
-              letterSpacing: '0.02em',
-              marginBottom: 4,
-            })}>
+          <div className="collection-card-copy" >
+            {showCategory && <span className="collection-card-category" >
               {note.category}
-            </span>
-            <p className="collection-card-title" style={styleOf({
-              fontFamily: '"Playfair Display", Georgia, serif',
-              fontSize: 12.5,
-              fontWeight: 500,
-              color: '#3A3840',
-              lineHeight: 1.52,
-              letterSpacing: '-0.003em',
-              display: '-webkit-box',
-              WebkitLineClamp: CARD_TITLE_LINES,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              margin: 0,
-              userSelect: 'none',
-              pointerEvents: 'none',
-            })}>
+            </span>}
+            <p className="collection-card-title" >
               {note.title}
             </p>
           </div>
-        </motion.div>
+        </div>
       </motion.div>
       </div>
     </motion.div>
@@ -988,144 +627,45 @@ function SetupDialog({
   const dialogRef = useDialogFocus(onClose);
   const [pairingToken,setPairingToken]=useState('');
   const [pairError,setPairError]=useState('');
+  const [pairFailed,setPairFailed]=useState(false);
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-      style={styleOf({
-        position: 'fixed', inset: 0, zIndex: 310,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 28,
-        background: 'rgba(73, 67, 57, 0.18)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
-      })}
-    >
-      <motion.div
-        ref={dialogRef}
-        className="collection-setup"
-        role="dialog"
-        aria-modal="true"
-        aria-label={panel==='extension'?'浏览器插件':'连接 Agent'}
-        tabIndex={-1}
-        initial={{ opacity: 0, scale: 0.96, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.98, y: 8 }}
-        transition={{ duration: 0.22 }}
-        style={styleOf({
-          width: 'min(440px, calc(100vw - 48px))',
-          borderRadius: 24,
-          background: 'rgba(253,252,250,0.98)',
-          border: '1px solid rgba(255,255,255,0.72)',
-          boxShadow: '0 34px 90px rgba(73,56,28,0.2)',
-          overflow: 'hidden',
-        })}
-      >
-        <div style={styleOf({ padding: '25px 26px 24px', position: 'relative' })}>
-          <button
-            onClick={onClose}
-            aria-label="关闭"
-            style={styleOf({
-              position: 'absolute', top: 18, right: 18,
-              width: 34, height: 34, borderRadius: 999,
-              border: '1px solid rgba(0,0,0,0.06)', background: '#F4F2ED',
-              color: '#6F6B64', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-            })}
-          >
-            <X size={16} />
-          </button>
-
-          <h2 style={styleOf({
-            margin: 0, color: '#3A3840', fontFamily: '"Playfair Display", Georgia, serif',
-            fontSize: 21, fontWeight: 600,
-          })}>
-            {panel === 'extension' ? '浏览器插件' : '连接 Agent'}
-          </h2>
-
-          {loading ? (
-            <div style={styleOf({ height: 132, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#829987' })}>
-              <Loader2 size={21} className="animate-spin" />
-            </div>
-          ) : panel === 'extension' ? (
-            <div style={styleOf({ marginTop: 24 })}>
-              <p className="collection-path">{info?.extension.path}</p>
-              <button
-                onClick={onOpenExtension}
-                disabled={!info?.extension.available}
-                style={styleOf({
-                  width: '100%', height: 46, border: 'none', borderRadius: 14,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                  background: info?.extension.available ? '#829987' : '#C8C7C2',
-                  color: '#fff', fontSize: 13, fontWeight: 600,
-                  cursor: info?.extension.available ? 'pointer' : 'not-allowed',
-                  opacity: info?.extension.available ? 1 : 0.58,
-                })}
-              >
-                <ExternalLink size={15} />
-                配置 Chrome 插件
-              </button>
-              <button className="collection-pair" onClick={async()=>{try{const result=await pairExtension();setPairingToken(result.token);setPairError('');}catch(error){setPairError(error instanceof Error?error.message:'配对失败');}}}>生成插件配对码</button>
-              {pairingToken&&<label className="collection-pair-label">配对码<input readOnly value={pairingToken} aria-label="插件配对码" onFocus={event=>event.currentTarget.select()}/><button onClick={()=>navigator.clipboard.writeText(pairingToken).catch(()=>setPairError('复制失败，请手动选择配对码'))}>复制配对码</button></label>}
-              <button className="collection-revoke" onClick={async()=>{try{await revokeExtension();setPairingToken('');setPairError('配对已撤销');}catch(error){setPairError(error instanceof Error?error.message:'撤销失败');}}}>撤销插件配对</button>
-              {pairError&&<p role="status">{pairError}</p>}
-              <details style={styleOf({ marginTop: 14, color: '#8B857D' })}>
-                <summary style={styleOf({ cursor: 'pointer', fontSize: 11.5, textAlign: 'center', listStylePosition: 'inside' })}>
-                  安装帮助
-                </summary>
-                <div style={styleOf({ marginTop: 11, padding: '12px 14px', borderRadius: 12, background: '#F5F3EE', fontSize: 11.5, lineHeight: 1.8 })}>
-                  在 Chrome 扩展页开启开发者模式，加载上方文件夹；点插件图标，把配对码填入插件并保存。
-                </div>
-              </details>
-            </div>
-          ) : (
-            <div style={styleOf({ marginTop: 18 })}>
-              <div style={styleOf({ borderTop: '1px solid rgba(73,56,28,0.08)' })}>
-                {([
-                  ['codex', 'Codex'],
-                  ['claude', 'Claude Code'],
-                ] as const).map(([client, label]) => {
-                  const detected = info?.agent.clients[client].available;
-                  const connected = connectedClients.has(client);
-                  const connecting = connectingClient === client;
-                  return (
-                    <div key={client} style={styleOf({
-                      minHeight: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-                      borderBottom: '1px solid rgba(73,56,28,0.08)',
-                    })}>
-                      <strong style={styleOf({ fontSize: 13.5, color: '#454248', fontWeight: 600 })}>{label}</strong>
-                      <button
-                        onClick={() => onConnectAgent(client)}
-                        disabled={!detected || connecting}
-                        style={styleOf({
-                          width: 94, height: 38, borderRadius: 12,
-                          border: connected ? '1px solid rgba(130,153,135,0.28)' : 'none',
-                          background: connected ? 'rgba(130,153,135,0.09)' : detected ? '#829987' : '#D2D0CB',
-                          color: connected ? '#627567' : '#fff',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          fontSize: 12, fontWeight: 600,
-                          cursor: detected && !connected ? 'pointer' : 'default',
-                          opacity: detected ? 1 : 0.58,
-                        })}
-                      >
-                        {connecting ? <Loader2 size={14} className="animate-spin" /> : connected ? <Check size={14} /> : <Bot size={14} />}
-                        {connecting ? '准备中' : connected ? '已复制' : detected ? '复制配置' : '不可用'}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {message && (
-            <div style={styleOf({
-              marginTop: 14, color: '#5E7564', fontSize: 11.5, textAlign: 'center',
-            })}>{message}</div>
-          )}
+    <motion.div className="collection-overlay collection-setup-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+      <motion.div ref={dialogRef} className="collection-setup" role="dialog" aria-modal="true" aria-label={panel === 'extension' ? '浏览器插件' : '连接 Agent'} tabIndex={-1}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <header className="collection-dialog-heading"><div><span className="collection-eyebrow">{panel === 'extension' ? 'EXTENSION' : 'MCP · READ ONLY'}</span><h2>{panel === 'extension' ? '浏览器插件' : '让 Agent 读你的收藏'}</h2></div>
+          <button type="button" className="collection-key collection-icon" onClick={onClose} aria-label="关闭"><X size={16}/></button>
+        </header>
+        <div className="collection-dialog-body">
+          <ReadReveal pending={loading} ready={!!info}/>
+          {loading ? <div className="collection-loading" role="status" aria-label="读取本地配置"><Reading label="读取本地配置"/></div>
+            : panel === 'extension' ? <>
+              <div className="collection-setup-state" role="status"><span className="collection-state-dot"/>{info ? (info.extension.available ? '插件文件夹已就绪' : '未找到插件文件夹') : '插件状态未读取'}{info?.extension.version && <span>v{info.extension.version}</span>}</div>
+              <div className="collection-step"><span className="collection-step-number">1</span><div><h3>安装插件</h3><p>在 Chrome 扩展页开启开发者模式，加载下面这个文件夹。</p>
+                <p className="collection-path" title={info?.extension.path}>{info?.extension.path || '路径未读取'}</p>
+                <div className="collection-action-row"><button type="button" className="collection-key" disabled={!info?.extension.path} onClick={() => copyText(info!.extension.path).then(() => {setPairError('路径已复制');setPairFailed(false);}).catch(() => {setPairError('复制失败，请手动选择路径');setPairFailed(true);})}>复制路径</button>
+                  <button type="button" className="collection-key" onClick={onOpenExtension} disabled={!info?.extension.available}><ExternalLink size={15}/>配置 Chrome 插件</button></div>
+              </div></div>
+              <div className="collection-step"><span className="collection-step-number">2</span><div><h3>配对</h3><p>生成一次性配对码，粘贴到插件里并保存。</p>
+                <button type="button" className="collection-key collection-pair" onClick={async () => {try {const result = await pairExtension();setPairingToken(result.token);setPairError('');setPairFailed(false);} catch(error) {setPairError(error instanceof Error ? error.message : '配对失败');setPairFailed(true);}}}>生成插件配对码</button>
+                {pairingToken && <div className="collection-pair-label"><label htmlFor="collection-pair-token">配对码</label><input id="collection-pair-token" readOnly value={pairingToken} aria-label="插件配对码" onFocus={event => event.currentTarget.select()}/><button type="button" className="collection-key" onClick={() => copyText(pairingToken).then(() => {setPairError('配对码已复制');setPairFailed(false);}).catch(() => {setPairError('复制失败，请手动选择配对码');setPairFailed(true);})}>复制配对码</button></div>}
+              </div></div>
+              <div className="collection-step"><span className="collection-step-number">3</span><div><h3>在小红书点「收藏」</h3><p>帖子会落到这张桌上；也可以把帖子卡片直接拖进来。</p></div></div>
+              <div className="collection-danger-zone"><p>不想再让这个浏览器收录？</p><button type="button" className="collection-key collection-danger collection-revoke" onClick={async () => {try {await revokeExtension();setPairingToken('');setPairError('配对已撤销');setPairFailed(false);} catch(error) {setPairError(error instanceof Error ? error.message : '撤销失败');setPairFailed(true);}}}>撤销插件配对</button></div>
+              {pairError && <p className={`collection-notice${pairFailed ? ' is-error' : ''}`} role={pairFailed ? 'alert' : 'status'}>{pairError}</p>}
+            </> : <>
+              <p className="collection-agent-intro">复制配置后，粘贴进该 Agent 的 MCP 设置。它只能搜索和阅读收藏，不能修改或删除。</p>
+              <div className="collection-tools"><span>search_saved_notes</span><span>read_saved_note</span></div>
+              {([['claude', 'Claude Code'], ['codex', 'Codex']] as const).map(([client, label]) => {
+                const detected = info?.agent.clients[client].available, copied = connectedClients.has(client), copying = connectingClient === client;
+                return <div className="collection-agent-row" key={client}><div className="collection-agent-portrait"><AgentSprite agent={client} mode="body" fit={52}/></div><div className="collection-agent-name"><strong>{label}</strong><small>{characterOf(client)?.name}</small></div>
+                  <button type="button" className="collection-key" onClick={() => onConnectAgent(client)} disabled={!detected || copying}>
+                    {copying ? <Reading mini label="处理收藏操作"/> : copied ? <Check size={14}/> : <Bot size={14}/>}{copying ? '准备中' : copied ? '已复制' : detected ? '复制配置' : '不可用'}
+                  </button>
+                </div>;
+              })}
+            </>}
+          {message && <p className="collection-notice" role="status">{message}</p>}
         </div>
       </motion.div>
     </motion.div>
@@ -1165,6 +705,33 @@ export function DeskView() {
   const [groupDropTargetId, setGroupDropTargetId] = useState<string | null>(null);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const reducedMotion = useReducedMotion();
+  const [helpOpen, setHelpOpen] = useState(false);
+  const entranceIds = useRef(new Set<string>());
+  const entrancePool = useRef<Set<string>|null>(null);
+  if(deskReady && !state.isLoading && entrancePool.current === null)entrancePool.current=new Set(notes.map(note => note.id));
+  const entranceClosed = useRef(false);
+  const claimEntrance = useCallback((id: string) => {if(entranceClosed.current || !entrancePool.current?.has(id) || entranceIds.current.has(id))return false;entranceIds.current.add(id);return true;}, []);
+  useEffect(() => {if(!deskReady || state.isLoading || entranceClosed.current)return;const timer=window.setTimeout(() => {entranceClosed.current=true;},600);return () => window.clearTimeout(timer);}, [deskReady,state.isLoading]);
+  const [newArrivalIds,setNewArrivalIds]=useState<Set<string>>(() => new Set());
+  const seenArrivalIds = useRef<Set<string>|null>(null);
+  const arrivalTimer = useRef<number|null>(null);
+  useEffect(() => () => {if(arrivalTimer.current !== null)window.clearTimeout(arrivalTimer.current);}, []);
+  const [importWarning,setImportWarning]=useState('');
+  useEffect(() => {if(reducedMotion)setNewArrivalIds(new Set());}, [reducedMotion]);
+  useEffect(() => {
+    if(!deskReady || state.isLoading)return;
+    if(!seenArrivalIds.current){seenArrivalIds.current=new Set(notes.map(note => note.id));return;}
+    const fresh=notes.filter(note => !seenArrivalIds.current!.has(note.id));
+    notes.forEach(note => seenArrivalIds.current!.add(note.id));
+    const ready=fresh.filter(note => note.mediaStatus !== 'partial' && note.videoStatus !== 'partial');
+    if(!ready.length)return;
+    flyData();
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    setNewArrivalIds(new Set(ready.map(note => note.id)));
+    if(arrivalTimer.current !== null)window.clearTimeout(arrivalTimer.current);
+    arrivalTimer.current=window.setTimeout(() => {setNewArrivalIds(new Set());arrivalTimer.current=null;},600);
+  }, [notes,deskReady,state.isLoading]);
   const [setupPanel, setSetupPanel] = useState<SetupPanel | null>(null);
   const [localDeleteBusy,setLocalDeleteBusy]=useState(false);
   const [localDeleteFeedback,setLocalDeleteFeedback]=useState({message:'',error:false});
@@ -1366,8 +933,9 @@ export function DeskView() {
   // Calculate total height for scrolling
   const allY = Object.values(positions).map(p => p.y);
   const maxY = allY.length > 0 ? Math.max(...allY) : 0;
-  const minH = Math.ceil(Math.max(labels.length, 1) / getDeskGroupColumnCount(dims.w)) * 310 + 160;
-  const containerH = Math.max(maxY + CARD_H + 100, minH);
+  const minH = Math.ceil(Math.max(labels.length, 1) / getDeskGroupColumnCount(dims.w)) * 340 + 160;
+  const maxLabelY = labels.length ? Math.max(...labels.map(label => label.tagTop + GROUP_TAG_H)) : 0;
+  const containerH = Math.max(maxY + CARD_H + 100, maxLabelY + 80, minH);
 
   const runImport = async (value: string) => {
     const input = value.trim();
@@ -1383,6 +951,7 @@ export function DeskView() {
       return;
     }
 
+    setImportWarning('');
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
     setImportFeedback({
@@ -1400,6 +969,7 @@ export function DeskView() {
         LOOSE_GROUP_ID,
       ) as DeskState);
       setNotes(result.notes);
+      if(result.note.mediaStatus === 'partial' || result.note.videoStatus === 'partial')setImportWarning(`${result.note.title}：${result.note.mediaError || result.note.videoError || '部分内容未能完整保存，请打开收藏核对。'}`);
       setImportFeedback(IDLE_IMPORT_FEEDBACK);
       await loadLocalStatus();
     } catch (error) {
@@ -1445,6 +1015,8 @@ export function DeskView() {
       dismissImportFeedback('error');
     }
   };
+
+  useEffect(() => {if(editingGroupId)scrollToGroup(editingGroupId, true);}, [editingGroupId]);
 
   const handleCreateGroup = () => {
     setDeskState((prev) => {
@@ -1650,18 +1222,23 @@ export function DeskView() {
 
   const canUseLocalService = serviceHealth.source === 'sidecar' && serviceHealth.ok;
 
-  const subtitle = state.error
-    ? state.error
-    : state.isLoading
-      ? '加载中…'
-      : hasActiveSearch
-        ? `找到 ${visibleNotes.length} 条`
-        : `${notes.length} 条笔记`;
-
   const isEmpty = notes.length === 0;
   const hasNoSearchResults = !isEmpty && hasActiveSearch && visibleNotes.length === 0;
 
+  const scrollToGroup = (groupId: string, focusLabel = false) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      const label = containerRef.current?.querySelector(`[data-group-id="${CSS.escape(groupId)}"]`);
+      const firstNote = getNotesInGroup(visibleNotes, deskState.noteGroupMap || {}, groupId)[0];
+      const selector = firstNote ? `[data-note-id="${CSS.escape(firstNote.id)}"]` : `[data-empty-group-id="${CSS.escape(groupId)}"]`;
+      const target = focusLabel ? label : containerRef.current?.querySelector(selector) || label;
+      target?.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
+    }));
+  };
   return (
+    <>
+    <PageHeading page="learning" help={<button type="button" className="page-help" aria-label="这页怎么用" onClick={() => setHelpOpen(true)}>?</button>}
+      action={<button type="button" className="collection-key collection-primary" disabled={localDeleteBusy} onClick={() => void openSetupPanel('extension')}><Puzzle size={16}/>插件</button>}/>
+    {helpOpen && <CollectionHelp onClose={() => setHelpOpen(false)}/>}
     <div
       className="collection-desk"
       ref={containerRef}
@@ -1710,13 +1287,7 @@ export function DeskView() {
         setImportFeedback(IDLE_IMPORT_FEEDBACK);
       }}
       onDrop={(event)=>{if(localDeleteInFlight.current){event.preventDefault();event.stopPropagation();return;}handleExternalDrop(event);}}
-      style={styleOf({
-        minHeight: '100vh',
-        background: '#EBE9E4',
-        position: 'relative',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-      })}
+
     >
       {recoverableDraft&&<div className="collection-error" role="status">有未保存的分组草稿<button onClick={restoreDraft}>恢复草稿</button><button onClick={reloadDesk}>丢弃草稿并读取</button></div>}
       {deskError&&<div className="collection-error" role="alert">{deskError}{deskReady&&<button onClick={retryDeskSave}>重试保存分组</button>}<button onClick={reloadDesk}>重新读取分组</button></div>}
@@ -1737,69 +1308,30 @@ export function DeskView() {
               event.stopPropagation();
             }}
             onDrop={handleExternalDrop}
-            style={styleOf({
-              position: 'fixed',
-              inset: 0,
-              zIndex: 220,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: importFeedback.phase === 'dragging'
-                ? 'rgba(235,233,228,0.58)'
-                : 'rgba(235,233,228,0.82)',
-              backdropFilter: 'blur(5px)',
-              WebkitBackdropFilter: 'blur(5px)',
-              pointerEvents: importFeedback.phase === 'dragging' ? 'auto' : 'none',
-              boxShadow: importFeedback.phase === 'dragging'
-                ? 'inset 0 0 0 2px rgba(130,153,135,0.52)'
-                : 'none',
-            })}
+            data-phase={importFeedback.phase}
           >
             {importFeedback.phase === 'dragging' ? (
               <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: [1, 1.06, 1] }}
-                transition={{ opacity: { duration: 0.18 }, scale: { duration: 1.35, repeat: Infinity, ease: 'easeInOut' } }}
-                style={styleOf({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 13, color: '#4F6254' })}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+
+                className="collection-drag-prompt"
               >
-                <div style={styleOf({
-                  width: 72, height: 72, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'rgba(253,252,250,0.88)', border: '1px solid rgba(130,153,135,0.3)',
-                  boxShadow: '0 16px 48px rgba(73,56,28,0.13)',
-                })}>
+                <div className="collection-drag-symbol">
                   <BookMarked size={25} strokeWidth={1.7} />
                 </div>
-                <span style={styleOf({ fontSize: 13, fontWeight: 600, letterSpacing: '0.08em' })}>松手收录</span>
+                <span className="collection-drag-title">松手收录</span>
               </motion.div>
             ) : (
               <motion.div
                 layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}
-                style={styleOf({
-                  maxWidth: 480, display: 'flex', alignItems: 'center', gap: 9,
-                  padding: '10px 15px', borderRadius: 999,
-                  color: importFeedback.phase === 'error' ? '#8F5146' : '#4F6254',
-                  background: 'rgba(253,252,250,0.92)', border: '1px solid rgba(94,105,95,0.12)',
-                  backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
-                  boxShadow: '0 8px 28px rgba(73,56,28,0.10)',
-                })}
+                className="collection-feedback-message"
               >
                 <motion.span
-                  animate={importFeedback.phase === 'processing'
-                    ? { opacity: [0.35, 1, 0.35], scale: [0.82, 1, 0.82] }
-                    : { opacity: 1, scale: 1 }}
-                  transition={importFeedback.phase === 'processing'
-                    ? { duration: 1.15, repeat: Infinity, ease: 'easeInOut' }
-                    : { duration: 0.16 }}
-                  style={styleOf({
-                    width: 7, height: 7, flexShrink: 0, borderRadius: '50%',
-                    background: importFeedback.phase === 'error' ? '#B56A5B' : '#829987',
-                  })}
+                  className="collection-feedback-dot"
                 />
-                <div style={styleOf({
-                  minWidth: 0, maxWidth: 430, fontSize: 12, fontWeight: 550,
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                })}>
+                <div className="collection-feedback-copy">
                   {importFeedback.phase === 'processing'
                     ? importFeedback.message
                     : importFeedback.phase === 'complete'
@@ -1814,83 +1346,24 @@ export function DeskView() {
         )}
       </AnimatePresence>
 
-      {/* ── Header ── */}
-      <header className="collection-toolbar" style={styleOf({
-        position: 'sticky', top: 0, left: 0, right: 0, zIndex: 100,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: `${12 + TITLEBAR_SAFE_TOP}px 20px 12px ${20 + TITLEBAR_SAFE_LEFT}px`,
-        background: 'rgba(235,233,228,0.92)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(0,0,0,0.04)',
-      })}>
-        <div style={styleOf({ width: 190, flexShrink: 0 })}>
-          <h2 style={styleOf({
-            fontFamily: '"Playfair Display", Georgia, serif',
-            fontSize: 16, fontWeight: 600, color: '#3A3840',
-            letterSpacing: '-0.015em', lineHeight: 1,
-          })}>
-            收藏画布
-          </h2>
-          <p style={styleOf({ fontSize: 10, color: '#A8A29E', marginTop: 2 })}>
-            {subtitle}
-          </p>
+      <header className="collection-toolbar">
+        <ScrollFade className="collection-scroll"><div className="collection-chips" role="group" aria-label="收藏分组">
+          <button type="button" className="collection-key collection-chip" aria-pressed={!activeCategory} disabled={localDeleteBusy} onClick={() => setActiveCategory(null)}>全部 <b>{notes.length}</b></button>
+          {labels.map(group => <button type="button" key={group.groupId} className="collection-key collection-chip" aria-pressed={activeCategory === group.groupId} disabled={localDeleteBusy}
+            onClick={() => {setActiveCategory(current => current === group.groupId ? null : group.groupId);scrollToGroup(group.groupId);}} title={group.name}><span>{group.name}</span><b>{group.noteCount}</b></button>)}
+          <button type="button" className="collection-key collection-chip collection-add-group" aria-label="新建分组" disabled={!deskReady || localDeleteBusy} onClick={handleCreateGroup}><Plus size={14}/>分组</button>
+        </div></ScrollFade>
+        <div className="collection-search"><Search size={14}/><input disabled={localDeleteBusy} value={searchQuery} onChange={event => {setSearchQuery(event.target.value);setActiveCategory(null);}}
+          onKeyDown={event => {if(event.key === 'Escape')setSearchQuery('');}} placeholder={`搜索 ${notes.length} 条收藏`} aria-label="搜索收藏"/>
+          {hasActiveSearch && <span className="collection-search-count" role="status">找到 {visibleNotes.length} 条</span>}
         </div>
-
-        <div style={styleOf({
-          width: 260, margin: '0 22px',
-          position: 'relative', display: 'flex', alignItems: 'center',
-        })}>
-          <Search size={14} strokeWidth={1.8} style={styleOf({ position: 'absolute', left: 13, color: '#8F8A82', pointerEvents: 'none' })} />
-          <input
-            disabled={localDeleteBusy}
-            value={searchQuery}
-            onChange={(event) => {
-              setSearchQuery(event.target.value);
-              setActiveCategory(null);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') setSearchQuery('');
-            }}
-            placeholder="搜索"
-            aria-label="搜索收藏"
-            style={styleOf({
-              width: '100%', height: 34, padding: '0 13px 0 36px',
-              borderRadius: 13, border: '1px solid rgba(73,56,28,0.07)',
-              background: 'rgba(253,252,250,0.58)',
-              color: '#454248', fontSize: 12,
-            })}
-          />
-        </div>
-
-        <div className="collection-toolbar-tools" style={styleOf({ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 })}>
-          <button ref={localDeleteButton} type="button" className="collection-recycle-entry" disabled={localDeleteBusy || localDeleteBlocked} aria-busy={localDeleteBusy} onClick={()=>void handleLocalDelete()} title={localDeleteBlocked?'分组保存或当前收藏操作完成后可用':'本地删除'}>{localDeleteBusy?<Loader2 size={14} className="animate-spin"/>:<Trash2 size={14} strokeWidth={1.8}/>}本地删除</button>
-          {([
-            ['extension', '插件', Puzzle],
-            ['agent', 'Agent', Bot],
-          ] as const).map(([panel, label, Icon]) => (
-            <motion.button
-              key={panel}
-              disabled={localDeleteBusy}
-              whileHover={{ y: -1, scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => void openSetupPanel(panel)}
-              style={styleOf({
-                height: 36, padding: '0 13px', borderRadius: 15,
-                border: '1px solid rgba(73,56,28,0.07)',
-                background: 'rgba(253,252,250,0.78)', color: '#666159',
-                display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 11.5, fontWeight: 550, cursor: 'pointer',
-                boxShadow: '0 3px 13px rgba(73,56,28,0.045)',
-              })}
-            >
-              <Icon size={14} strokeWidth={1.8} />
-              {label}
-            </motion.button>
-          ))}
+        <div className="collection-toolbar-tools">
+          <button type="button" className="collection-key collection-tool" disabled={localDeleteBusy} title="Agent" aria-label="Agent" onClick={() => void openSetupPanel('agent')}><Bot size={16}/><span>Agent</span></button>
+          <button ref={localDeleteButton} type="button" className={`collection-key collection-tool collection-recycle-entry${selectedNoteIds.size ? " collection-danger" : ""}`} disabled={localDeleteBusy || localDeleteBlocked} aria-label="本地删除" aria-busy={localDeleteBusy} onClick={() => void handleLocalDelete()} title={localDeleteBlocked ? '分组保存或当前收藏操作完成后可用' : '本地删除'}>{localDeleteBusy ? <Reading mini label="处理本地删除"/> : <Trash2 size={16}/>}<span>本地删除</span></button>
         </div>
       </header>
 
+      {importWarning && <p className="collection-import-warning" role="status">{importWarning}<button className="collection-key collection-icon" aria-label="关闭部分收录提示" onClick={() => setImportWarning('')}><X size={14}/></button></p>}
       {localDeleteFeedback.message && <p className="collection-local-delete-feedback" role={localDeleteFeedback.error?'alert':'status'}>{localDeleteFeedback.message}</p>}
 
       <AnimatePresence>
@@ -1921,62 +1394,22 @@ export function DeskView() {
         style={styleOf({
         position: 'relative',
         width: '100%',
-        height: isEmpty || hasNoSearchResults ? 'calc(100vh - 98px)' : containerH,
-        minHeight: isEmpty || hasNoSearchResults ? 520 : undefined,
+        minHeight: isEmpty || hasNoSearchResults ? 520 : containerH,
         zIndex: 1,
         userSelect: 'none',
         WebkitUserSelect: 'none',
       })}>
-        {isEmpty && !state.isLoading && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={styleOf({
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#77736C',
-              textAlign: 'center',
-              pointerEvents: 'none',
-            })}
-          >
-            <BookMarked size={26} strokeWidth={1.4} color="#829987" />
-            <div style={styleOf({
-              marginTop: 12,
-              fontFamily: '"Playfair Display", Georgia, serif',
-              fontSize: 22,
-              fontWeight: 600,
-              color: '#4B494F',
-            })}>
-              暂无收藏
-            </div>
-          </motion.div>
-        )}
-        {hasNoSearchResults && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={styleOf({
-              position: 'absolute', inset: 0,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              color: '#77736C', textAlign: 'center', pointerEvents: 'none',
-            })}
-          >
-            <Search size={24} strokeWidth={1.4} color="#829987" />
-            <div style={styleOf({
-              marginTop: 12, fontFamily: '"Playfair Display", Georgia, serif',
-              fontSize: 20, fontWeight: 600, color: '#4B494F',
-            })}>
-              没找到相关收藏
-            </div>
-          </motion.div>
-        )}
+        <ReadReveal pending={(state.isLoading||(!deskReady&&!deskError))&&!state.error} ready={deskReady&&!state.error&&!deskError}/>
+        {(state.isLoading||(!deskReady&&!deskError))&&!state.error && <div className="collection-loading"><Reading label="读取收藏画布"/></div>}
+        {isEmpty && !state.isLoading && !state.error && <div className="collection-empty">
+          <div className="collection-empty-frames" aria-hidden="true"><i/><i/></div><h2>暂无收藏</h2><p>在小红书帖子上点收藏，就会落到这里</p>
+          <button type="button" className="collection-key" onClick={() => void openSetupPanel('extension')}>配置插件</button>
+        </div>}
+        {state.error && <div className="collection-error collection-load-error" role="alert">{state.error}</div>}
+        {hasNoSearchResults && <div className="collection-empty"><div className="collection-empty-frames" aria-hidden="true"><i/><i/></div><h2>没找到「{searchQuery.trim()}」</h2><p>试试作者、标签或图片里的字</p><button type="button" className="collection-key" onClick={() => setSearchQuery('')}>清除搜索</button></div>}
         <AnimatePresence>
           {draggedNoteId && labels
-            .filter(({ groupId }) => !draggedNoteIds.every((noteId) =>
+            .filter(({ groupId, noteCount }) => noteCount > 0 && !draggedNoteIds.every((noteId) =>
               (deskState.noteGroupMap?.[noteId] || LOOSE_GROUP_ID) === groupId
             ))
             .map(({ groupId, x, y, color }) => {
@@ -1984,6 +1417,7 @@ export function DeskView() {
               return (
                 <motion.div
                   key={`drop-zone-${groupId}`}
+                  className={`collection-drop-zone${isDropTarget ? ' is-drop-target' : ''}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -2014,22 +1448,36 @@ export function DeskView() {
                     width: groupDropZoneWidth,
                     height: 330,
                     zIndex: 550,
-                    borderRadius: 30,
-                    border: `1px dashed ${isDropTarget ? `${color}88` : 'rgba(130,153,135,0.25)'}`,
-                    background: isDropTarget ? `${color}12` : 'rgba(253,252,250,0.04)',
-                    boxShadow: isDropTarget ? `inset 0 0 0 1px ${color}18` : 'none',
-                    pointerEvents: 'auto',
                   })}
                 />
               );
             })}
         </AnimatePresence>
         <AnimatePresence>
-          {labels.map(({ groupId, name, x, y, color, noteCount }) => {
+          {labels.map(({ groupId, name, x, tagTop, color, noteCount }) => {
             const isExpanded = activeCategory === groupId;
             const isEditing = editingGroupId === groupId;
             const isDropTarget = dropTargetGroupId === groupId;
             const isGroupDropTarget = groupDropTargetId === groupId;
+            const handleLabelDragOver = (event: DragEvent<HTMLElement>) => {
+              if (!draggedGroupId && !draggedNoteId) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'move';
+              if (draggedGroupId) setGroupDropTargetId(groupId);
+              else setDropTargetGroupId(groupId);
+            };
+            const handleLabelDragLeave = (event: DragEvent<HTMLElement>) => {
+              if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+              if (groupDropTargetId === groupId) setGroupDropTargetId(null);
+              if (dropTargetGroupId === groupId) setDropTargetGroupId(null);
+            };
+            const handleLabelDrop = (event: DragEvent<HTMLElement>) => {
+              if (!draggedGroupId && !draggedNoteIds.length) return;
+              event.preventDefault();event.stopPropagation();
+              if (draggedGroupId) {handleGroupDrop(groupId);return;}
+              if (draggedNoteIds.length) handleMoveNotesToGroup(draggedNoteIds, groupId);
+              setDraggedNoteIds([]);
+            };
             return (
               <motion.div
                 key={`lbl-${groupId}`}
@@ -2041,18 +1489,22 @@ export function DeskView() {
                 style={styleOf({
                   position: 'absolute',
                   left: x,
-                  top: y,
+                  top: tagTop,
                   x: '-50%',
                   zIndex: isExpanded || isGroupDropTarget ? 600 : (activeCategory === null ? 400 : 100),
                 })}
               >
-                <div style={styleOf({
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                })}>
+                {noteCount === 0 && <div
+                  className={`collection-empty-group${isDropTarget || isGroupDropTarget ? ' is-drop-target' : ''}`}
+                  data-empty-group-id={groupId}
+                  onDragEnter={handleLabelDragOver}
+                  onDragOver={handleLabelDragOver}
+                  onDragLeave={handleLabelDragLeave}
+                  onDrop={handleLabelDrop}
+                >拖卡片到这里</div>}
+                <div className="collection-group-controls">
                   <motion.div
-                    className="desk-native-drag collection-group"
+                    className={`desk-native-drag collection-group${isExpanded ? " is-expanded" : ""}${isDropTarget || isGroupDropTarget ? " is-drop-target" : ""}`}
                     role={isEditing ? undefined : 'button'}
                     tabIndex={isEditing ? -1 : 0}
                     aria-label={`分组：${name}，${noteCount} 条收藏`}
@@ -2060,7 +1512,7 @@ export function DeskView() {
                     data-group-id={groupId}
                     onKeyDown={event=>{if(!isEditing && (event.key==='Enter' || event.key===' ')){event.preventDefault();setActiveCategory(prev=>prev===groupId?null:groupId);}}}
                     draggable={!isEditing}
-                    title={isEditing ? undefined : '点击展开，拖动排序'}
+                    title={isEditing ? undefined : `${name} · ${noteCount} 条笔记；点击展开，拖动排序`}
                     onMouseDown={() => window.getSelection()?.removeAllRanges()}
                     onDragStartCapture={(event) => handleGroupDragStart(groupId, event)}
                     onDragEndCapture={handleDragEnd}
@@ -2068,58 +1520,9 @@ export function DeskView() {
                       if (isEditing) return;
                       setActiveCategory((prev) => (prev === groupId ? null : groupId));
                     }}
-                    onDragOver={(event) => {
-                      if (draggedGroupId) {
-                        event.preventDefault();
-                        event.dataTransfer.dropEffect = 'move';
-                        setGroupDropTargetId(groupId);
-                        return;
-                      }
-                      if (!draggedNoteId) return;
-                      event.preventDefault();
-                      if (dropTargetGroupId !== groupId) {
-                        setDropTargetGroupId(groupId);
-                      }
-                    }}
-                    onDragLeave={() => {
-                      if (groupDropTargetId === groupId) {
-                        setGroupDropTargetId(null);
-                      }
-                      if (dropTargetGroupId === groupId) {
-                        setDropTargetGroupId(null);
-                      }
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      if (draggedGroupId) {
-                        handleGroupDrop(groupId);
-                        return;
-                      }
-                      if (draggedNoteIds.length) {
-                        handleMoveNotesToGroup(draggedNoteIds, groupId);
-                      }
-                      setDraggedNoteIds([]);
-                    }}
-                    style={styleOf({
-                      background: isExpanded || isDropTarget || isGroupDropTarget ? 'rgba(253, 252, 250, 0.98)' : 'rgba(240, 238, 230, 0.85)',
-                      backdropFilter: 'blur(8px)',
-                      WebkitBackdropFilter: 'blur(8px)',
-                      padding: '6px 14px 6px 18px',
-                      borderRadius: 24,
-                      border: isExpanded || isDropTarget || isGroupDropTarget ? `1px solid ${color}40` : '1px solid rgba(0,0,0,0.04)',
-                      boxShadow: isExpanded || isDropTarget || isGroupDropTarget
-                        ? `0 8px 24px ${color}25, 0 2px 8px rgba(0,0,0,0.06)`
-                        : '0 2px 8px rgba(55,45,25,0.08)',
-                      cursor: isEditing ? 'default' : 'grab',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      userSelect: 'none',
-                      WebkitUserSelect: 'none',
-                    })}
-                    animate={isDropTarget || isGroupDropTarget ? { scale: 1.05, y: -2 } : { scale: 1, y: 0 }}
-                    whileHover={isEditing ? undefined : { scale: 1.05, y: -2 }}
+                    onDragOver={handleLabelDragOver}
+                    onDragLeave={handleLabelDragLeave}
+                    onDrop={handleLabelDrop}
                   >
                     {isEditing ? (
                       <>
@@ -2140,17 +1543,7 @@ export function DeskView() {
                             }
                           }}
                           autoFocus
-                          style={styleOf({
-                            width: 132,
-                            height: 30,
-                            border: '1px solid rgba(0,0,0,0.08)',
-                            borderRadius: 10,
-                            background: '#fff',
-                            padding: '0 10px',
-                            fontSize: 13,
-                            color: '#3A3840',
-                            outline: 'none',
-                          })}
+                          className="collection-group-input"
                         />
                         <button
                           aria-label="保存分组名称"
@@ -2158,87 +1551,33 @@ export function DeskView() {
                             event.stopPropagation();
                             handleCommitRename();
                           }}
-                          style={styleOf({
-                            width: 26,
-                            height: 26,
-                            borderRadius: 999,
-                            border: 'none',
-                            background: color,
-                            color: '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                          })}
+                          className="collection-key collection-icon collection-rename"
                         >
                           <Check size={13} strokeWidth={2.2} />
                         </button>
                       </>
                     ) : (
                       <>
-                        <div>
-                          <div style={styleOf({ position: 'relative', fontFamily: 'Playfair Display, Georgia, serif', fontSize: 15, fontWeight: 600, color: isExpanded ? color : '#3A3840', zIndex: 1 })}>
-                            {name}
-                            <div style={styleOf({
-                              position: 'absolute',
-                              bottom: 2,
-                              left: -2,
-                              right: -2,
-                              height: 6,
-                              background: color,
-                              opacity: isExpanded ? 0.1 : 0.35,
-                              zIndex: -1,
-                              borderRadius: 2,
-                              transition: 'opacity 0.3s ease',
-                            })} />
-                          </div>
-                          <div style={styleOf({ marginTop: 2, fontSize: 10, color: '#A8A29E', lineHeight: 1 })}>
-                            {noteCount} 条笔记
-                          </div>
-                        </div>
-                        <motion.div
-                          animate={{
-                            rotate: isExpanded ? 180 : 0,
-                            color: isExpanded ? color : '#A8A29E'
-                          }}
-                          transition={{ type: 'spring', stiffness: 250, damping: 20 }}
-                          style={styleOf({ display: 'flex', alignItems: 'center' })}
-                        >
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                          </svg>
-                        </motion.div>
+                        <div className="collection-group-copy"><div className="collection-group-name" title={name}>{name}</div><div className="collection-group-count">{noteCount}</div></div>
                       </>
                     )}
                   </motion.div>
 
                   <AnimatePresence>
-                    {isExpanded && (
+                    {isExpanded && !isEditing && (
                       <>
                         <motion.button
                           aria-label={`重命名分组：${name}`}
-                          initial={{ opacity: 0, scale: 0.8, x: -10 }}
-                          animate={{ opacity: 1, scale: 1, x: 0 }}
-                          exit={{ opacity: 0, scale: 0.8, x: -10 }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
                           onClick={(event) => {
                             event.stopPropagation();
                             handleStartRename(groupId, name);
                           }}
-                          style={styleOf({
-                            background: 'rgba(253,252,250,0.94)',
-                            color: '#6B6860',
-                            border: '1px solid rgba(0,0,0,0.06)',
-                            borderRadius: 20,
-                            width: 34,
-                            height: 34,
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(73,56,28,0.08)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          })}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                          className="collection-key collection-icon collection-rename"
+
+
                         >
                           <Pencil size={14} strokeWidth={1.8} />
                         </motion.button>
@@ -2252,7 +1591,7 @@ export function DeskView() {
         </AnimatePresence>
 
         {/* Cards */}
-        {visibleNotes.map(note => {
+        {visibleNotes.map((note, index) => {
           const pos = positions[note.id];
           if (!pos) return null;
           const noteGroupId = deskState.noteGroupMap?.[note.id] || LOOSE_GROUP_ID;
@@ -2263,10 +1602,15 @@ export function DeskView() {
               key={note.id}
               note={note}
               pos={pos}
+              claimEntrance={claimEntrance}
+              entranceReady={deskReady && !state.isLoading}
+              entranceIndex={index}
+              newArrival={newArrivalIds.has(note.id)}
               isDimmed={isDimmed}
               lightweight={lightweightCanvas}
               isSelected={isSelected}
               selectedCount={draggedNoteId === note.id ? draggedNoteIds.length : 0}
+              showCategory={hasActiveSearch || noteGroupId === LOOSE_GROUP_ID}
               onClick={handleCardClick}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
@@ -2288,32 +1632,15 @@ export function DeskView() {
         )}
       </AnimatePresence>
 
-      {/* ── Canvas footer control ── */}
-      {!state.isLoading && notes.length > 0 && (
-        <motion.button
-          className="collection-create-group"
-          disabled={!deskReady}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.96 }}
-          onClick={handleCreateGroup}
-          style={styleOf({
-            position: 'relative',
-            margin: '24px auto',
-            height: 46,
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '0 20px', borderRadius: 24, cursor: 'pointer',
-            color: '#FDFCFA', background: '#829987', border: '1px solid #829987',
-            fontSize: 13, fontWeight: 550,
-            boxShadow: '0 8px 28px rgba(55,45,25,0.13), 0 2px 8px rgba(0,0,0,0.06)',
-          })}
-        >
-          <Plus size={16} />
-          新建分组
-        </motion.button>
-      )}
-
     </div>
+    </>
   );
+}
+
+function CollectionHelp({onClose}: {onClose: () => void}) {
+  const ref = useDialogFocus(onClose);
+  return <div className="collection-overlay collection-setup-overlay" onMouseDown={event => {if(event.target === event.currentTarget)onClose();}}><div className="collection-setup" ref={ref} role="dialog" aria-modal="true" aria-label="收藏怎么用" tabIndex={-1}>
+    <header className="collection-dialog-heading"><h2>收藏怎么用</h2><button className="collection-key collection-icon" aria-label="关闭" onClick={onClose}><X size={16}/></button></header>
+    <div className="collection-dialog-body collection-help-body"><p>收进来：安装并配对 Chrome 插件，在小红书帖子上点收藏；也可以把帖子拖入画布。</p><p>本地删除：整理已经删除的记录，并请求在访达打开本地文件夹。</p><p>Agent：只复制收藏的只读 MCP 配置。粘贴进该 Agent 设置后可搜索和阅读，不能修改或删除。</p></div>
+  </div></div>;
 }

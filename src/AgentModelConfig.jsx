@@ -1,3 +1,4 @@
+import { flyDataOnce } from './data-flight.js';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from './components.jsx';
 import { request } from './api.js';
@@ -90,6 +91,7 @@ export function AgentModelConfig({ targetId, bindingTuple, revision, disabled, o
     if (value) {
       setResult(value);
       if (value.status === 'verified' || value.closed === true) {
+        if (value.status === 'verified' && value.closed !== true) flyDataOnce(`agent-model:${original.operationId}`);
         if (!pending('', original.operationId)) setMessage('结果已确认，但浏览器未能清除待查标记；本窗口仍停止新写入。');
         else setMessage(value.closed === true ? '服务端已封闭原编号，确认没有执行；若还有待查编号，请继续核对。' : '');
         setView(null); setHistory(null);
@@ -105,6 +107,7 @@ export function AgentModelConfig({ targetId, bindingTuple, revision, disabled, o
     if (value) {
       setResult(value);
       if (id === pendingId && (value.status === 'verified' || value.closed === true)) {
+        if (value.status === 'verified' && value.closed !== true) flyDataOnce(`agent-model:${id}`);
         if (!pending('', id)) setMessage('结果已确认，但浏览器未能清除待查标记；本窗口仍停止新写入。');
         else setMessage(value.closed === true ? '服务端已封闭原编号，确认没有执行；若还有待查编号，请继续核对。' : '');
         setView(null); setHistory(null);

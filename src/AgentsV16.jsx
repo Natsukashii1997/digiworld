@@ -1,3 +1,5 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
+import { copyText } from './data-flight.js';
 // 派单168：接力台 → 选角 → 发车 → 当前伙伴档案。所有读取和打开都由显式动作触发。
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -209,7 +211,7 @@ export function AgentsV16({
     setReceipt("");
     const n = generation.current;
     try {
-      await navigator.clipboard.writeText(prepared.prompt);
+      await copyText(prepared.prompt);
       if (!alive.current || generation.current !== n) return;
       setReceipt("TRANSFER OK · 提示词已复制");
       notify("提示词已复制");
@@ -286,10 +288,11 @@ export function AgentsV16({
             disabled={discoveryBusy}
             onClick={() => detect()}
           >
-            <RefreshCw size={18} className={discoveryBusy ? "spinning" : ""} />
+            {discoveryBusy ? <Reading mini label="检测本机入口"/> : <RefreshCw size={18}/> }
           </button>
         </span>}
       />
+      <ReadReveal pending={discoveryBusy} ready={!discoveryError}/>
       {discoveryError && (
         <p role="alert" className="inline-error">
           {discoveryError}
@@ -382,7 +385,7 @@ export function AgentsV16({
             )}
             <div className="relay-actions">
               {!loaded && <Button secondary disabled={busy} onClick={() => find(false)}>
-                <History size={16} />{busy ? "读取中…" : "重新查找会话"}
+                <History size={16} />{busy ? <Reading mini label="读取中…"/> : "重新查找会话"}
               </Button>}
               <Button secondary disabled={busy} onClick={() => setManual(true)}>
                 <PenLine size={16} />

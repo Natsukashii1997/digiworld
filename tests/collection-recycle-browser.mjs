@@ -46,7 +46,9 @@ try {
   await page.route('**/api/collection/recycle/organize',async route=>{mutations++;await route.fetch();submitted();await held;await route.abort('failed');});
   await until(async()=>await entry(page).isEnabled());await entry(page).click();await committed;
   assert.equal(await entry(page).isEnabled(),false);assert.equal(await page.locator('.collection-canvas').evaluate(node=>node.inert),true);
-  await entry(page).dispatchEvent('click');await page.locator('.collection-create-group').dispatchEvent('click');
+  assert.equal(await page.getByRole('button',{name:'新建分组',exact:true}).isEnabled(),false);
+  assert.ok(await page.getByRole('button',{name:'新建分组',exact:true}).evaluate(node=>!!node.closest('.collection-toolbar')));
+  await entry(page).dispatchEvent('click');await page.getByRole('button',{name:'新建分组',exact:true}).dispatchEvent('click');
   assert.equal(await page.getByLabel('分组名称',{exact:true}).count(),0);
   release();await until(async()=>await status(page).textContent().then(text=>text.includes('整理未确认完成')));
   assert.equal(mutations,1);assert.equal((await app.api('/recycle')).items.find(item=>item.noteId===syntheticNote(2).id).status,'organized');assert.equal(opened.length,3);

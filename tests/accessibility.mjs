@@ -49,7 +49,6 @@ try {
     "calendar",
     "aihot",
     "learning",
-    "silver",
   ]) {
     await page.goto(app.url + "/#" + route);
     if(route==="inbox")await page.getByRole("dialog",{name:"待处理",exact:true}).waitFor();
@@ -61,7 +60,7 @@ try {
   await page.locator(".hx").waitFor();
   await scan("home");
   await page.goto(app.url + "/#assets");
-  await page.getByRole("button", { name: "新建资产", exact: true }).click();
+  await page.getByRole("button", { name: "新建", exact: true }).first().click();
   await scan("create-dialog");
   await page.keyboard.press("Escape");
   await page

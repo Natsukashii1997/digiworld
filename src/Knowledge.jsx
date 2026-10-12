@@ -1,3 +1,5 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
+import { copyText } from './data-flight.js';
 import React, { useEffect, useRef, useState } from "react";
 import {
   BookOpen,
@@ -235,8 +237,9 @@ export function LegacyKnowledge({ state, adoptState, notify, navigate }) {
               <Badge tone={mcp?.url ? "success" : "muted"}>{mcp?.url ? "运行中" : mcp ? "未启动" : "读取中"}</Badge>
             </div>
             <dl className="kn-kv">
+              <ReadReveal pending={!mcp} ready={!!mcp?.url&&!mcp?.error}/>
               <dt>地址</dt>
-              <dd className="mono">{mcp?.url || mcp?.error || "读取中…"}</dd>
+              <dd className="mono">{mcp?.url || mcp?.error || <Reading mini label="读取MCP状态"/>}</dd>
               <dt>读取授权</dt>
               <dd>{zones.profileSharing ? "已允许" : "未开启"}</dd>
               <dt>待处理建议</dt>
@@ -624,7 +627,7 @@ export function KnowledgeSource({
         if (action === "copy") {
           const text = `# 本机知识来源\n来源：${result.sourceName}\n目录：${result.root}\n相对路径：${result.path}\n原文 SHA-256：${result.sha256}\n文件修改于：${result.modifiedAt}\n核对于：${result.readAt}\n仅限本机；不含正文，未发送给 Agent。`;
           try {
-            await navigator.clipboard.writeText(text);
+            await copyText(text);
             if (active()) {
               setReceipt("来源指针已复制 · 不含正文");
               notify("来源指针已复制");
@@ -655,6 +658,7 @@ export function KnowledgeSource({
   }
   return (
     <section className="knowledge-workspace" aria-label="知识源内容">
+      <ReadReveal pending={busy==="read"||busy==="scan"} ready={!!(document||scan)&&!error}/>
       <header className="knowledge-source-heading">
         <div>
           <h2>{source.name}</h2>
@@ -666,7 +670,7 @@ export function KnowledgeSource({
         {onRefresh && <Button secondary onClick={onRefresh}>刷新连接核对</Button>}
         <Button disabled={!!busy || blocked || needsReconfirmation} onClick={() => run("scan")}>
           <RefreshCw size={16} />
-          {busy === "scan" ? "扫描中…" : scan ? "重新扫描" : "扫描文件"}
+          {busy === "scan" ? <Reading mini label="扫描文件"/> : scan ? "重新扫描" : "扫描文件"}
         </Button>
         <Button
           secondary
@@ -693,7 +697,7 @@ export function KnowledgeSource({
       )}
       {busy === "scan" ? (
         <p role="status" className="detail-footnote">
-          正在扫描 Markdown 文件名与路径，不读取正文…
+          <Reading label="正在扫描 Markdown 文件名与路径，不读取正文"/>
         </p>
       ) : !scan ? (
         <p role="status" className="detail-footnote">
@@ -849,7 +853,7 @@ export function KnowledgeSource({
           )}
         </>
       )}
-      {busy === "read" && <p role="status">正在读取所选原文…</p>}
+      {busy === "read" && <p role="status"><Reading label="正在读取所选原文"/></p>}
       {document && (
         <section
           className="knowledge-preview"

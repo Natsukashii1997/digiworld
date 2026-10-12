@@ -57,7 +57,7 @@ async function dataDir() {
 }
 const clock = () => Date.parse("2026-09-30T08:00:00.000Z");
 
-test("打包：主库快照、配置日志、知识写入日志、各集合；175排银饰图片实体，清单含每个文件 SHA256", async () => {
+test("打包：主库快照、配置日志、知识写入日志、各集合；退役目录不进入新备份", async () => {
   const { directory, repository } = await dataDir();
   try {
     const { bytes, manifest } = await packDirectory(directory, { clock });
@@ -78,8 +78,8 @@ test("打包：主库快照、配置日志、知识写入日志、各集合；17
     assert.ok(paths.some((p) => /^snapshots\/1-[a-f0-9-]+\.json$/.test(p)), "主库快照");
     assert.ok(!paths.some((p) => p.includes("writer-lock") || p.endsWith(".tmp")), "不含锁与临时文件");
     assert.ok(!paths.includes("outside-link"));
-    assert.deepEqual(manifest.skipped, [{ path: "outside-link", reason: "符号链接不跟随" }, {path:"silver",reason:"银饰图片只存本机，不进入新完整备份"}]);
-    assert.equal(paths.some(p=>p.startsWith("silver/")),false,"175批准：新完整ZIP排银饰实体");
+    assert.deepEqual(manifest.skipped, [{ path: "outside-link", reason: "符号链接不跟随" }, {path:"silver",reason:"退役银饰图片目录不进入新备份"}]);
+    assert.equal(paths.some(p=>p.startsWith("silver/")),false,"退役目录不进入新完整 ZIP");
     assert.deepEqual([...paths].sort(), paths, "清单按路径排序，便于比对");
     const entries = unzipSync(bytes);
     assert.deepEqual(Object.keys(entries).sort(), ["manifest.json", ...paths.map((p) => `data/${p}`)].sort());

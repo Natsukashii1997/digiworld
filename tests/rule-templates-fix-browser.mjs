@@ -17,6 +17,10 @@ const context = await browser.newContext({
   reducedMotion: "reduce",
 });
 const page = await context.newPage();
+await page.addInitScript(() => {
+  window.__successFeedback = 0;
+  addEventListener("guiji:data-caught", () => window.__successFeedback++);
+});
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 page.setDefaultTimeout(5000);
@@ -110,6 +114,7 @@ try {
   await page.getByRole("button", { name: "查看 项目协同协议", exact: true }).click();
   await panel().getByRole("button", { name: "核对写入结果", exact: true }).click();
   await panel().getByText("已写入，回读一致", { exact: true }).waitFor();
+  assert.equal(await page.evaluate(() => window.__successFeedback), 1, "原未决写入确认成功后反馈一次");
   assert.equal(await panel().getByRole("button", { name: /预览装入/ }).isDisabled(), false);
   console.log("PASS D-R2 未知结果锁跨关闭与刷新保留，核对后解除");
 

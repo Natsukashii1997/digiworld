@@ -134,7 +134,11 @@ try {
   assert.match(await readOnly.innerText(),/公司/);assert.match(await readOnly.innerText(),/只读/);
   assert.equal(await readOnly.locator("input,textarea").count(),0,"其他日历无编辑入口");await page.keyboard.press("Escape");
   await eventMarker(page,"写方案").waitFor();
-  assert.ok((await today.locator(".cal-night").count())>=1,"夜巡窗口仍存在");
+  assert.ok(await page.locator(".cal-week-night").count()>=1,"周视图夜巡窗口横贯七日；跨午夜保留两个时间段");
+  const bands=await page.locator(".cal-week-night").evaluateAll(es=>es.map(e=>e.getBoundingClientRect().width));
+  const laneWidth=await page.locator(".cal-lane").first().evaluate(e=>e.getBoundingClientRect().width);
+  assert.ok(bands.every(w=>w>=laneWidth*6.9),"每条带横贯七日而非逐日重复");
+  assert.equal(await page.locator(".cal-night").count(),0,"周视图不再重复七块");
   assert.equal(await page.locator('.cal-legend').count(),0,'图例按批准迁入帮助');
   await button(page,'这页怎么用').click();await page.getByRole('dialog').getByText(/夜巡 v2 计划窗口/).waitFor();await page.keyboard.press('Escape');
   assert.equal(await page.getByText(/项目里程碑/).count(),0,'批准取消里程碑占位');

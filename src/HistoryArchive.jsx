@@ -1,3 +1,6 @@
+import { flyData } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
+import { copyText } from './data-flight.js';
 import { DiffSummary } from "./DiffSummary.jsx";
 import { savepointThresholds } from "./settings-v16.js";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -12,7 +15,7 @@ import {
   RefreshCw,
   ChevronDown,
 } from "lucide-react";
-import { PageHeading, Button, Dialog, Empty } from "./components.jsx";
+import { PageHeading, Button, Dialog, Empty, ScrollFade } from "./components.jsx";
 import { request } from "./api.js";
 import { Floppy } from "./ProjectsV16.jsx";
 import "./savepoints-v16.css";
@@ -346,7 +349,7 @@ export function HistoryArchive({
       if (r.state === "verified") {
         setPreview(null);
         setReceipt("已存档 · " + r.hash.slice(0, 12));
-        notify("已创建存档点并回读");
+        notify("已创建存档点并回读"); flyData();
         await load();
       } else {
         setPending([{ id: preview.id }]);
@@ -373,7 +376,7 @@ export function HistoryArchive({
       if (r.state === "verified") {
         setPreview(null);
         setReceipt("已核实存档 · " + r.hash.slice(0, 12));
-        notify("原操作已查回，没有重复提交");
+        notify("原操作已查回，没有重复提交"); flyData();
         await load();
       } else if (r.state === "not_started") {
         draftRef.current = message;
@@ -530,9 +533,10 @@ export function HistoryArchive({
             </select>
           </label>
         )}
+        <ReadReveal pending={loading} ready={!!data&&!error}/>
         {loading && !data && (
           <p role="status" className="sp-loading">
-            正在读取存档点…
+            <Reading label="正在读取存档点"/>
           </p>
         )}
         {error && (
@@ -656,16 +660,16 @@ export function HistoryArchive({
                   </span>
                   <span>
                     <b className="mono add">+{count(stat?.insertions)}</b>
-                    <small>行</small>
+                    <small>新增行</small>
                   </span>
                   <span>
                     <b className="mono del">−{count(stat?.deletions)}</b>
                     <small>
-                      行{stat?.binary ? " · 二进制 " + stat.binary : ""}
+                      删除行{stat?.binary ? " · 二进制 " + stat.binary : ""}
                     </small>
                   </span>
                 </div>
-                <div className="sp-dirs" aria-label="主要改动目录">
+                <ScrollFade><div className="sp-dirs" tabIndex={0} role="region" aria-label="主要改动目录">
                   {data.directories.map((d) => (
                     <span
                       className="sp-dir"
@@ -679,7 +683,7 @@ export function HistoryArchive({
                       <b className="mono">{d.count}</b>
                     </span>
                   ))}
-                </div>
+                </div></ScrollFade>
               </div>
               <div className="sp-pend-act">
                 <Button
@@ -806,7 +810,7 @@ export function HistoryArchive({
                               className="text-btn"
                               onClick={async () => {
                                 try {
-                                  await navigator.clipboard.writeText(
+                                  await copyText(
                                     savepointRollbackText(
                                       project,
                                       c,

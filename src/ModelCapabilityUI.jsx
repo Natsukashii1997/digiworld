@@ -1,3 +1,5 @@
+import { flyDataOnce } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React,{useEffect,useRef,useState} from 'react';
 import {Button,Dialog} from './components.jsx';
 import {PageChoices} from './PageChoices.jsx';
@@ -25,19 +27,20 @@ function ModelPanel({book,initialAction='summary',navigate,onBusyChange,adoptSta
  }
  async function adoptIntent(){if(!adoptState)return;try{adoptState(await request('/workspace',undefined,'GET',false));}catch(e){a.setError('凭据写入已回读，但工作台状态未刷新：'+e.message);}}
  async function apply(){if(!plan||unresolved||lock.current)return;const id=plan.operationId,kind=planKind;if(kind==='credentials')setKey('');
-  const value=await run(async()=>{const v=await call(kind==='credentials'?'/apply-credentials':kind==='book'?'/confirm-book':'/confirm-test',{token:plan.token,operationId:id,confirmed:true});if(kind==='credentials'&&v.status==='verified')await adoptIntent();return v;});
+  const value=await run(async()=>{const v=await call(kind==='credentials'?'/apply-credentials':kind==='book'?'/confirm-book':'/confirm-test',{token:plan.token,operationId:id,confirmed:true});if(kind==='credentials'&&v.status==='verified'){await adoptIntent();flyDataOnce(`model-credentials:${v.operationId||id}`);}return v;});
   if(value){setResult({...value,operationId:value.operationId||id});setUnresolved(['unknown','running'].includes(value.status));setPlan(null);}
   else if(a.lastError.current&&!a.lastError.current.operationNotStarted){setResult({operationId:id,status:'unknown',reason:a.lastError.current.message});setUnresolved(true);setPlan(null);}
  }
- async function check(){if(!result?.operationId)return;const value=await run(async()=>{const v=await call('/check',{operationId:result.operationId});if(planKind==='credentials'&&v.status==='verified')await adoptIntent();return v;});if(value){setResult({...value,operationId:value.operationId||result.operationId});setUnresolved(['unknown','running'].includes(value.status));}}
+ async function check(){if(!result?.operationId)return;const value=await run(async()=>{const v=await call('/check',{operationId:result.operationId});if(planKind==='credentials'&&v.status==='verified'){await adoptIntent();if(unresolved)flyDataOnce(`model-credentials:${v.operationId||result.operationId}`);}return v;});if(value){setResult({...value,operationId:value.operationId||result.operationId});setUnresolved(['unknown','running'].includes(value.status));}}
  async function read(){if(result?.status!=='verified'||!result?.outputArtifactRef)return;const value=await run(()=>call('/read',{operationId:result.operationId}));if(value)setOutput(value);}
  async function history(){const value=await run(()=>call('/history'));if(value)setRows(Array.isArray(value)?value:value.items);}
  async function readHistory(row){if(row.status!=='verified'||!row.outputArtifactRef)return;const value=await run(()=>call('/read',{operationId:row.operationId}));if(value)setOutput(value);}
  function enter(e){if(e.key!=='Enter')return;if(e.currentTarget.tagName==='TEXTAREA'){if(e.nativeEvent.isComposing||e.nativeEvent.keyCode===229||composition.current)e.preventDefault();return;}e.preventDefault();if(e.nativeEvent.isComposing||e.nativeEvent.keyCode===229||composition.current||lock.current||unresolved)return;e.currentTarget.form?.requestSubmit();}
  const ime={onCompositionStart:()=>{composition.current=true;},onCompositionEnd:()=>{composition.current=false;},onKeyDown:enter};
  return <section className="capability-console model-capability-console" aria-label={book?'单书模型操作':'真实模型连接'}>
-  <h2>{book?'单书模型操作':'真实模型连接'}</h2><p>默认关闭。仅支持固定官方 OpenAI / Anthropic 地址；凭据只保存在系统钥匙串。每次真实请求先展示内容与费用；不会替其他 Agent 切换模型。</p>
-  {loading&&<p role="status">正在读取本机模型授权…</p>}{!loading&&!status&&<p>本机模型授权未知，真实连接保持关闭。</p>}
+  <ReadReveal pending={loading} ready={!!status&&!a.error}/>
+   <h2>{book?'单书模型操作':'真实模型连接'}</h2><p>默认关闭。仅支持固定官方 OpenAI / Anthropic 地址；凭据只保存在系统钥匙串。每次真实请求先展示内容与费用；不会替其他 Agent 切换模型。</p>
+  {loading&&<p role="status"><Reading label="正在读取本机模型授权"/></p>}{!loading&&!status&&<p>本机模型授权未知，真实连接保持关闭。</p>}
   {status&&!status.enabled&&<><p>模型/API 能力默认关闭，请先在设置的能力授权中启用。</p>{book&&<Button type="button" secondary onClick={()=>navigate?.('settings')}>去设置模型授权</Button>}</>}
   {status?.enabled&&<>
    <p>连接意向：{status.provider||'待配置'} · {status.model||'待配置'}</p><p>{status.credentialStatus||'凭据状态待用户点击核验'}</p>

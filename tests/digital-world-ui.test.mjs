@@ -224,7 +224,6 @@ test("切片 1.2：导航按今日、资产、目标、运行、知识、生活�
   // 协同页自路线 v3 切片 2.3/2.4 起可用（看板、留痕、一键派发），不再是规划页；成熟度如实标“部分可用”。
   assert.equal(PAGES.find((x) => x.id === "collab").maturity, "partial");
   // 路线 v3 切片 5.3、5.4：AI HOT 与学习成长已开发，不再是规划中页面（见下方单独的用例）。
-  // 银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”，不再是规划页，由 silver-agents-browser.mjs 覆盖。
   // 路线 v3 切片 5.2（分支 backup-calendar）：日历已开发，标“部分可用”，由 calendar-todo-browser.mjs 覆盖。
   assert.equal(PAGES.find((x) => x.id === "calendar").maturity, "partial");
   assert.equal(PAGES.find((x) => x.id === "calendar").plan, undefined);
@@ -310,7 +309,7 @@ test("首页 A 今日与 B 待处理读取真实数据，未授权日历不假�
 
 test("收藏接替学习成长：保留生活区路由，不渲染旧书架与旧链接", () => {
   const page=PAGES.find(page=>page.id==='learning');assert.equal(page.group,'生活');assert.equal(page.title,'收藏');assert.equal(page.plan,undefined);
-  const html=renderToStaticMarkup(React.createElement(Collection));assert.match(html,/收藏画布/);assert.doesNotMatch(html,/书架|学习状态|链接收藏|回收区/);
+  const html=renderToStaticMarkup(React.createElement(Collection));assert.match(html,/<h1[^>]*>收藏<\/h1>/);assert.match(html,/aria-label="收藏分组"/);assert.match(html,/aria-label="搜索收藏"/);assert.doesNotMatch(html,/<h2[^>]*>收藏画布<\/h2>/);assert.doesNotMatch(html,/书架|学习状态|链接收藏|回收区/);
   // 世界总览热点卡：首屏渲染时还没有读到缓存，如实写“正在读取”，不放假数据。
   const hot = renderToStaticMarkup(React.createElement(HomeHot, { navigate() {} }));
   assert.match(hot, /今日热点/);

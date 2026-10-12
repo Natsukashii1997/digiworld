@@ -1,3 +1,5 @@
+import { flyData } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 // 日历页（生活区，路线 v3 5.2）：周视图 + 今天；在时间轴上拖出规划块并写一句话，写入 macOS“工作台”日历；
 // 其他日历的会议只读；夜巡 v2 计划窗口只读展示；旁边是“工作台”提醒事项列表的 todo。
 // 权威在 macOS 日历与提醒事项：每次写入后以服务端回读结果为准，冲突时提示并显示回读内容。
@@ -5,7 +7,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CalendarPlus, ChevronLeft, ChevronRight, RefreshCw, ShieldCheck, BellRing, Plus, Check, Trash2 } from "lucide-react";
 import { request } from "./api.js";
-import { Button, Dialog, PageHeading } from "./components.jsx";
+import { Button, Dialog, PageHeading, ScrollFade } from "./components.jsx";
 import {
   DAY_MINUTES,
   addDays,
@@ -36,28 +38,35 @@ const dayLabel = (d) => `${WEEKDAYS[d.getDay()]} ${d.getMonth() + 1}/${d.getDate
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 
 // 状态 + 本周事件 + todo 的读取；读取失败如实显示，不用本地缓存冒充。
-export function useCalendarData(range) {
+export function useCalendarData(range, { retainOnError = false } = {}) {
   const [status, setStatus] = useState(null),
     [week, setWeek] = useState(null),
     [error, setError] = useState("");
   const generation = useRef(0);
+  const loadedRange = useRef("");
   const from = range?.from,
     to = range?.to;
   const load = useCallback(async () => {
     const id = ++generation.current;
+    const rangeKey = `${from || ""}|${to || ""}`;
+    // 不把其他日期范围的旧事件显示到当前周。
+    if (rangeKey !== loadedRange.current) setWeek(null);
     try {
       const s = await request("/calendar/status");
       if (id !== generation.current) return;
-      setStatus(s);
-      setError("");
-      if (!s.available) { setWeek(null); return; }
-      const w = s.access.calendar === "authorized" && from ? await request("/calendar/week", {from,to}) : null;
+      const w = s.available && s.access.calendar === "authorized" && from ? await request("/calendar/week", {from,to}) : null;
       if (id !== generation.current) return;
+      loadedRange.current = rangeKey;
+      setStatus(s);
       setWeek(w);
+      setError("");
     } catch (e) {
-      if (id === generation.current) { setStatus(null); setWeek(null); setError(e.message || "读取失败"); }
+      if (id !== generation.current) return;
+      // 只有只读摘要可以保留变暗的前像；日历编辑页继续使用原有失败保护。
+      if (!retainOnError) { setStatus(null); setWeek(null); }
+      setError(e.message || "读取失败");
     }
-  }, [from, to]);
+  }, [from, to, retainOnError]);
   useEffect(() => {
     load();
     return () => { generation.current++; };
@@ -85,7 +94,7 @@ const ACCESS_LABEL = {
   writeOnly: "只有写入权限",
 };
 
-export function Permission({ access, onGranted, notify }) {
+export function Permission({ access, onGranted, notify, secondary = false }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const askable = access.calendar === "notDetermined" || access.reminders === "notDetermined";
@@ -111,6 +120,7 @@ export function Permission({ access, onGranted, notify }) {
         )}
         {askable && (
           <Button
+            secondary={secondary}
             disabled={busy}
             onClick={async () => {
               setBusy(true);
@@ -196,7 +206,7 @@ function BlockDialog({ draft, onClose, onSaved, notify, setNotice }) {
       if (result.conflict || !result.check.matches) {
         setNotice(result.message);
         notify(result.message, "warning");
-      } else notify(result.message);
+      } else { flyData(); notify(result.message); }
       onSaved(result.block);
     } catch (e) {
       // 结果未知：关闭对话框并刷新，以系统日历回读为准；其他错误留在对话框里。
@@ -524,6 +534,7 @@ function TodoPanel({ todos, access, notify, setNotice, reload, now, onRead }) {
         notify(result.message, "warning");
         return false;
       }
+      flyData();
       notify(result.message);
       return true;
     } catch (e) {
@@ -536,6 +547,7 @@ function TodoPanel({ todos, access, notify, setNotice, reload, now, onRead }) {
   }
   return (
     <section className="cal-todo" aria-labelledby="cal-todo-title">
+      <ReadReveal pending={access?.reminders==="authorized"&&!todos?.loaded&&!todos?.error} ready={!!items&&!todos?.error}/>
       <div className="cal-todo-head">
         <h2 id="cal-todo-title"><span className="cal-en">TODO</span>TodoList <b>{items ? items.filter(x=>!x.completed).length : "—"}</b><small className="cal-todo-count-label">未完成</small></h2>
       </div>
@@ -545,16 +557,16 @@ function TodoPanel({ todos, access, notify, setNotice, reload, now, onRead }) {
         </p>
       ) : !items ? (
         <p className="cal-muted" role="status">
-          {todos?.error ? "读取失败，点击刷新重试。" : todos?.reason || "正在读取提醒事项…"}
+          {todos?.error ? "读取失败，点击刷新重试。" : todos?.reason || <Reading label="正在读取提醒事项"/>}
         </p>
       ) : (
         <>
           {items.length ? (
-            <ul className="todo-list">
+            <ScrollFade><ul className="todo-list">
               {items.map((item) => (
                 <TodoItem key={item.id} item={item} onWrite={write} now={now} disabled={busy} />
               ))}
-            </ul>
+            </ul></ScrollFade>
           ) : (
             <p className="cal-muted">“工作台”列表里还没有 todo。</p>
           )}
@@ -568,6 +580,7 @@ function TodoPanel({ todos, access, notify, setNotice, reload, now, onRead }) {
                 const result = await request("/calendar/todos/create", { title: text });
                 onRead(result.reminder);
                 setText("");
+                if (!result.conflict && result.check.matches) flyData();
                 notify(result.message, result.check.matches ? "success" : "warning");
               } catch (err) {
                 notify(err.message, "error");
@@ -742,7 +755,7 @@ export function CalendarPage({ state, notify, calendarTodos, calendarNow, refres
                 <p>WEEK {weekNumber} · {rangeText}</p>
                 <h2><b>{anchor.getFullYear()}</b> 年 <b>{anchor.getMonth() + 1}</b> 月</h2>
               </div>
-              <div className="cal-tools"><PageChoices
+              <div className="cal-tools"><ul className="cal-source-legend" aria-label="日程来源"><li className="mine">工作台</li><li>公司</li></ul><PageChoices
                 label="日历视图"
                 className="cal-toggle"
                 choices={[
@@ -795,18 +808,19 @@ export function CalendarPage({ state, notify, calendarTodos, calendarNow, refres
               </div></div>
             </div>
           </div>
-          {(access?.calendar !== "authorized" || access?.reminders !== "authorized") && <Permission access={access} onGranted={reload} notify={notify}/>}
+          {(access?.calendar !== "authorized" || access?.reminders !== "authorized") && <Permission access={access} secondary={!!ready} onGranted={reload} notify={notify}/>}
           {(ready || access?.reminders === "authorized") && <TodoPanel todos={calendarTodos} access={access} notify={notify} setNotice={setNotice} reload={reload} now={calendarNow} onRead={publishCalendarTodos}/>}
           {calendarTodos?.error && <p className="inline-error" role="alert">提醒事项读取失败：{calendarTodos.error}</p>}
           <div className="cal-layout">
           <div className="cal-main">
+             <ReadReveal pending={ready&&!week} ready={!!week&&Array.isArray(week.events)&&week.available!==false}/>
             {!ready ? (
               <p className="cal-muted" role="status">
                 {week?.reason || "日历授权后显示周视图。"}
               </p>
             ) : !week ? (
               <p className="cal-muted" role="status">
-                正在读取日历…
+                <Reading label="正在读取日历"/>
               </p>
             ) : week.events === null || week.available === false ? (
               <p className="cal-muted" role="status">
@@ -874,6 +888,7 @@ export function CalendarPage({ state, notify, calendarTodos, calendarNow, refres
                     aria-label="24小时时间轴"
                   >
                     <div className="cal-body">
+                      {!narrow && mode === "week" && nightSegments(nightV2Of(state).window).map(([a,b])=><div className="cal-week-night" key={a} style={{top:`${a / DAY_MINUTES * 100}%`,height:`${(b-a) / DAY_MINUTES * 100}%`}} aria-hidden="true"><span>夜巡窗口 · {hmOf(a)}–{hmOf(b)}</span></div>)}
                       <div className="cal-hours" aria-hidden="true">
                         {HOURS.map((h) => (
                           <span key={h} style={{ top: `${(h / 24) * 100}%` }}>
@@ -886,7 +901,7 @@ export function CalendarPage({ state, notify, calendarTodos, calendarNow, refres
                           key={ymd(d)}
                           day={d}
                           events={week.events}
-                          night={nightV2Of(state).window}
+                          night={!narrow && mode === "week" ? null : nightV2Of(state).window}
                           drag={drag}
                           now={now}
                           onPointerDown={onPointerDown}

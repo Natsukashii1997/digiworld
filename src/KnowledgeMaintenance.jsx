@@ -1,3 +1,5 @@
+import { flyData } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { Badge, Button } from "./components.jsx";
@@ -377,6 +379,7 @@ export function KnowledgeRenewal({
         setConfirmed(false);
         adoptState(result.state);
         onOpen(result.taskId);
+        flyData();
         notify("新整理任务已创建，旧记录保留；尚未启动 Codex");
       }
     } catch (failure) {
@@ -401,10 +404,11 @@ export function KnowledgeRenewal({
   const disabled = blocked || !!busy || pending;
   return (
     <section className="knowledge-task-section" aria-label="重新整理">
+      <ReadReveal pending={busy==="preview"} ready={!!preview&&!error}/>
       <div className="knowledge-compilation-heading">
         <h3>重新整理</h3>
         <Button secondary disabled={disabled} onClick={() => run("preview")}>
-          {busy === "preview" ? "读取中…" : "预览重新整理"}
+          {busy === "preview" ? <Reading mini label="读取整理预览"/> : "预览重新整理"}
         </Button>
       </div>
       <p className="detail-footnote">

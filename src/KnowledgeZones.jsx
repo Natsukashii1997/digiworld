@@ -1,3 +1,6 @@
+import { motionOrigin } from './scan-motion.js';
+import { flyData } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 // 知识仓库三区视图与个人说明（路线 v3 切片 3.2 / 3.3；产品定义 v1.2 §4.4；D30、D32）。
 // 三区只是按文件夹规则划分的视图：统计只读元数据，不移动、不改写任何 Vault 文件。
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -312,7 +315,7 @@ export function ZoneRules({ state, sources, vault, adoptState, notify, blocked }
         expectedRevision: state.revision,
       });
       adoptState(next);
-      notify("划分规则已保存，重新统计后生效");
+      notify("划分规则已保存，重新统计后生效"); flyData();
     } catch (failure) {
       setError(failure.message);
     } finally {
@@ -430,6 +433,7 @@ export function ProfilePanel({ state, config, vault, mcp, adoptState, notify, na
   const pending = (state.profileProposals || []).filter((p) => p.status === "pending").length;
   const url = mcp?.url || DEFAULT_MCP_URL;
   async function toggle(enabled) {
+    const from=motionOrigin();
     if (busy) return;
     setBusy(true);
     setError("");
@@ -440,6 +444,7 @@ export function ProfilePanel({ state, config, vault, mcp, adoptState, notify, na
         expectedRevision: state.revision,
       });
       adoptState(next);
+      flyData(from);
       setAgreed(false);
       notify(enabled ? "已允许本机 Agent 通过 MCP 读取个人说明" : "已关闭 MCP 读取个人说明");
     } catch (failure) {
@@ -467,10 +472,11 @@ export function ProfilePanel({ state, config, vault, mcp, adoptState, notify, na
         <div>
           <dt>MCP 地址</dt>
           <dd>
+            <ReadReveal pending={!mcp} ready={!!mcp?.url&&!mcp?.error}/>
             {mcp?.url ? (
               <code className="mcp-url">{mcp.url}</code>
             ) : (
-              <span>{mcp?.error || "读取中…"}</span>
+              <span>{mcp?.error || <Reading mini label="读取MCP状态"/>}</span>
             )}
           </dd>
         </div>

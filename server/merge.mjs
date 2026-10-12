@@ -5,7 +5,10 @@ export function backupState(input) {
       throw Object.assign(new Error("不支持的备份版本"), { status: 400 });
     input = input.state;
   }
-  return validateState(input);
+  // 历史导出里的银饰记录不再恢复到当前库，其余字段仍严格校验。
+  const active = { ...input };
+  delete active.silver;
+  return validateState(active);
 }
 export function mergeBackup(current, incoming) {
   const input = backupState(incoming);
@@ -23,7 +26,6 @@ export function mergeBackup(current, incoming) {
     scrollEntriesAdded: 0,
     learningLinksAdded: 0,
     learningBooksAdded: 0,
-    silverAdded: { wall: 0, categories: 0, items: 0 },
     agentRolesAdded: 0,
     activityAdded: 0,
     collabAdded: 0,
@@ -41,8 +43,6 @@ export function mergeBackup(current, incoming) {
     summary.collabAdded = (input.collabLog || []).length;
     summary.candidatesAdded = (input.revisionCandidates || []).length;
     summary.skillSourceAdoptionsAdded = (input.skillSourceAdoptions || []).length;
-    for (const name of Object.keys(summary.silverAdded))
-      summary.silverAdded[name] = (input.silver?.[name] || []).length;
     summary.agentRolesAdded = (input.agentRoles || []).length;
     summary.settings = "采用备份中的配置草稿；连接结果需重新扫描";
     // 简报已读状态与连接一样是本机状态（项目 ID 来自本机扫描），不随备份恢复。
@@ -59,6 +59,7 @@ export function mergeBackup(current, incoming) {
     return { state: { ...content, revision: 0 }, summary };
   }
   const next = structuredClone(current);
+  delete next.silver;
   for (const name of Object.keys(summary.added)) {
     if (["knowledgeTasks", "scrolls", "reverseRecords"].includes(name)) continue;
     const lookup = new Map(next[name].map((item, index) => [item.id, index]));
@@ -143,7 +144,6 @@ export function mergeBackup(current, incoming) {
   }
   if (input.scrolls?.length) mergeScrolls(next, input.scrolls, summary);
   if (input.learning) mergeLearning(next, input.learning, summary);
-  if (input.silver) mergeSilver(next, input.silver, summary);
   if (input.agentRoles?.length) {
     // 角色卡：当前库已有的卡保留当前编辑，只补上备份独有的卡。
     next.agentRoles ||= [];
@@ -209,7 +209,6 @@ export function mergeBackup(current, incoming) {
   validateState(next);
   return { state: next, summary };
 }
-
 // 改版候选（进化回路 v1）：按 ID 并集。同 ID 的正文等身份字段必须一致；
 // 当前仍待处理而备份已决定时采用备份的决定（对应新版本随资产版本一起并入）；
 // 当前已决定时保留当前；两边决定不同视为冲突，整次不导入。
@@ -304,48 +303,5 @@ function mergeLearning(next, incoming, summary) {
     next.learning.books.push(structuredClone(book));
     bookIds.add(book.id);
     summary.learningBooksAdded++;
-  }
-}
-
-// 银饰计划（路线 v3 5.5）：欣赏图、品类、已填格都是可变记录。合并只做加法：
-// 缺失的记录追加，已有记录保留当前库的编辑；同一已填格在两边属于不同品类视为冲突，整次不导入。
-// 图片文件不随备份走（备份只含主库），缺失的图片在界面上显示为“图片缺失”。
-function mergeSilver(next, incoming, summary) {
-  next.silver ||= { wall: [], categories: [], items: [] };
-  const target = next.silver;
-  for (const name of ["wall", "categories", "items"]) {
-    const existing = new Map(target[name].map((r) => [r.id, r]));
-    for (const record of incoming[name]) {
-      const old = existing.get(record.id);
-      if (old) {
-        if (name === "items" && (old.categoryId !== record.categoryId || old.categoryKey !== record.categoryKey))
-          throw Object.assign(new Error("银饰收藏存在冲突，本次不会导入任何记录"), {
-            status: 409,
-          });
-        summary.kept++;
-        continue;
-      }
-      target[name].push(structuredClone(record));
-      existing.set(record.id, record);
-      summary.silverAdded[name]++;
-    }
-  }
-
-  if(incoming.targets){
-    target.targets ||= {};
-    for(const [key,value] of Object.entries(incoming.targets))if(target.targets[key]===undefined)target.targets[key]=value;
-  }
-  if(incoming.wishes?.length){
-    target.wishes ||= [];
-    for(const record of incoming.wishes){
-      const old=target.wishes.find(w=>w.id===record.id);
-      const conflict=message=>{throw Object.assign(new Error(message),{status:409});};
-      if(old){
-        if(['wallId','categoryKey','createdAt'].some(k=>old[k]!==record[k]) || old.fulfilledItemId && record.fulfilledItemId && (old.fulfilledItemId!==record.fulfilledItemId || old.fulfilledAt!==record.fulfilledAt))conflict('银饰心愿身份或实现关联冲突，本次不会导入任何记录');
-        summary.kept++;continue;
-      }
-      if(target.wishes.some(w=>!w.deletedAt&&!record.deletedAt&&w.wallId===record.wallId&&w.categoryKey===record.categoryKey || record.fulfilledItemId&&w.fulfilledItemId===record.fulfilledItemId))conflict('银饰心愿来源重复或藏品关联冲突，本次不会导入任何记录');
-      target.wishes.push(structuredClone(record));summary.silverWishesAdded=(summary.silverWishesAdded||0)+1;
-    }
   }
 }

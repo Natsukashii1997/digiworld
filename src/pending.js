@@ -110,7 +110,7 @@ export function pendingItems(
       detail: "停滞与安全提示暂时不可用；在项目空间可以重新读取。",
       to: "projects",
     });
-  for (const p of projectStatus?.items || []) {
+  for (const p of !projectStatus?.error ? projectStatus?.items || [] : []) {
     const issues = p.safety?.issues || [];
     if (issues.length)
       items.push({

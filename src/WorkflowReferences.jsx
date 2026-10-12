@@ -1,3 +1,4 @@
+import { copyText } from './data-flight.js';
 import React, { useRef, useState } from "react";
 import { Plus, X, Copy, Download, PenLine } from "lucide-react";
 import { Button, Badge, typeLabel } from "./components.jsx";
@@ -279,7 +280,7 @@ export function WorkflowDelivery({
       } else {
         const text = workflowText(fresh.version, fresh.assets);
         try {
-          await navigator.clipboard.writeText(text);
+          await copyText(text);
           notify("已复制流程说明 · 未发送或执行");
         } catch {
           setFallback(text);

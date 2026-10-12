@@ -814,6 +814,8 @@
   }
 }
 @media (max-width: 760px) {
+  .page-references.v16 .reverse-scroll { margin:0 calc(var(--s-4) * -1); }
+  .page-references.v16 .reverse-scroll .rail-filter { margin:0; }
   .page-references.v16 .re-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1250,3 +1252,12 @@
 /* reduce仅撤下交互可见性，保稳定装饰DOM；不异步增删整页SVG。 */
 .page-references.v16 .slider[hidden] {display:none;}
 @media(prefers-reduced-motion:reduce) {.page-references.v16 .slider {display:none;}}
+
+/* 两行筛选：状态一行滚动，类型方块在右端。 */
+.page-references.v16 .rail-filter { flex-wrap:nowrap; overflow-x:auto; }
+.page-references.v16 .rail-filter button { flex:none; min-height:44px; white-space:nowrap; }
+.page-references.v16 .rail-types { justify-content:flex-end; }
+.page-references.v16 .rail-types button { flex:0 0 44px; min-width:44px; min-height:44px; flex-direction:column; justify-content:center; gap:2px; padding:var(--s-2); }
+.page-references.v16 .reference-actions { display:flex; justify-content:space-between; align-items:center; gap:var(--s-3); }
+.page-references.v16 .reference-actions .button { width:auto; }
+.page-references.v16 .specimen-txt.legacy-note { border:0; background:none; box-shadow:none; padding:0; }

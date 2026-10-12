@@ -36,8 +36,8 @@
   transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
 .notes-v16 .sn.tone-red { --paper: var(--red); --a: 0.06; }
-.notes-v16 .sn.tone-blue { --paper: var(--blue); --a: 0.06; }
-.notes-v16 .sn.tone-green { --paper: var(--lcd); --a: 0.05; }
+.notes-v16 .sn.tone-blue { --paper: color-mix(in srgb, var(--blue) 40%, var(--muted)); --a: 0.04; }
+.notes-v16 .sn.tone-green { --paper: color-mix(in srgb, var(--lcd) 40%, var(--muted)); --a: 0.04; }
 .notes-v16 .sn.tone-yellow { --paper: var(--yellow); --a: 0.06; }
 .notes-v16 .sn.tone-gray { --paper: var(--muted); --a: 0.04; }
 .notes-v16 .sn:hover, .notes-v16 .sn.is-hover {
@@ -259,3 +259,11 @@
 }
 @media(min-width:1101px){.notes-v16 .sn-wall.compact:has(.sn-cell.editing){grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(min-width:1181px){.notes-v16 .sn-wall.compact .sn-new.editing > .sn-pad{width:100%;}}
+
+/* 派单362：两列按自然高度排列；编辑卡仍使用完整网格行。 */
+@media(min-width:761px){
+ .notes-v16 .sn-wall:not(:has(.sn-cell.editing)){display:block;columns:2;column-gap:var(--s-5)}
+ .notes-v16 .sn-wall:not(:has(.sn-cell.editing)) .sn-cell{display:inline-block;width:100%;vertical-align:top;break-inside:avoid;margin-bottom:var(--s-5)}
+ .notes-v16 .sn-wall:has(.sn-cell.editing){grid-template-columns:repeat(2,minmax(0,1fr))}
+ .notes-v16 .sn-new.editing > .sn-pad{width:100%}
+}

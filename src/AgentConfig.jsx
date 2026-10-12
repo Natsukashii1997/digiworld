@@ -1,3 +1,5 @@
+import { flyDataOnce } from './data-flight.js';
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import { Button, Badge } from "./components.jsx";
 import { request } from "./api.js";
@@ -165,6 +167,7 @@ function ConfigPanel({ target, revision, adoptState }) {
     setResult(null);
   }
   function showResult(value) {
+    if (pendingRef.current === value.id && value.status === "matches_after") flyDataOnce(`agent-config:${value.id}`);
     setResult(value);
     if (pendingRef.current === value.id && value.status !== "unknown")
       trackPending(null);
@@ -195,6 +198,7 @@ function ConfigPanel({ target, revision, adoptState }) {
       aria-label={`${target.label} 的配置`}
       aria-busy={!!busy}
     >
+      <ReadReveal pending={busy==="inspect"} ready={!!view&&!error}/>
       <div className="config-heading">
         <h4>终端显示</h4>
         <Badge tone="muted">仅限本机 · Home 层</Badge>
@@ -206,7 +210,7 @@ function ConfigPanel({ target, revision, adoptState }) {
           <div className="heading-actions">
             <Button secondary disabled={!!busy || !!pending} onClick={inspect}>
               {busy === "inspect"
-                ? "读取中…"
+                ? <Reading mini label="读取配置"/>
                 : view
                   ? "重新读取配置"
                   : "读取配置"}

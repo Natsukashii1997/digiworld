@@ -19,6 +19,20 @@ test("示例主库没有任何待处理线索", () => {
   assert.deepEqual(pendingItems(seed()), []);
 });
 
+test("项目刷新失败保留前像时，待处理仅列读取失败；恢复后重新列当前项目问题", () => {
+  const state = seed();
+  const snapshot = [{ projectId: "repair-project", name: "合成项目",
+    safety: { issues: [{ text: "合成安全问题" }] },
+    activity: { state: "stalled", idleDays: 30 } }];
+  const ids = status => pendingItems(state, undefined, status).map(item => item.id).sort();
+  const currentIds = ["project-safety-repair-project", "project-stall-repair-project"];
+  assert.deepEqual(ids({ loaded: true, error: "", items: snapshot }), currentIds);
+  assert.deepEqual(ids({ loaded: true, error: "服务中断", items: snapshot }), ["project-status-error"]);
+  assert.deepEqual(ids({ loaded: false, error: "", items: snapshot }), currentIds, "刷新中保持上一次成功的项目问题与计数");
+  assert.deepEqual(ids({ loaded: true, error: "", items: snapshot }), currentIds);
+  assert.equal(snapshot[0].safety.issues.length, 1, "读取失败不删除供项目页参考的前像");
+});
+
 test("只把当前版本最新反馈为需改进的未归档资产列为线索", () => {
   const s = seed();
   const [a, b, c] = s.assets;

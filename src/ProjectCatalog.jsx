@@ -1,3 +1,4 @@
+import { flyData } from './data-flight.js';
 import React, { useRef, useState } from "react";
 import { Button } from "./components.jsx";
 import { request } from "./api.js";
@@ -47,6 +48,7 @@ export function ProjectCatalogEditor({ project, state, adoptState, notify }) {
       const items = [...(state.connections?.projectCatalog || []).filter((entry) => entry.projectId !== project.id), item];
       const next = await request("/project-catalog/apply", { revision: state.revision, items });
       adoptState(next);
+      flyData();
       initial.current = JSON.stringify(item);
       notify("项目展示信息已保存", "success");
     } catch (cause) {
@@ -93,6 +95,7 @@ export function ManualProjectForm({ state, adoptState, notify }) {
         manualProjects: [{ path: path.trim(), name: name.trim() || undefined }],
       });
       adoptState(next);
+      flyData();
       setPath(""); setName("");
       notify("目录已登记到待归类，请打开项目详情设置展示位置", "success");
     } catch (cause) {

@@ -1,3 +1,5 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
+import { flyData } from './data-flight.js';
 // 项目空间第二批：世界总览“今日项目简报”卡。每个在推进项目一段话（昨天到今天、唯一下一步、卡点），
 // 由服务端按本机数据的确定规则生成，不调用任何模型。可“标为已读”（存主库）；内容变化后提示“有更新”。
 // 每段带一键开工，复用 2.4 的开工口令与留痕。
@@ -98,6 +100,7 @@ export function HomeBrief({ state, adoptState, notify, navigate }) {
         items: items.map((i) => ({ projectId: i.projectId, digest: i.digest })),
       });
       adoptState(next);
+      flyData();
       const ids = new Set(items.map((i) => i.projectId));
       setBrief((prev) => ({
         ...prev,
@@ -113,6 +116,7 @@ export function HomeBrief({ state, adoptState, notify, navigate }) {
   const unread = brief.items.filter((i) => i.read !== "read");
   return (
     <section className="home-section home-brief" aria-labelledby="home-brief-title">
+      <ReadReveal pending={!brief.loaded} ready={brief.loaded&&!brief.error}/>
       <div className="v14-sh">
         <h2 id="home-brief-title">今日项目简报</h2>
         <span className="v14-sub">
@@ -129,7 +133,7 @@ export function HomeBrief({ state, adoptState, notify, navigate }) {
         <>
           <div className="brief-tools">
             <Button secondary disabled={!brief.loaded} onClick={() => load(true)}>
-              <RefreshCw size={16} className={brief.loaded ? "" : "spinning"} />
+              {!brief.loaded ? <Reading mini label="刷新简报"/> : <RefreshCw size={16}/>}
               刷新简报
             </Button>
             <Button
@@ -148,7 +152,7 @@ export function HomeBrief({ state, adoptState, notify, navigate }) {
           )}
           {!brief.loaded && !brief.items.length && (
             <p className="recent-empty" role="status">
-              正在汇总在推进项目的 CURRENT、Git 与 GitHub…
+              <Reading label="正在汇总在推进项目的 CURRENT、Git 与 GitHub"/>
             </p>
           )}
           <div className="brief-list">

@@ -1,7 +1,9 @@
+import { ReadReveal } from './ScanMotion.jsx';
+import { copyText } from './data-flight.js';
 import React, { useEffect, useRef, useState, useId } from "react";
 import { createPortal } from "react-dom";
 import { ArrowRight, Copy, List, RefreshCw, UserRound } from "lucide-react";
-import { PageHeading, Button, Dialog, Scanning } from "./components.jsx";
+import { PageHeading, Button, Dialog, Scanning, SourceReadError } from "./components.jsx";
 import { AgentSprite, prefersReduced, useReducedMotion } from "./v14.jsx";
 import { COLLAB_AGENTS, timelineOf } from "./collab.js";
 import {
@@ -73,7 +75,7 @@ function Avatar({ actor }) {
     <span>?</span>
   );
 }
-function LineMap({ run, onNode, onLog }) {
+function LineMap({ run, onNode, onLog, readFailed }) {
   const scroll = useRef(),
     reduced = useReducedMotion(),
     uid = useId().replace(/:/g, "");
@@ -119,7 +121,7 @@ function LineMap({ run, onNode, onLog }) {
   const reworkFrom = nodes.find((n) => /验收/.test(n.label)) || nodes[Math.min(5, nodes.length - 1)];
   const reworkTo = nodes.find((n) => /实现/.test(n.label)) || nodes[Math.min(3, nodes.length - 1)];
   return (
-    <section className="tm-frame" aria-label="线路图">
+    <section className={`tm-frame${readFailed ? " read-failed" : ""}`} aria-label="线路图">
       <header className="tm-head">
         <span className="en">LINE MAP · {run.template} · {PACE[run.pace] || "节奏未设置"}</span>
         <button className="tm-logbtn" onClick={onLog}>
@@ -348,7 +350,7 @@ function CopyPath({ value, label, iconOnly = false, notify }) {
       title={iconOnly ? label || value : undefined}
       onClick={async () => {
         try {
-          await navigator.clipboard.writeText(value);
+          await copyText(value);
           notify("路径已复制");
         } catch {
           notify("路径复制失败", "error");
@@ -580,6 +582,7 @@ export function CollabV16({
     );
   return (
     <div className="collab-v16">
+      <ReadReveal pending={!board?.loaded} ready={!!board?.loaded&&!board.error}/>
       <PageHeading
         page="collab"
         help={
@@ -609,11 +612,7 @@ export function CollabV16({
         {stale}
         <Button secondary disabled={blocked || busy} onClick={regenerate}>按最新状态重新生成</Button>
       </p>}
-      {board?.error && (
-        <p role="alert" className="inline-error">
-          协同协议读取失败：{board.error}
-        </p>
-      )}
+      <SourceReadError title="协同协议" error={board?.error} retained={Boolean(pairs.length || unknown.length)} onRetry={refresh} />
       {!board?.loaded && <Scanning label="正在读取协同协议" />}
       {unknown.map((i) => (
         <p key={i.projectId} className="inline-error" role="alert">
@@ -640,10 +639,9 @@ export function CollabV16({
       )}
       {!!pairs.length && (
         <>
-          <div className="cx-run-groups">
+          <div className={`cx-run-groups${board?.error ? " read-failed" : ""}`}>
             {groups.map((group) => <section className="cx-round" key={`${group.projectId}:${group.round}`}>
               <header>
-                <b>{group.projectName} · {group.round}</b>
                 <button type="button" onClick={() => setIssuesOpen(group)}>
                   待议清单 {group.issues?.state === "ok" ? `${group.issues.count} 条` : "待核实"} →
                 </button>
@@ -665,13 +663,14 @@ export function CollabV16({
               </nav>
             </section>)}
           </div>
-          <section className={`cx-sum ${run.conflict ? "bad" : ""}`}>
+          <section className={`cx-sum ${run.conflict ? "bad" : ""}${board?.error ? " read-failed" : ""}`}>
             <div className="cx-sum-main">
               <h2>
                 {item.name} · {run.title}
               </h2>
               {run.taskSummary && <p className="cx-task-summary"><b>CURRENT 当前任务</b><span>{run.taskSummary}</span></p>}
               <p className="cx-sum-facts">
+                <span>{groups.find(group => group.pairs.some(pair => pair.key === currentKey))?.round || "未设置轮次"}</span>
                 <span>{run.template}</span>
                 <span>{run.templateState === "bound" ? "锁定模板版本" : run.templateState === "legacy" ? "沿用旧版八站" : "模板待核实"}</span>
                 {run.pace && <span>节奏 <b>{PACE[run.pace]}</b></span>}
@@ -743,10 +742,10 @@ export function CollabV16({
             </p>
           )}
           {run.stations.length
-            ? <LineMap run={run} onNode={setNode} onLog={() => setLog(true)} />
+            ? <LineMap run={run} readFailed={!!board?.error} onNode={setNode} onLog={() => setLog(true)} />
             : <p className="inline-error" role="alert">锁定的模板版本未读到，线路与下一棒口令待核实。</p>}
           <div className="cx-foot">
-            <button disabled={!run.stableId} onClick={() => setSettingsOpen(true)}
+            <button disabled={!run.stableId || !board?.loaded || !!board?.error} onClick={() => setSettingsOpen(true)}
               title={!run.stableId ? "先在项目 CURRENT 协议登记稳定的 run_id" : undefined}>
               {run.templateState === "bound" ? "运行设置 / 升级模板" : "绑定工作流模板"}
             </button>
@@ -822,6 +821,7 @@ export function CollabV16({
         "运行设置与模板版本",
         <CollabRunSettings key={currentKey} state={state} save={save} notify={notify}
           refresh={refresh} item={item} run={run} versions={versions}
+          readBlocked={!board?.loaded || !!board?.error}
           onClose={() => setSettingsOpen(false)} />,
       )}
       {issuesOpen && drawer(

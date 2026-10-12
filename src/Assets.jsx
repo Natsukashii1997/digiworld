@@ -1,3 +1,4 @@
+import { copyText } from './data-flight.js';
 import React, { useMemo, useState } from "react";
 import {
   Search,
@@ -78,7 +79,7 @@ export function download(name, bytes, type = "application/octet-stream") {
 }
 export async function copy(text, notify) {
   try {
-    await navigator.clipboard.writeText(text);
+    await copyText(text);
     notify("已复制到剪贴板");
     return true;
   } catch {
@@ -403,7 +404,7 @@ export function Assets({
                     <span>{originLabel(a)}</span>
                   </div>
                   <h3>{v.title}</h3>
-                  <p>{a.type === "MCP" ? `${v.mcpConfig.origin}${v.mcpConfig.path}` : v.description || "还没有一句话说明。"}</p>
+                  <p className={!v.description && a.type !== "MCP" ? "asset-description-empty" : undefined}>{a.type === "MCP" ? `${v.mcpConfig.origin}${v.mcpConfig.path}` : v.description || "还没有一句话说明。"}</p>
                   <span className="sr-only">使用 {usage.get(a.id).count} 次</span>
                   <div className="card-bottom">
                     <div className="card-tags">

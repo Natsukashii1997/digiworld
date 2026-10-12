@@ -11,7 +11,7 @@ const ACTORS = [
   ["user", "你"],
 ];
 
-export function CollabRunSettings({ state, save, notify, refresh, item, run, versions, onClose }) {
+export function CollabRunSettings({ state, save, notify, refresh, item, run, versions, onClose, readBlocked = false }) {
   const existing = (state.collabRunSettings || []).find((entry) =>
     entry.projectId === item.projectId && entry.runId === run.id);
   const [draft, setDraft] = useState(() => runSettingDraft(existing, versions, item, run));
@@ -33,7 +33,7 @@ export function CollabRunSettings({ state, save, notify, refresh, item, run, ver
 
   async function persist(event) {
     event.preventDefault();
-    if (saving || (upgrading && !acceptedDiff)) return;
+    if (readBlocked || saving || (upgrading && !acceptedDiff)) return;
     try {
       const next = validateRunSettingDraft(draft, versions);
       if (sameRound.some((entry) => entry.issuesPath !== next.issuesPath))
@@ -52,6 +52,7 @@ export function CollabRunSettings({ state, save, notify, refresh, item, run, ver
 
   return <form className="cx-run-form" onSubmit={persist}>
     <p>一张派单对应一次运行。这里配置路线与提醒；过关结论仍只读取项目协议文件。</p>
+    {readBlocked && <p role="status" className="inline-error">当前协议待核实，草稿已保留；关闭设置并重新读取看板后再保存。</p>}
     <label>轮次
       <input value={draft.round} maxLength={100} onChange={(e) => setDraft({ ...draft, round: e.target.value })} />
     </label>
@@ -106,7 +107,7 @@ export function CollabRunSettings({ state, save, notify, refresh, item, run, ver
         </label>;
       })}
     </fieldset>}
-    <div className="cx-form-actions"><Button type="submit" disabled={saving || !chosenAllowed || (upgrading && !acceptedDiff)}>
+    <div className="cx-form-actions"><Button type="submit" disabled={readBlocked || saving || !chosenAllowed || (upgrading && !acceptedDiff)}>
       {saving ? "正在保存…" : upgrading ? "确认升级版本" : existing ? "保存运行设置" : "绑定并开始运行"}
     </Button></div>
   </form>;

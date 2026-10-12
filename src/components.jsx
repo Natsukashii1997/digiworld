@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+import { Reading, usePanelScan } from './ScanMotion.jsx';
+import React, { useEffect, useRef, useState } from "react";
 import { X, Layers, Quote, Workflow, Flame, Plug } from "lucide-react";
 import { Pixel, StageBar } from "./pixel.jsx";
 import { Odometer } from "./Odometer.jsx";
@@ -65,6 +66,40 @@ export function Button({
     </button>
   );
 }
+
+// Source reads can retry safely; failed mutations keep their own recovery contracts.
+export function SourceReadError({ title, error, onRetry, retained = false }) {
+  const [busy, setBusy] = useState(false);
+  if (!error) return null;
+  return <div className="inline-error source-read-error" role="alert">
+    <span>{title}暂时读不到。{retained && "下面是上次内容。"}</span>
+    <Button secondary disabled={busy} onClick={async () => {
+      if (busy) return;
+      setBusy(true);
+      try { await onRetry?.(); } finally { setBusy(false); }
+    }}>{busy ? <Reading mini label="重新读取来源"/> : "重试"}</Button>
+  </div>;
+}
+
+// Keep the original scrollport and its keyboard/drag behavior; only decorate overflow.
+export function ScrollFade({ children, className = "" }) {
+  const root = useRef(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const row = root.current?.firstElementChild;
+    if (!row) return;
+    const measure = () => setEdges({ left: row.scrollLeft > 1, right: row.scrollWidth - row.clientWidth - row.scrollLeft > 1 });
+    const resize = new ResizeObserver(measure);
+    const changes = new MutationObserver(() => { observe(); measure(); });
+    const observe = () => { resize.observe(row); for (const child of row.children) resize.observe(child); };
+    observe(); changes.observe(row, { childList: true, subtree: true, characterData: true });
+    row.addEventListener("scroll", measure, { passive: true });
+    document.fonts?.ready.then(measure);
+    measure();
+    return () => { resize.disconnect(); changes.disconnect(); row.removeEventListener("scroll", measure); };
+  }, []);
+  return <div ref={root} className={`scroll-fade ${className}`} data-left={edges.left} data-right={edges.right}>{children}</div>;
+}
 // 页头下一行的边界说明（UI v15）：把“只读 / 只存本机 / 需授权”收成小标签，正文里不再重复。
 export function Bounds({ items }) {
   return (
@@ -112,20 +147,8 @@ export function Steps({ items, current, label = "流程" }) {
     </ol>
   );
 }
-// 进行中：液晶屏上的雷达扫线 + 等宽 SEARCHING，只说明“正在读”，不预告结果。
-export function Scanning({ label }) {
-  return (
-    <div className="scanning" aria-live="polite">
-      <span className="scanning-screen" aria-hidden="true">
-        <i />
-      </span>
-      <span className="scanning-text">
-        <small>SEARCHING</small>
-        {label}…
-      </span>
-    </div>
-  );
-}
+// 区块读取统一点阵；说明仍通过aria-label传达具体读取对象。
+export function Scanning({ label }) { return <Reading label={label}/>; }
 // 空状态：一颗在等待的数码蛋，或该区域的图标。
 export function Empty({ icon: Icon, sprite = "egg", title, children, action }) {
   return (
@@ -159,12 +182,7 @@ export function PageHeading({ page, eyebrow, title, description, action, titleHi
       <div className="page-heading-main">
         <div className="page-eyebrow">
           {meta && <span className="page-code">{meta.code}</span>}
-          {/* UI v14e：眉题用液晶点阵字开机扫亮；银饰页保持原样。 */}
-          {page === "silver" ? (
-            <span>{eyebrow || meta?.eyebrow}</span>
-          ) : (
-            <LcdText text={eyebrow || meta?.eyebrow} px={2} boot />
-          )}
+          <LcdText text={eyebrow || meta?.eyebrow} px={2} boot />
           {meta?.maturity && <Maturity level={meta.maturity} />}
         </div>
         {help ? <div className="title-row"><h1 className={titleHidden ? "sr-only" : undefined}>{title || meta?.title}</h1>{help}</div> : <h1 className={titleHidden ? "sr-only" : undefined}>{title || meta?.title}</h1>}
@@ -181,6 +199,7 @@ export function PageHeading({ page, eyebrow, title, description, action, titleHi
 }
 export function Dialog({ title, children, onClose, drawer = false, recoverFocus = false }) {
   const ref = useRef();
+  usePanelScan(ref);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {

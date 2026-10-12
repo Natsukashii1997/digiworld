@@ -1,5 +1,5 @@
 // 路线 v3 切片 1.2：导航两区重排——今日 / 工作区 / 生活区 / 系统；改名；存档点下移 + 资产详情“历史”标签；
-// 能力体检并入智能体群（#health 仍可访问）；生活区 AI HOT、收藏已开发，银饰计划仍是规划中；390 宽无横溢；键盘可达；axe。
+// 能力体检并入智能体群（#health 仍可访问）；生活区 AI HOT、收藏已开发；390 宽无横溢；键盘可达；axe。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import AxeBuilder from "@axe-core/playwright";
@@ -26,12 +26,11 @@ const EXPECTED = [
       ["", ["知识仓库"]],
     ],
   ],
-  ["生活区", [["", ["日历", "随手记", "AI HOT", "收藏", "银饰计划"]]]],
+  ["生活区", [["", ["日历", "随手记", "AI HOT", "收藏"]]]],
   ["系统", [["", ["设置", "存档点"]]]],
 ];
 const OLD_NAMES = ["知识中枢", "逆向参考", "随手速记"];
-// 路线 v3 切片 5.3、5.4：AI HOT 与收藏已开发；银饰计划自路线 v3 5.5（分支 silver-agents）起为“可用”。
-// 集成后生活区这三页都不再是规划页（日历不在本段检查范围内，与基点一致）。
+// 路线 v3 切片 5.3、5.4：AI HOT 与收藏已开发。
 const LIFE_PLANNED = [];
 const LIFE_BUILT = [
   ["aihot", "AI HOT"],
@@ -242,7 +241,7 @@ try {
     assert.equal(await page.evaluate(() => location.hash), `#${id}`);
   }
   await axe(page, "learning");
-  ok("生活区 AI HOT、收藏可达且不再标注规划中；银饰计划已可用（由 silver-agents-browser 覆盖），axe 通过");
+  ok("生活区 AI HOT、收藏可达且不再标注规划中，axe 通过");
 
   // 6. 第二版首页以四区中枢承接信息，完整页面导航仍留在侧栏。
   await page.goto(`${app.url}/#home`);
@@ -250,8 +249,9 @@ try {
   for (const [id, title] of [["a", "今日"], ["b", "待处理"], ["c", "协同"], ["d", "在推进"]])
     assert.equal(await page.locator(`.hx-mod-${id}`).getByRole("heading", { name: new RegExp(title) }).count(), 1);
   assert.equal(await page.locator(".structure-map, section.home-hot").count(), 0);
-  for (const name of ["逆向工程", "知识仓库", "随手记", "AI HOT", "收藏", "银饰计划", "存档点"])
+  for (const name of ["逆向工程", "知识仓库", "随手记", "AI HOT", "收藏", "存档点"])
     await navItem(page, name).waitFor();
+  assert.equal(await navItem(page, "银饰计划").count(), 0);
   await axe(page, "home");
   ok("世界总览四区中枢只出现一次；原页面入口保留在侧栏");
 
@@ -294,8 +294,8 @@ try {
   await navigationHits(mobile,"390抽屉");
   await noOverflow(mobile, "390 抽屉");
   await axe(mobile, "390 drawer");
-  await navItem(mobile, "银饰计划").click();
-  await mobile.locator("main h1", { hasText: "银饰计划" }).waitFor();
+  await navItem(mobile, "收藏").click();
+  await mobile.locator("main h1", { hasText: "收藏" }).waitFor();
   assert.ok(
     !(await mobile.locator(".sidebar.mobile-open").count()),
     "选中后抽屉应关闭",

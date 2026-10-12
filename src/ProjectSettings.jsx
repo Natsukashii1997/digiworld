@@ -1,3 +1,4 @@
+import { flyData } from './data-flight.js';
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "./components.jsx";
 import { request, scan } from "./api.js";
@@ -97,6 +98,7 @@ export function ProjectSettings({ state, adoptState, notify, onBusyChange }) {
     try {
       const next = await fn();
       adoptState(next);
+      flyData();
       reconcile(next, group);
       return next;
     } catch (e) {

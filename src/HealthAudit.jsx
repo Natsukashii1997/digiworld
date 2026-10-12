@@ -1,3 +1,4 @@
+import { flyData } from './data-flight.js';
 import "./health-audit.css";
 import React,{useRef,useState} from 'react';
 import {Button} from './components.jsx';
@@ -6,7 +7,7 @@ import {CONTENT_AGENT_IDS} from './AgentContents.jsx';
 export function HealthAudit({healthAudit={items:[]},onResult,notify,agentId}) {
  const lock=useRef(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
- async function inspect(){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{onResult(await request('/agent-health/inspect',{}));notify('能力体检回执已保存');}catch(e){setError(e.message);}finally{lock.current=false;setBusy(false);}}
+ async function inspect(){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{onResult(await request('/agent-health/inspect',{}));flyData();notify('能力体检回执已保存');}catch(e){setError(e.message);}finally{lock.current=false;setBusy(false);}}
  return <section className="agent-audit" id="agent-health" tabIndex={-1} aria-label="能力体检">
   <div className="v14-sh"><h2>能力体检</h2><Button secondary disabled={busy} onClick={inspect}>{busy?'体检中…':'检查全部支持体检的已登记 Agent'}</Button></div>
   <p>只读检查入口、链接、版本与不可读目录；不读取MCP正文、凭据或会话。未检查不判为正常，gateway在线情况待接入数据，运行采用待验证。</p>

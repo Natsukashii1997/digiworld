@@ -1,3 +1,4 @@
+import { Reading, usePanelScan } from './ScanMotion.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import { ArrowRight, ChevronDown, ChevronUp, X } from "lucide-react";
 import { inboxSummary, rulePendingReady } from "./pending.js";
@@ -9,6 +10,7 @@ import { inboxTime } from "./inbox-time.js";
 
 export function InboxDrawer({ items, state, ruleInstalls, navigate, select, adoptState, notify, onClose, onKnowledgeRead, collabStatus, nightV2Reports = {loaded:true,items:[]}, target }) {
   const ref = useRef(), closeRef = useRef(onClose), busy = useRef(false), restore = useRef(true);
+  usePanelScan(ref);
   closeRef.current = onClose;
   const [intelOpen,setIntelOpen] = useState(false);
   const groups = inboxSummary(items);
@@ -77,11 +79,12 @@ export function InboxDrawer({ items, state, ruleInstalls, navigate, select, adop
       <header className="ib-head"><div><span className="en">INBOX · QUEST BOARD</span><h2>待处理</h2></div><button className="icon-button" aria-label="关闭待处理" onClick={close}><X size={18}/></button></header>
       {!!items.length && <div className="ib-count" aria-label="待处理计数">{groups.map(group=><span className={group.key} key={group.key}><b className="mono">{group.count}</b>{group.short}</span>)}</div>}
       <div className="ib-body">
-        {unresolved && <p role="status" className="ib-status">{!rulePendingReady(ruleInstalls) && !ruleInstalls?.error ? "规则模板装入记录还在读取，读完前不能确定待处理是否完整。" : collabStatus?.loaded === false ? "协同协议还在读取，读完前不能确定待处理是否完整。" : "夜巡 v2 晨报仍在读取，读完前不能确定待处理是否完整。"}</p>}
+        {unresolved && <p role="status" className="ib-status"><Reading mini label="读取待处理来源"/> {!rulePendingReady(ruleInstalls) && !ruleInstalls?.error ? "规则模板装入记录还在读取，读完前不能确定待处理是否完整。" : collabStatus?.loaded === false ? "协同协议还在读取，读完前不能确定待处理是否完整。" : "夜巡 v2 晨报仍在读取，读完前不能确定待处理是否完整。"}</p>}
         {items.length > 0 ? groups.map(group=>{
           const entries=items.filter(item=>group.key==="intel"?!item.triage || item.triage===group.triage:item.triage===group.triage);
+          if(group.key==="intel"&&!group.count)return null;
           const cards = <ul>{entries.filter(item=>!state.profileProposals?.some(p=>item.id===`profile-${p.id}`)).map(item=><li className="ib-card" key={item.id} data-item-id={item.id}>
-                <button className="ib-card-btn" aria-label={`${item.kind} ${item.title} ${item.detail} 前往`} onClick={()=>jump(item)}><span className="ib-card-main"><b>{item.title}</b><small>{item.detail}</small>{!item.triage&&<span className="ib-unclassified">未归类</span>}</span><span className="ib-card-side"><time className="en" dateTime={item.foundAt||undefined}>{inboxTime(item.foundAt)}</time><span className="ib-go">前往 <ArrowRight size={13}/></span></span></button>
+                <button className="ib-card-btn" aria-label={`${item.kind} ${item.title} ${item.detail} 查看`} onClick={()=>jump(item)}><span className="ib-card-main"><b>{item.title}</b><small>{item.detail}</small>{!item.triage&&<span className="ib-unclassified">未归类</span>}</span><span className="ib-card-side"><time className="en" dateTime={item.foundAt||undefined}>{inboxTime(item.foundAt)}</time><span className="ib-go">查看 <ArrowRight size={13}/></span></span></button>
               </li>)}</ul>;
           return <section className={`ib-sec ${group.key}`} key={group.key} aria-label={group.label}>
             <h3><i aria-hidden="true"/><span className="en">{group.en}</span>{group.label}<b className="mono">{group.count}</b>{group.key==="intel"&&group.count>0&&<button className="ib-fold" aria-expanded={intelOpen} aria-controls="ib-intel" onClick={()=>setIntelOpen(v=>!v)}>{intelOpen?<ChevronUp size={14}/>:<ChevronDown size={14}/>} {intelOpen?"收起":"展开"}</button>}</h3>

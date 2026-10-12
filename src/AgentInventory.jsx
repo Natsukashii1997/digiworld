@@ -1,3 +1,4 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import { Copy, RefreshCw } from "lucide-react";
 import { Badge, Button, Dialog } from "./components.jsx";
@@ -81,6 +82,7 @@ export function AgentInventory({
   return (
     <Dialog title={agent.name} drawer onClose={onClose}>
       <div className="asset-form agent-inventory">
+        <ReadReveal pending={busy} ready={!!result&&!error&&!incomplete}/>
         <div className="agent-inventory-title">
           <h2>{agent.name}</h2>
           <Badge tone="muted">{labels[agent.status]}</Badge>
@@ -206,8 +208,8 @@ export function AgentInventory({
             <h3>目录与资产</h3>
             {supported && (
               <Button secondary disabled={busy} onClick={refresh}>
-                <RefreshCw size={15} className={busy ? "spinning" : ""} />
-                {busy ? "读取中…" : "刷新目录"}
+                <RefreshCw size={15}  />
+                {busy ? <Reading mini label="读取目录"/> : "刷新目录"}
               </Button>
             )}
           </div>
@@ -217,7 +219,7 @@ export function AgentInventory({
             <>
               <p className="detail-footnote" role="status">
                 {busy
-                  ? "正在读取目录元数据…"
+                  ? <Reading label="正在读取目录元数据"/>
                   : error && result
                     ? "上次结果 · 刷新未成功"
                     : incomplete

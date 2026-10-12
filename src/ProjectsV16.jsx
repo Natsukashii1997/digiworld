@@ -1,7 +1,8 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import { ProjectSettings } from "./ProjectSettings.jsx";
 import { savepointThresholds } from "./settings-v16.js";
 import { projectSavepointAge as savepointAge } from "./pending.js";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -15,7 +16,7 @@ import {
   AlertCircle,
   Github,
 } from "lucide-react";
-import { Button, Dialog, PageHeading, Badge } from "./components.jsx";
+import { Button, Dialog, PageHeading, Badge, SourceReadError } from "./components.jsx";
 import { request, scan } from "./api.js";
 import { Pixel } from "./pixel.jsx";
 import { AgentSprite, useReducedMotion } from "./v14.jsx";
@@ -125,6 +126,7 @@ function SaveCard({
   onSavepoints,
   savepointDays,
   savepointWarnDays,
+  readFailed,
 }) {
   const readable = readableCurrent(item),
     f = item.current?.fields,
@@ -134,7 +136,7 @@ function SaveCard({
   const points = readable ? item.daily?.days || [] : [];
   return (
     <article
-      className={`pj-save${stalled ? " stalled" : ""}${launch ? " is-launching" : ""}`}
+      className={`pj-save${stalled ? " stalled" : ""}${launch ? " is-launching" : ""}${readFailed ? " read-failed" : ""}`}
       aria-label={`项目状态卡：${item.name}`}
       data-project-id={item.projectId}
     >
@@ -195,7 +197,7 @@ function SaveCard({
           ) : (
             <p className="pj-unread">
               <AlertCircle size={18} />
-              读不到 CURRENT<small>{unavailable(item)}</small>
+              读不到 CURRENT<small>{readFailed ? "当前状态待核实" : unavailable(item)}</small>
             </p>
           )}
         </div>
@@ -280,7 +282,8 @@ function SaveCard({
       <div className="pj-save-act">
         <Button
           className="pj-go"
-          disabled={!item.root || !readable}
+          secondary={index > 0}
+          disabled={!item.root || !readable || readFailed}
           onClick={onContinue}
           aria-expanded={launch}
         >
@@ -486,6 +489,7 @@ export function ProjectsV16({
     window.innerWidth > 1180 ? 3 : window.innerWidth > 760 ? 2 : 1,
   );
   const settingsBusy = useRef(false);
+  const dailyGeneration = useRef(0);
   const started = useRef(false),
     scanLock = useRef(false),
     lib = useRef(null),
@@ -532,17 +536,20 @@ export function ProjectsV16({
       run();
     }
   }, []);
+  const loadDaily = useCallback(async () => {
+    const generation = ++dailyGeneration.current;
+    if (!ids) { setDaily({ items: [], error: "" }); return; }
+    try {
+      const result = await request("/project-status/activity", {});
+      if (generation === dailyGeneration.current) setDaily({ ...result, error: "" });
+    } catch (e) {
+      if (generation === dailyGeneration.current) setDaily(previous => ({ ...previous, error: e.message }));
+    }
+  }, [ids]);
   useEffect(() => {
-    let alive = true;
-    if (active.length)
-      request("/project-status/activity", {})
-        .then((v) => alive && setDaily({ ...v, error: "" }))
-        .catch((e) => alive && setDaily({ items: [], error: e.message }));
-    else setDaily({ items: [], error: "" });
-    return () => {
-      alive = false;
-    };
-  }, [state.revision, projectStatus.at, ids]);
+    loadDaily();
+    return () => { dailyGeneration.current++; };
+  }, [loadDaily, state.revision, projectStatus.at]);
   useEffect(() => {
     const resize = () =>
       setColumns(
@@ -565,7 +572,7 @@ export function ProjectsV16({
         name: p.name,
         root: p.localPaths[0],
         current: projectStatus.error
-          ? { state: "error", message: projectStatus.error }
+          ? { state: "error", message: "当前状态待核实" }
           : { state: "loading" },
         activity: { state: "unknown" },
         safety: { issues: [], checks: {} },
@@ -638,6 +645,7 @@ export function ProjectsV16({
   }
   return (
     <div className="projects-v16 project-space">
+      <ReadReveal pending={busy} ready={!error}/>
       <PageHeading
         page="projects"
         help={
@@ -666,7 +674,7 @@ export function ProjectsV16({
               disabled={busy}
               onClick={() => run()}
             >
-              <RefreshCw size={18} className={busy ? "spinning" : ""} />
+              {busy ? <Reading mini label="扫描项目"/> : <RefreshCw size={18}/> }
             </button>
           </div>
         }
@@ -717,22 +725,18 @@ export function ProjectsV16({
             已有 {active.length} 个在推进项目，建议收窄；通常同时推进1–3个。
           </p>
         )}
-        {projectStatus.error && (
-          <p className="inline-error" role="alert">
-            状态与体检读取失败：{projectStatus.error}
-          </p>
-        )}
+        <SourceReadError title="项目状态与体检" error={projectStatus.error}
+          retained={items.some(item => projectStatus.items.some(snapshot => snapshot.projectId === item.projectId))} onRetry={refreshProjectStatus} />
         {daily.error && (
-          <p role="status" className="detail-footnote">
-            本机活动读取失败：{daily.error}。活动按未知处理。
-          </p>
+          <SourceReadError title="本机活动" error={daily.error}
+            retained={items.some(item => readableCurrent(item) && (item.daily?.days?.length > 0 ||
+              item.daily?.state !== "ok" && Boolean(item.daily?.note || item.daily?.reason))) ||
+              Boolean(help && daily.items.some(item => item.note))} onRetry={loadDaily} />
         )}
         {github.error && (
-          <p role="status" className="detail-footnote">
-            GitHub 面板读取失败：{github.error}。GitHub 情况按未知处理。
-          </p>
+          <SourceReadError title="GitHub 面板" error={github.error} onRetry={() => loadGithub(true)} />
         )}
-        <div className={`pj-saves${launch ? " launching" : ""}`}>
+        <div className={`pj-saves${launch ? " launching" : ""}`} data-read-stale={!!projectStatus.error}>
           {Array.from(
             { length: Math.ceil(Math.max(3, items.length) / columns) },
             (_, row) => (
@@ -747,6 +751,7 @@ export function ProjectsV16({
                       index={i}
                       savepointDays={item.savepointDays}
                       savepointWarnDays={savepointThresholds(c).warn}
+                      readFailed={!!projectStatus.error}
                       onSavepoints={() =>
                         navigate("history", { projectId: item.projectId })
                       }
@@ -764,6 +769,7 @@ export function ProjectsV16({
                     <button
                       type="button"
                       className="pj-save pj-vacant"
+                      aria-label={`空存档 ${i + 1}，前往项目列表`}
                       key={i}
                       onClick={() => {
                         lib.current.scrollIntoView({
@@ -779,12 +785,12 @@ export function ProjectsV16({
                           SLOT {String(i + 1).padStart(2, "0")}
                         </span>
                       </span>
-                      <span className="pj-empty-hint">
+                      {i === items.length && <span className="pj-empty-hint">
                         空存档
                         <small>
                           {library.length ? "从下面挑一盘开新档" : "先登记项目"}
                         </small>
-                      </span>
+                      </span>}
                     </button>
                   ) : null;
                 })}
@@ -857,10 +863,7 @@ export function ProjectsV16({
         )}
         {busy && (
           <div className="pj-skel" role="status" aria-label="正在查找项目">
-            <span className="sr-only">正在读取目录标记与 GitHub 仓库…</span>
-            {Array.from({ length: 4 }, (_, i) => (
-              <i key={i} />
-            ))}
+            <Reading label="正在读取目录标记与 GitHub 仓库"/>
           </div>
         )}
         {!busy &&
@@ -1038,7 +1041,8 @@ export function ProjectsV16({
                 const item = items.find((i) => i.projectId === selected.id);
                 return item ? (
                   <>
-                    <CurrentBlock current={item.current} />
+                    {projectStatus.error && <p className="detail-footnote" role="status">上次读取结果，当前状态与体检待核实；关闭详情后可在项目状态提示处重试。</p>}
+                    <div className={projectStatus.error ? "read-failed" : ""}><CurrentBlock current={item.current} /></div>
                     <p>
                       最近活动：
                       {date(
@@ -1057,13 +1061,13 @@ export function ProjectsV16({
                       当前阶段：{item.stage?.label || "未知"} ·{" "}
                       {item.stage?.basis || "当前记录不足以推断"}
                     </p>
-                    {item.safety?.checks?.git ? (
+                    {!projectStatus.error && item.safety?.checks?.git ? (
                       <SafetyBlock safety={item.safety} />
                     ) : (
                       <p>
                         {projectStatus.error
-                          ? `体检未知：${projectStatus.error}`
-                          : "体检读取中…"}
+                          ? "体检未知，请在项目状态提示处重试"
+                          : !projectStatus.loaded ? <Reading mini label="体检读取中"/> : "体检待核实"}
                       </p>
                     )}
                     <GithubBlock

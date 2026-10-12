@@ -151,13 +151,12 @@ async function stableRoleCard(p, width) {
       await selectAgentTab(p, id, tab);
       sameFrame(await roleFrame(p), baseline, `${width} ${id} ${tab}`);
       if (tab === "档案" && id === "doubao") {
-        const size = await p.locator(".role-placeholder").evaluate((el) => { const r=el.getBoundingClientRect(), plate=el.closest(".stage").querySelector(".stage-plate").getBoundingClientRect(); return { width:r.width,height:r.height,bottom:r.bottom,right:r.right,plateTop:plate.top,plateLeft:plate.left }; });
-        assert.equal(size.width, width <= 640 ? 96 : 140, `${width} 伙伴占位徽记尺寸`);
-        assert.ok(width <= 640 ? size.right < size.plateLeft : size.bottom < size.plateTop, `${width} 伙伴徽记与名牌分区`);
-        if ([1440,390].includes(width)) await p.locator("#agent-roles .archive").screenshot({path:`test-results/agents-role-card/${width}-豆包档案.png`});
+        assert.equal(await p.locator(".stage .role-status-screen").count(), 1, "其他伙伴也使用状态屏");
+        assert.equal(await p.locator(".stage .role-placeholder,.stage .hero").count(), 0, "档案取消重复形象");
       }
       if (tab === "档案" && id === "hermes") {
-        assert.equal(Math.round(await p.locator(".stage .hero.rookie").evaluate(e=>e.getBoundingClientRect().height)), width <= 640 ? 88 : width <= 760 ? 180 : 220, `${width} 成长期形象比例`);
+        assert.equal(await p.locator(".stage .hero").count(), 0, `${width} 档案没有重复立绘`);
+        assert.equal(await p.locator(".role-status-grid > div").count(), 3, `${width} Skill、插件、体检三项状态读数`);
         if ([1440,390].includes(width)) await p.locator("#agent-roles .archive").screenshot({path:`test-results/agents-role-card/${width}-亚古兽档案.png`});
       }
       if (tab === "档案" && id === "codex" && [760,390,320].includes(width)) {

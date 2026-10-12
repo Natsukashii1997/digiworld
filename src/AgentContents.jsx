@@ -1,7 +1,8 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 // 智能体群 · 内容清单与体检摘要（产品定义 v1.2 §4.3；G3）。
 // 每个已检测、支持清单的 Agent 一张卡：展开时才只读读取，按 Skill / 配置文件 / 插件 / MCP 分组。
 // Codex/Hermes 单项开关进入已登记目标的受控入口，默认关闭，预览后人工确认；其他 Agent 仍只预览。
-// 角色卡（F4，silver-agents 分支）挂在每张卡的 .agent-contents-top 右侧，本文件不实现。
+// 角色卡（F4）挂在每张卡的 .agent-contents-top 右侧，本文件不实现。
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, RefreshCw, ToggleRight } from "lucide-react";
 import { Badge, Button, Dialog } from "./components.jsx";
@@ -227,6 +228,7 @@ function ContentsCard({ agent, state, result, onResult, focus = 0, roleCard = fa
       aria-labelledby={`${bodyId}-title`}
       aria-busy={busy}
     >
+      <ReadReveal pending={busy} ready={!!result&&!error&&!stale}/>
       <div className={roleCard ? "role-contents-toolbar" : undefined}>
       <div className="agent-contents-top">
         <h3 id={`${bodyId}-title`}>{roleCard ? "内容清单" : agent.name}</h3>
@@ -251,8 +253,8 @@ function ContentsCard({ agent, state, result, onResult, focus = 0, roleCard = fa
         </Button>
         {open && (
           <Button secondary disabled={busy} onClick={load}>
-            <RefreshCw size={15} className={busy ? "spinning" : ""} />
-            {roleCard ? <span className="sr-only">{busy ? "读取中…" : "重新读取"}</span> : busy ? "读取中…" : "重新读取"}
+            {busy ? <Reading mini label="读取目录"/> : <RefreshCw size={15}/>}
+            {roleCard ? <span className="sr-only">{busy ? "读取中…" : "重新读取"}</span> : busy ? null : "重新读取"}
           </Button>
         )}
         {!roleCard && ["codex", "hermes"].includes(agent.id) && <AgentWriteLaunch state={state} agentId={agent.id} />}
@@ -273,7 +275,7 @@ function ContentsCard({ agent, state, result, onResult, focus = 0, roleCard = fa
       {open && (
         <div id={bodyId} className="agent-contents-body">
           {(!result || stale) && busy && (
-            <p className="detail-footnote">正在只读读取…</p>
+            <p className="detail-footnote"><Reading label="正在只读读取内容清单"/></p>
           )}
           {groups && !stale && (
             <>

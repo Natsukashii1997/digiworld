@@ -8,17 +8,25 @@ import { geometry, axe, motion } from "./ui-v14-checks.mjs";
 const out = process.env.GUIJI_TEST_RESULTS || "test-results/savepoints189";
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch(),
-  errors = [];
+  errors = [], contexts = new Set();
+async function closeApp(app) {
+  // 断言/导航失败也先关闭浏览器连接，避免夹具服务等待泄漏的context。
+  await Promise.all([...contexts].map(context => context.close()));
+  await app.close();
+}
 async function pageFor(app, width = 1440, mode = "main", options = {}) {
   const context = await browser.newContext({
       viewport: { width, height: 1000 },
       timezoneId: "Asia/Shanghai",
       reducedMotion: "reduce",
       permissions: ["clipboard-read", "clipboard-write"],
-    }),
-    page = await context.newPage();
+    });
+  contexts.add(context);
+  context.on("close", () => contexts.delete(context));
+  try {
+  const page = await context.newPage();
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.clock.install({ time: new Date("2026-10-05T05:20:00Z") });
+  await page.clock.setFixedTime(new Date("2026-10-05T05:20:00Z"));
   await page.route("**/*", (r) => {
     assert.equal(new URL(r.request().url()).origin, new URL(app.url).origin);
     return r.continue();
@@ -42,6 +50,7 @@ async function pageFor(app, width = 1440, mode = "main", options = {}) {
     )
     .waitFor();
   return { context, page };
+  } catch (error) { await context.close(); throw error; }
 }
 try {
   const thresholdApp=await fixture189();
@@ -53,12 +62,14 @@ try {
     assert(await p.locator('.sp-tab[aria-selected=true] .sp-dot.warn').count(),'页签同步黄阈值');
     const state=await thresholdApp.repository.read();assert(!pendingItems(state,undefined,undefined,undefined,undefined,undefined,{now:Date.parse("2026-10-05T05:20:00Z")}).some(x=>x.id==='project-unsaved-save-project-0'),'四天未超过红5不进待处理');
     assert(pendingItems(state,undefined,undefined,undefined,undefined,undefined,{now:Date.parse("2026-10-07T05:20:00Z")}).some(x=>x.id==='project-unsaved-save-project-0'),'六天超过红5进待处理');await context.close();
-  } finally {await thresholdApp.close();}
+  } finally {await closeApp(thresholdApp);}
   for (const mode of ["main", "commit", "nogit", "cloud", "empty"]) {
     const app = await fixture189(mode);
     try {
       for (const width of [1440, 1024, 430, 393, 390, 375, 320]) {
+        console.log('CHECK savepoints',mode,width);
         const { context, page: p } = await pageFor(app, width, mode);
+        try {
         await geometry(p, "#savepoint-project", mode + width);
         await geometry(p, ".page-heading", "页头" + width);
         const tabs = p.getByRole("tab");
@@ -119,10 +130,10 @@ try {
           path: join(out, `${mode}-${width}.png`),
           fullPage: true,
         });
-        await context.close();
+        } finally { await context.close(); }
       }
     } finally {
-      await app.close();
+      await closeApp(app);
     }
   }
   const app = await fixture189();
@@ -205,7 +216,7 @@ try {
     );
     await context.close();
   } finally {
-    await app.close();
+    await closeApp(app);
   }
   // Strict elapsed thresholds: 25h is yellow and 73h red although whole days are 1/3.
   for(const [hours,tone] of [[24,'ok'],[25,'warn'],[72,'warn'],[73,'bad']]) {
@@ -216,7 +227,7 @@ try {
       assert.equal(await p.locator('.sp-pending').evaluate((e,t)=>e.classList.contains(t),tone),true);
       assert.equal(await p.getByRole('tab',{name:/个人 AI 工作台/}).locator('.sp-dot').evaluate((e,t)=>e.classList.contains(t),tone),true);
       await context.close();
-    } finally {await age.close();}
+    } finally {await closeApp(age);}
   }
   const init=await fixture189('nogit');
   try {
@@ -228,7 +239,7 @@ try {
     await geometry(p,'[role=dialog]','初始化预览');await axe(p,'初始化预览');
     await p.keyboard.press('Escape');assert.equal(init.data.calls.filter(c=>c.action==='confirm').length,0,'取消预览不初始化');
     await context.close();
-  } finally {await init.close();}
+  } finally {await closeApp(init);}
   // Unknown request reached no server: query establishes not_started, allowing a fresh preview.
   const lost = await fixture189();
   try {
@@ -258,7 +269,7 @@ try {
     await p.keyboard.press("Escape");
     await context.close();
   } finally {
-    await lost.close();
+    await closeApp(lost);
   }
   // Historical archived assets remain in storage but no longer appear in the warehouse.
   const archived = await fixture189();
@@ -282,7 +293,7 @@ try {
     );
     await context.close();
   } finally {
-    await archived.close();
+    await closeApp(archived);
   }
   assert.deepEqual(errors, []);
   console.log(

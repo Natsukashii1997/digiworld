@@ -1,3 +1,4 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
   Plus,
@@ -18,7 +19,7 @@ import {
   FolderOpen,
   ExternalLink,
 } from "lucide-react";
-import { PageHeading, Button, Dialog } from "./components.jsx";
+import { PageHeading, ScrollFade, Button, Dialog } from "./components.jsx";
 import { RecordPanel, MaterialForm } from "./ReverseEngineering.jsx";
 import { copy } from "./Assets.jsx";
 import { generateRecipeSkill } from "./reverse-skill.js";
@@ -110,6 +111,7 @@ function Media({ media, alt, className = "art" }) {
     let alive = true,
       objectURL;
     setUrl("");
+    setDims(null);
     setError("");
     request("/reverse/media/read", media)
       .then((r) => {
@@ -125,7 +127,7 @@ function Media({ media, alt, className = "art" }) {
       if (objectURL) URL.revokeObjectURL(objectURL);
     };
   }, [media.path, media.sha256]);
-  return error ? (
+  return <><ReadReveal pending={!dims&&!error} ready={!!dims&&!error}/>{error ? (
     <p role="alert">{error}</p>
   ) : url ? (
     <img
@@ -147,9 +149,9 @@ function Media({ media, alt, className = "art" }) {
       aria-label={alt + "读取中"}
       style={{ minHeight: 120 }}
     >
-      读取本机图片…
+      <Reading label="读取本机图片"/>
     </div>
-  );
+  )}</>;
 }
 function Artifact({ type, artifact, label }) {
   if (artifact.media?.length)
@@ -185,7 +187,7 @@ function Artifact({ type, artifact, label }) {
       />
     );
   return (
-    <div className="specimen-txt">
+    <div className={label === "旧参考备注" ? "specimen-txt legacy-note" : "specimen-txt"}>
       <span className="en">{label}</span>
       {artifact.text ? (
         artifact.text.split("\n\n").map((p, i) => <p key={i}>{p}</p>)
@@ -1330,7 +1332,7 @@ export function ReverseV16({ state, save, notify, onSelect }) {
           </button>
         }
         action={
-          <Button className="go" onClick={() => setDrawer("input")}>
+          <Button secondary className="go" onClick={() => setDrawer("input")}>
             <Plus size={17} />
             投入参照物
           </Button>
@@ -1338,7 +1340,7 @@ export function ReverseV16({ state, save, notify, onSelect }) {
       />
       <div className="re-layout">
         <aside className="rail" aria-label="标本架">
-          <div className="rail-filter" role="group" aria-label="标本状态">
+          <ScrollFade className="reverse-scroll"><div className="rail-filter" role="group" aria-label="标本状态">
             {[
               "全部",
               "待逆推",
@@ -1361,7 +1363,7 @@ export function ReverseV16({ state, save, notify, onSelect }) {
                 </span>
               </button>
             ))}
-          </div>
+          </div></ScrollFade>
           <div className="rail-types" role="group" aria-label="参照类型">
             {RECIPE_TYPES.map((t) => {
               const Icon = icons[t];
@@ -1497,7 +1499,7 @@ export function ReverseV16({ state, save, notify, onSelect }) {
                       }}
                       label="旧参考备注"
                     />
-                    <a
+                    <div className="reference-actions"><a
                       href={active.material.url}
                       target="_blank"
                       rel="noreferrer"
@@ -1506,7 +1508,7 @@ export function ReverseV16({ state, save, notify, onSelect }) {
                       查看来源
                       <ExternalLink size={14} />
                     </a>
-                    <Button onClick={beginReference}>开始逆推</Button>
+                    <Button onClick={beginReference}>开始逆推</Button></div>
                   </>
                 ) : (
                   <>

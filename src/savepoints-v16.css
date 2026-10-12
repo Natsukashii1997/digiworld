@@ -5,6 +5,10 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
+.v14 .sp-v16 .subtle-notice:not(.reverse-issues) {
+  /* 全局规则会上提贴近页头；此处跟在项目标签后，需留出间距，否则被标签底边压住。 */
+  margin-top: var(--s-2);
+}
 .sp-v16 .sp-tabs {
   display: flex;
   gap: var(--s-2);
@@ -953,3 +957,8 @@
 .sp-diff-summary h3 { font-size:var(--fs-title); }
 .sp-diff-summary p,.sp-diff-summary code { overflow-wrap:anywhere; }
 .sp-diff-summary summary { min-height:44px; padding:var(--s-2) 0; cursor:pointer; }
+
+.sp-v16 .sp-dirs{display:flex;flex-wrap:nowrap;gap:var(--s-3);overflow-x:auto}
+.sp-v16 .sp-dir{flex:1 0 auto;white-space:nowrap;gap:4px}
+.sp-v16 .sp-dir .mono{flex:initial;white-space:nowrap}
+.sp-v16 .sp-line-actions{margin-top:var(--s-5)}

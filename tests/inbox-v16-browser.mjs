@@ -14,7 +14,7 @@ async function geometry(p,width){
 }
 try {
  let p=await setup({proposals:2});await p.goto(app.url+'/#assets');await open(p);
- assert.equal(new URL(p.url()).hash,'#assets','任意页开抽屉保留背景');assert.equal(await p.locator('.ib-sec').count(),3);assert.equal(await p.locator('.ib-count .main b').innerText(),'2');assert.equal(await p.locator('.ib-count .side b').innerText(),'4');assert.equal(await p.locator('.ib-count .intel b').innerText(),'0');assert.equal(await p.locator('.ib-badge').innerText(),'6');assert.equal(await p.locator('.ib-sec.intel .ib-card').count(),0);
+ assert.equal(new URL(p.url()).hash,'#assets','任意页开抽屉保留背景');assert.equal(await p.locator('.ib-sec').count(),2);assert.equal(await p.locator('.ib-count .main b').innerText(),'2');assert.equal(await p.locator('.ib-count .side b').innerText(),'4');assert.equal(await p.locator('.ib-count .intel b').innerText(),'0');assert.equal(await p.locator('.ib-badge').innerText(),'6');assert.equal(await p.locator('.ib-sec.intel .ib-card').count(),0);
  assert.equal(await p.getByRole('button',{name:'展开',exact:true}).count(),0,'零条情报不提供空展开动作');
  for(const width of [320,375,390,393,430,768,1024,1440]){await p.setViewportSize({width,height:900});await geometry(p,width);await p.screenshot({path:join(output,`drawer-${width}.png`)});}
  await p.setViewportSize({width:1440,height:1000});await p.keyboard.press('Tab');assert(await p.locator('.ib-drawer').evaluate(e=>e.contains(document.activeElement)));await p.keyboard.press('Escape');await p.getByRole('dialog',{name:'待处理',exact:true}).waitFor({state:'detached'});assert(await p.locator('.topbar-inbox').evaluate(e=>e===document.activeElement));

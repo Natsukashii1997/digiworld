@@ -49,7 +49,8 @@ async function walk(root, { omitSilver = false } = {}) {
     for (const name of names) {
       const path = prefix ? `${prefix}/${name}` : name;
       if (excluded(path)) continue;
-      if(omitSilver && path === "silver"){skipped.push({path,reason:"银饰图片只存本机，不进入新完整备份"});continue;}
+      // 旧备份恢复后可能仍有退役目录；不让它进入新生成的备份。
+      if(omitSilver && path === "silver"){skipped.push({path,reason:"退役银饰图片目录不进入新备份"});continue;}
       const full = join(dir, name);
       const info = await lstat(full);
       if (info.isSymbolicLink()) skipped.push({ path, reason: "符号链接不跟随" });

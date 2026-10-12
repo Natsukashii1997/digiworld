@@ -1,3 +1,4 @@
+import { flyDataOnce } from './data-flight.js';
 import React, { useEffect, useRef, useState } from "react";
 import { Badge, Button } from "./components.jsx";
 import { request } from "./api.js";
@@ -132,6 +133,7 @@ export function KnowledgeWriteback({
           result.status === "rolled_back"
             ? "已撤回候选文件，恢复全文保留在本机记录"
             : "候选已保存并回读，仍为待整理";
+        if (writing && result.status === "applied") flyDataOnce(`knowledge-writeback:${result.id}`);
         setMessage(feedback);
         notify(feedback);
       }

@@ -1,3 +1,4 @@
+import { flyDataOnce } from './data-flight.js';
 import React,{useEffect,useState} from 'react';
 import {Button} from './components.jsx';import {PageChoices} from './PageChoices.jsx';import {request} from './api.js';
 import {useCapabilityAction,OperationReview,CapabilityResult,CapabilityHistory,useCapabilityBusy} from './capability-ui-core.jsx';
@@ -12,8 +13,8 @@ export function CapabilitySettings({state,onChanged,onBusyChange,initialCapabili
  useEffect(()=>{load();},[]);
  useEffect(()=>{if(!settings)return;setEnabled(settings.enabled[cap]);const o=settings.options[cap];setUsd(String((o.budgetMicrosUsd||20000)/1e6));setSource(o.sourceId||sources[0]?.id||'');setNotes(o.notesFolder||'工作台随手记');setProfiles(o.profileFolders?.join('\n')||'个人上下文');setPlan(null);},[cap,settings]);
  async function preview(){if(unknown)return;let options={};if(cap==='model')options={budgetMicrosUsd:usdMicros(usd)};if(cap==='vault')options={sourceId:source,notesFolder:notes,profileFolders:profiles.split('\n').map(s=>s.trim()).filter(Boolean)};const value=await a.run(()=>request('/capabilities/settings/preview',{capability:cap,enabled,options:enabled?options:{}},'POST',false));if(value)setPlan(value);}
- async function apply(){const value=await a.run(()=>request('/capabilities/settings/apply',{token:plan.token,operationId:plan.operationId,confirmed:true},'POST',false));if(value){setResult(value);setPlan(null);await load();onChanged?.();}else if(a.lastError.current&&!a.lastError.current.operationNotStarted){setResult({operationId:plan.operationId,status:'unknown'});setUnknown(plan.operationId);setPlan(null);await load();}}
- async function check(){const value=await a.run(()=>request('/capabilities/settings/check',{operationId:unknown},'POST',false));if(value){setResult(value);if(!['unknown','running','unchecked'].includes(value.status)){setUnknown('');await load();}}}
+ async function apply(){const value=await a.run(()=>request('/capabilities/settings/apply',{token:plan.token,operationId:plan.operationId,confirmed:true},'POST',false));if(value){if(value.status==='verified')flyDataOnce(`capability-setting:${value.operationId||plan.operationId}`);setResult(value);setPlan(null);await load();onChanged?.();}else if(a.lastError.current&&!a.lastError.current.operationNotStarted){setResult({operationId:plan.operationId,status:'unknown'});setUnknown(plan.operationId);setPlan(null);await load();}}
+ async function check(){const value=await a.run(()=>request('/capabilities/settings/check',{operationId:unknown},'POST',false));if(value){if(unknown&&value.status==='verified')flyDataOnce(`capability-setting:${value.operationId||unknown}`);setResult(value);if(!['unknown','running','unchecked'].includes(value.status)){setUnknown('');await load();}}}
  return <div className="capability-console" role="region" aria-label="产品能力授权"><p>四个可配置开关默认关闭。开启只授予所选能力；每次外部写入或发送仍先预览、再确认。</p>
   <PageChoices label="授权能力类型" choices={Object.entries(labels)} value={cap} onChange={setCap}/>
   <Button type="button" secondary aria-pressed={enabled} onClick={()=>{setEnabled(!enabled);setPlan(null);}} disabled={!settings||a.busy}>{enabled?'将允许':'将关闭'}{labels[cap]}</Button>

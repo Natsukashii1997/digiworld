@@ -86,6 +86,8 @@ export async function openRepository(directory) {
       if (digest(raw) !== head.sha256) throw new Error("checksum");
       const state = parse(raw);
       if (state.revision !== head.revision) throw new Error("revision");
+      // 旧快照保留原字节与校验和；在运行态忽略已撤销的银饰字段。
+      delete state.silver;
       return validateState(state);
     } catch {
       throw failure(
@@ -335,7 +337,6 @@ export async function openRepository(directory) {
           allowProfile: true,
           allowCandidateImport: true,
           allowSkillSourceAdoptions: true,
-          allowSilverImport: true,
         });
         const result = await commit({
           ...state,
@@ -349,14 +350,17 @@ export async function openRepository(directory) {
       return serial(async () => {
         const stored = await read();
         if (initialize && stored) return stored;
-        validateState(state);
-        if (!initialize && (state.revision ?? 0) !== (stored?.revision ?? 0))
+        // 旧客户端或旧导出可能仍携带银饰字段；保存时丢弃，不让它回到当前主库。
+        const active = { ...state };
+        delete active.silver;
+        validateState(active);
+        if (!initialize && (active.revision ?? 0) !== (stored?.revision ?? 0))
           throw failure(
             "另一个页面已更新主库，本次没有覆盖。请先保留未保存内容，再刷新。",
             409,
           );
-        validateHistory(stored, state, { restrictAssetDeletion });
-        return commit({ ...state, revision: (stored?.revision ?? 0) + 1 });
+        validateHistory(stored, active, { restrictAssetDeletion });
+        return commit({ ...active, revision: (stored?.revision ?? 0) + 1 });
       });
     },
     async close() {

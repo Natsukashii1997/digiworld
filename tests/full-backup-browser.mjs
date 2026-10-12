@@ -44,7 +44,7 @@ try {
   await page.goto(`${app.url}/#settings`);
   await page.getByRole("radio",{name:"数据与备份",exact:true}).click();
   await page.getByText("最近完整备份 / 恢复",{exact:true}).waitFor();
-  await page.getByText(/不含银饰原图，原图请另行保留/).waitFor();
+  await page.getByText(/历史快照保持原样；已撤销页面的记录不会导入当前主库/).waitFor();
   await button(page, "导出可合并数据 JSON").waitFor();
   const exportButton = button(page, "下载恢复包 ZIP");
   await atLeast44(exportButton, "下载恢复包 ZIP");
@@ -64,7 +64,7 @@ try {
   await page.getByLabel("选择完整备份文件").setInputFiles(file);
   const dialog = page.getByRole("dialog", { name: "完整备份恢复预览" });
   await dialog.waitFor();
-  await dialog.getByText("恢复包不含银饰原图；恢复银饰记录后，原图仍需从你另行保留的文件找回。",{exact:true}).waitFor();
+  await dialog.getByText("恢复只创建新的数据目录；历史快照保持原样，已撤销页面的记录不会进入当前主库。",{exact:true}).waitFor();
   const count = (label) => dialog.locator(".backup-summary > div", { hasText: label }).locator("strong").innerText();
   assert.equal(await count("冲突"), "1");
   const receiptNames = (await readdir(join(directory,"backup-records"))).sort();

@@ -16,6 +16,10 @@ const context = await browser.newContext({
   reducedMotion: "reduce",
 });
 const page = await context.newPage();
+await page.addInitScript(() => {
+  window.__successFeedback = 0;
+  addEventListener("guiji:data-caught", () => window.__successFeedback++);
+});
 page.setDefaultTimeout(5000);
 const calls = [];
 let flows = 0,
@@ -242,6 +246,11 @@ try {
   });
   await history.waitFor();
   assert.match(await history.innerText(), /当前文件待核对/);
+  await history.getByRole("button", { name: "核对文件", exact: true }).first().click();
+  await page.getByRole("heading", { name: "符合修改后内容", exact: true }).waitFor();
+  assert.equal(await page.evaluate(() => window.__successFeedback), 0, "历史文件核对不播放本次保存成功反馈");
+  await page.getByRole("button", { name: "变更记录", exact: true }).click();
+  await history.waitFor();
   await history
     .getByRole("button", { name: "预览恢复", exact: true })
     .first()

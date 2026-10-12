@@ -2,19 +2,19 @@
    UI v14e 公共层 · 掌机里的数码世界（docs/design/ui-v14/v14e-preview.html）
    以 v14b 为底：每页是掌机里的一块屏幕。材质（面板 / 屏幕 / 液晶）、点阵读数、
    一次局部反馈、换台、涟漪、微光与倾斜、阶梯浮现、背景微尘。
-   作用域：主区 .v14（银饰页不加，保持原样）。系统“减少动态效果”时全部停止。
+   作用域：主区 .v14。系统“减少动态效果”时全部停止。
    ========================================================================== */
 
 /* ---------- 令牌补全（Claude 165 设计评审 P0）----------
-   styles.css 是受保护的根令牌（资产卡墙与银饰页逐像素不变），这里只补它没有的档位与硬件色，不覆盖已有值。
+   styles.css 是受保护的根令牌；这里只补它没有的档位与硬件色，不覆盖已有值。
    其他样式层不写圆角 / 字号 / 颜色字面值，一律引用令牌（tests/design-tokens.test.mjs 守护）。
    圆角：--r-xs 4 · --r-s 8 · --r 12 · --r-l 16 · --r-xl 20 · --r-pill；2–3px 只用于像素级小件。
-   字号：--fs-micro 10（只给等宽大写小标）· label 11 · small 12 · meta 12.5 · caption 13 · body 14 · read 15（正文阅读）· title 16 · section 20 · display-s 28 · page-narrow 30（窄屏页标题）· display 34 · page 38。 */
+   字号：--fs-micro 11（只给等宽大写小标）· label 11 · small 12 · meta 12.5 · caption 13 · body 14 · read 15（正文阅读）· title 16 · section 20 · display-s 28 · page-narrow 30（窄屏页标题）· display 34 · page 38。 */
 :root {
   --r-xs: 4px;
   --r-xl: 20px;
   --r-pill: 999px;
-  --fs-micro: 10px;
+  --fs-micro: 11px;
   --fs-small: 12px;
   --fs-caption: 13px;
   --fs-read: 15px;
@@ -33,6 +33,16 @@
   --collection-title-ink: #25282d;
   --collection-category-ink: #344c66;
   --collection-category-fill: #edf3f8;
+  --collection-key-shadow: 0 3px 0 var(--bg), inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
+  --collection-key-pressed-shadow: 0 0 0 var(--bg), inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
+  --collection-key-primary-shadow: 0 3px 0 color-mix(in srgb, var(--orange) 45%, var(--bg)), var(--glow-orange);
+  --collection-field-shadow: inset 0 2px 0 color-mix(in srgb, #000 35%, transparent);
+  --collection-paper-shadow: 0 14px 26px -12px color-mix(in srgb, #000 85%, transparent), 0 0 0 1px color-mix(in srgb, #fff 6%, transparent);
+  --collection-paper-hover-shadow: 0 18px 32px -10px color-mix(in srgb, #000 90%, transparent), 0 0 0 1px var(--cyan);
+  --collection-paper-arrival-shadow: 0 0 20px color-mix(in srgb, var(--cyan) 40%, transparent), var(--collection-paper-shadow);
+  --collection-dialog-shadow: 0 30px 60px -20px #000;
+  --collection-pixel-glow: 0 0 6px var(--cyan);
+  --primary-fill: linear-gradient(180deg, var(--orange-2), var(--orange));
   /* 硬件材质：暴龙机外壳、按键、连线 */
   --hw-bezel: #1b2540;
   --hw-bezel-hi: #24345c;
@@ -53,6 +63,23 @@
   --lcd-shade: #3d4a2c;
   --lcd-shade-2: #2e3a24;
 }
+
+/* 351 P4: keep protected shell/root styles intact and raise only their small type. */
+:is(kbd, .brand-en, .nav-heading, .nav-zone-title small, .nav-count, .nav-flag,
+    .crumb-code, .empty-code, .cover-code, .cover-version, .detail-facts dt,
+    .detail-tabs span, .handoff header small, .toast-text small, .partner-head > small,
+    .mainline-index, .area-code, .scanning-text small, .project-group-head .page-code,
+    .steps-dot, .steps-text small, .pending-kind, .map-zone-title small) { font-size: var(--fs-label); }
+.topbar-inbox .nav-count { font-size: var(--fs-label); }
+.source-read-error { display:flex; align-items:center; gap:var(--s-3); flex-wrap:wrap; margin:var(--s-3) 0; }
+.source-read-error > span { flex:1; min-width:12em; overflow-wrap:anywhere; }
+.source-read-error .button { flex:none; }
+.read-failed { opacity:.8; }
+.scroll-fade { position:relative; min-width:0; --scroll-fade-fill:var(--panel); }
+.scroll-fade::before,.scroll-fade::after { content:""; position:absolute; top:0; bottom:0; width:var(--s-6); z-index:3; pointer-events:none; opacity:0; }
+.scroll-fade::before { left:0; background:linear-gradient(90deg,var(--scroll-fade-fill),transparent); }
+.scroll-fade::after { right:0; background:linear-gradient(270deg,var(--scroll-fade-fill),transparent); }
+.scroll-fade[data-left="true"]::before,.scroll-fade[data-right="true"]::after { opacity:1; }
 
 /* ---------- 背景微尘（画布，JS 控制） ---------- */
 .v14-motes {
@@ -418,7 +445,7 @@
   max-width: 640px;
 }
 /* 页内访问 / 隐私说明（Claude 165 页头减负）：边界已进页头标签，这里降为一行灰色注释；全文保留、不截断、不折叠。 */
-:is(.v14, .page-silver) .subtle-notice:not(.reverse-issues) {
+.v14 .subtle-notice:not(.reverse-issues) {
   max-width: 80ch;
   margin: calc(var(--s-3) * -1) 0 var(--s-5);
   padding: 0;
@@ -428,7 +455,7 @@
   font-size: var(--fs-small);
   line-height: 1.6;
 }
-:is(.v14, .page-silver) .subtle-notice:not(.reverse-issues) svg {
+.v14 .subtle-notice:not(.reverse-issues) svg {
   width: 14px;
   height: 14px;
   margin-top: 3px;
@@ -626,7 +653,6 @@ html {
 }
 .page-bounds li,
 .main-content .badge,
-.page-silver .maturity,
 .reverse-card-select small,
 .m-panel.sheen small,
 .recent-main small,
@@ -733,3 +759,5 @@ html {
 .calendar-v14 .cal-allday-chip:hover {
   background-color: color-mix(in srgb, var(--text) 5%, transparent);
 }
+
+.asset-description-empty { color:var(--muted)!important; }

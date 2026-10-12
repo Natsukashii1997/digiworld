@@ -1,3 +1,5 @@
+import { Reading, ReadReveal } from './ScanMotion.jsx';
+import { copyText } from './data-flight.js';
 import React, { useEffect, useRef, useState } from "react";
 import { Copy, RefreshCw, Link2 } from "lucide-react";
 import { Button, Badge } from "./components.jsx";
@@ -112,7 +114,7 @@ export function ProjectContext({ project, state, adoptState, notify }) {
         if (!active()) return;
         setPack(result.text);
         try {
-          await navigator.clipboard.writeText(result.text);
+          await copyText(result.text);
           if (!active()) return;
           setCopied(true);
           notify("项目交接包已复制");
@@ -138,6 +140,7 @@ export function ProjectContext({ project, state, adoptState, notify }) {
   }
   return (
     <section className="project-context" aria-label="项目上下文">
+      <ReadReveal pending={busy==="preview"} ready={!!preview&&!error}/>
       <div className="section-head">
         <h3>项目上下文</h3>
         <Badge tone="muted">仅限本机</Badge>
@@ -211,7 +214,7 @@ export function ProjectContext({ project, state, adoptState, notify }) {
               onClick={() => run("preview")}
             >
               <RefreshCw size={15} />
-              {busy === "preview" ? "读取中…" : "预览文件"}
+              {busy === "preview" ? <Reading mini label="读取项目文件"/> : "预览文件"}
             </Button>
             {!connected && (
               <Button disabled={!!busy || !preview} onClick={() => run("bind")}>

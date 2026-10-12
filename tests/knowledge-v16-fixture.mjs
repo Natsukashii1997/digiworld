@@ -6,7 +6,7 @@ import { parse, stringify } from "../src/serialization.js";
 import { seed } from "../src/store.js";
 import { createKnowledgeFiles } from "../server/knowledge-files.mjs";
 export const profile193 = "# 关于我\n\n## 角色\n合成测试角色。\n\n## 沟通\n结论先行。\n";
-export async function knowledge193Fixture({ empty = false, mcp = true, staticRoot = join(import.meta.dirname, "../dist"), feishuKnowledge } = {}) {
+export async function knowledge193Fixture({ empty = false, mcp = true, staticRoot = process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"), feishuKnowledge } = {}) {
   const base = await realpath(await mkdtemp(join(tmpdir(), "guiji-knowledge193-")));
   const roots = ["我的 Vault", "研究资料", "本机笔记"].map((n) => join(base, "sources", n));
   for (const root of roots) await mkdir(join(root, "方法"), { recursive: true });
