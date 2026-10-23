@@ -85,7 +85,8 @@ export function createCollection(repository, { directory = repository.directory,
       return result;
     } finally { await handle?.close(); await fs.rm(temporary,{force:true}); }
   }
-  const notesResponse = state => ({notes:state.notes.map(note=>noteWithAutoGroup(note,state)), revision:state.revision, lastImportedAt:state.notes[0]?.savedAt || null});
+  // archived：阶段 2 归档标记，按条目 ID 单独存（同 categories），重导入同一条不会丢。
+  const notesResponse = state => ({notes:state.notes.map(note=>noteWithAutoGroup(note,state)), revision:state.revision, lastImportedAt:state.notes[0]?.savedAt || null, archived:state.archived || {}});
   function groupNewNote(state, note) {
     const desk={...state.desk,noteGroupMap:{...state.desk.noteGroupMap,[note.id]:LOOSE_GROUP_ID}};
     const autoGroups={...(state.autoGroups || {})};
@@ -203,6 +204,17 @@ export function createCollection(repository, { directory = repository.directory,
       }
       const changed=state.notes.filter(note=>updates[note.id] && updates[note.id]!==note.category).map(note=>note.id);
       return notesResponse(await write({...invalidateAutoGroups(state,changed),categories:{...state.categories,...updates},notes:state.notes.map(n=>updates[n.id] ? {...n,category:updates[n.id]} : n)}));
+    });
+  }
+  async function archive(id, body) {
+    if (!body || typeof body!=='object' || Array.isArray(body) || Object.keys(body).some(k=>k!=='archived') || typeof body.archived!=='boolean') throw failure('归档请求无效',400);
+    return serialized(async()=>{
+      const state=await read();
+      if (!state.notes.some(n=>n.id===id)) throw failure('收藏不存在或已删除',404);
+      const archived={...(state.archived || {})};
+      if (body.archived===(archived[id]!==undefined)) return notesResponse(state);
+      if (body.archived) archived[id]=now(); else delete archived[id];
+      return notesResponse(await write({...state,archived}));
     });
   }
   async function remove(id) {
@@ -340,7 +352,7 @@ export function createCollection(repository, { directory = repository.directory,
   }
   const recycle = createCollectionRecycle({ root, read, write, guard, serialized, busyVersions, platform, runOpen, checkpoint:recycleCheckpoint });
   const repairCover=createCoverRepair({root,read,write,guard,serialized,busyVersions,publicNote,fetchImpl,ocrRunner});
-  return { start:()=>getWorker.start(),close:()=>getWorker.close(),retryGet,read:()=>serialized(read), notes:()=>serialized(async()=>notesResponse(await read())), desk:()=>serialized(async()=>{const state=await read();return {...state.desk,revision:state.revision};}), health:async()=>({ok:true,source:'sidecar'}), startImport,status,saveDesk,categories,remove,autoGroupStatus,undoAutoGroup,pairing,handleClip,sendMedia,manual,clearLegacy,setup,recycle,repairCover,
+  return { start:()=>getWorker.start(),close:()=>getWorker.close(),retryGet,read:()=>serialized(read), notes:()=>serialized(async()=>notesResponse(await read())), desk:()=>serialized(async()=>{const state=await read();return {...state.desk,revision:state.revision};}), health:async()=>({ok:true,source:'sidecar'}), startImport,status,saveDesk,categories,archive,remove,autoGroupStatus,undoAutoGroup,pairing,handleClip,sendMedia,manual,clearLegacy,setup,recycle,repairCover,
     async revokePairing(){await serialized(async()=>{const state=await read();await write({...state,extensionHash:''});});return {ok:true};},
     async reanalyze(id){const note=await serialized(async()=>{const state=await read(),value=state.notes.find(n=>n.id===id);if(!value?.mediaVersion)throw failure('没有本地视频',404);if(busyVersions.has(value.mediaVersion))throw failure('视频正在分析中',409);busyVersions.add(value.mediaVersion);return value;});try{const result=await reanalyzeStoredNoteVideo(note,{mediaDirectory:join(root,'versions',note.mediaVersion,'media'),publicBaseUrl:`/collection-media/${note.mediaVersion}`,modelDirectory:join(root,'models'),deadline:Date.now()+30*60*1000,fetchImpl,...(analyzer?{analyzer}:{})});return await serialized(async()=>{const current=await read();if(current.notes.find(n=>n.id===id)?.mediaVersion!==note.mediaVersion)throw failure('视频已变化，请重新读取',409);const analysis=Object.fromEntries(['videoDuration','transcriptText','transcriptSegments','transcriptEngine','videoStatus','videoError'].map(key=>[key,result[key]]));return notesResponse(await write({...current,notes:current.notes.map(n=>n.id===id?publicNote({...n,...analysis}):n)}));});}finally{busyVersions.delete(note.mediaVersion);}},
   };

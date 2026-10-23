@@ -217,6 +217,19 @@ export async function openRepository(directory) {
         return commit(state);
       });
     },
+    // 项目桌（阶段 2）：只改 projectDesk；结果与原样相同（重复投递、重复装备）不写主库。
+    updateProjectDesk(update) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先初始化资产库", 409);
+        const projectDesk = await update(structuredClone(stored.projectDesk || []), stored);
+        if (equivalent(projectDesk, stored.projectDesk || [])) return stored;
+        const state = { ...stored, projectDesk, revision: stored.revision + 1 };
+        validateState(state);
+        validateHistory(stored, state, { allowProjectDesk: true });
+        return commit(state);
+      });
+    },
     // 每日项目简报的已读状态（项目空间第二批）：只改 briefReads；同一内容重复标记不写主库。
     updateBriefReads(update) {
       return serial(async () => {
@@ -370,6 +383,7 @@ export async function openRepository(directory) {
           allowProfile: true,
           allowCandidateImport: true,
           allowSkillSourceAdoptions: true,
+          allowProjectDesk: true,
         });
         const result = await commit({
           ...state,

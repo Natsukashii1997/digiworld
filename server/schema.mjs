@@ -6,6 +6,7 @@ import { validateSkillSourceAdoptions, validateSkillSourceAdoptionHistory } from
 import { validateActivity, validateActivityHistory } from "./asset-activity-schema.mjs";
 import { validateCollabLog, validateCollabHistory } from "./collab-schema.mjs";
 import { validateBriefReads, validateBriefHistory } from "./brief-schema.mjs";
+import { validateProjectDesk, validateProjectDeskHistory } from "./project-desk-schema.mjs";
 import { validateDesignVersion } from "../src/design-asset.js";
 import { safePath } from "../src/store.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
@@ -179,8 +180,10 @@ export function validateScrolls(scrolls) {
       id(e.id);
       // 逆向工程入库的条目带来源：逆向记录 ID 与可选的素材链接（支线 B2）。
       if (e.source !== undefined) {
-        keys(e.source, ["reverseId", "url"]);
-        id(e.source.reverseId);
+        // 阶段 2：收藏条目收入焚决时来源为收藏 ID；两种来源只取其一。
+        keys(e.source, ["reverseId", "collectionId", "url"]);
+        if (e.source.reverseId !== undefined && e.source.collectionId !== undefined) invalid("焚决来源");
+        id(e.source.reverseId ?? e.source.collectionId);
         if (e.source.url !== undefined) {
           text(e.source.url, "来源链接", REVERSE_LIMITS.url);
           if (!e.source.url) invalid("来源链接");
@@ -414,6 +417,7 @@ export function validateState(state) {
     "reverseSettings",
     "revisionCandidates",
     "skillSourceAdoptions",
+    "projectDesk",
   ]);
   if (state.skillSourceAdoptions !== undefined) validateSkillSourceAdoptions(state.skillSourceAdoptions,state.assets);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
@@ -517,8 +521,16 @@ export function validateState(state) {
         "workflowTemplate",
         "mcpConfig",
         "design",
+        "hatchedFrom",
       ]);
       id(v.id);
+      // 阶段 2：从随手记或收藏孵成的资产，在首个版本记来源条目；之后的版本不继承。
+      if (v.hatchedFrom !== undefined) {
+        if (v !== a.versions[0]) invalid("孵化来源只能在首个版本");
+        keys(v.hatchedFrom, ["kind", "id"]);
+        if (!["note", "collection"].includes(v.hatchedFrom.kind)) invalid("孵化来源类型");
+        id(v.hatchedFrom.id);
+      }
       if (v.references !== undefined) {
         if (a.type !== "Workflow") invalid("只有工作流可设置资产引用");
         array(v.references, "工作流引用", 50);
@@ -596,7 +608,7 @@ export function validateState(state) {
   if (state.collabRunSettings !== undefined)
     validateCollabRunSettings(state.collabRunSettings, state.assets);
   for (const n of state.notes) {
-    keys(n, ["id", "text", "at", "format", "refined", "images", "type", "title", "rich"]);
+    keys(n, ["id", "text", "at", "format", "refined", "images", "type", "title", "rich", "archivedAt"]);
     id(n.id);
     if(!validNoteMeta(n)||!validNoteRich(n))invalid("便签类型或标题");
     if(!validNoteImages(n.images))invalid("便签图片引用");
@@ -609,6 +621,8 @@ export function validateState(state) {
       if(n.text!=="")text(n.text, "随手记", NOTE_MAX);
       if (CONTROL.test(n.text)) invalid("随手记包含控制字符");
     }
+    // 阶段 2：归档是孵化去向之一，只记时间；缺失即未归档。
+    if (n.archivedAt !== undefined) date(n.archivedAt);
     if (n.refined !== undefined) {
       keys(n.refined, ["scrollId", "entryId", "at"]);
       id(n.refined.scrollId);
@@ -1090,6 +1104,7 @@ export function validateState(state) {
   validateActivity(state);
   validateCollabLog(state);
   validateBriefReads(state);
+  validateProjectDesk(state);
   // 进化回路 v1：改版候选，旧库缺失按空处理；版本上的 candidateId 与候选互相核对。
   validateRevisionCandidates(state);
   return state;
@@ -1165,6 +1180,7 @@ export function validateHistory(
     allowReverseService = false,
     allowReverseImport = false,
     allowReverseSkill = false,
+    allowProjectDesk = false,
   } = {},
 ) {
   validateReverseHistory(previous,next,{ allowReverseService, allowReverseImport, allowReverseSkill });
@@ -1193,6 +1209,7 @@ export function validateHistory(
   validateActivityHistory(previous?.assetActivity || [], next.assetActivity || [], allowActivity);
   validateCollabHistory(previous?.collabLog || [], next.collabLog || [], allowCollab);
   validateBriefHistory(previous?.briefReads || [], next.briefReads || [], allowBriefs);
+  validateProjectDeskHistory(previous?.projectDesk || [], next.projectDesk || [], allowProjectDesk);
   validateSkillSourceAdoptionHistory(previous?.skillSourceAdoptions || [], next.skillSourceAdoptions || [], allowSkillSourceAdoptions);
   if (
     !allowKnowledge &&

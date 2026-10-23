@@ -36,3 +36,12 @@ export function editNote(notes,id,input){
  if(input.format)updated.format=input.format;else delete updated.format;
  return notes.map(n=>n.id===id?updated:n);
 }
+// 阶段 2：归档是孵化去向之一。只改 archivedAt；已是目标状态时原样返回（重放不推进版本）。
+export function archiveNote(notes,id,input,at){
+ noteId(id);
+ if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>k!=='archived')||typeof input.archived!=='boolean')throw failure('归档请求无效');
+ const current=notes.find(n=>n.id===id);
+ if(!current)throw failure('便签不存在或已删除',404);
+ if(input.archived===(current.archivedAt!==undefined))return notes;
+ return notes.map(n=>{if(n.id!==id)return n;const {archivedAt,...rest}=n;return input.archived?{...rest,archivedAt:at}:rest;});
+}

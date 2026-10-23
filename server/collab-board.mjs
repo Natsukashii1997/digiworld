@@ -18,6 +18,7 @@ import {
   COLLAB_KINDS,
   COLLAB_STAGE_IDS,
   STATE_ID,
+  validateRelayRefs,
 } from "./collab-schema.mjs";
 
 export const HEADINGS_READ_LIMIT = 1024 * 1024;
@@ -319,6 +320,8 @@ export function createCollabBoard(repository, { clock = Date.now } = {}) {
         "stateId",
         "stage",
         "promptSha256",
+        "inbox",
+        "loadout",
       ]);
       if (typeof input.id !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(input.id))
         throw failure("留痕 ID 无效");
@@ -332,6 +335,7 @@ export function createCollabBoard(repository, { clock = Date.now } = {}) {
         throw failure("流程阶段无效");
       if (typeof input.promptSha256 !== "string" || !/^[a-f0-9]{64}$/.test(input.promptSha256))
         throw failure("口令指纹无效");
+      validateRelayRefs(input);
       let saved;
       const state = await repository.updateCollab((records, stored) => {
         const old = records.find((r) => r.id === input.id);

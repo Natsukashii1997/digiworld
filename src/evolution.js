@@ -177,7 +177,7 @@ export function adoptCandidate(state, candidateId, { versionId = uid(), at = now
   if (!asset || asset.archived) throw new Error("资产不存在或已归档");
   if (current(asset).id !== candidate.baseVersionId)
     throw new Error("当前版本已变化，候选基于旧版本，不能直接采用；可以退回后重新生成任务包");
-  const { restoredFrom, candidateId: _previous, ...base } = current(asset);
+  const { restoredFrom, candidateId: _previous, hatchedFrom: _hatch, ...base } = current(asset);
   const version = { ...base, id: versionId, at, content: candidate.content, candidateId };
   return decide(
     {

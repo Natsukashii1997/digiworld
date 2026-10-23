@@ -20,6 +20,7 @@ export function makeAsset(input) {
     workflowTemplate,
     mcpConfig,
     design,
+    hatchedFrom,
   } = input;
   if (!title?.trim()) throw new Error("请填写资产名称");
   if (!["Skill", "Prompt", "Workflow", "Rule", "MCP", "Design"].includes(type))
@@ -44,6 +45,7 @@ export function makeAsset(input) {
     ...(mediaManifest === undefined ? {} : { mediaManifest }),
     ...(mcpConfig === undefined ? {} : { mcpConfig }),
     ...(design === undefined ? {} : { design }),
+    ...(hatchedFrom === undefined ? {} : { hatchedFrom }),
     ...(workflowTemplate == null
       ? {}
       : { workflowTemplate: validateWorkflowTemplate(workflowTemplate) }),
@@ -65,9 +67,9 @@ export function current(asset) {
   return asset.versions.at(-1);
 }
 export function revise(asset, values) {
-  // 候选来源只属于采用时生成的那个版本，之后的编辑或恢复都不继承（进化回路 v1）。
-  const { candidateId: _base, ...base } = current(asset);
-  const { candidateId: _value, ...rest } = values;
+  // 候选来源与孵化来源只属于生成时的那个版本，之后的编辑或恢复都不继承（进化回路 v1、阶段 2）。
+  const { candidateId: _base, hatchedFrom: _baseHatch, ...base } = current(asset);
+  const { candidateId: _value, hatchedFrom: _valueHatch, ...rest } = values;
   const next = { ...base, ...rest, id: uid(), at: now() };
   if (Object.hasOwn(values, "workflowTemplate")) {
     if (values.workflowTemplate == null) delete next.workflowTemplate;

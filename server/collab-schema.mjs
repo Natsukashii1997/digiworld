@@ -23,11 +23,38 @@ const RECORD_KEYS = [
   "stateId",
   "stage",
   "promptSha256",
+  "inbox",
+  "loadout",
   "at",
 ];
 const identifier = (s) =>
   typeof s === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(s);
 export const STATE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+// 阶段 2：「继续」口令带上的收件与装备引用（只存引用）；有这条留痕，对应收件即“已交代”。
+export function validateRelayRefs(r) {
+  if (r.inbox === undefined && r.loadout === undefined) return;
+  if (r.kind !== "start") invalid("只有继续口令可带收件与装备");
+  if (r.inbox !== undefined) {
+    if (!Array.isArray(r.inbox) || !r.inbox.length || r.inbox.length > 100) invalid("留痕收件");
+    const seen = new Set();
+    for (const item of r.inbox) {
+      if (!item || typeof item !== "object" || Array.isArray(item) || Object.keys(item).some((k) => !["kind", "id"].includes(k)) ||
+        !["note", "collection"].includes(item.kind) || !identifier(item.id) || seen.has(`${item.kind}:${item.id}`))
+        invalid("留痕收件");
+      seen.add(`${item.kind}:${item.id}`);
+    }
+  }
+  if (r.loadout !== undefined) {
+    if (!Array.isArray(r.loadout) || !r.loadout.length || r.loadout.length > 30) invalid("留痕装备");
+    const seen = new Set();
+    for (const item of r.loadout) {
+      if (!item || typeof item !== "object" || Array.isArray(item) || Object.keys(item).some((k) => !["assetId", "versionId"].includes(k)) ||
+        !identifier(item.assetId) || !identifier(item.versionId) || seen.has(item.assetId))
+        invalid("留痕装备");
+      seen.add(item.assetId);
+    }
+  }
+}
 
 export function validateCollabLog(state) {
   const records = state.collabLog === undefined ? [] : state.collabLog;
@@ -57,6 +84,7 @@ export function validateCollabLog(state) {
       invalid("操作留痕阶段");
     if (typeof r.promptSha256 !== "string" || !/^[a-f0-9]{64}$/.test(r.promptSha256))
       invalid("操作留痕口令指纹");
+    validateRelayRefs(r);
     if (
       typeof r.at !== "string" ||
       !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(r.at) ||

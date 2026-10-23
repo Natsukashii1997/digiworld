@@ -1,6 +1,6 @@
 import {createNoteImages} from './note-images.mjs';
 import {searchCollection,COLLECTION_QUERY_MAX} from '../src/collection-search.js';
-import { editNote, deleteNote, noteId } from './notes.mjs';
+import { editNote, deleteNote, archiveNote, noteId } from './notes.mjs';
 import { createReaUpdater } from './rea-update.mjs';
 import { createReverseSkillV4 } from "./reverse-skill-v4.mjs";
 import { createReverseRunner } from "./reverse-runner.mjs";
@@ -32,6 +32,7 @@ import { createProjectContext } from "./project-context.mjs";
 import { createProjectIdentity } from "./project-identity.mjs";
 import { createProjectStatus, ghVisibility } from "./project-status.mjs";
 import { createCollabBoard } from "./collab-board.mjs";
+import { createProjectDesk } from "./project-desk.mjs";
 import { createProjectGithub, createGhRunner } from "./project-github.mjs";
 import { createProjectBrief } from "./project-brief.mjs";
 import { applyProjectCatalog, excludedProject, reconcileProjectCatalog } from "./project-catalog.mjs";
@@ -314,6 +315,7 @@ export async function startServer({
   });
   const learning = createLearning(repository, { clock, ...(adapters.learningMetadataReader ? {metadataReader:adapters.learningMetadataReader}: {}) });
   const collection = createCollection(repository, { directory, clock, ...adapters.collection });
+  const projectDesk = createProjectDesk(repository, { collection, clock });
   const knowledgeProfile = createKnowledgeProfile(repository, {
     files: knowledgeFiles,
     clock,
@@ -441,6 +443,8 @@ export async function startServer({
           const coverRepair=path.match(/^\/notes\/((?:[a-f0-9]{24}|douyin-\d{15,25}))\/repair-cover$/);
           if (method==='POST' && coverRepair) return send(response,200,await collection.repairCover(coverRepair[1],await body(request)));
           const note=path.match(/^\/notes\/((?:[a-f0-9]{24}|douyin-\d{15,25}))(\/reanalyze)?$/);
+          const archive=path.match(/^\/notes\/((?:[a-f0-9]{24}|douyin-\d{15,25}))\/archive$/);
+          if (method==='POST' && archive) return send(response,200,await collection.archive(archive[1],await body(request,1024)));
           if (method==='DELETE' && note && !note[2]) return send(response,200,await collection.remove(note[1]));
           if (method==='POST' && note?.[2]) return send(response,200,await collection.reanalyze(note[1]));
           const autoGroup=path.match(/^\/notes\/((?:[a-f0-9]{24}|douyin-\d{15,25}))\/auto-group\/(undo|[a-f0-9-]{36})$/);
@@ -503,6 +507,12 @@ export async function startServer({
           const input = request.method !== 'GET' ? await body(request) : null;
           const state = request.method !== 'GET' ? await repository.updateNotes(notes => (request.method==='DELETE'?deleteNote:editNote)(notes, id, input)) : await repository.read();
           return send(response, 200, {note:state?.notes.find(note => note.id === id) || null, revision:state?.revision || 0});
+        }
+        const noteArchive = url.pathname.match(/^\/api\/notes\/([^/]+)\/archive$/);
+        if (noteArchive && request.method === 'POST') {
+          const id = noteId(noteArchive[1]), input = await body(request, 1024);
+          const state = await repository.updateNotes(notes => archiveNote(notes, id, input, new Date().toISOString()));
+          return send(response, 200, {note:state.notes.find(note => note.id === id) || null, revision:state.revision});
         }
         if (url.pathname === "/api/workspace" && request.method === "GET")
           return send(response, 200, await repository.read());
@@ -728,6 +738,11 @@ export async function startServer({
           const action = controlledAction === 'gate-preview' ? 'gatePreview' : controlledAction;
           return send(response, 200, await controlled[action](await body(request)));
         }
+        if (url.pathname === "/api/project-desk" && request.method === "GET")
+          return send(response, 200, await projectDesk.read());
+        const deskAction = url.pathname.match(/^\/api\/project-desk\/(deliver|withdraw|equip|unequip|next)$/)?.[1];
+        if (deskAction && request.method === "POST")
+          return send(response, 200, await projectDesk[deskAction](await body(request, 4096)));
         const collabAction = url.pathname.match(
           /^\/api\/collab\/(board|record|protocol)$/,
         )?.[1];

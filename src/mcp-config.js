@@ -40,7 +40,7 @@ export function validateMcpVersion(version) {
   if (version.title !== config.serverId || version.description !== '' || version.content !== '' ||
     version.source !== '个人创建' || !Array.isArray(version.tags) || version.tags.length !== 0 ||
     !Array.isArray(version.files) || version.files.length !== 0 ||
-    ['references', 'workflowTemplate', 'mediaManifest', 'candidateId'].some(key => version[key] !== undefined))
+    ['references', 'workflowTemplate', 'mediaManifest', 'candidateId', 'hatchedFrom'].some(key => version[key] !== undefined))
     fail('MCP 版本仅可保存结构化配置，不接收正文、文件、自由来源或其他资产字段');
   return config;
 }
