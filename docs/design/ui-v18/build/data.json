@@ -1,0 +1,325 @@
+{
+ "now": "10月23日 周五",
+ "clock": "15:20",
+ "greeting": "下午好，被选召的孩子",
+ "assets": [
+  {
+   "code": "PRM.01",
+   "type": "Prompt",
+   "glyph": "Prompt",
+   "title": "会话交接Handoff",
+   "desc": "会话结束前，让 AI 核实当前进度，写一份新会话直接就能接手的交接文档，并给出新会话的启动指令。",
+   "tags": [
+    "会话交接",
+    "上下文管理"
+   ],
+   "versions": 2,
+   "uses": 6,
+   "last": "10/16 11:07",
+   "stage": 2,
+   "stageName": "成熟期"
+  },
+  {
+   "code": "PRM.02",
+   "type": "Prompt",
+   "glyph": "Prompt",
+   "title": "UI 诊断优化",
+   "desc": "先根据真实截图弄清每页的目的并给页面定级：方向对就打磨细节，方向不对就按\"页面简报 → 视觉稿 → 写代码\"重新设计，每一步都等你确认。",
+   "tags": [
+    "UI优化",
+    "UI重设计"
+   ],
+   "versions": 2,
+   "uses": 3,
+   "last": "10/16 08:16",
+   "stage": 2,
+   "stageName": "成熟期"
+  },
+  {
+   "code": "PRM.05",
+   "type": "Prompt",
+   "glyph": "Prompt",
+   "title": "答前校准",
+   "desc": "回答前先让 AI 亮出它默认的前提、缺少的信息和你可能踩的坑，只问你一个最关键的问题，然后给出针对你具体情况的答案，而不是通用建议。",
+   "tags": [
+    "问题校准",
+    "需求澄清"
+   ],
+   "versions": 1,
+   "uses": 2,
+   "last": "10/14 13:41",
+   "stage": 2,
+   "stageName": "成熟期"
+  },
+  {
+   "code": "DES.01",
+   "type": "Design",
+   "glyph": "Design",
+   "title": "111",
+   "desc": "",
+   "tags": [],
+   "versions": 1,
+   "uses": 0,
+   "last": "",
+   "stage": 1,
+   "stageName": "成长期"
+  },
+  {
+   "code": "RUL.01",
+   "type": "Rule",
+   "glyph": "Rule",
+   "title": "省 Token 守则",
+   "desc": "3条原则，帮助节省token",
+   "tags": [],
+   "versions": 2,
+   "uses": 0,
+   "last": "",
+   "stage": 1,
+   "stageName": "成长期"
+  },
+  {
+   "code": "PRM.04",
+   "type": "Prompt",
+   "glyph": "Prompt",
+   "title": "深度思考伙伴",
+   "desc": "让 AI 不急着给答案，而是先确认真正的问题、追问关键信息、挑战你的假设，和你一轮一轮把问题拆清楚，最后整理成一个能指导行动的问题模型。",
+   "tags": [
+    "深度思考",
+    "问题建模"
+   ],
+   "versions": 1,
+   "uses": 0,
+   "last": "",
+   "stage": 1,
+   "stageName": "成长期"
+  },
+  {
+   "code": "PRM.03",
+   "type": "Prompt",
+   "glyph": "Prompt",
+   "title": "开源调研GitHub",
+   "desc": "开工前，让 AI 按明确的标准筛选 GitHub 上成熟的开源项目，用实时数据对比后，给出\"直接用 / 基于现有项目改 / 自己开发\"的结论和最简单的 MVP 方案，等你确认后再写代码。",
+   "tags": [
+    "开源调研",
+    "技术选型"
+   ],
+   "versions": 2,
+   "uses": 0,
+   "last": "",
+   "stage": 1,
+   "stageName": "成长期"
+  }
+ ],
+ "scroll": {
+  "code": "FJ.01",
+  "type": "Scroll",
+  "glyph": "Scroll",
+  "title": "心法",
+  "entries": [
+   {
+    "name": "背后挖掘",
+    "uses": 3,
+    "text": "在我最近反复讨论的问题背后，有没有一个更深的问题，是我一直在绕着它走，却没有真正问出来的？"
+   },
+   {
+    "name": "11",
+    "uses": 0,
+    "text": "在我最近反复讨论的问题背后，有没有一个更深的问题，是我一直在绕着它走，却没有真正问出来的？"
+   }
+  ],
+  "uses": 3,
+  "last": "10/12 22:28",
+  "stage": 2,
+  "stageName": "成熟期"
+ },
+ "eggs": [
+  {
+   "kind": "note",
+   "at": "2026-10-23T03:25:45.144Z",
+   "time": "10/23 11:25",
+   "title": "明确当前项目进度的prompt",
+   "more": "大的审查的prompt",
+   "source": "随手记"
+  },
+  {
+   "kind": "note",
+   "at": "2026-10-22T03:00:21.020Z",
+   "time": "10/22 11:00",
+   "title": "Github排行版内部版本",
+   "more": "1. 日涨星，周涨星，月涨星 / 2. 月度Github热门表单，skill详解",
+   "source": "随手记"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-20T10:37:40.744Z",
+   "time": "10/20 18:37",
+   "title": "新野兽派&新粗野主义|6种超抓眼UI交互",
+   "source": "收藏 · 设计美学",
+   "cover": "/collection-media/d6d8a60003421f505474eed0fde673b5/media/6ac85b9e000000001303df96/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-20T10:33:02.948Z",
+   "time": "10/20 18:33",
+   "title": "前端网页设计风格参考",
+   "source": "收藏 · 编程开发",
+   "cover": "/collection-media/b6f82866bdaa7d1bb78769ae3a27996b/media/6a9b941c000000002601f851/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-20T10:28:18.671Z",
+   "time": "10/20 18:28",
+   "title": "新拟物风5种高级交互拿来就用！附提示词",
+   "source": "收藏 · AI工具",
+   "cover": "/collection-media/61963bd929a544a1710c7c229b13fa6f/media/6ac71ef80000000018010b14/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-20T10:26:45.324Z",
+   "time": "10/20 18:26",
+   "title": "6种“杂志风”dashboard交互，附提示词！",
+   "source": "收藏 · 编程开发",
+   "cover": "/collection-media/5cc49040615f2f8c5e8768d35f6bdabe/media/6acc7315000000001c00d53b/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-20T10:25:43.778Z",
+   "time": "10/20 18:25",
+   "title": "6种Y2K铬金属Dashboard交互，提示词直接抄",
+   "source": "收藏 · AI工具",
+   "cover": "/collection-media/d9c61967a6b2d15777aa4ce8fa95adae/media/6acb3eff0000000014002b4f/01.webp"
+  },
+  {
+   "kind": "note",
+   "at": "2026-10-19T08:05:45.510Z",
+   "time": "10/19 16:05",
+   "title": "设计复制使用可以单独做，作为一个单独的板块，然后是3d空间悬浮，有卡片飘在空中，选中可以复制设计的提示词，引用使用",
+   "more": "",
+   "source": "随手记"
+  },
+  {
+   "kind": "note",
+   "at": "2026-10-19T06:00:55.569Z",
+   "time": "10/19 14:00",
+   "title": "国际课程：",
+   "more": "国际课程课时卡 / 活动海报同类型名称只保留第一张",
+   "source": "随手记"
+  },
+  {
+   "kind": "note",
+   "at": "2026-10-19T05:05:19.377Z",
+   "time": "10/19 13:05",
+   "title": "访达：command+shift+G",
+   "more": "",
+   "source": "随手记"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-17T05:22:13.223Z",
+   "time": "10/17 13:22",
+   "title": "7 天，我们筛选出了 10 个最热门的 JEV 项目",
+   "source": "收藏 · AI学习",
+   "cover": "/collection-media/7893ce826dd743d6bf40686b35b3c759/media/6ab1d06900000000370386c7/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-15T09:35:46.620Z",
+   "time": "10/15 17:35",
+   "title": "6种像素风高级交互｜附提示词直接抄！",
+   "source": "收藏 · AI学习",
+   "cover": "/collection-media/538ec185ea39d4ac6f9bce0ccbd06dc5/media/6ac9c7680000000018010efc/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-14T03:18:49.468Z",
+   "time": "10/14 11:18",
+   "title": "让Claude睡后干活，Loop Engineering实践",
+   "source": "收藏 · AI学习",
+   "cover": "/collection-media/870119bfcb05c894ba5e7569f28e6b51/media/6a4fb970000000001c024301/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-12T02:02:07.532Z",
+   "time": "10/12 10:02",
+   "title": "第一人称视角学调酒-玛格丽特Margarita",
+   "source": "收藏 · 调酒",
+   "cover": "/collection-media/ccbea522df890053736b5b6c2c91aca8/media/69d109a1000000001a0249b4/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-09T14:15:34.666Z",
+   "time": "10/09 22:15",
+   "title": "Top 10 Skills 推荐｜高星开源🌟",
+   "source": "收藏 · AI学习",
+   "cover": "/collection-media/2cb2e844f65b9b93f25c8c21d6a1f5ac/media/6ac4ba630000000018038fea/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-09T09:08:56.723Z",
+   "time": "10/09 17:08",
+   "title": "我用的最多最顺手的vibe coding技能",
+   "source": "收藏 · AI学习",
+   "cover": "/collection-media/eb77076c327f36708778760b539e4dd8/media/6a58ebe80000000022018f82/01.webp"
+  },
+  {
+   "kind": "collection",
+   "at": "2026-10-09T09:08:02.115Z",
+   "time": "10/09 17:08",
+   "title": "卡帕西同款会生长的知识库搭建思路",
+   "source": "收藏 · AI学习",
+   "cover": "/collection-media/9698764d46caa508700b92ab7a7f3566/media/6a3b7c36000000000f029072/01.webp"
+  }
+ ],
+ "eggCount": 17,
+ "weekUses": 0,
+ "lastUse": "10/16",
+ "slots": [
+  {
+   "slot": "01",
+   "name": "数码世界｜个人 AI 工作台",
+   "holder": "claude",
+   "progress": "阶段 0：检查点 0f03467 已提交，两版视觉稿待你选",
+   "next": "选定基地与资产仓库的视觉方向",
+   "nextSet": true,
+   "inbox": 0,
+   "loadout": [
+    "会话交接Handoff",
+    "UI 诊断优化"
+   ],
+   "step": 1,
+   "steps": [
+    "认领",
+    "实现",
+    "复核",
+    "返修",
+    "验收"
+   ],
+   "saved": "今天 15:16 存档",
+   "format": "协作表格"
+  },
+  {
+   "slot": "02",
+   "name": "牛马之家",
+   "holder": "claude",
+   "progress": "物料交付改读 NAS · 已发布 40c9528",
+   "next": "",
+   "nextSet": false,
+   "inbox": 7,
+   "inboxItems": [
+    "知识库目前太短，整体做高一点…",
+    "首页 / 策略 / 营销结构调整…",
+    "月度促销已录入时显示原文…",
+    "新的结构：用户概览、用户路径…",
+    "管培带教做什么",
+    "月度物料，过往营销，设计参考",
+    "6种高审美dashboard交互拿来就用"
+   ],
+   "loadout": [
+    "会话交接Handoff",
+    "UI 诊断优化"
+   ],
+   "saved": "今天 14:01 存档",
+   "format": "最新段落"
+  }
+ ]
+}
