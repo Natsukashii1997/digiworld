@@ -4,9 +4,11 @@ set -e
 ROOT=$(cd "$(dirname "$0")/../../../.." && pwd)
 D="$ROOT/docs/design/ui-v18"
 OUT=$(mktemp -d)
-NODE_PATH="$ROOT/node_modules" "$ROOT/node_modules/.bin/esbuild" "$D/build/make.jsx" --bundle --platform=node --format=esm \
+ESB="$ROOT/node_modules/.bin/esbuild"
+NODE_PATH="$ROOT/node_modules" "$ESB" "$D/build/make.jsx" --bundle --platform=node --format=esm \
   --jsx=automatic --loader:.js=jsx --log-level=warning --outfile="$OUT/make.mjs" \
   --banner:js="import {createRequire} from 'module';const require=createRequire('$ROOT/package.json');"
+"$ESB" "$D/build/partner-mount.js" --bundle --format=iife --log-level=warning --outfile="$D/partner.js"
 node "$OUT/make.mjs" "$D/build/data.json" "$D"
 node "$D/build/shoot.mjs"
 rm -rf "$OUT"
