@@ -418,7 +418,7 @@ export default function App() {
             partnerScreen.current?.poke();
             navigate("home");
           }}
-          aria-label={`伙伴 ${partner.name}，${partner.stage}；前往世界总览`}
+          aria-label={`伙伴 ${partner.name}，${partner.stage}；前往基地`}
         >
           <span className="partner-screen" data-partner-screen aria-hidden="true">
             <PartnerScreen ref={partnerScreen} mode="roam" onSeason={setSeason} />
