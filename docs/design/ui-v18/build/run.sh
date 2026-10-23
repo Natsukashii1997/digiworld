@@ -8,7 +8,7 @@ ESB="$ROOT/node_modules/.bin/esbuild"
 NODE_PATH="$ROOT/node_modules" "$ESB" "$D/build/make.jsx" --bundle --platform=node --format=esm \
   --jsx=automatic --loader:.js=jsx --log-level=warning --outfile="$OUT/make.mjs" \
   --banner:js="import {createRequire} from 'module';const require=createRequire('$ROOT/package.json');"
-"$ESB" "$D/build/partner-mount.js" --bundle --format=iife --log-level=warning --outfile="$D/partner.js"
+"$ESB" "$D/build/page.js" --bundle --format=iife --log-level=warning --outfile="$D/page.js"
 node "$OUT/make.mjs" "$D/build/data.json" "$D"
 node "$D/build/shoot.mjs"
 rm -rf "$OUT"

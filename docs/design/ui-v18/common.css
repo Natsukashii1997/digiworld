@@ -1,4 +1,5 @@
-/* UI v18 视觉稿 · 共用层：令牌 2.0 + 侧栏 + 基础件。只用于静态视觉稿，落地时按 README 改源码。 */
+/* UI v18 视觉稿 · 共用层：令牌 2.0 + 侧栏 + 基础件。只用于视觉稿，落地时按 README 改源码。
+   伙伴屏的样式原样来自源码：本文件“伙伴屏”一节照抄 src/styles.css，页面另外直接引用 src/partner-lcd.css。 */
 :root {
   color-scheme: dark;
   --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -35,6 +36,9 @@
   --px-glyph-fill: color-mix(in srgb, currentColor 22%, transparent);
   --px-shadow: rgba(28, 38, 22, 0.3);
   --design-highlight: #fff1f7;
+  --r: 12px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* 令牌 2.0：字阶 6 级 + 液晶数字；圆角 3 级；阴影 2 级 */
   --f-12: 12px;
@@ -72,7 +76,7 @@ svg { flex: none; }
 
 /* ---------- 像素与液晶 ---------- */
 .pixel { display: block; image-rendering: pixelated; }
-.pixel .pixel-frame:not(.f0) { display: none; }
+.pixel .pixel-frame:not(.f0) { opacity: 0; }
 .lcd-num { display: inline-flex; line-height: 0; }
 .lcd-num svg { display: block; }
 .stage-bar { display: inline-flex; align-items: center; gap: 7px; font: 500 var(--f-12) var(--mono); color: var(--muted); white-space: nowrap; }
@@ -105,11 +109,75 @@ svg { flex: none; }
 .digivice-lcd { position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; transform: translate(-50%, -50%); display: grid; place-items: center; overflow: hidden; border-radius: 7%; background: var(--m-lcd); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35); }
 .digivice-lcd::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(rgba(28, 38, 22, 0.16) 0.8px, transparent 1px); background-size: 4px 4px; }
 .digivice-lcd .pixel { position: relative; z-index: 1; width: 74%; height: auto; }
+/* 暴龙机屏的玻璃反光与扫描线：照抄 src/styles.css 3378–3385 */
+.digivice-lcd::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.25), transparent 40%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 3px);
+}
 
-/* 液晶屏材质（灰绿） */
-.lcd-screen { position: relative; overflow: hidden; color: var(--lcd-ink); background: var(--m-lcd); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.4); }
-.lcd-screen::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(rgba(28, 38, 22, 0.16) 0.8px, transparent 1px); background-size: 4px 4px; pointer-events: none; }
-.lcd-screen::after { content: ""; position: absolute; inset: 0; background: linear-gradient(125deg, rgba(255, 255, 255, 0.22), transparent 40%); pointer-events: none; }
+/* ---------- 伙伴屏：照抄 src/styles.css 1188–1205、4947–4986，不改一字 ---------- */
+.partner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding: 12px 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01));
+  text-align: left;
+  transition:
+    border-color 0.25s,
+    transform 0.3s var(--ease);
+}
+.partner:hover {
+  border-color: var(--line-2);
+  transform: translateY(-1px);
+}
+.partner {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  margin: auto -6px 0;
+  padding: 7px 7px 10px;
+}
+.partner-screen {
+  position: relative;
+  display: block;
+  height: 86px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 40%, var(--lcd-screen), var(--lcd-screen-2));
+  box-shadow:
+    0 0 0 3px #1b2540,
+    0 0 0 4px var(--line-2),
+    inset 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.partner-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(28, 38, 22, 0.16) 0.8px, transparent 1px);
+  background-size: 4px 4px;
+}
+.partner-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.22), transparent 40%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 3px);
+}
+.partner-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+}
 
 /* ---------- 外壳 ---------- */
 .shell { display: grid; grid-template-columns: 216px minmax(0, 1fr); min-height: 100vh; }
@@ -127,13 +195,6 @@ svg { flex: none; }
 .nav a i.egg { color: var(--lcd); background: rgba(166, 227, 110, 0.1); }
 .nav .grp { padding: 14px 12px 4px; font: 600 var(--f-12) var(--mono); letter-spacing: 0.16em; color: var(--faint); }
 .side .spacer { flex: 1; }
-.eggscreen { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; height: 72px; padding: 10px 14px; border-radius: var(--r-2); }
-.eggscreen .read { position: relative; z-index: 1; display: grid; gap: 5px; color: var(--lcd-ink); }
-.eggscreen .read small { font-size: var(--f-12); font-weight: 600; }
-.eggscreen .pixel { position: relative; z-index: 1; }
-.eggscreen .ground { position: absolute; left: 0; right: 0; bottom: 8px; height: 2px; background: rgba(28, 38, 22, 0.25); }
-.eggscreen .leaf { position: absolute; width: 4px; height: 4px; background: #8a5a2b; opacity: 0.65; }
-.season { padding: 6px 4px 0; color: var(--muted); font-size: var(--f-12); }
 .saved { display: flex; align-items: center; gap: 8px; padding: 10px 6px 0; color: var(--text-2); font-size: var(--f-12); }
 .saved::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--lcd); box-shadow: 0 0 8px var(--lcd); }
 
@@ -158,6 +219,4 @@ svg { flex: none; }
   .side { display: none; }
   .mobile-top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; background: rgba(8, 13, 26, 0.92); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
   .mobile-top b { font-size: var(--f-16); }
-  .mobile-top .egg-mini { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px 0 6px; margin-left: auto; border-radius: var(--r-pill); }
-  .mobile-top .egg-mini span { position: relative; z-index: 1; font: 700 var(--f-12) var(--mono); }
 }
