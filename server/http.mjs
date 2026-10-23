@@ -1,8 +1,16 @@
+import {createNoteImages} from './note-images.mjs';
+import {searchCollection,COLLECTION_QUERY_MAX} from '../src/collection-search.js';
+import { editNote, deleteNote, noteId } from './notes.mjs';
+import { createReaUpdater } from './rea-update.mjs';
+import { createReverseSkillV4 } from "./reverse-skill-v4.mjs";
+import { createReverseRunner } from "./reverse-runner.mjs";
+import { createReverseNative } from "./reverse-native.mjs";
 import { createPolicyKnowledgeFiles } from "./knowledge-access-policy.mjs";
 import { createKnowledgeAccess } from "./knowledge-access.mjs";
 import { createSavepoints } from './savepoints.mjs';
 import {createRelaySessions} from "./relay-sessions.mjs";
 import {createReverseMedia} from './reverse-media.mjs';
+import {checkReverseTarget} from './reverse-target.mjs';
 import {createCapabilitiesHttp} from './capabilities-http.mjs';
 import {readDataRootIdentity} from './data-root-identity.mjs';
 import {createNightV2Harness} from './night-v2-harness.mjs';
@@ -52,6 +60,7 @@ import { createCollection } from "./collection.mjs";
 import { createKnowledgeProfile } from "./knowledge-profile.mjs";
 import { startProfileMcp } from "./profile-mcp.mjs";
 import { createFullBackup } from "./full-backup.mjs";
+import { FULL_BACKUP_LIMITS, FULL_BACKUP_LIMIT_MESSAGE } from "../src/full-backup-contract.js";
 import { createBackupRecords } from "./backup-records.mjs";
 import { createStorageStatus } from "./storage-status.mjs";
 import { createProjectActivity } from "./project-activity.mjs";
@@ -91,12 +100,12 @@ const MIME = {
   ".ico": "image/x-icon",
   ".webmanifest": "application/manifest+json; charset=utf-8",
 };
-async function body(request) {
+async function body(request,limit=100*1024*1024) {
   let bytes = 0;
   const chunks = [];
   for await (const chunk of request) {
     bytes += chunk.length;
-    if (bytes > 100 * 1024 * 1024) throw failure("请求超过 100 MB 限制", 413);
+    if (bytes > limit) throw failure(limit===100*1024*1024?"请求超过 100 MB 限制":"图片请求超过 12 MB 限制", 413);
     chunks.push(chunk);
   }
   try {
@@ -113,6 +122,19 @@ function send(response, status, value) {
   response.end(stringify(value));
 }
 
+async function backupUpload(request) {
+  const length = request.headers['content-length'];
+  if (length !== undefined && (!/^\d+$/.test(length) || Number(length) > FULL_BACKUP_LIMITS.archiveBytes))
+    throw failure(FULL_BACKUP_LIMIT_MESSAGE, 413);
+  let size = 0; const chunks = [];
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > FULL_BACKUP_LIMITS.archiveBytes) throw failure(FULL_BACKUP_LIMIT_MESSAGE, 413);
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks, size);
+}
+
 export async function startServer({
   directory,
   port = 5178,
@@ -124,6 +146,9 @@ export async function startServer({
   enableCapabilityScheduler = false,
   nightV2 = {},
   controlledExecution = {},
+  reverse = {},
+  reverseNative = {},
+  reaUpdate = {},
 } = {}) {
   const repository = await openRepository(directory);
   const controlled = createControlledExecution({ directory,
@@ -175,7 +200,13 @@ export async function startServer({
     }));
     return { ...reports, items, decisions: decisions.items };
   }
+  let reaUpdater, nativeReverse;
+  const reverseRunner = await createReverseRunner({ repository, ...reverse, doctorVersion: () => reaUpdater?.versionForDoctor(), externalBusy: () => !!(nativeReverse?.busy || reaUpdater?.busy || reaUpdater?.unresolved) });
+  nativeReverse = await createReverseNative({repository,...reverseNative,externalBusy:()=>!!(reverseRunner.busy||reaUpdater?.busy||reaUpdater?.unresolved)});
+  reaUpdater = await createReaUpdater({ directory: repository.directory, ...reaUpdate, externalBusy: () => reverseRunner.busy || nativeReverse.busy });
   const reverseMedia=createReverseMedia(await realpath(repository.directory));
+  const noteImages=createNoteImages(await realpath(repository.directory));
+  const reverseSkillV4 = createReverseSkillV4({ repository, readMedia: reverseMedia.read });
   const deliveries = createDeliveries(repository, clock);
   const activity = createAssetActivity(repository, deliveries, clock);
   const projectContext = createProjectContext(repository, clock);
@@ -372,17 +403,28 @@ export async function startServer({
           throw failure("会话失效，请刷新工作台", 403);
         if (
           ["POST", "PUT"].includes(request.method) &&
-          request.headers["content-type"] !== "application/json"
+          request.headers["content-type"] !== "application/json" &&
+          !(url.pathname === '/api/full-backup/upload' && request.method === 'POST' && request.headers['content-type'] === 'application/zip')
         )
           throw failure("需要 JSON 请求", 415);
         if (url.pathname.startsWith('/api/collection/')) {
           const path = url.pathname.slice('/api/collection'.length), method = request.method;
+          if(method==='GET' && path==='/search') {
+            const query=url.searchParams.get('q')||'';
+            if(query.length>COLLECTION_QUERY_MAX)throw failure('搜索词最多300个字符，请缩短后重试',400);
+            return send(response,200,searchCollection(await collection.read(),query));
+          }
+          const getAnalysis=path.match(/^\/notes\/((?:[a-f0-9]{24}|douyin-\d{15,25}))\/get-analysis\/retry$/);
+          if(method==='POST' && getAnalysis)return send(response,200,await collection.retryGet(getAnalysis[1],await body(request)));
           if (method==='GET' && path==='/notes') return send(response,200,await collection.notes());
           if (method==='GET' && path==='/notes/version') return send(response,200,{revision:String((await collection.read()).revision)});
           if (method==='GET' && path==='/health') return send(response,200,await collection.health());
           if (method==='GET' && path==='/desk-workspace') return send(response,200,await collection.desk());
           if (method==='PUT' && path==='/desk-workspace') return send(response,200,await collection.saveDesk(await body(request)));
-          if (method==='POST' && path==='/notes/import') return send(response,202,await collection.startImport(await body(request)));
+          if (method==='POST' && path==='/notes/import') {
+            let input;try{input=await body(request);}catch(error){error.operationNotStarted=true;throw error;}
+            return send(response,202,await collection.startImport(input));
+          }
           if (method==='POST' && path==='/notes/manual') return send(response,200,await collection.manual(await body(request)));
           if (method==='PATCH' && path==='/notes/categories') return send(response,200,await collection.categories(await body(request)));
           if (method==='POST' && path==='/extension/pair') return send(response,200,await collection.pairing());
@@ -396,9 +438,14 @@ export async function startServer({
           if (method==='POST' && recycled) { const input=await body(request); if (Object.keys(input).length) throw failure('回收操作不接受自定义路径',400); return send(response,200,recycled[2]==='restore'?await collection.recycle.restore(recycled[1]):await collection.recycle.open(recycled[1],input)); }
           const operation=path.match(/^\/operations\/([a-f0-9-]{36})$/);
           if (method==='GET' && operation) return send(response,200,await collection.status(operation[1]));
-          const note=path.match(/^\/notes\/([a-f0-9]{24})(\/reanalyze)?$/);
+          const coverRepair=path.match(/^\/notes\/((?:[a-f0-9]{24}|douyin-\d{15,25}))\/repair-cover$/);
+          if (method==='POST' && coverRepair) return send(response,200,await collection.repairCover(coverRepair[1],await body(request)));
+          const note=path.match(/^\/notes\/((?:[a-f0-9]{24}|douyin-\d{15,25}))(\/reanalyze)?$/);
           if (method==='DELETE' && note && !note[2]) return send(response,200,await collection.remove(note[1]));
           if (method==='POST' && note?.[2]) return send(response,200,await collection.reanalyze(note[1]));
+          const autoGroup=path.match(/^\/notes\/((?:[a-f0-9]{24}|douyin-\d{15,25}))\/auto-group\/(undo|[a-f0-9-]{36})$/);
+          if (method==='POST' && autoGroup?.[2]==='undo') return send(response,200,await collection.undoAutoGroup(autoGroup[1],await body(request)));
+          if (method==='GET' && autoGroup && autoGroup[2]!=='undo') return send(response,200,await collection.autoGroupStatus(autoGroup[1],autoGroup[2]));
           throw failure('收藏接口不存在',404);
         }
         if(url.pathname.startsWith('/api/capabilities/')){
@@ -443,10 +490,50 @@ export async function startServer({
             slotId: url.searchParams.get("slotId") }));
         if (url.pathname === "/api/capability-usage" && request.method === "GET")
           return send(response, 200, await capabilityUsage.summary());
+        if(url.pathname==='/api/note-images'&&request.method==='POST')return send(response,200,await noteImages.store(await body(request,12*1024*1024)));
+        const imageRead=url.pathname.match(/^\/api\/note-images\/([a-f0-9]{64}\.(?:png|jpg|webp))\/read$/);
+        if(imageRead&&request.method==='POST'){const input=await body(request,1024);if(!input||Object.keys(input).length)throw failure('图片读取请求无效');return send(response,200,await noteImages.read(imageRead[1]));}
+        const noteRoute = url.pathname.match(/^\/api\/notes\/([^/]+)$/);
+        if (url.pathname === '/api/notes' && request.method === 'GET') {
+          const state = await repository.read();
+          return send(response, 200, {notes:state?.notes || [], revision:state?.revision || 0});
+        }
+        if (noteRoute && ['GET','PUT','DELETE'].includes(request.method)) {
+          const id = noteId(noteRoute[1]);
+          const input = request.method !== 'GET' ? await body(request) : null;
+          const state = request.method !== 'GET' ? await repository.updateNotes(notes => (request.method==='DELETE'?deleteNote:editNote)(notes, id, input)) : await repository.read();
+          return send(response, 200, {note:state?.notes.find(note => note.id === id) || null, revision:state?.revision || 0});
+        }
         if (url.pathname === "/api/workspace" && request.method === "GET")
           return send(response, 200, await repository.read());
         if (url.pathname === "/api/assets/delete" && request.method === "POST")
           return send(response, 200, await assetDeletion.remove(await body(request)));
+        if(url.pathname==='/api/reverse/native/query'&&request.method==='GET')return send(response,200,await nativeReverse.query(Object.fromEntries(url.searchParams)));
+        if(url.pathname.startsWith('/api/reverse/native/')&&request.method==='POST'){
+          const action=url.pathname.slice('/api/reverse/native/'.length);
+          if(!['catalog','start','reconnect','turn','interrupt','respond','disconnect','archive','acknowledge'].includes(action))throw failure('原生操作不存在',404);
+          return send(response,200,await nativeReverse[action](await body(request,1024*1024)));
+        }
+        if(url.pathname==='/api/reverse/pack'&&request.method==='GET')return send(response,200,await reverseSkillV4.pack(Object.fromEntries(url.searchParams)));
+        if(url.pathname==='/api/reverse/skill/preview'&&request.method==='POST')return send(response,200,await reverseSkillV4.preview(await body(request)));
+        if(url.pathname==='/api/reverse/skill/confirm'&&request.method==='POST')return send(response,200,await reverseSkillV4.confirm(await body(request)));
+        if(url.pathname==='/api/reverse/skill/query'&&request.method==='GET')return send(response,200,await reverseSkillV4.query(Object.fromEntries(url.searchParams)));
+        if(url.pathname==='/api/reverse/update'&&request.method==='GET')return send(response,200,reaUpdater.read());
+        if(url.pathname==='/api/reverse/update/check'&&request.method==='POST')return send(response,200,await reaUpdater.check());
+        if(url.pathname==='/api/reverse/update/preview'&&request.method==='POST')return send(response,200,await reaUpdater.preview());
+        if(url.pathname==='/api/reverse/update/confirm'&&request.method==='POST')return send(response,200,await reaUpdater.confirm(await body(request)));
+        if(url.pathname==='/api/reverse/update/query'&&request.method==='POST')return send(response,200,await reaUpdater.query());
+        if(url.pathname==='/api/reverse/status'&&request.method==='GET')return send(response,200,await reverseRunner.status());
+        if(url.pathname==='/api/reverse/runs/query'&&request.method==='GET')return send(response,200,await reverseRunner.query(Object.fromEntries(url.searchParams)));
+        if(url.pathname==='/api/reverse/runs/start'&&request.method==='POST'){
+          const input=await body(request);
+          if(input.executor==='codex')throw failure('Codex 已使用原生会话，请从原生分析区开始',400);
+          const result=await reverseRunner.start(input);return send(response,result.run?202:200,result);
+        }
+        if(url.pathname==='/api/reverse/target/precheck'&&request.method==='POST')return send(response,200,await reverseRunner.precheck(await body(request)));
+        if(url.pathname==='/api/reverse/pack/select'&&request.method==='POST')return send(response,200,await reverseRunner.selectVersion(await body(request)));
+        if(url.pathname==='/api/reverse/runs/stop'&&request.method==='POST')return send(response,200,await reverseRunner.stop(await body(request)));
+        if(url.pathname==='/api/reverse/target/check'&&request.method==='POST')return send(response,200,await reverseRunner.check(await body(request)));
         if(url.pathname==='/api/reverse/media'&&request.method==='POST')return send(response,200,await reverseMedia.store(await body(request)));
         if(url.pathname==='/api/reverse/media/read'&&request.method==='POST')return send(response,200,await reverseMedia.read(await body(request)));
         if(url.pathname==='/api/reverse/media/locate'&&request.method==='POST')return send(response,200,await reverseMedia.locate(await body(request)));
@@ -676,10 +763,10 @@ export async function startServer({
               ruleAction === "revert-preview" ? "revertPreview" : ruleAction
             ](await body(request)),
           );
-        const relayAction=url.pathname.match(/^\/api\/relay-sessions\/(list|prepare|clear|open)$/)?.[1];
+        const relayAction=url.pathname.match(/^\/api\/relay-sessions\/(list|prepare|history|validate|clear|open)$/)?.[1];
         if(relayAction && request.method==='POST') {
           const data=await body(request);
-          const keys={list:['pageId','earlier'],prepare:['pageId','id'],clear:['pageId'],open:['agentId']}[relayAction];
+          const keys={list:['pageId','earlier','query','cursor'],prepare:['pageId','id','format','depth','evidenceRefs','currentState'],history:['pageId','id'],validate:['pageId','id'],clear:['pageId'],open:['agentId']}[relayAction];
           if(!data||Array.isArray(data)||Object.keys(data).some(k=>!keys.includes(k)))throw failure('接力请求只接受白名单字段');
           return send(response,200,await relaySessions[relayAction](data));
         }
@@ -811,6 +898,17 @@ export async function startServer({
             exportedAt: new Date().toISOString(),
             state: await repository.read(),
           });
+        if (url.pathname === '/api/full-backup/upload' && request.method === 'POST')
+          return send(response, 200, await fullBackup.preview({bytes:await backupUpload(request)}));
+        if (url.pathname === '/api/full-backup/download' && request.method === 'POST') {
+          await body(request);
+          const result = await fullBackup.create();
+          response.writeHead(200, {'content-type':'application/zip','content-length':result.bytes.length,'cache-control':'no-store','X-Workbench-Filename':encodeURIComponent(result.filename),'X-Workbench-Backup-Files':String(result.manifest.files.length)});
+          return response.end(result.bytes);
+        }
+        if (url.pathname === '/api/full-backup/scope' && request.method === 'GET') return send(response,200,await fullBackup.scope());
+        const restoreOperation = url.pathname.match(/^\/api\/full-backup\/operations\/([a-f0-9-]+)$/)?.[1];
+        if (restoreOperation && request.method === 'GET') return send(response,200,await fullBackup.operation(restoreOperation));
         const fullBackupAction = url.pathname.match(
           /^\/api\/full-backup\/(create|preview|restore)$/,
         )?.[1];
@@ -879,24 +977,30 @@ export async function startServer({
           request.method === "POST"
         ) {
           const input = await body(request);
+          if (!input || typeof input !== "object" || Array.isArray(input)) throw failure("请求格式无效");
           const result = await singleScan("projects", async () => {
             const existing =
               (await repository.read())?.connections ||
               emptyConnections(adapters.defaultRoots());
+            if (Object.hasOwn(input, "roots") &&
+              (!Array.isArray(input.expectedRoots) || JSON.stringify(input.expectedRoots) !== JSON.stringify(existing.roots)))
+              throw failure("扫描目录已被其他窗口修改，已保留本次输入；请重新读取设置后确认", 409);
             const roots = input.roots ?? existing.roots;
             const [local, remote] = await Promise.all([
               adapters.scanLocalProjects(roots, {
                 knownPaths: [
                   ...new Set(existing.projects
                     .filter((p) => !p.manual && !excludedProject(p, existing.projectExclusions || []))
+                    .sort((a, b) => Number(!!b.active) - Number(!!a.active))
                     .flatMap((p) => p.localPaths)),
                 ],
+                excludePaths: (existing.projectExclusions || []).filter(entry => entry.startsWith("path:")).map(entry => entry.slice(5)),
               }),
               adapters.scanGitHub(),
             ]);
             return repository.updateConnections((previous) => {
               const c = previous || existing;
-              if (JSON.stringify(c.roots) !== JSON.stringify(existing.roots))
+              if (JSON.stringify(c.roots) !== JSON.stringify(existing.roots) || JSON.stringify(c.projectExclusions || []) !== JSON.stringify(existing.projectExclusions || []))
                 throw failure("扫描期间目录范围已变化，请重新扫描", 409);
               const exclusions = c.projectExclusions || [];
               const prior = c.projects.filter((p) => !excludedProject(p, exclusions));
@@ -925,6 +1029,7 @@ export async function startServer({
                 projectScannedAt: local.at,
                 errors: local.errors,
                 truncated: local.truncated || remote.truncated,
+                projectScanDiagnostics: (local.truncated && !local.diagnostics) || (remote.truncated && !remote.diagnostics) ? undefined : { version: 1, at: local.at, ...(local.diagnostics ? { local: local.diagnostics } : {}), ...(remote.diagnostics ? { remote: remote.diagnostics } : {}) },
                 github: {
                   status: remote.status,
                   login: remote.login || c.github.login,
@@ -1007,6 +1112,8 @@ export async function startServer({
           ...(error.unknownResult === true ? { unknownResult: true } : {}),
           ...((error.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED" || /^FEISHU_[A-Z_]+$/.test(error.code || "")) ? { code: error.code } : {}),
           ...(error.operationId ? {operationId:error.operationId}:{}),
+          ...(error.revisionConflict === true ? {revisionConflict:true}:{}),
+          ...(error.noteConflict ? {noteConflict:true,currentNote:error.currentNote}:{}),
         });
       else response.end();
     }
@@ -1021,9 +1128,13 @@ export async function startServer({
   } catch (error) {
     await mcp?.close();
     deliveries.close();
+    await reaUpdater.close();
+    await reverseRunner.close();
+    await nativeReverse.close();
     await repository.close();
     throw error;
   }
+  await collection.start();
   aihot.start();
   capabilities.start();
   return {
@@ -1034,14 +1145,19 @@ export async function startServer({
     nightV2Actions,
     mcpUrl: mcp?.url || null,
     async close() {
+      await collection.close();
       relaySessions.dispose?.();
       aihot.close();
       fullBackup.close();
       await capabilities.close();
-      await new Promise((resolve) => server.close(resolve));
+      const serverClosed = new Promise((resolve) => server.close(resolve));
       await mcp?.close();
       deliveries.close();
-      await repository.close();
+      await reaUpdater.close();
+      await reverseRunner.close();
+      await nativeReverse.close();
+      await serverClosed;
+    await repository.close();
     },
   };
 }

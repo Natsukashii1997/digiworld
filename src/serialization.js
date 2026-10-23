@@ -16,9 +16,7 @@ export function parse(text) {
     if (item && typeof item === "object" && Object.keys(item).length === 1) {
       if (typeof item.__binary === "string") {
         if (
-          !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
-            item.__binary,
-          )
+          (item.__binary.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(item.__binary))
         )
           throw new Error("二进制编码无效");
         return Uint8Array.from(atob(item.__binary), (c) => c.charCodeAt(0));

@@ -24,6 +24,8 @@ import { AgentSprite, useReducedMotion } from "./v14.jsx";
 import { castOf, characterOf } from "./characters.js";
 import { request } from "./api.js";
 import "./agents-v16.css";
+import {filterRelaySessions} from "./relay-prompt.js";
+import {AgentMigration} from "./AgentMigration.jsx";
 import {RelayLaunch} from "./RelayLaunch.jsx";
 const names = {
   "claude-code": "Claude Code",
@@ -68,6 +70,10 @@ export function AgentsV16({
     [manual, setManual] = useState(false),
     [chooser, setChooser] = useState(false),
     [relayVisible, setRelayVisible] = useState(false);
+  const [migrationVisible,setMigrationVisible]=useState(false), [query,setQuery]=useState(""), [sourceFilter,setSourceFilter]=useState(""), [projectFilter,setProjectFilter]=useState(""), [depth,setDepth]=useState("recent");
+  const [searched,setSearched]=useState({query:'',earlier:false}), [evidenceRefs,setEvidenceRefs]=useState([]), [currentState,setCurrentState]=useState({goal:'',decisions:'',nextStep:''}), [downloaded,setDownloaded]=useState('');
+  const evidenceKey = e => `${e.kind}:${e.ordinal}:${e.start}:${e.end}`;
+  const invalidate = () => {setPrepared(null);setSeen(false);setOpen(false);setReceipt('');};
   const [loaded, setLoaded] = useState(false),
     [listing, setListing] = useState({ sessions: [], sources: [], skipped: 0 }),
     [chosen, setChosen] = useState(null),
@@ -134,7 +140,7 @@ export function AgentsV16({
     if (!s) return;
     const result = await request("/relay-sessions/prepare", {
       pageId: scope.current,
-      id: s.id,
+      id: s.id, format: "work", depth, evidenceRefs, currentState,
     });
     if (alive.current && generation.current === n) {
       setPrepared(result);
@@ -144,33 +150,33 @@ export function AgentsV16({
       }
     }
   }
-  async function find(earlier) {
+  async function find(earlier, append = false) {
     if (lock.current) return;
-    lock.current = true;
-    setBusy(true);
-    setError("");
-    setReceipt("");
-    setPrepared(null);
-    setOpen(false);
-    setSeen(false);
-    const n = ++generation.current;
+    lock.current = true;setBusy(true);setError('');setReceipt('');
+    const criteria=append?searched:{earlier,query};
+    if(!append){invalidate();setSourceFilter('');setProjectFilter('');setChosen(null);setEvidenceRefs([]);setCurrentState({goal:'',decisions:'',nextStep:''});setDownloaded('');}
+    const n=++generation.current;
     try {
-      const list = await request("/relay-sessions/list", {
-        pageId: scope.current,
-        earlier,
-      });
-      if (!alive.current || generation.current !== n) return;
-      setListing(list);
-      setLoaded(true);
-      setChosen(list.sessions[0] || null);
-    } catch (e) {
-      if (alive.current && generation.current === n) setError(e.message);
-    } finally {
-      if (generation.current === n) {
-        lock.current = false;
-        if (alive.current) setBusy(false);
-      }
-    }
+      const list=await request('/relay-sessions/list',{pageId:scope.current,...criteria,...(append?{cursor:listing.nextCursor}:{})});
+      if(!alive.current||generation.current!==n)return;
+      setListing(previous=>({...list,sessions:append?[...new Map([...previous.sessions,...list.sessions].map(row=>[row.id,row])).values()].sort((a,b)=>Date.parse(b.updatedAt)-Date.parse(a.updatedAt)):list.sessions}));
+      setSearched(criteria);setLoaded(true);
+      if(!append)setChosen(list.sessions[0]||null);
+      else setChosen(previous=>previous||list.sessions[0]||null);
+    } catch(e) {if(alive.current&&generation.current===n)setError(e.message);}
+    finally {if(generation.current===n){lock.current=false;if(alive.current)setBusy(false);}}
+  }
+  async function downloadHistory() {
+    if(lock.current||!chosen)return;
+    lock.current=true;setBusy(true);setError('');const n=generation.current;
+    try {
+      const r=await request('/relay-sessions/history',{pageId:scope.current,id:chosen.id});
+      if(!alive.current||generation.current!==n)return;
+      const url=URL.createObjectURL(new Blob([r.content],{type:'text/markdown;charset=utf-8'}));
+      const link=document.createElement('a');link.href=url;link.download=r.filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);
+      setDownloaded(r.filename);notify('可读历史已生成下载，请一并交给接手的 AI');
+    } catch(e) {if(alive.current&&generation.current===n){invalidate();setDownloaded('');setError(e.message+'；请重新搜索并生成材料。');}}
+    finally {if(generation.current===n){lock.current=false;if(alive.current)setBusy(false);}}
   }
   async function choose(s, expand = false) {
     if (lock.current) return;
@@ -178,6 +184,7 @@ export function AgentsV16({
     setBusy(true);
     setError("");
     setReceipt("");
+    if(chosen?.id!==s.id){setEvidenceRefs([]);setCurrentState({goal:'',decisions:'',nextStep:''});setDownloaded('');}
     setChosen(s);
     setChooser(false);
     const n = ++generation.current;
@@ -210,17 +217,21 @@ export function AgentsV16({
     setError("");
     setReceipt("");
     const n = generation.current;
+    let sourceValidated=false;
     try {
+      await request('/relay-sessions/validate',{pageId:scope.current,id:chosen.id});
+      if(!alive.current||generation.current!==n)return;
+      sourceValidated=true;
       await copyText(prepared.prompt);
       if (!alive.current || generation.current !== n) return;
-      setReceipt("TRANSFER OK · 提示词已复制");
+      setReceipt("材料已复制，待粘贴发送");
       notify("提示词已复制");
       if (openApp) {
         try {
           const r = await request("/relay-sessions/open", { agentId: picked });
           if (alive.current && generation.current === n) {
             setReceipt(
-              r.opened ? "TRANSFER OK · 已打开应用，请粘贴发送" : r.reason,
+              r.opened ? "应用已打开，待粘贴发送" : r.reason,
             );
             notify(r.opened ? "已打开应用，请粘贴发送" : r.reason);
           }
@@ -230,10 +241,12 @@ export function AgentsV16({
           }
         }
       }
-    } catch {
+    } catch (e) {
       if (alive.current && generation.current === n) {
-        setOpen(true);
-        setError("复制失败，请从预览中手动复制；应用尚未打开");
+        if (!sourceValidated) { invalidate(); setDownloaded(''); }
+        else setOpen(true);
+        setError(sourceValidated ? "复制失败，编辑内容已保留，可重试或从预览中手动复制；应用尚未打开" : `${e.message}；请重新搜索并生成材料。`);
+        notify(sourceValidated ? "本次复制失败，编辑内容已保留" : "来源核对未通过，请重新生成材料", "error");
       }
     } finally {
       if (generation.current === n) {
@@ -253,7 +266,7 @@ export function AgentsV16({
     listing.incomplete ||
     listing.skipped > 0 ||
     listing.sources.some((s) => s.status !== "ok");
-  const launch = relayVisible && chosen && <RelayLaunch open={open} busy={busy} prepared={prepared} picked={picked} targetName={targetName} character={character} copy={copy} onPreview={()=>{if(!prepared){choose(chosen,true);return;}setOpen(!open);setSeen(true);}}/>;
+  const launch = relayVisible && chosen && <RelayLaunch open={open} busy={busy} prepared={prepared} picked={picked} targetName={targetName} character={character} copy={copy} onPromptChange={prompt=>{setPrepared(p=>({...p,prompt}));setReceipt("");}} onPreview={()=>{if(!prepared){choose(chosen,true);return;}setOpen(!open);setSeen(true);}}/>;
   function toggleRelay() {
     if (relayVisible) {
       setRelayVisible(false);
@@ -278,6 +291,7 @@ export function AgentsV16({
           </button>
         }
         action={<span className="agent-head-actions">
+          <button type="button" className="relay-entry" aria-expanded={migrationVisible} onClick={()=>setMigrationVisible(true)}>⇄ Agent 迁移</button>
           <button type="button" className="relay-entry" aria-expanded={relayVisible} onClick={toggleRelay}>
             <span aria-hidden="true">⇄</span> 上下文接力
           </button>
@@ -306,14 +320,14 @@ export function AgentsV16({
         <div className="relay-top">
           <span className="en">CONTINUE · 接着哪段会话</span>
           <span className="relay-tools">
-            {chosen && (
+            {loaded && (
               <button
                 type="button"
                 className="text-btn"
                 disabled={busy}
                 onClick={() => setChooser(true)}
               >
-                换一段 <b>{listing.sessions.length}</b>
+                搜索 / 换一段 <b>{listing.sessions.length}</b>
                 <ChevronDown size={15} />
               </button>
             )}
@@ -394,12 +408,23 @@ export function AgentsV16({
             </div>
           </>
         )}
+        {loaded&&partial&&<p className="relay-scope" role="status">读取范围不完整：{listing.sources.filter(s=>s.status!=="ok"||s.reason).map(s=>`${names[s.agentId]||s.agentId}：${s.reason||s.status}`).join("；")}。已跳过 {listing.skipped||0} 段。</p>}
+        {listing.scan&&<p className="relay-scope" role="status">已扫描 {listing.scan.scanned} / {listing.scan.total} 个会话文件{listing.nextCursor?'，仍有未扫描内容。':'，本次扫描结束。'}{listing.nextCursor&&<Button secondary disabled={busy} onClick={()=>find(searched.earlier,true)}>继续扫描</Button>}</p>}
+        {chosen&&<div className="relay-scope">
+          <p>{chosen.lastUserText||"选中后生成可编辑的接力材料；未发送给任何 AI。"}</p>
+          <label>材料容量 <select aria-label="接力材料范围" value={depth} disabled={busy} onChange={e=>{setDepth(e.target.value);invalidate();}}><option value="recent">1.8 万字 · 容量内保留全部可读历史</option><option value="extended">4.8 万字 · 更大容量</option></select></label>
+          {chosen.matches?.length>0&&<fieldset className="relay-evidence"><legend>选入命中的历史片段</legend>{chosen.matches.map((m,i)=><label key={evidenceKey(m)+i}><input type="checkbox" disabled={busy} checked={evidenceRefs.some(e=>evidenceKey(e)===evidenceKey(m))} onChange={e=>{setEvidenceRefs(prev=>e.target.checked?[...prev.filter(x=>evidenceKey(x)!==evidenceKey(m)),{kind:m.kind,ordinal:m.ordinal,start:m.start,end:m.end}]:prev.filter(x=>evidenceKey(x)!==evidenceKey(m)));invalidate();}}/><span><b>{m.kind==='source_compaction'?'来源压缩摘要':`${m.role==='user'?'用户':'助手'} · 第 ${m.ordinal+1} 条`}</b><span>{m.snippet}</span></span></label>)}</fieldset>}
+          <details className="relay-confirmed"><summary>补充本次确认的状态（可选）</summary><p>原文会保留在材料中；这里只补充你已确认的新决定。</p>{[['goal','当前目标'],['decisions','最新决定与约束'],['nextStep','唯一下一步']].map(([key,label])=><label key={key}>{label}<textarea aria-label={label} maxLength={2000} value={currentState[key]} disabled={busy} onChange={e=>{setCurrentState(prev=>({...prev,[key]:e.target.value}));invalidate();}}/></label>)}</details>
+          {prepared?.coverage&&<><p>纳入 {prepared.coverage.includedMessages} 条文本 · 省略 {prepared.coverage.omittedMessages} 条 · 截取 {prepared.coverage.clippedMessages} 条。{prepared.coverage.sourceSummaries>0?'含来源压缩摘要，原始逐字历史不能证明完整。':''}工具结果和附件需另行核对。</p>{prepared.coverage.needsHistory&&<p role="alert">材料已超出容量，部分历史未带上。请下载完整可读历史并一并交给目标 AI；只复制当前摘录可能漏掉决定。</p>}</>}
+          <Button secondary disabled={busy} onClick={downloadHistory}>下载完整可读历史</Button>{downloaded&&<p role="status">已生成下载：{downloaded}。请确认文件已保存，并附给接手的 AI。</p>}
+        </div>}
         {error && (
           <p role="alert" className="inline-error">
             {error}
           </p>
         )}
       </section>}
+      {migrationVisible&&<AgentMigration state={state} onClose={()=>setMigrationVisible(false)} onConfigure={()=>{setMigrationVisible(false);setTab("配置");}}/>}
       <AgentRoles
         state={state}
         save={save}
@@ -468,7 +493,7 @@ export function AgentsV16({
               种入口；检测到不代表已登录或可控制。更新于{" "}
               {time(state.connections?.agentScannedAt)}
             </p>
-            <p>点击页首「上下文接力」后才读取会话列表元数据；选定会话并预览时才读取正文。</p>
+            <p>点击页首「上下文接力」后，读取本机会话文件以生成标题和摘录；只返回列表所需信息。选定并预览时重新核验来源。</p>
             <p>
               仅本机内存使用，离页丢弃；不存主库、不备份、不上传。每次复制前先预览；只打开已检测应用，不输入、不发送。
             </p>
@@ -531,12 +556,16 @@ export function AgentsV16({
       )}
       {chooser && (
         <Dialog title="换一段会话" onClose={() => setChooser(false)}>
+          <form className="relay-filters" onSubmit={e=>{e.preventDefault();find(true);}}><label>搜索会话<input aria-label="搜索会话" maxLength={200} placeholder="搜索完整可读正文与来源摘要" value={query} disabled={busy} onChange={e=>setQuery(e.target.value)}/></label><Button disabled={busy} type="submit">搜索正文</Button><label>来源 AI<select aria-label="筛选来源 AI" value={sourceFilter} onChange={e=>setSourceFilter(e.target.value)}><option value="">全部来源</option>{[...new Set(listing.sessions.map(s=>s.agentId))].map(id=><option key={id} value={id}>{names[id]||id}</option>)}</select></label><label>项目<select aria-label="筛选项目" value={projectFilter} onChange={e=>setProjectFilter(e.target.value)}><option value="">全部项目</option>{[...new Set(listing.sessions.map(s=>s.project).filter(Boolean))].map(p=><option key={p} value={p}>{p}</option>)}</select></label></form>
+          <p role="status">已扫描范围找到 {filterRelaySessions(listing.sessions,{query:searched.query,source:sourceFilter,project:projectFilter}).length} 段{searched.query?`，搜索：${searched.query}`:''}{listing.scan?` · 已扫描 ${listing.scan.scanned} / ${listing.scan.total}`:''}{listing.nextCursor?'，仍有未扫描内容':''}</p>
+          {listing.nextCursor&&<Button secondary disabled={busy} onClick={()=>find(searched.earlier,true)}>继续扫描</Button>}
+          {error&&<p role="alert">{error}</p>}
           <div className="relay-choices">
-            {listing.sessions.map((s) => (
+            {filterRelaySessions(listing.sessions,{query:searched.query,source:sourceFilter,project:projectFilter}).map((s) => (
               <button type="button" className="relay-choice" key={s.id} disabled={busy} onClick={() => choose(s)}>
                 <b>{s.title || "未命名会话"}</b>
                 <span><small>来源 AI</small>{names[s.agentId] || s.agentId}</span>
-                <span><small>最近更新</small>{time(s.updatedAt)}</span>
+                <span><small>最近更新</small>{time(s.updatedAt)}</span><span>{s.project||"未记录项目"} · {s.rounds} 轮</span>{s.lastUserText&&<span>{s.lastUserText}</span>}{s.matches?.map((m,i)=><span className="relay-match" key={i}><small>{m.kind==='source_compaction'?'来源摘要':m.role==='user'?'用户原文':'助手原文'}</small>{m.snippet}</span>)}
               </button>
             ))}
           </div>

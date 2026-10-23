@@ -70,7 +70,7 @@
 .projects-v16 { --px-cut: polygon(0 0, calc(100% - 15px) 0, calc(100% - 15px) 5px, calc(100% - 10px) 5px, calc(100% - 10px) 10px, calc(100% - 5px) 10px, calc(100% - 5px) 15px, 100% 15px, 100% 100%, 0 100%); }
 /* 空存档 */
 .projects-v16 .pj-save.pj-vacant {
-  isolation: isolate; grid-template-rows: auto auto; align-self: start; min-height: 0; height: auto; border: 0; border-radius: 0; box-shadow: none;
+  isolation: isolate; grid-template-rows: auto 1fr; align-self: stretch; min-height: 180px; height: auto; border: 0; border-radius: 0; box-shadow: none;
   background: var(--line-3); clip-path: var(--px-cut);
   color: var(--muted); text-align: left; font: inherit; cursor: pointer;
 }
@@ -294,5 +294,4 @@
   .projects-v16 .pj-no-active .pj-vacant ~ .pj-vacant { display:none; }
 }
 
-.projects-v16 .pj-cs-code { align-self:center; min-height:28px; margin:var(--s-2); padding:0 var(--s-2); border:1px solid currentColor; border-radius:var(--r-s); background:none; color:var(--cyan); }
-.projects-v16 .pj-cs.git .pj-cs-code { color:var(--violet-2); }
+.projects-v16 .pj-cs-code { white-space:nowrap; }

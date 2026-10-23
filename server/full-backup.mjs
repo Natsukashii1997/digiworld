@@ -5,13 +5,15 @@
 // 普通导出（/api/backup，JSON 合并）保持现状。
 import { lstat, mkdir, open, readdir, readFile, rename, rm } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, isAbsolute } from "node:path";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { unzipSync, zipSync, strToU8, strFromU8 } from "fflate";
 import { openRepository } from "./repository.mjs";
 import { createBackupRecords } from "./backup-records.mjs";
+import { FULL_BACKUP_LIMITS as LIMITS, FULL_BACKUP_LIMIT_MESSAGE } from "../src/full-backup-contract.js";
+
+import {createRestoreOperations, RESTORE_MARKER, restoreId} from "./full-backup-operations.mjs";
 
 export const BACKUP_FORMAT = "workbench-full-backup";
-const LIMITS = { files: 100000, bytes: 1024 * 1024 * 1024, upload: 100 * 1024 * 1024 };
 const fail = (message, status = 400) => Object.assign(new Error(message), { status });
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
@@ -24,7 +26,7 @@ function excluded(path) {
     /^\.guiji-config-.+\.tmp$/.test(name) ||
     /^\.upload-/.test(name) ||
     /^\..+-[0-9a-f-]{36}\.tmp$/.test(name) ||
-    name === ".DS_Store"
+    name === ".DS_Store" || path === RESTORE_MARKER
   );
 }
 
@@ -49,6 +51,7 @@ async function walk(root, { omitSilver = false } = {}) {
     for (const name of names) {
       const path = prefix ? `${prefix}/${name}` : name;
       if (excluded(path)) continue;
+      if (path === "reverse-evidence") { skipped.push({ path, reason: "REA原始证据不随备份，请单独复制reverse-evidence目录；摘要和日志已保留" }); continue; }
       // 旧备份恢复后可能仍有退役目录；不让它进入新生成的备份。
       if(omitSilver && path === "silver"){skipped.push({path,reason:"退役银饰图片目录不进入新备份"});continue;}
       const full = join(dir, name);
@@ -89,9 +92,11 @@ export async function packDirectory(directory, { clock = Date.now } = {}) {
     files = [];
   let total = 0;
   for (const path of paths) {
-    const bytes = new Uint8Array(await readFile(join(directory, ...path.split("/"))));
+    const pathOnDisk = join(directory, ...path.split("/"));
+    if (total + (await lstat(pathOnDisk)).size > LIMITS.dataBytes) throw fail("数据目录超过 1 GiB，无法打包为单个文件",413);
+    const bytes = await readFile(pathOnDisk);
     total += bytes.length;
-    if (total > LIMITS.bytes) throw fail("数据目录超过 1 GB，无法打包为单个文件", 413);
+    if (total > LIMITS.dataBytes) throw fail("数据目录超过 1 GiB，无法打包为单个文件", 413);
     entries[`data/${path}`] = bytes;
     files.push({ path, size: bytes.length, sha256: sha(bytes) });
   }
@@ -106,20 +111,31 @@ export async function packDirectory(directory, { clock = Date.now } = {}) {
     skipped,
   };
   entries["manifest.json"] = strToU8(JSON.stringify(manifest, null, 2));
-  return { bytes: zipSync(entries, { level: 6 }), manifest };
+  if (entries["manifest.json"].length > LIMITS.manifestBytes) throw fail("完整备份清单超过 64 MiB 上限", 413);
+  const bytes = zipSync(entries, { level: 6 });
+  if (bytes.length > LIMITS.archiveBytes) throw fail(FULL_BACKUP_LIMIT_MESSAGE, 413);
+  return { bytes, manifest };
 }
 
 // 解包并逐项核对：清单格式、路径安全、文件集合与清单完全一致、每个文件大小与 SHA256。
 export function inspectBackup(bytes) {
   if (!(bytes instanceof Uint8Array) || bytes.length === 0) throw fail("完整备份文件为空");
+  if (bytes.length > LIMITS.archiveBytes) throw fail(FULL_BACKUP_LIMIT_MESSAGE, 413);
   let declared = 0,
     count = 0,
     entries;
+  const names = new Set();
   try {
     entries = unzipSync(bytes, {
       filter(file) {
-        declared += file.originalSize;
-        if (++count > LIMITS.files + 1 || declared > LIMITS.bytes) throw fail("完整备份解压后过大");
+        if (names.has(file.name)) throw fail("完整备份含重复文件");
+        names.add(file.name);
+        if (!Number.isSafeInteger(file.originalSize) || file.originalSize < 0) throw fail("完整备份文件大小无效");
+        if (file.compression === 0 && file.size !== file.originalSize) throw fail("完整备份文件大小声明不一致");
+        if (file.name === "manifest.json") {
+          if (file.originalSize > LIMITS.manifestBytes) throw fail("完整备份清单超过 64 MiB 上限", 413);
+        } else declared += file.originalSize;
+        if (++count > LIMITS.files + 1 || declared > LIMITS.dataBytes) throw fail("完整备份解压后过大", 413);
         return true;
       },
     });
@@ -128,6 +144,8 @@ export function inspectBackup(bytes) {
     throw fail("不是有效的完整备份文件（无法解压）");
   }
   if (!entries["manifest.json"]) throw fail("完整备份缺少清单 manifest.json");
+  if (entries["manifest.json"].length > LIMITS.manifestBytes) throw fail("完整备份清单超过 64 MiB 上限",413);
+  if (Object.entries(entries).reduce((n,[name,raw])=>n+(name === "manifest.json" ? 0 : raw.length),0) > LIMITS.dataBytes) throw fail("完整备份解压后过大",413);
   let manifest;
   try {
     manifest = JSON.parse(strFromU8(entries["manifest.json"]));
@@ -139,8 +157,8 @@ export function inspectBackup(bytes) {
   const seen = new Set();
   for (const file of manifest.files) {
     if (
-      !safePath(file?.path) ||
-      !Number.isSafeInteger(file.size) ||
+      !safePath(file?.path) || file.path === RESTORE_MARKER ||
+      !Number.isSafeInteger(file.size) || file.size < 0 ||
       !/^[a-f0-9]{64}$/.test(file.sha256 || "") ||
       seen.has(file.path)
     )
@@ -152,13 +170,16 @@ export function inspectBackup(bytes) {
   );
   if (extra.length) throw fail(`完整备份含有清单之外的文件：${extra[0]}`);
   const files = new Map();
+  let total = 0;
   for (const file of manifest.files) {
     const data = entries[`data/${file.path}`];
     if (!data) throw fail(`完整备份缺少清单中的文件：${file.path}`);
     if (data.length !== file.size || sha(data) !== file.sha256)
       throw fail(`完整备份校验失败：${file.path} 的 SHA256 与清单不一致，文件可能被篡改`);
     files.set(file.path, data);
+    total += data.length;
   }
+  if (total !== manifest.totalBytes || total > LIMITS.dataBytes || manifest.files.length > LIMITS.files) throw fail("完整备份清单总量与文件不一致");
   return { manifest, files, mainDatabase: mainDatabase((p) => files.get(p)) };
 }
 
@@ -204,7 +225,7 @@ async function durableWrite(path, bytes) {
 }
 
 // 恢复到新的数据目录：目标必须不存在，且与当前目录互不包含。
-export async function restoreTo(bytes, target, { current } = {}) {
+export async function restoreTo(bytes, target, { current, marker, afterRename } = {}) {
   const { manifest, files } = inspectBackup(bytes);
   target = resolve(target);
   if (current && (within(resolve(current), target) || within(target, resolve(current))))
@@ -237,7 +258,13 @@ export async function restoreTo(bytes, target, { current } = {}) {
       }
     }
     if (await exists(target)) throw fail("恢复目标已存在，不覆盖已有目录", 409);
+    if (marker) await durableWrite(join(staging, RESTORE_MARKER), JSON.stringify(marker));
+    const staged = await open(staging, "r");
+    try { await staged.sync(); } finally { await staged.close(); }
     await rename(staging, target);
+    const parent = await open(dirname(target), "r");
+    try { await parent.sync(); } finally { await parent.close(); }
+    await afterRename?.();
     return { target, verified, mainDatabase: db };
   } catch (error) {
     await rm(staging, { recursive: true, force: true });
@@ -251,9 +278,10 @@ const stamp = (ms) => {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 };
 
-export function createFullBackup(repository, { clock = Date.now, records = createBackupRecords(repository.directory, { clock }) } = {}) {
+export function createFullBackup(repository, { clock = Date.now, records = createBackupRecords(repository.directory, { clock }), afterRename } = {}) {
   const directory = resolve(repository.directory);
-  const previews = new Map();
+  const previews = new Map(), active = new Set();
+  const operations = createRestoreOperations(directory);
   function prune() {
     for (const [token, item] of previews) if (item.expires <= clock()) previews.delete(token);
   }
@@ -276,18 +304,17 @@ export function createFullBackup(repository, { clock = Date.now, records = creat
     async preview(input) {
       const bytes = input?.bytes;
       if (!(bytes instanceof Uint8Array)) throw fail("请选择完整备份文件（.zip）");
-      if (bytes.length > LIMITS.upload) throw fail("完整备份文件超过 100 MB 上传限制", 413);
+      if (bytes.length > LIMITS.archiveBytes) throw fail(FULL_BACKUP_LIMIT_MESSAGE, 413);
       const result = await previewRestore(directory, bytes);
       prune();
-      let target = join(dirname(directory), `${basename(directory)}-恢复-${stamp(clock())}`);
-      for (let n = 2; await exists(target); n++)
-        target = join(dirname(directory), `${basename(directory)}-恢复-${stamp(clock())}-${n}`);
+      const operationId = randomUUID(), target = operations.target(operationId);
       const token = randomBytes(16).toString("hex");
       previews.clear(); // 只保留最近一次预览，避免在内存中积压大文件
-      previews.set(token, { bytes, target, expires: clock() + 10 * 60 * 1000 });
+      previews.set(token, { bytes, target, operationId, expires: clock() + 10 * 60 * 1000 });
       const current = await repository.read().catch(() => null);
       return {
         token,
+        operationId,
         target,
         current: { directory, revision: current?.revision ?? null },
         backup: {
@@ -300,12 +327,32 @@ export function createFullBackup(repository, { clock = Date.now, records = creat
         summary: result.summary,
       };
     },
+    async scope() { return {identity:await operations.scope()}; },
+    operation(id) { return operations.result(id, {running:active.has(id)}); },
     async restore(input) {
       prune();
-      const item = previews.get(input?.token);
-      if (!item) throw fail("预览已失效，请重新选择备份文件并预览", 409);
-      previews.delete(input.token);
-      return restoreTo(item.bytes, item.target, { current: directory });
+      const item = previews.get(input?.token), id = input?.operationId || item?.operationId;
+      if (!restoreId(id)) throw Object.assign(fail("预览已失效，请重新选择备份文件并预览",409),{operationNotStarted:true});
+      if (active.has(id)) return {operationId:id,status:'processing'};
+      active.add(id);
+      try {
+        const existing = await operations.get(id);
+        if (existing) {
+          if (sha(String(input?.token)) !== existing.tokenSha) throw fail('恢复编号与原预览不一致，请核对原操作',409);
+          return operations.result(id);
+        }
+        if (!item || item.operationId !== id) throw Object.assign(fail("预览已失效，请重新选择备份文件并预览",409),{operationNotStarted:true});
+        const {manifest,mainDatabase} = inspectBackup(item.bytes);
+        const plan = await operations.prepare({id,bytes:item.bytes,token:input.token,manifest,mainDatabase,at:new Date(clock()).toISOString()});
+        previews.delete(input.token);
+        try {
+          const result = await restoreTo(item.bytes, item.target, {current:directory,marker:operations.marker(plan),afterRename});
+          await operations.complete(id,new Date(clock()).toISOString());
+          return {...result,operationId:id,status:'complete'};
+        } catch (cause) {
+          throw Object.assign(fail('恢复结果待核对，请使用原操作编号查询，不要重复恢复',503),{unknownResult:true,cause});
+        }
+      } finally {active.delete(id);}
     },
     close() {
       previews.clear();

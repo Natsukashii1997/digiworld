@@ -32,7 +32,7 @@ export function createAssetActivity(repository, deliveries, clock = Date.now) {
           const asset = stored.assets.find((a) => a.id === payload.assetId);
           if (!asset || asset.archived)
             throw failure("资产不存在或已归档", 409);
-          if (payload.action === "copy-skill") {
+          if (payload.action === "copy-skill" || (payload.action === "copy-design" && payload.deliveryId)) {
             const links = await deliveries.list(asset.id);
             if (
               !links.some(

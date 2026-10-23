@@ -1,5 +1,5 @@
 // AI HOT（路线 v3 切片 5.3，产品定义 v1.2 §4.8，问题共识基线 D34）：aihot.news 公开只读接口的本机拉取与缓存。
-// - 接口返回一律当作不可信文本：只取标题、摘要、链接、来源、时间六个白名单字段，截断长度，链接只允许 http/https。
+// - 接口返回一律当作不可信文本：只取标题、摘要、链接、来源、分类与日期白名单字段，截断长度，链接只允许 http/https。
 // - 缓存与设置是数据目录下的 JSON（aihot/cache.json、aihot/settings.json），有大小上限；不进主库、不进备份。
 // - 拉取失败保留上次缓存，标注失败与上次成功时间；网络访问可关闭；首次拉取须由页面上的“开始拉取”确认后才发生。
 // v1公开文档于2026-10-06核对：items.category、source.name、links.original、publishedAt；热点latestAt。兼容旧缓存别名。
@@ -22,6 +22,35 @@ export const AIHOT_LIMITS = {
 export const SECTIONS = { selected: "精选", hot: "热点", daily: "日报" };
 const DEFAULT_SETTINGS = { enabled: true, intervalHours: 3, acknowledgedAt: "" };
 const HOUR = 60 * 60 * 1000;
+const RETRY_DELAYS = [60_000, 5 * 60_000, 15 * 60_000];
+const NETWORK_CODES = new Set(['ENETUNREACH', 'EHOSTUNREACH', 'ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EAI_AGAIN', 'ENOTFOUND', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_SOCKET']);
+function diagnosis(error) {
+  const code = [error?.code, error?.cause?.code].find(c => NETWORK_CODES.has(c));
+  if (code) return { type: 'network', code, retryable: true };
+  if (['TimeoutError', 'AbortError'].includes(error?.name)) return { type: 'timeout', code: 'TIMEOUT', retryable: true };
+  if (Number.isInteger(error?.httpStatus)) return { type: 'http', code: `HTTP_${error.httpStatus}`, retryable: error.httpStatus === 429 || error.httpStatus >= 500 };
+  if (error?.safeCode) return { type: 'payload', code: error.safeCode, retryable: false };
+  if (error instanceof TypeError && /fetch failed/i.test(error.message)) return { type: 'network', code: 'FETCH_FAILED', retryable: true };
+  return { type: 'unknown', code: 'UNKNOWN', retryable: false };
+}
+function retryAfter(value, at) {
+  if (!value) return 0;
+  const delay = /^\d+(?:\.\d+)?$/.test(value.trim()) ? Number(value) * 1000 : Date.parse(value) - at;
+  return Number.isFinite(delay) && delay > 0 && at + delay <= 8.64e15 ? at + delay : 0;
+}
+function cleanDiagnostics(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.filter(d => {
+    if (!isObject(d) || !own(SECTIONS, d.section) || seen.has(d.section)) return false;
+    const valid = d.type === 'network' && (NETWORK_CODES.has(d.code) || d.code === 'FETCH_FAILED') ||
+      d.type === 'timeout' && d.code === 'TIMEOUT' || d.type === 'http' && /^HTTP_[1-5]\d\d$/.test(d.code) ||
+      d.type === 'payload' && ['RESPONSE_TOO_LARGE', 'INVALID_JSON', 'NO_DAILY_DATE'].includes(d.code) || d.type === 'unknown' && d.code === 'UNKNOWN';
+    if (valid) seen.add(d.section);
+    return valid;
+  }).slice(0, 3).map(d => ({ section: d.section, type: d.type, code: d.code, retryable: d.retryable === true }));
+}
+const failureText = diagnostics => `拉取失败${diagnostics.length ? `：${diagnostics.map(d => `${SECTIONS[d.section]}（${d.code}）`).join('、')}` : '，旧错误详情未记录'}；已保留上次内容`;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const fail = (message, status = 400) => Object.assign(new Error(message), { status });
@@ -92,6 +121,7 @@ export function sanitizeItem(raw) {
     url: cleanUrl(url),
     source: cleanText(sourceOf(raw), AIHOT_LIMITS.source),
     publishedAt: cleanDate(at),
+    ...(cleanDate(raw.discoveredAt) ? { discoveredAt: cleanDate(raw.discoveredAt) } : {}),
   };
 }
 
@@ -144,6 +174,10 @@ const emptyCache = () => ({
   lastAttemptAt: "",
   lastSuccessAt: "",
   error: "",
+  consecutiveFailures: 0,
+  nextRetryAt: "",
+  rateLimitedUntil: "",
+  diagnostics: [],
   sections: { selected: emptySection(), hot: emptySection(), daily: { ...emptySection(), date: "" } },
 });
 // 从磁盘读回的缓存同样当作不可信：重新走一遍白名单。
@@ -152,12 +186,16 @@ function sanitizeCache(raw) {
   if (!isObject(raw)) return c;
   if (["ok", "failed", "never"].includes(raw.status)) c.status = raw.status;
   for (const k of ["lastAttemptAt", "lastSuccessAt"]) c[k] = cleanDate(raw[k]);
-  c.error = cleanText(raw.error, 300);
+  c.consecutiveFailures = Number.isSafeInteger(raw.consecutiveFailures) ? Math.min(1000, Math.max(0, raw.consecutiveFailures)) : 0;
+  for (const k of ['nextRetryAt', 'rateLimitedUntil']) c[k] = cleanDate(raw[k]);
+  c.diagnostics = cleanDiagnostics(raw.diagnostics);
+  c.error = c.status === 'failed' ? failureText(c.diagnostics) : '';
   const sections = isObject(raw.sections) ? raw.sections : {};
   for (const key of Object.keys(SECTIONS)) {
     const s = isObject(sections[key]) ? sections[key] : {};
     c.sections[key].fetchedAt = cleanDate(s.fetchedAt);
     c.sections[key].items = Array.isArray(s.items) ? sanitizeList(s.items) : [];
+    if (key === "selected" && ["24h", "7d"].includes(s.window)) c.sections[key].window = s.window;
   }
   const date = sections.daily?.date;
   c.sections.daily.date = typeof date === "string" && DATE.test(date) ? date : "";
@@ -253,23 +291,23 @@ export function createAiHot({ directory, fetch: fetchImpl = globalThis.fetch, cl
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(AIHOT_LIMITS.timeoutMs),
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) throw Object.assign(new Error(`HTTP ${response.status}`), { httpStatus: response.status, retryAfter: [429, 503].includes(response.status) ? retryAfter(response.headers.get('retry-after'), clock()) : 0 });
     const declared = Number(response.headers.get("content-length"));
-    if (Number.isFinite(declared) && declared > AIHOT_LIMITS.responseBytes) throw new Error("响应过大");
+    if (Number.isFinite(declared) && declared > AIHOT_LIMITS.responseBytes) throw Object.assign(new Error("响应过大"), { safeCode: 'RESPONSE_TOO_LARGE' });
     const text = await response.text();
-    if (Buffer.byteLength(text) > AIHOT_LIMITS.responseBytes) throw new Error("响应过大");
+    if (Buffer.byteLength(text) > AIHOT_LIMITS.responseBytes) throw Object.assign(new Error("响应过大"), { safeCode: 'RESPONSE_TOO_LARGE' });
     try {
       return JSON.parse(text);
     } catch {
-      throw new Error("不是有效 JSON");
+      throw Object.assign(new Error("不是有效 JSON"), { safeCode: 'INVALID_JSON' });
     }
   }
   const loaders = {
-    selected: async () => ({ items: sanitizeList(await getJson("items?mode=selected&window=24h")) }),
+    selected: async () => ({ window: "7d", items: sanitizeList(await getJson("items?mode=selected&window=7d&limit=10")).slice(0, 10) }),
     hot: async () => ({ items: sanitizeList(await getJson("hot-topics")) }),
     daily: async () => {
       const date = dailyDate(await getJson("dailies?limit=1"));
-      if (!date) throw new Error("没有可用的日报日期");
+      if (!date) throw Object.assign(new Error("没有可用的日报日期"), { safeCode: 'NO_DAILY_DATE' });
       return { date, items: sanitizeList(await getJson(`dailies/${date}`)) };
     },
   };
@@ -283,23 +321,36 @@ export function createAiHot({ directory, fetch: fetchImpl = globalThis.fetch, cl
       await atomicWrite(dir, "settings.json", JSON.stringify({ ...settings, acknowledgedAt: at }));
     // 逐个分区顺序请求：一次最多 4 个 GET，失败的分区保留旧内容。
     const cache = await readCache();
+    if (Date.parse(cache.rateLimitedUntil) > clock()) return status();
     const failed = [];
+    let limitedUntil = 0, rateError;
     for (const key of Object.keys(SECTIONS)) {
       try {
+        if (rateError) throw rateError;
         const result = await loaders[key]();
         cache.sections[key] = { ...cache.sections[key], ...result, fetchedAt: at };
       } catch (error) {
-        failed.push(`${SECTIONS[key]}（${cleanText(error?.message || "未知错误", 60)}）`);
+        failed.push({ section: key, ...diagnosis(error) });
+        if (error.httpStatus === 429 && !error.retryAfter) error.retryAfter = clock() + (RETRY_DELAYS[cache.consecutiveFailures] || settings.intervalHours * HOUR);
+        limitedUntil = Math.max(limitedUntil, error.retryAfter || 0);
+        if (limitedUntil > clock()) rateError = error;
       }
     }
     cache.lastAttemptAt = at;
+    cache.diagnostics = failed;
+    cache.rateLimitedUntil = limitedUntil ? new Date(limitedUntil).toISOString() : '';
+    cache.nextRetryAt = '';
     if (failed.length) {
       cache.status = "failed";
-      cache.error = `拉取失败：${failed.join("、")}；已保留上次内容`;
+      cache.consecutiveFailures = Math.min(1000, cache.consecutiveFailures + 1);
+      cache.error = failureText(failed);
+      const delay = RETRY_DELAYS[cache.consecutiveFailures - 1];
+      if (delay && failed.some(d => d.retryable)) cache.nextRetryAt = new Date(Math.max(clock() + delay, limitedUntil)).toISOString();
     } else {
       cache.status = "ok";
       cache.error = "";
       cache.lastSuccessAt = at;
+      cache.consecutiveFailures = 0;
     }
     await atomicWrite(dir, "cache.json", fitCache(cache));
     return status();
@@ -313,7 +364,8 @@ export function createAiHot({ directory, fetch: fetchImpl = globalThis.fetch, cl
     if (!settings.enabled || !settings.acknowledgedAt || inflight) return;
     const cache = await readCache();
     const last = Date.parse(cache.lastAttemptAt);
-    if (Number.isFinite(last) && now().getTime() - last < settings.intervalHours * HOUR) return;
+    const due = cache.status === 'failed' && cache.consecutiveFailures === 0 ? last + RETRY_DELAYS[0] : Date.parse(cache.nextRetryAt) || last + settings.intervalHours * HOUR;
+    if (clock() < Math.max(due || 0, Date.parse(cache.rateLimitedUntil) || 0)) return;
     await refresh().catch(() => {});
   }
   return {

@@ -234,7 +234,7 @@ try {
   await page.goto("about:blank");
   await page.goto(app.url + "/#notes");
   await page.locator(".notes-v16 .sn-wall").waitFor();
-  assert.equal(await page.locator('.page-bounds').innerText(),'只存本机');
+  assert.equal(await page.locator('.page-bounds').count(),0);
   const cards=await page.locator('.sn[data-note-id]').count();assert.equal(cards,12);assert.equal(await page.getByRole('button',{name:/^更多操作：|^写入 Obsidian：/}).count(),0);
   assert.equal(requests.filter(r=>/\/api\/capabilities\/vault\/(apply|rollback|preview-note|preview-profile)/.test(r)).length,0);
   await legacy.hover();await legacy.getByRole('button',{name:/^复制：/}).click();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'- 旧笔记不是列表\n第二行');

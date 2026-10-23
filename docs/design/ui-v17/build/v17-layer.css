@@ -1,0 +1,718 @@
+/* UI v17 系统层视觉稿样式层（2026-10-10，常浩拍板方向 A“主机与卡带”）。
+   只用于视觉稿：注入到真实页面之上，由 v17-shell.js 配合做最小 DOM 搬移。
+   Codex 落地时以 SYSTEM-BRIEF.md 为准，本文件是数值参照，不要原样拷进 src。 */
+
+html.v17 {
+  /* 字阶 5 档 */
+  --v-label: 11px;
+  --v-body: 14px;
+  --v-sub: 17px;
+  --v-section: 22px;
+  --v-display: 40px;
+  /* 节奏 3 值 */
+  --v-tight: 12px;
+  --v-group: 24px;
+  --v-block: 64px;
+  /* 圆角 3 档 */
+  --v-r1: 6px;
+  --v-r2: 12px;
+  --v-r3: 20px;
+  /* 外壳 */
+  --dev-w: 268px;
+  --dev-gap: 12px;
+  --gutter: 40px;
+  /* 机身材质：只给外壳用 */
+  --m-device: linear-gradient(180deg, #1b2644 0%, #141d35 14%, #0f1629 100%);
+  --m-device-edge: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(140, 178, 255, 0.1),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.45), 0 40px 80px -40px #000, 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+/* ---------- 外壳：机身 ---------- */
+.v17 .app-shell {
+  grid-template-columns: var(--dev-w) minmax(0, 1fr);
+}
+.v17 .topbar {
+  display: none;
+}
+.v17 .sidebar {
+  top: var(--dev-gap);
+  height: calc(100vh - var(--dev-gap) * 2);
+  margin: var(--dev-gap) 0 var(--dev-gap) var(--dev-gap);
+  padding: 12px 12px 14px;
+  gap: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--v-r3);
+  background: var(--m-device);
+  box-shadow: var(--m-device-edge);
+  backdrop-filter: none;
+}
+/* 机身上沿的两颗螺丝与一道分模线：只出现在外壳上 */
+.v17 .sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 8px 8px auto;
+  height: 4px;
+  background: radial-gradient(circle at 2px 2px, rgba(140, 178, 255, 0.28) 1.5px, transparent 2px) left / 4px 4px no-repeat,
+    radial-gradient(circle at 2px 2px, rgba(140, 178, 255, 0.28) 1.5px, transparent 2px) right / 4px 4px no-repeat;
+  pointer-events: none;
+}
+
+/* 品牌行 = 00 世界总览卡带 */
+.v17 .v17-bezel {
+  display: grid;
+  gap: 8px;
+}
+.v17 .brand {
+  min-height: 44px;
+  padding: 0 8px;
+  gap: 10px;
+  border-radius: var(--v-r1);
+}
+.v17 .brand-crest {
+  width: 30px;
+  height: 30px;
+}
+.v17 .brand-crest svg {
+  width: 22px;
+  height: 22px;
+}
+.v17 .brand-text img.pixel-text {
+  height: 17px;
+  width: auto;
+}
+.v17 .brand-en {
+  display: none;
+}
+.v17 .brand .v17-code {
+  margin-left: auto;
+}
+.v17 .brand.v17-here .v17-code {
+  color: #1f0f00;
+  background: var(--orange);
+}
+
+/* 伙伴屏：顶部加大；有事才报信 */
+.v17 .partner {
+  position: relative;
+  display: grid;
+  gap: 0;
+  padding: 8px;
+  border: 0;
+  border-radius: 14px;
+  background: #060a13;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.85), inset 0 0 0 1px rgba(140, 178, 255, 0.12), 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.v17 .partner-screen {
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.v17 .partner-line {
+  display: none;
+}
+.v17 .partner-season {
+  font: 500 var(--v-label) / 1 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 0;
+}
+/* 电源灯：屏幕左框上，表示保存状态 */
+.v17 .v17-led {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: var(--lcd);
+  box-shadow: 0 0 6px var(--lcd);
+}
+/* 报信画面：液晶反色块 + 数字；点屏幕打开待处理 */
+.v17 .v17-signal {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 8px;
+  height: 80px;
+  z-index: 3;
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+  background: #aebc93;
+  color: #1c2616;
+  box-shadow: inset 0 0 0 1px rgba(28, 38, 22, 0.25);
+  background-image: radial-gradient(rgba(28, 38, 22, 0.13) 1px, transparent 1.2px);
+  background-size: 4px 4px;
+}
+.v17 .v17-signal b {
+  font: 700 44px/1 var(--mono);
+  letter-spacing: -0.04em;
+  animation: v17-blink 1.6s steps(1) infinite;
+}
+.v17 .v17-signal span {
+  display: grid;
+  gap: 4px;
+  font: 700 var(--v-body) / 1.2 var(--sans);
+}
+.v17 .v17-signal small {
+  font: 600 var(--v-label) / 1 var(--mono);
+  letter-spacing: 0.12em;
+  opacity: 0.7;
+}
+@keyframes v17-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* 三个功能键 */
+.v17 .v17-keys {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px 44px;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+.v17 .v17-keys > button {
+  height: 44px;
+  margin: 0;
+  border-radius: 10px;
+  border: 0;
+  background: linear-gradient(180deg, #1d2846, #151e36);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(140, 178, 255, 0.12), 0 3px 0 #0a0f1d,
+    0 6px 12px -6px #000;
+  color: var(--text-2);
+}
+.v17 .v17-keys > button:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 0 0 1px rgba(140, 178, 255, 0.12), 0 1px 0 #0a0f1d;
+}
+.v17 .v17-keys .topbar-search {
+  width: auto;
+  min-width: 0;
+  padding: 0 10px 0 12px;
+  font-size: var(--v-body);
+}
+.v17 .v17-keys .topbar-search kbd {
+  font: 500 var(--v-label) / 1 var(--mono);
+  padding: 4px 5px;
+}
+.v17 .v17-keys .topbar-inbox .nav-count {
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  font: 700 var(--v-label) / 20px var(--mono);
+  box-shadow: 0 0 0 2px #121a30;
+}
+
+/* ---------- 卡带架 ---------- */
+.v17 .nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 0;
+  /* 右侧留 8px 给“插入中”的卡带推进；底部渐隐提示还有卡带 */
+  padding: 0 8px 12px 0;
+  scrollbar-width: none;
+  mask-image: linear-gradient(180deg, #000 calc(100% - 24px), transparent);
+}
+.v17 .nav-zone-today {
+  display: none;
+}
+.v17 .nav-zone + .nav-zone {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+.v17 .nav-divider {
+  display: none;
+}
+.v17 .nav-zone-title {
+  display: none !important;
+  height: auto;
+  padding: 2px 8px 6px;
+  font: 600 var(--v-label) / 1 var(--sans);
+  letter-spacing: 0.12em;
+  color: var(--faint);
+}
+.v17 .nav-zone-title small {
+  display: none;
+}
+.v17 .nav-group {
+  display: grid;
+  gap: 0;
+}
+.v17 .nav-item,
+.v17 .brand {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+}
+.v17 .nav-item {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 12px 0 8px;
+  border-radius: 4px 10px 10px 4px;
+  font-size: var(--v-body);
+  color: var(--text-2);
+  background: transparent;
+  transition: transform var(--t-mid) var(--ease), background var(--t-fast), color var(--t-fast);
+}
+/* 卡带脊之间的细槽 */
+.v17 .nav-item + .nav-item::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.v17 .nav-item > svg {
+  display: none;
+}
+.v17 .v17-code {
+  display: grid;
+  place-items: center;
+  height: 22px;
+  border-radius: 4px;
+  font: 600 var(--v-label) / 1 var(--mono);
+  letter-spacing: 0.04em;
+  font-style: normal;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.38);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.v17 .nav-item:hover {
+  transform: translateX(4px);
+  color: var(--text);
+  background: rgba(140, 178, 255, 0.05);
+}
+/* 插入中：卡带向内容区推进 8px，亮灯 */
+.v17 .nav-item.active {
+  transform: translateX(8px);
+  color: var(--text);
+  font-weight: 600;
+  background: linear-gradient(90deg, #1e2a4b, #172240);
+  box-shadow: inset 0 0 0 1px rgba(255, 138, 36, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 10px 20px -12px rgba(255, 138, 36, 0.7);
+}
+.v17 .nav-item.active::before {
+  display: none;
+}
+.v17 .nav-item.active + .nav-item::before {
+  display: none;
+}
+.v17 .nav-item.active .v17-code {
+  color: #1f0f00;
+  background: var(--orange);
+  box-shadow: 0 0 10px rgba(255, 138, 36, 0.55);
+}
+.v17 .nav-item .nav-count {
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  font: 500 var(--v-label) / 1 var(--mono);
+  color: var(--muted);
+  background: none;
+  border: 0;
+}
+.v17 .nav-item .nav-flag {
+  font: 500 var(--v-label) / 1 var(--sans);
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+.v17 .save-state {
+  display: none;
+}
+/* 系统键：设置、存档点，机身底部一对药丸键 */
+.v17 .v17-syskeys {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.v17 .v17-syskeys .nav-item {
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 6px;
+  padding: 0 8px 0 6px;
+  border-radius: 22px;
+  font-size: 13px;
+  background: linear-gradient(180deg, #1a2441, #131b31);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(140, 178, 255, 0.1), 0 2px 0 #0a0f1d;
+}
+.v17 .v17-syskeys .nav-item::before {
+  display: none;
+}
+.v17 .v17-syskeys .nav-item .v17-code {
+  border-radius: 11px;
+}
+.v17 .v17-syskeys .nav-item.active {
+  transform: none;
+}
+
+/* ---------- 内容区：卡带标签条 ---------- */
+.v17 .main-content {
+  padding: 0 var(--gutter) 96px;
+  animation: none;
+}
+.v17 .page-heading {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 76px;
+  margin: 0 calc(var(--gutter) * -1) var(--v-group);
+  padding: 16px var(--gutter);
+  background: rgba(7, 11, 22, 0.86);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+/* 插入触点：与机身里亮着的卡带同色，宽度对齐编号 */
+.v17 .page-heading::after {
+  content: "";
+  position: absolute;
+  left: var(--gutter);
+  bottom: -1px;
+  width: 44px;
+  height: 2px;
+  background: var(--orange);
+  box-shadow: 0 0 12px rgba(255, 138, 36, 0.8);
+}
+.v17 .page-heading-main,
+.v17 .page-eyebrow,
+.v17 .title-row {
+  display: contents;
+}
+.v17 .page-heading .lcd-num,
+.v17 .page-heading .page-eyebrow > span:not(.page-code):not(.maturity),
+.v17 .page-lead,
+.v17 .page-mark,
+.v17 .page-bounds {
+  display: none !important;
+}
+.v17 .page-heading .page-code {
+  order: 0;
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--v-r1);
+  font: 700 var(--v-body) / 1 var(--mono);
+  color: var(--orange);
+  border: 1px solid rgba(255, 138, 36, 0.55);
+  background: rgba(255, 138, 36, 0.08);
+}
+.v17 .page-heading h1 {
+  order: 1;
+  margin: 0;
+  font-size: var(--v-section);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.v17 .page-heading .page-help {
+  order: 2;
+  margin: 0 -6px;
+}
+.v17 .page-heading .page-help::before {
+  width: 22px;
+  height: 22px;
+}
+.v17 .page-heading .maturity {
+  order: 3;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 500 var(--v-label) / 1 var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.v17 .page-heading-action {
+  order: 4;
+  margin-left: auto;
+  align-self: center;
+}
+
+/* 展示页：标签条在顶端透明，主角直接贴着开场 */
+.v17 .v17-showcase .page-heading {
+  background: linear-gradient(180deg, rgba(7, 11, 22, 0.92), rgba(7, 11, 22, 0.6));
+  border-bottom-color: transparent;
+}
+
+/* ---------- 通用细节 ---------- */
+.v17 .main-content :is(small, .meta, .card-type, .cover-code) {
+  font-size: max(var(--v-label), 1em);
+}
+.v17 .main-content .button.primary,
+.v17 .main-content .button.accent {
+  box-shadow: 0 6px 18px -8px rgba(255, 138, 36, 0.7);
+}
+
+/* ---------- 样板一：资产仓库（展示页） ---------- */
+.v17 .page-assets .asset-heading-actions {
+  gap: 8px;
+}
+.v17 .page-assets .inline-search {
+  width: 300px;
+  height: 44px;
+}
+.v17 .page-assets .inline-search input {
+  height: 42px;
+}
+.v17 .page-assets .page-heading-action .button {
+  height: 44px;
+}
+/* 类型架：分类不是筛选器而是陈列架的隔板 */
+.v17 .page-assets .asset-toolbar {
+  margin: 8px 0 var(--v-group);
+  align-items: end;
+}
+.v17 .page-assets .segmented {
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+.v17 .page-assets .segmented button {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--v-r1);
+  font-size: var(--v-body);
+  color: var(--text-2);
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+}
+.v17 .page-assets .segmented button span {
+  font: 500 var(--v-label) / 1 var(--mono);
+  color: var(--muted);
+  margin-left: 6px;
+}
+.v17 .page-assets .segmented button.active {
+  color: var(--text);
+  font-weight: 600;
+  background: none;
+  box-shadow: none;
+  border-bottom-color: var(--orange);
+}
+.v17 .page-assets .segmented button.active span {
+  color: var(--orange);
+}
+.v17 .page-assets .collection-meta {
+  display: none;
+}
+.v17 .page-assets .asset-grid {
+  gap: var(--v-group);
+}
+/* 热度为 0 时退后：只有真实使用过的数字才是橙色 */
+.v17 .page-assets .cover-uses.v17-zero {
+  color: var(--faint) !important;
+  opacity: 0.55;
+  font-size: 22px !important;
+  text-shadow: none !important;
+}
+.v17 .page-assets .card-body p.v17-placeholder {
+  color: var(--faint);
+}
+.v17 .page-assets .card-bottom {
+  font-size: var(--v-label);
+}
+
+/* ---------- 样板二：设置（工具页） ---------- */
+.v17 .settings-v16 .st-layout {
+  margin-top: 0;
+  gap: var(--v-block);
+}
+/* 分类与内容顶对齐：右侧标题与左侧第一项同高 */
+.v17 .settings-v16 .st-h {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 var(--v-tight);
+  font-size: var(--v-section);
+}
+.v17 .settings-v16 .st-h small,
+.v17 .settings-v16 .st-h span {
+  font-size: var(--v-body);
+  font-weight: 400;
+  color: var(--muted);
+}
+.v17 .settings-v16 .st-nav button {
+  min-height: 52px;
+  border-radius: var(--v-r1);
+}
+@media (min-width: 761px) {
+/* 权限表：行高收紧，操作列定宽右对齐，按钮同宽 */
+.v17 .settings-v16 .st-tr {
+  grid-template-columns: minmax(0, 1fr) 104px 176px 200px;
+  padding: 12px var(--v-group);
+  min-height: 68px;
+}
+.v17 .settings-v16 .st-th {
+  min-height: 0;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: var(--v-label);
+  letter-spacing: 0.12em;
+}
+.v17 .settings-v16 .st-th > :last-child {
+  justify-self: end;
+}
+.v17 .settings-v16 .st-last {
+  white-space: nowrap;
+  font-size: 13px;
+}
+.v17 .settings-v16 .st-act {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.v17 .settings-v16 .st-act .button {
+  min-width: 92px;
+  justify-content: center;
+}
+}
+.v17 .settings-v16 .st-group {
+  border-radius: var(--v-r2);
+}
+
+/* ---------- 统一降级行（G6）与空位（G7） ---------- */
+.v17 .v17-degrade {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 4px;
+  font-size: var(--v-body);
+  color: var(--text-2);
+}
+.v17 .v17-degrade i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--yellow);
+}
+.v17 .v17-degrade button {
+  margin-left: auto;
+}
+
+/* ---------- 390 ---------- */
+@media (max-width: 960px) {
+  html.v17 {
+    --gutter: 16px;
+  }
+  .v17 .app-shell {
+    grid-template-columns: 1fr;
+  }
+  .v17 .sidebar {
+    top: 0;
+    height: 100vh;
+    margin: 0;
+    width: 300px;
+    border-radius: 0 var(--v-r3) var(--v-r3) 0;
+  }
+  /* 手机顶栏就是卡带标签条 */
+  .v17 .topbar {
+    display: flex;
+    height: 60px;
+    padding: 0 8px 0 4px;
+    background: rgba(7, 11, 22, 0.9);
+  }
+  .v17 .crumb-root,
+  .v17 .crumb-sep {
+    display: none;
+  }
+  .v17 .crumbs {
+    gap: 10px;
+    font-size: var(--sub, 17px);
+  }
+  .v17 .crumbs .crumb-code {
+    display: grid;
+    place-items: center;
+    min-width: 36px;
+    height: 26px;
+    font: 700 13px/1 var(--mono);
+    color: var(--orange);
+    border-color: rgba(255, 138, 36, 0.55);
+    background: rgba(255, 138, 36, 0.08);
+  }
+  .v17 .crumbs strong {
+    font-size: var(--v-sub);
+    font-weight: 700;
+  }
+  .v17 .topbar::after {
+    content: "";
+    position: absolute;
+    left: 52px;
+    bottom: -1px;
+    width: 36px;
+    height: 2px;
+    background: var(--orange);
+    box-shadow: 0 0 10px rgba(255, 138, 36, 0.8);
+  }
+  .v17 .topbar-actions .v17-mobile-key {
+    display: inline-grid;
+  }
+  .v17 .page-heading {
+    position: static;
+    min-height: 0;
+    margin: 0 0 var(--v-tight);
+    padding: 16px 0 0;
+    background: none;
+    border: 0;
+    backdrop-filter: none;
+  }
+  .v17 .page-heading::after,
+  .v17 .page-heading .page-code,
+  .v17 .page-heading h1,
+  .v17 .page-heading .maturity {
+    display: none;
+  }
+  .v17 .page-heading-action {
+    flex: 1;
+    min-width: 0;
+  }
+  .v17 .page-assets .asset-heading-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .v17 .page-assets .inline-search {
+    width: auto;
+  }
+  .v17 .page-assets .segmented {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    mask-image: linear-gradient(90deg, #000 82%, transparent);
+    scrollbar-width: none;
+  }
+  .v17 .page-assets .segmented button {
+    flex: none;
+  }
+  .v17 .settings-v16 .st-nav {
+    mask-image: linear-gradient(90deg, #000 82%, transparent);
+  }
+  .v17 .partner-screen,
+  .v17 .v17-signal {
+    height: 72px;
+  }
+}

@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createFloatingNotes} from '../src/floating-notes-store.js';
+import {editNote} from '../server/notes.mjs';
+import {noteContent,imageMarker} from '../src/note-image-model.js';
+import {stringify,parse} from '../src/serialization.js';
+import {mkdtemp,rm,realpath} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createNoteImages} from '../server/note-images.mjs';
+import {packDirectory,restoreTo} from '../server/full-backup.mjs';
+import {openRepository} from '../server/repository.mjs';
+import {seed} from '../src/store.js';
+const image='a'.repeat(64)+'.png';
+test('image references survive offline unknown-save recovery and are compared with remote images',async()=>{let disk=null,offline=false,lose=false,notes=[{id:'one',at:'2026-10-20T00:00:00Z',text:'原始'+imageMarker(image),images:[image]}],puts=0;const storage={load:async()=>structuredClone(disk),save:async value=>{disk=structuredClone(value);}},api=async(path,input)=>{if(offline)throw Error('offline');if(path==='/notes')return{notes:structuredClone(notes)};const id=path.split('/').at(-1);if(input){puts++;notes=editNote(notes,id,input);if(lose)throw Error('lost reply');}return{note:structuredClone(notes.find(n=>n.id===id))};},make=()=>createFloatingNotes({api,storage,identity:async()=>({dataRootIdentity:'a'.repeat(64)}),newId:()=> 'copy-one'});const c=make();await c.init();c.begin(notes[0]);c.change('one',{text:'编辑'+imageMarker(image),images:[image]});offline=true;await c.save('one');assert.equal(c.snapshot().records.one.phase,'unknown');assert.deepEqual(disk.records[0].images,[image]);assert.deepEqual(disk.records[0].sent.images,[image]);assert.deepEqual(disk.records[0].base.images,[image]);offline=false;lose=true;const reopened=make();await reopened.init();await reopened.save('one');assert.equal(notes.length,1);assert.deepEqual(notes[0].images,[image]);assert.equal(disk.records.length,0);assert(puts<=2);reopened.change('one',{text:'再改'+imageMarker(image),images:[image]});await reopened.persist();notes=[{...notes[0],images:['b'.repeat(64)+'.jpg']}];const conflicted=make();await conflicted.init();await conflicted.save('one');assert.equal(conflicted.snapshot().records.one.phase,'conflict');await conflicted.keepBoth('one');assert(notes.some(n=>n.id==='copy-one'&&n.images[0]===image));assert(notes.some(n=>n.id==='one'&&n.images[0]!==image));});
+test('large image base64 round trips without regex stack overflow and malformed encodings stay rejected',()=>{const bytes=new Uint8Array(8*1024*1024);bytes[0]=137;assert.deepEqual(parse(stringify({data:bytes})).data,bytes);for(const value of ['A','A===','AA=A','A_AA','AAAA\n'])assert.throws(()=>parse(JSON.stringify({data:{__binary:value}})));});
+test('complete backup and restored data directory retain attachment bytes and strict read permissions',async()=>{const root=await realpath(await mkdtemp(join(tmpdir(),'notes-image-backup-'))),data=join(root,'data'),destination=join(root,'restored');let repository;try{repository=await openRepository(data);await repository.write(seed(),{initialize:true});const images=createNoteImages(data),png=new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,0]),saved=await images.store({data:png});const packed=await packDirectory(data);await restoreTo(packed.bytes,destination);const restored=createNoteImages(destination);assert.deepEqual((await restored.read(saved.id)).data,png);}finally{await repository?.close();await rm(root,{recursive:true,force:true});}});

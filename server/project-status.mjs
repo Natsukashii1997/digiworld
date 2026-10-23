@@ -1,3 +1,4 @@
+import { identityOptions } from "./directory-identity.mjs";
 // 路线 v3 切片 2.1/2.2：在推进项目的状态卡、停滞雷达与安全体检。
 // 全部只读：只读项目自己的 CURRENT.md 开头与 Git 元数据，不写项目文件、不执行 Git 写操作、
 // 不调用需要写权限的接口。读取前必须通过项目身份与扫描范围校验，不接受任意路径。
@@ -481,7 +482,7 @@ export async function resolveProjectRoot(project, connections) {
     return { root: "", error: "没有本地目录（仅 GitHub 项目），无法读取状态与 Git" };
   try {
     assertDirectoryConfirmed(project, root);
-    const directory = await projectDirectory(connections.roots, root);
+    const directory = await projectDirectory(connections.roots, root, identityOptions(project, root));
     assertDirectoryConfirmed(project, root, directory.identity);
     // 之后的读取与 Git 查询都用校验得到的真实路径。
     return {
@@ -493,7 +494,7 @@ export async function resolveProjectRoot(project, connections) {
           : "CURRENT.md",
     };
   } catch (e) {
-    if (e.status) return { root, error: e.message };
+    if (e.status) return { root, error: e.message, ...(e.code === 'DIRECTORY_IDENTITY_CHANGED' ? { code: e.code } : {}) };
     if (["ENOENT", "ENOTDIR"].includes(e.code))
       return { root, error: "项目目录不存在，请重新扫描" };
     return { root, error: "项目目录无法核实" };
@@ -515,7 +516,11 @@ export function createProjectStatus(
     });
     const resolved = await resolveProjectRoot(project, connections);
     item.root = resolved.root;
-    if (resolved.error) return blocked(resolved.error);
+    if (resolved.error) {
+      const result = blocked(resolved.error);
+      if (resolved.code) result.current.code = resolved.code;
+      return result;
+    }
     const { canonical, path } = resolved;
     const file = await readCurrentFile(canonical, path);
     const current =

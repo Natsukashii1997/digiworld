@@ -14,7 +14,7 @@ async function until(check){for(let i=0;i<100;i++){if(await check())return;await
 try {
   let page=await open(1440);await page.getByText('暂无收藏',{exact:true}).waitFor();await axe(page,'empty');await page.screenshot({path:join(out,'empty-1440.png')});await page.context().close();
   for(let i=1;i<=6;i++)assert.equal((await app.importNote(syntheticNote(i,{title:['一张值得反复阅读的编程开发笔记保留完整两行标题','白色相纸边框','工作流收藏','给未来自己的设计','像素世界中的日常','把想法收进画布'][i-1]}))).status,'complete');
-  const desk=await app.api('/desk-workspace'),group=desk.groups[0];await app.api('/desk-workspace',{workspace:{...desk,noteGroupMap:Object.fromEntries((await app.api('/notes')).notes.map((n,i)=>[n.id,i<4?group.id:'loose']))},expectedRevision:desk.revision},'PUT');
+  const desk=await app.api('/desk-workspace'),group={id:'custom:canvas-fixture',kind:'custom',name:'编程开发'};await app.api('/desk-workspace',{workspace:{...desk,groups:[...desk.groups,group],noteGroupMap:Object.fromEntries((await app.api('/notes')).notes.map((n,i)=>[n.id,i<4?group.id:'loose']))},expectedRevision:desk.revision},'PUT');
   await app.api('/notes/categories',{updates:Object.fromEntries((await app.api('/notes')).notes.map(n=>[n.id,'编程开发']))},'PATCH');
   const looseIds=Object.entries((await app.api('/desk-workspace')).noteGroupMap).filter(([,groupId])=>groupId==='loose').map(([id])=>id);
   for(const width of [320,375,390,430,1024,1440]) {
@@ -45,7 +45,7 @@ try {
     const rename=page.getByRole('button',{name:/重命名分组：/}).first();
     assert.ok(await rename.evaluate(node=>{const button=node.getBoundingClientRect(),canvas=node.closest('.collection-canvas').getBoundingClientRect();return button.left>=canvas.left&&button.right<=canvas.right&&button.width>=44;}),'展开组签的编辑按钮必须完整位于画布内');
     await axe(page,'expanded '+width);await page.screenshot({path:join(out,'expanded-'+width+'.png'),fullPage:true});
-    const first=page.locator('.collection-card-position').first();await first.scrollIntoViewIfNeeded();await first.click();const dialog=page.getByRole('dialog');await dialog.waitFor();await noOverflow(page,'reader '+width);await axe(page,'reader '+width);assert.match(await dialog.innerText(),/正文内容/);await page.screenshot({path:join(out,'reader-'+width+'.png'),fullPage:true});await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
+    const first=page.locator('.collection-card-position').first();await first.scrollIntoViewIfNeeded();await first.click();const dialog=page.getByRole('dialog');await dialog.waitFor();await noOverflow(page,'reader '+width);await axe(page,'reader '+width);assert.match(await dialog.innerText(),/图片识别：独有关键词像素收藏/);await page.screenshot({path:join(out,'reader-'+width+'.png'),fullPage:true});await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
     await page.getByLabel('搜索收藏').fill('像素收藏');await until(async()=>await page.locator('.collection-paper').count()>0);assert.ok(await page.locator('.collection-paper').count());await page.getByLabel('搜索收藏').fill('不存在的关键词ABC');await until(async()=>await page.locator('.collection-paper').count()===0);await page.getByLabel('搜索收藏').fill('');
     await page.context().close();
   }

@@ -1,0 +1,316 @@
+/* v17 质感三选一（2026-10-10，常浩反馈“质感低、不酷炫、normal”）。叠在 v17-layer.css 之上。 */
+
+/* ============ 公共：把被删掉的液晶点阵眉题请回来 ============ */
+html.v17[data-variant] .page-heading .page-eyebrow > span.lcd-num {
+  display: inline-block !important;
+  color: var(--cyan);
+  filter: drop-shadow(0 0 6px rgba(77, 227, 255, 0.55));
+}
+
+/* ============ A · 卡带贴纸 ============ */
+/* 标签条 = 一张真正的卡带标签：左侧区段色带 + 斜纹，印刷纸感，底边一排金手指 */
+.v17[data-variant="a"] .page-heading {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 10px;
+  min-height: 0;
+  margin: 20px 0 32px;
+  padding: 22px 28px 30px 52px;
+  border: 0;
+  border-radius: 10px 10px 4px 4px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #18233f 0%, #121b33 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(140, 178, 255, 0.14),
+    0 22px 44px -26px #000;
+  backdrop-filter: none;
+}
+.v17[data-variant="a"] .page-heading::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  border-radius: 10px 0 0 4px;
+  background: repeating-linear-gradient(135deg, var(--orange) 0 6px, #c9600f 6px 12px);
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.4);
+}
+/* 金手指：贴纸底边一排触点，左端对齐机身里亮着的卡带 */
+.v17[data-variant="a"] .page-heading::after {
+  left: 52px;
+  right: 28px;
+  bottom: 8px;
+  width: auto;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, #d9a441 0 10px, transparent 10px 16px);
+  opacity: 0.55;
+  box-shadow: none;
+  border-radius: 1px;
+}
+.v17[data-variant="a"] .page-heading .page-code {
+  grid-row: 1;
+  grid-column: 1;
+}
+.v17[data-variant="a"] .page-heading .lcd-num {
+  grid-row: 1;
+  grid-column: 2 / 4;
+}
+.v17[data-variant="a"] .page-heading .maturity {
+  grid-row: 1;
+  grid-column: 4;
+  justify-self: start;
+  padding: 4px 8px;
+  border: 1px solid rgba(166, 227, 110, 0.4);
+  border-radius: 4px;
+  color: var(--lcd);
+}
+.v17[data-variant="a"] .page-heading h1 {
+  grid-row: 2;
+  grid-column: 1 / 3;
+  color: var(--text);
+  font-size: var(--v-display);
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+.v17[data-variant="a"] .page-heading .page-help {
+  grid-row: 2;
+  grid-column: 3;
+}
+.v17[data-variant="a"] .page-heading-action {
+  grid-row: 1 / 3;
+  grid-column: 5;
+}
+.v17[data-variant="a"] .page-heading .page-mark {
+  display: none !important;
+  position: absolute;
+  right: 380px;
+  top: 50%;
+  width: 120px !important;
+  height: 120px !important;
+  transform: translateY(-50%);
+  opacity: 0.1;
+  z-index: 0;
+  mask-image: none;
+}
+/* 卡带脊变成真卡带：右侧防滑纹 + 区段色贴纸 */
+.v17[data-variant="a"] .nav-item {
+  background: linear-gradient(180deg, #172039, #121a2e);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+  border-radius: 3px 8px 8px 3px;
+}
+.v17[data-variant="a"] .nav-item + .nav-item::before {
+  display: none;
+}
+.v17[data-variant="a"] .nav-item::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 12px;
+  bottom: 12px;
+  width: 10px;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.55) 0 1px, rgba(255, 255, 255, 0.05) 1px 3px);
+  border-radius: 1px;
+}
+.v17[data-variant="a"] .nav-item .nav-count,
+.v17[data-variant="a"] .nav-item .nav-flag {
+  margin-right: 16px;
+}
+.v17[data-variant="a"] .nav-zone-work .v17-code {
+  box-shadow: inset 3px 0 0 var(--orange);
+}
+.v17[data-variant="a"] .nav-zone-life .v17-code {
+  box-shadow: inset 3px 0 0 var(--cyan);
+}
+.v17[data-variant="a"] .nav-item.active {
+  background: linear-gradient(90deg, #26345c, #1b2748);
+}
+
+/* ============ B · 霓虹主机 ============ */
+/* 机身：霓虹边缘灯 + 屏框印字 + 喇叭孔；页头：像素点阵大标题投射在内容区 */
+.v17[data-variant="b"] .sidebar {
+  box-shadow: var(--m-device-edge), 0 0 0 1px rgba(255, 138, 36, 0.35), 0 0 28px -6px rgba(255, 138, 36, 0.45),
+    inset 0 0 40px -20px rgba(77, 227, 255, 0.35);
+}
+.v17[data-variant="b"] .partner::after {
+  content: "PARTNER · DOT MATRIX";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -15px;
+  text-align: center;
+  font: 600 8px/1 var(--mono);
+  letter-spacing: 0.3em;
+  color: rgba(140, 178, 255, 0.45);
+}
+.v17[data-variant="b"] .partner {
+  margin-bottom: 14px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.85), inset 0 0 0 1px rgba(77, 227, 255, 0.35), 0 0 18px -4px rgba(77, 227, 255, 0.45);
+}
+.v17[data-variant="b"] .v17-keys > button {
+  border-radius: 22px;
+}
+.v17[data-variant="b"] .v17-syskeys::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  width: 64px;
+  height: 14px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.75) 1.4px, transparent 1.8px) 0 0 / 7px 7px;
+}
+.v17[data-variant="b"] .nav-item.active {
+  box-shadow: inset 0 0 0 1px rgba(255, 138, 36, 0.7), 0 0 22px -4px rgba(255, 138, 36, 0.8);
+}
+/* 光束：从插入中的卡带射向内容区 */
+.v17[data-variant="b"] .v17-beam {
+  position: fixed;
+  left: 256px;
+  width: 52px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 138, 36, 0.9), transparent);
+  box-shadow: 0 0 10px rgba(255, 138, 36, 0.8);
+  z-index: 50;
+  pointer-events: none;
+}
+.v17[data-variant="b"] .page-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 12px;
+  min-height: 0;
+  margin: 28px 0 28px;
+  padding: 0;
+  background: none;
+  border: 0;
+  backdrop-filter: none;
+}
+.v17[data-variant="b"] .page-heading::after {
+  display: none;
+}
+.v17[data-variant="b"] .page-heading .page-code {
+  grid-row: 1;
+  grid-column: 1;
+}
+.v17[data-variant="b"] .page-heading .lcd-num {
+  grid-row: 1;
+  grid-column: 2;
+}
+.v17[data-variant="b"] .page-heading .maturity {
+  display: none;
+}
+.v17[data-variant="b"] .page-heading h1 {
+  grid-row: 2;
+  grid-column: 1 / 3;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.v17[data-variant="b"] .page-heading h1 .v17-pxtitle {
+  display: block;
+  height: 54px;
+  width: auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 14px rgba(77, 227, 255, 0.55));
+}
+.v17[data-variant="b"] .page-heading h1 .v17-pxtitle-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.v17[data-variant="b"] .page-heading .page-help {
+  display: none;
+}
+.v17[data-variant="b"] .page-heading-action {
+  grid-row: 1 / 3;
+  grid-column: 3;
+}
+/* 扫描线：标题区一道缓慢下扫的光 */
+.v17[data-variant="b"] .page-heading::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  right: 40%;
+  top: 30px;
+  height: 64px;
+  background: repeating-linear-gradient(180deg, rgba(77, 227, 255, 0.06) 0 1px, transparent 1px 3px);
+  mask-image: linear-gradient(90deg, #000, transparent);
+  pointer-events: none;
+}
+
+/* ============ C · 旧页头回归 ============ */
+/* 恢复 v16 页头的眉题、大标题和光，只把导语和边界标签收进问号；机身加屏框印字 */
+.v17[data-variant="c"] .page-heading {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 14px;
+  min-height: 0;
+  margin: 36px 0 32px;
+  padding: 0;
+  background: none;
+  border: 0;
+  backdrop-filter: none;
+}
+.v17[data-variant="c"] .page-heading::after {
+  display: none;
+}
+.v17[data-variant="c"] .page-heading .page-code {
+  grid-row: 1;
+  grid-column: 1;
+  min-width: 0;
+  height: 24px;
+  font-size: 12px;
+}
+.v17[data-variant="c"] .page-heading .lcd-num {
+  grid-row: 1;
+  grid-column: 2;
+}
+.v17[data-variant="c"] .page-heading .maturity {
+  grid-row: 1;
+  grid-column: 3;
+  padding: 4px 8px;
+  border: 1px solid rgba(166, 227, 110, 0.4);
+  border-radius: 4px;
+  color: var(--lcd);
+}
+.v17[data-variant="c"] .page-heading h1 {
+  grid-row: 2;
+  grid-column: 1 / 3;
+  font-size: var(--v-display);
+}
+.v17[data-variant="c"] .page-heading .page-help {
+  grid-row: 2;
+  grid-column: 3;
+  justify-self: start;
+}
+.v17[data-variant="c"] .page-heading-action {
+  grid-row: 1 / 3;
+  grid-column: 5;
+}
+.v17[data-variant="c"] .page-heading .page-mark {
+  display: block !important;
+}
+.v17[data-variant="c"] .partner {
+  margin-bottom: 14px;
+}
+.v17[data-variant="c"] .partner::after {
+  content: "PARTNER · DOT MATRIX";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -15px;
+  text-align: center;
+  font: 600 8px/1 var(--mono);
+  letter-spacing: 0.3em;
+  color: rgba(140, 178, 255, 0.4);
+}

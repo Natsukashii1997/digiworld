@@ -213,7 +213,7 @@ test("HTTP：创建完整备份 → 预览 → 确认恢复到新目录；预览
     assert.match(preview.token, /^[a-f0-9]{32,}$/);
     assert.equal(preview.summary.conflict.length, 0);
     assert.match(preview.target, new RegExp(`^${dirname(app.repository.directory).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
-    assert.match(basename(preview.target), /^.+-恢复-\d{8}-\d{6}$/);
+    assert.match(basename(preview.target), /^.+-恢复-[a-f0-9-]{36}$/);
     const restored = await request(app, "/api/full-backup/restore", { token: preview.token });
     target = restored.target;
     assert.equal(target, preview.target);

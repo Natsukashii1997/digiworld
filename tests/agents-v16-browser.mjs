@@ -9,7 +9,7 @@ const { chromium } = createRequire(import.meta.url)(
   process.env.PLAYWRIGHT_MODULE ||
     "/Users/nat/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright",
 );
-const app = await agentsV16Fixture(),
+const app = await agentsV16Fixture({ workHandoff: true }),
   browser = await chromium.launch(),
   errors = [],
   requests = [];
@@ -258,7 +258,7 @@ try {
     await btn(p, "上下文接力").click();
     await p.locator(".relay-title").getByText("UI v16", { exact: false }).waitFor();
     assert.equal(app.relayCalls.list, offset.list + 1);
-    assert.equal(app.relayCalls.prepare, offset.prepare, "按钮只读列表元数据");
+    assert.equal(app.relayCalls.prepare, offset.prepare, "列表读取返回摘要，尚未生成接手材料");
     await p.getByText("来源 AI", { exact: true }).first().waitFor();
     await p.getByText("最近更新", { exact: true }).first().waitFor();
     const roster = p.getByRole("radiogroup", { name: "接力目标" }),
@@ -283,15 +283,15 @@ try {
       .evaluateAll((es) => es.map((e) => e.getBoundingClientRect().height));
     assert.deepEqual(heights, [148, 148, 96, 96]);
     await p.locator(".prompt-toggle").click();
-    await p.locator("pre.prompt").waitFor();
-    assert.equal(app.relayCalls.prepare, offset.prepare + 1, "预览才读取正文");
+    await p.locator("textarea.prompt").waitFor();
+    assert.equal(app.relayCalls.prepare, offset.prepare + 1, "预览才生成接手材料");
     assert.deepEqual(
       await p.evaluate(() => copied),
       [],
       "未预览只展开，不复制",
     );
     assert.equal(app.relayCalls.open.length, offset.openLength);
-    const preview = await p.locator("pre.prompt").textContent();
+    const preview = await p.locator("textarea.prompt").inputValue();
     assert.equal(preview, app.prompt);
     await (
       width <= 760
@@ -300,11 +300,12 @@ try {
             .locator(".launch-actions")
             .getByRole("button", { name: "只复制提示词", exact: true })
     ).click();
+    await p.waitForFunction(() => window.copied.length === 1);
     assert.deepEqual(await p.evaluate(() => copied), [preview]);
     assert.equal(app.relayCalls.open.length, offset.openLength, "只复制不打开");
     await btn(p, "带到 机械邪龙兽 继续").click();
     await p
-      .getByText("TRANSFER OK · 已打开应用，请粘贴发送", { exact: true })
+      .getByText("应用已打开，待粘贴发送", { exact: true })
       .waitFor();
     assert.deepEqual(await p.evaluate(() => copied), [preview, preview]);
     assert.equal(app.relayCalls.open.at(-1), "codex");
@@ -362,10 +363,10 @@ try {
       .getByRole("dialog")
       .getByText("仅本机内存使用", { exact: false })
       .waitFor();
-    assert.match(await p.getByRole("dialog").innerText(), /点击页首「上下文接力」后才读取/);
+    assert.match(await p.getByRole("dialog").innerText(), /点击页首「上下文接力」后，读取/);
     await axe(p, "帮助 " + width);
     await p.keyboard.press("Escape");
-    await btn(p, "换一段 15").click();
+    await btn(p, "搜索 / 换一段 15").click();
     await p.getByRole("dialog", { name: "换一段会话" }).waitFor();
     await p
       .getByRole("dialog")
@@ -373,7 +374,7 @@ try {
       .filter({ hasText: "Claude Code" })
       .first()
       .click();
-    assert.equal(app.relayCalls.prepare, offset.prepare + 1, "切换会话不读取正文");
+    assert.equal(app.relayCalls.prepare, offset.prepare + 1, "切换会话不自动生成接手材料");
     await p.locator(".prompt-toggle").click();
     await p.locator(".relay-quote").waitFor();
     assert.equal(app.relayCalls.prepare, offset.prepare + 2);
@@ -443,11 +444,11 @@ try {
     .getByText("UI v16", { exact: false })
     .waitFor();
   assert.equal(app.relayCalls.list, count + 1, "点击后读取列表");
-  assert.equal(app.relayCalls.prepare, prep, "列表不读正文");
+  assert.equal(app.relayCalls.prepare, prep, "列表阶段不生成接手材料");
   await p.locator(".prompt-toggle").click();
-  await p.locator("pre.prompt").waitFor();
-  assert.equal(app.relayCalls.prepare, prep + 1, "预览时才读正文");
-  assert.equal(await p.locator("pre.prompt").textContent(), app.prompt);
+  await p.locator("textarea.prompt").waitFor();
+  assert.equal(app.relayCalls.prepare, prep + 1, "预览时重新核验并生成接手材料");
+  assert.equal(await p.locator("textarea.prompt").inputValue(), app.prompt);
   await p.context().close();
   const q = await open(1440);
   app.model.fail = true;
@@ -477,7 +478,7 @@ try {
   );
   app.model.delayList = null;
   await q.locator("main.page-home").waitFor();
-  assert.equal(await q.locator("pre.prompt").count(), 0, "离页迟到不显示正文");
+  assert.equal(await q.locator("textarea.prompt").count(), 0, "离页迟到不显示正文");
   app.model.empty = true;
   app.model.partial = true;
   await q.evaluate(() => (location.hash = "#agents"));

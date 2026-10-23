@@ -37,7 +37,7 @@ const item = (n, extra = {}) => ({
 function stubApi(overrides = {}) {
   const calls = [];
   const routes = {
-    "items?mode=selected&window=24h": () => json({ data: { items: [item(1), item(2)] } }),
+    "items?mode=selected&window=7d&limit=10": () => json({ data: { items: [item(1), item(2)] } }),
     "hot-topics": () => json({ topics: [item("h1"), item("h2"), item("h3")] }),
     "dailies?limit=1": () => json({ data: [{ date: "2026-09-30", title: "日报" }] }),
     "dailies/2026-09-30": () =>
@@ -181,7 +181,7 @@ test("默认设置：开启网络访问、每 3 小时；首次拉取前不自�
 test("拉取：只请求 aihot.news 的四个只读地址，不跟随重定向；缓存只含白名单字段", async () =>
   withDir(async (dir) => {
     const api = stubApi({
-      "items?mode=selected&window=24h": () =>
+      "items?mode=selected&window=7d&limit=10": () =>
         json({ items: [item(1, { url: "javascript:alert(1)", secret: "x", title: "恶意\u0000标题" })] }),
     });
     const hot = createAiHot({ directory: dir, fetch: api.fetch, clock: clockAt(T0) });
@@ -189,7 +189,7 @@ test("拉取：只请求 aihot.news 的四个只读地址，不跟随重定向�
     assert.deepEqual(
       api.calls.map((c) => c.url),
       [
-        `${AIHOT_BASE}items?mode=selected&window=24h`,
+        `${AIHOT_BASE}items?mode=selected&window=7d&limit=10`,
         `${AIHOT_BASE}hot-topics`,
         `${AIHOT_BASE}dailies?limit=1`,
         `${AIHOT_BASE}dailies/2026-09-30`,
@@ -266,7 +266,7 @@ test("失败：只有热点失败时，其余分区更新，热点保留旧内�
     await hot.refresh();
     t += 3 * 60 * 60 * 1000;
     api = stubApi({
-      "items?mode=selected&window=24h": () => json({ items: [item("新")] }),
+      "items?mode=selected&window=7d&limit=10": () => json({ items: [item("新")] }),
       "hot-topics": () => json({}, 500),
     });
     const status = await hot.refresh();
@@ -296,7 +296,7 @@ test("缓存：大小有上限，超长内容被截断或舍去后仍能写入",
     const huge = (n) => item(n, { title: "题".repeat(AIHOT_LIMITS.title), summary: "文".repeat(AIHOT_LIMITS.summary) });
     const list = () => json({ items: Array.from({ length: 200 }, (_, i) => huge(i)) });
     const api = stubApi({
-      "items?mode=selected&window=24h": list,
+      "items?mode=selected&window=7d&limit=10": list,
       "hot-topics": list,
       "dailies/2026-09-30": list,
     });

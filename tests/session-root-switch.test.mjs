@@ -5,6 +5,45 @@ const rootA = 'a'.repeat(64), rootB = 'b'.repeat(64);
 const sessionResponse = (token, dataRootIdentity) =>
   new Response(JSON.stringify({ token, dataRootIdentity }), { status: 200 });
 
+test('an unbound notes connection can retry a temporarily missing identity without reloading', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    let sessions = 0, reads = 0;
+    globalThis.fetch = async url => {
+      if (url === '/api/session') return sessionResponse('synthetic', ++sessions === 1 ? null : rootA);
+      if (url === '/api/notes') { reads++; return new Response('{"notes":[]}'); }
+      throw Error('unexpected URL');
+    };
+    const { session, request } = await import(`../src/api.js?unbound=${Date.now()}`);
+    const { createFloatingNotes } = await import('../src/floating-notes-store.js');
+    const store = createFloatingNotes({
+      identity: () => session({ retryUnbound: true }), api: request,
+      storage: { load: async () => null, save: async () => {} },
+    });
+    await store.init();
+    assert.equal(store.snapshot().online, false);
+    await store.refresh();
+    assert.equal(store.snapshot().online, true);
+    assert.equal(store.snapshot().ready, true);
+    assert.equal(sessions, 2);
+    assert.equal(reads, 1);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('unbound retry never loosens a root already used by a request', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    let sessions = 0;
+    globalThis.fetch = async url => url === '/api/session'
+      ? sessionResponse('synthetic', ++sessions === 1 ? null : rootA)
+      : new Response('{}');
+    const { session, request } = await import(`../src/api.js?used-unbound=${Date.now()}`);
+    await request('/legacy');
+    assert.equal((await session({ retryUnbound: true })).dataRootIdentity, null);
+    assert.equal(sessions, 1);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 test('a 403 session refresh on a different data root never retries the original POST', async () => {
   const originalFetch = globalThis.fetch;
   const calls = [];

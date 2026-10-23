@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Radio,
   Library,
+  Monitor,
 } from "lucide-react";
 import { Button, Dialog, PageHeading, ScrollFade } from "./components.jsx";
 import { PageChoices } from "./PageChoices.jsx";
@@ -18,6 +19,8 @@ import { CapabilitySettings } from "./CapabilitySettings.jsx";
 import { ModelCapabilityUI } from "./ModelCapabilityUI.jsx";
 import { DaemonCapabilityUI } from "./DaemonCapabilityUI.jsx";
 import { AiHotSettings, useAiHot } from "./LifePages.jsx";
+import { AgentTargets } from "./AgentTargets.jsx";
+import "./agents-v16.css";
 import { ProjectSettings } from "./ProjectSettings.jsx";
 import { SourcePolicy } from "./KnowledgeV16.jsx";
 import {
@@ -34,15 +37,7 @@ import {
   calendarPermissionLabel,
 } from "./settings-v16.js";
 import "./settings-v16.css";
-const icons = [
-  ShieldCheck,
-  HardDrive,
-  Folder,
-  BookOpen,
-  CalendarDays,
-  Radio,
-  Library,
-];
+const icons = [ShieldCheck, HardDrive, Folder, Monitor, Library];
 function Row({ title, detail, children }) {
   return (
     <div className="st-row">
@@ -54,10 +49,12 @@ function Row({ title, detail, children }) {
     </div>
   );
 }
-export function SettingsV16({ state, save, notify, adoptState, navigate }) {
+export function SettingsV16({ state, save, notify, adoptState, navigate, onSelect }) {
   const [category, setCategory] = useState("security"),
     [panel, setPanel] = useState(null),
     [help, setHelp] = useState(false),
+    [targetAgent, setTargetAgent] = useState("codex"),
+    [targetPending, setTargetPending] = useState(false),
     [settings, setSettings] = useState(null),
     [calendar, setCalendar] = useState(null),
     [usage, setUsage] = useState(null),
@@ -105,13 +102,8 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
         : <Reading mini label="读取MCP状态"/>,
     `REV ${state.revision}`,
     `${c.roots?.length || 0} 个目录 · ${c.projectStallDays || 7} 天`,
-    `${sources.length} 个来源`,
-    calendarPermissionLabel(calendar),
-    aihotError
-      ? "读取失败"
-      : aihot
-        ? `${aihot.settings.enabled ? "已开启" : "已关闭"} · ${aihot.settings.intervalHours} 小时`
-        : <Reading mini label="读取MCP状态"/>,
+    `${c.agentTargets?.length || 0} 个目标`,
+    "已撤下板块的权限与后台设置",
   ];
   const close = () => {
     if (busy.current || policyBusy) return;
@@ -121,11 +113,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
   };
   const manageRow = (row) => {
     if (row.id === "knowledge" || row.id === "calendar") {
-      setCategory(row.id);
-      return;
-    }
-    if (row.id === "savepoints") {
-      navigate("history");
+      setCategory("legacy");
       return;
     }
     setPanel({ type: "capabilities", cap: row.capability });
@@ -154,7 +142,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
           label="设置分类"
           className="st-nav"
           value={category}
-          onChange={setCategory}
+          onChange={id => { if (targetPending) notify("请先完成或取消目标编辑，再切换设置。", "warning"); else setCategory(id); }}
           choices={SETTINGS_CATEGORIES.map(([id, name], i) => {
             const Icon = icons[i];
             return [
@@ -264,7 +252,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
           {category === "project" && (
             <section>
               <h2 className="st-h">
-                项目与存档<small>与项目空间共用设置</small>
+                项目设置<small>与项目空间共用设置</small>
               </h2>
               <div className="st-group">
                 <Row title="扫描目录" detail="本地项目的发现范围">
@@ -289,7 +277,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
                     调整阈值
                   </Button>
                 </Row>
-                <Row title="未存档提醒" detail="供项目空间、存档点与待处理使用">
+                <Row title="未存档提醒" detail="供项目空间状态提示使用">
                   <span className="st-chip yellow">
                     黄 <b>{thresholds.warn} 天</b>
                   </span>
@@ -306,7 +294,19 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
               </div>
             </section>
           )}
-          {category === "knowledge" && (
+          {category === "targets" && (
+            <section>
+              <h2 className="st-h">资产交付目标<small>程序入口与 Home 绑定</small></h2>
+              <PageChoices className="segmented" label="交付目标 Agent" value={targetAgent}
+                onChange={id => { if (targetPending) notify("请先完成或取消目标编辑，再切换 Agent。", "warning"); else setTargetAgent(id); }}
+                choices={[["codex", "Codex"], ["hermes", "Hermes"]]} />
+              <AgentTargets key={targetAgent} agentId={targetAgent} state={state}
+                adoptState={adoptState} notify={notify} onEvidence={() => {}}
+                onSelect={onSelect} showConfig={false} onPendingChange={setTargetPending} />
+            </section>
+          )}
+          {category === "legacy" && <p className="st-foot">原板块已撤下。这里保留已有授权与后台设置的管理入口；撤下页面不会自动撤销授权。</p>}
+          {category === "legacy" && (
             <section>
               <h2 className="st-h">
                 知识与 MCP<small>只读范围独立授权</small>
@@ -339,9 +339,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
                 ))}
                 {!sources.length && (
                   <Row title="知识源" detail="尚未连接来源">
-                    <Button secondary onClick={() => navigate("knowledge")}>
-                      去连接
-                    </Button>
+                    <span>无已连接来源</span>
                   </Row>
                 )}
                 <Row
@@ -368,7 +366,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
               </div>
             </section>
           )}
-          {category === "calendar" && (
+          {category === "legacy" && (
             <section>
               <h2 className="st-h">
                 日历与提醒<small>macOS 系统权限</small>
@@ -403,7 +401,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
               </div>
             </section>
           )}
-          {category === "network" && (
+          {category === "legacy" && (
             <section>
               <h2 className="st-h">
                 资讯<small>AI HOT</small>
@@ -548,7 +546,6 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
               blocked={policyPending || policyBusy}
               adoptState={adoptState}
               notify={notify}
-              navigate={navigate}
             />
           )}
           {["source", "profile"].includes(panel.type) && policyError && (
@@ -624,14 +621,13 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
               各页设置抽屉是这里的快捷入口，读写同一份设置。开启能力沿用预览、备份、确认、回读与留痕，默认关闭；每次实际写入仍单独确认。
             </p>
             <p>
-              知识源与个人说明分别授权；存档点写入每次确认，日历与提醒权限由系统管理。最近使用只取本机实际调用留痕；没有记录显示从未使用，读取失败表示未知。
+              历史授权保留已撤下板块的权限管理。日历与提醒权限由系统管理；最近使用只取本机实际调用留痕，读取失败表示未知。
             </p>
             <p>
-              普通备份以合并方式导入，不覆盖历史。完整备份含主库、操作日志与逆向图片；恢复到新的目录并校验，保留原目录，切换由你完成。生成记录不证明下载文件已保存到磁盘。旧浏览器数据检查入口保留。
+              普通备份以合并方式导入，不覆盖历史。完整备份含主库、操作日志与逆向图片，不含 REA 原始证据；恢复到新的目录并校验，保留原目录，切换由你完成。生成记录不证明下载文件已保存到磁盘。旧浏览器数据检查入口保留。
             </p>
             <p>
-              AI HOT 只读公开接口并缓存，设置草稿须保存；学习书架只读索引 PDF /
-              EPUB。模型连接意向草稿界面已移除，历史 state.model 数据保留。
+              历史资讯后台可在历史授权中关闭；设置草稿须保存。旧数据保留。
             </p>
           </div>
         </Dialog>

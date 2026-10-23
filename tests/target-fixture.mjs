@@ -123,7 +123,7 @@ export async function targetFixture() {
   const app = await startServer({
     directory: join(root, "database"),
     port: 0,
-    staticRoot: join(import.meta.dirname, "../dist"),
+    staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
     clock: () => now,
     discovery: {
       defaultRoots: () => [],

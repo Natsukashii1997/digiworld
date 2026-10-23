@@ -1261,3 +1261,20 @@
 .page-references.v16 .reference-actions { display:flex; justify-content:space-between; align-items:center; gap:var(--s-3); }
 .page-references.v16 .reference-actions .button { width:auto; }
 .page-references.v16 .specimen-txt.legacy-note { border:0; background:none; box-shadow:none; padding:0; }
+
+/* REA沿用逆向页现有材质和控件，不改变页面布局。 */
+.rea-fields { min-width:0; border:1px solid var(--line-2); padding:16px; display:grid; gap:14px; }
+.rea-fields legend { padding:0 6px; }
+.rea-methods { display:flex; flex-wrap:wrap; gap:8px 16px; }
+.rea-fields label:has(> input[type="radio"]), .rea-fields label:has(> input[type="checkbox"]) { min-height:44px; align-items:center; }
+.rea-fields input:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+.rea-evidence { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+.rea-evidence .text-btn { min-width:44px; min-height:44px; }
+.rea-unknowns { margin:16px 0; overflow-wrap:anywhere; }
+.rea-unknowns ul { padding-left:22px; }
+.re-launch .pk small { display:block; font-size:var(--fs-label); font-weight:400; }
+
+.rea-target-summary { overflow-wrap:anywhere; margin-bottom:16px; }
+
+.rea-web-help { display:grid; gap:var(--s-2); min-width:0; }
+.rea-web-help code { white-space:pre-wrap; overflow-wrap:anywhere; }

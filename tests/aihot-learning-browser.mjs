@@ -41,7 +41,7 @@ async function aihotFetch(url, options) {
   assert.equal(options?.redirect, "error");
   if (failing) throw new TypeError("fetch failed");
   const key = String(url).slice(BASE.length);
-  if (key === "items?mode=selected&window=24h") return json({ data: { items: SELECTED } });
+  if (key === "items?mode=selected&window=7d&limit=10") return json({ data: { items: SELECTED } });
   if (key === "hot-topics") return json({ topics: HOT });
   if (key === "dailies?limit=1") return json({ data: [{ date: "2026-09-30" }] });
   if (key === "dailies/2026-09-30") return json({ date: "2026-09-30", sections: [{ items: DAILY }] });

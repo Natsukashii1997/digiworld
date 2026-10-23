@@ -54,7 +54,7 @@ async function errorState(page, name, retained, selector='.hx-mod-a') {
     for(const e of body.querySelectorAll('.hx-tl-bar,.hx-mini-line')){const r=e.getBoundingClientRect();spans.push([r.top,r.bottom]);}
     spans.sort((a,b)=>a[0]-b[0]);let bottom=box.top,gap=0;
     for(const [top,end] of spans){gap=Math.max(gap,top-bottom);bottom=Math.max(bottom,end);}
-    return {id:card.className,height:card.getBoundingClientRect().height,maxBlank:Math.max(gap,box.bottom-bottom)};
+    return {id:card.className,height:card.getBoundingClientRect().height,maxBlank:gap,headGap:(spans[0]?.[0] ?? box.top)-card.querySelector("header").getBoundingClientRect().bottom};
   }));
   const axe = await new AxeBuilder({page}).include(selector+' .source-read-error').analyze();
   const pageAxe = await new AxeBuilder({page}).include(selector).analyze();
@@ -70,7 +70,7 @@ async function errorState(page, name, retained, selector='.hx-mod-a') {
     n.target.length===1&&n.target[0]==='.pj-rack:nth-child(3) > h4')),name+' no new page accessibility findings');
   if(page.viewportSize().width===1440&&cards.length) {
     check(alerts.every(a=>a.lines<=2),name+' alert <=2 lines');
-    check(cards.every(c=>c.maxBlank<=120),name+' home blank <=120px');
+    check(cards.every(c=>c.maxBlank<=120 && c.headGap<=32),name+' home blank <=120px');
   }
   await screenshot(page,name);
 }

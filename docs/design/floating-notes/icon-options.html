@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>悬浮球图标三选一</title>
+<style>
+:root{--bg:#f3f4f7;--card:#fff;--ink:#1b2133;--muted:#6b7389;--line:#e3e6ee}
+body{margin:0;padding:24px 16px;background:var(--bg);color:var(--ink);font:14px -apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif}
+h1{font-size:18px;margin:0 0 4px}p.sub{color:var(--muted);margin:0 0 20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:960px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{font-size:15px;margin:0 0 4px}.card .d{color:var(--muted);font-size:12px;margin:0 0 12px;line-height:1.5}
+.big{display:flex;justify-content:center;padding:12px 0;background:#e9ecf3;border-radius:8px}
+.row{display:flex;gap:18px;align-items:center;margin-top:12px;font-size:12px;color:var(--muted)}
+.row figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+.desk{margin-top:12px;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:10px 12px;border-radius:8px;background:#fafbfc;border:1px dashed var(--line);font-size:12px;color:var(--muted)}
+.tr{width:28px;height:28px;border-radius:50%;background:#f06292;display:grid;place-items:center;color:#fff;font-weight:600;font-size:12px}
+svg{display:block;shape-rendering:crispEdges}
+</style>
+</head>
+<body>
+<h1>数码世界悬浮球 · 图标三选一</h1>
+<p class="sub">实际尺寸：圆盘 28pt，点击区 32pt（原来是 52 / 60），和侧边栏翻译图标一样大。上方是放大 4 倍的样子，下方是实际大小和三种状态。</p>
+<div class="grid" id="grid"></div>
+<script>
+// 每版：网格（字符→颜色），以及是否有深色底盘
+const V = [
+  {id:'A', name:'A · 数码蛋', desc:'奶白蛋壳 + 金色斑纹，透明底不带圆盘，轮廓用深蓝描边。最像一个"小物件"。', disk:false,
+   pal:{O:'#0f1729',W:'#fff4dc',S:'#ffb020',H:'#ffffff',D:'#f0dcb4'},
+   rows:[
+    '....OOOO....',
+    '...OHWWWO...',
+    '..OHWSSWWO..',
+    '..OWSSSSWO..',
+    '.OWWWSSWWWO.',
+    '.OSWWWWWWSO.',
+    '.OSSWWWWSSO.',
+    '.OWWWWWWWWO.',
+    '.OWWSSSSWWO.',
+    '.OWSSSSSSDO.',
+    '..ODWWWWDO..',
+    '...ODDDDO...',
+    '....OOOO....']},
+  {id:'B', name:'B · 暴龙机', desc:'深色圆盘 + 金圈，中间是像素暴龙机，屏幕发青光。延续现在的深色风格。', disk:true,
+   pal:{O:'#ffd166',B:'#1c2a4a',C:'#4de3ff',c:'#1f8fb0',K:'#0f1729',G:'#ffd166'},
+   rows:[
+    '..OOOOOO..',
+    '.OBBBBBBO.',
+    'OBCCCCCCBO',
+    'OBCcCCcCBO',
+    'OBCCCCCCBO',
+    'OBCcccCCBO',
+    'OBCCCCCCBO',
+    'OBBBBBBBBO',
+    'OBGBBBBGBO',
+    '.OBBGGBBO.',
+    '..OOOOOO..']},
+  {id:'C', name:'C · 像素纹章', desc:'深色圆盘，中间是一枚发光的像素徽记（太阳形纹章），像"数码世界"的标志。', disk:true,
+   pal:{G:'#ffd166',g:'#c98a1a',W:'#fff6d6'},
+   rows:[
+    '....G....',
+    '.G..G..G.',
+    '..GGGGG..',
+    '..GgWgG..',
+    'GGGWWWGGG',
+    '..GgWgG..',
+    '..GGGGG..',
+    '.G..G..G.',
+    '....G....']},
+];
+function svg(v, scale, state){
+  const S=28, px=2, w=v.rows[0].length*px, h=v.rows.length*px, ox=(32-w)/2, oy=(32-h)/2;
+  let s=`<svg width="${32*scale}" height="${32*scale}" viewBox="0 0 32 32">`;
+  if(v.disk){s+=`<circle cx="16" cy="16" r="14" fill="#0f1729"/><circle cx="16" cy="16" r="13.5" fill="none" stroke="rgba(140,178,255,.32)" stroke-width="1"/>`;}
+  v.rows.forEach((r,y)=>[...r].forEach((ch,x)=>{const c=v.pal[ch];if(c)s+=`<rect x="${ox+x*px}" y="${oy+y*px}" width="${px}" height="${px}" fill="${c}"/>`}));
+  if(state==='draft')s+=`<circle cx="26" cy="6" r="4" fill="#0c1325"/><circle cx="26" cy="6" r="2.6" fill="#ffd166"/>`;
+  if(state==='saving')s+=`<path d="M16 1 A15 15 0 0 1 31 16" fill="none" stroke="#ffd166" stroke-width="1.5" style="shape-rendering:auto"/>`;
+  return s+'</svg>';
+}
+document.getElementById('grid').innerHTML=V.map(v=>`
+ <div class="card"><h2>${v.name}</h2><p class="d">${v.desc}</p>
+  <div class="big">${svg(v,4)}</div>
+  <div class="row"><figure>${svg(v,1)}<span>已保存</span></figure><figure>${svg(v,1,'draft')}<span>有草稿</span></figure><figure>${svg(v,1,'saving')}<span>保存中</span></figure></div>
+  <div class="desk">和翻译图标并排 ${svg(v,1)}<span class="tr">译</span></div>
+ </div>`).join('');
+</script>
+</body>
+</html>

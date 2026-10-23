@@ -46,16 +46,17 @@ try {
         }
         if (width === 320) {
           await page.goto(`${app.url}/#assets`);
-          await page.getByRole("group", { name: "视图模式" }).waitFor();
+          await page.locator(".asset-grid").waitFor();
+          assert.equal(await page.getByRole("group", { name: "视图模式" }).count(), 0);
+          assert.equal(await page.getByRole("button", { name: /^(网格视图|列表视图)$/ }).count(), 0);
+          assert.equal(await page.locator(".asset-grid.list-layout").count(), 0);
           const controls = await page.evaluate(() => {
-            const group = document.querySelector(".toolbar-right .view-toggle");
-            const [grid, list] = group.querySelectorAll("button");
-            const toolbar = group.parentElement.getBoundingClientRect();
-            const g = grid.getBoundingClientRect(), l = list.getBoundingClientRect();
-            return { sameRow: Math.abs(g.top - l.top) <= 1,
-              inside: group.getBoundingClientRect().right <= toolbar.right + 1 };
+            const toolbar = document.querySelector(".asset-toolbar > .toolbar-right").getBoundingClientRect();
+            const sort = document.querySelector("select[aria-label='排序方式']").getBoundingClientRect();
+            return { inside: sort.left >= toolbar.left - 1 && sort.right <= toolbar.right + 1,
+              overflow: document.documentElement.scrollWidth > innerWidth };
           });
-          assert.deepEqual(controls, { sameRow: true, inside: true });
+          assert.deepEqual(controls, { inside: true, overflow: false });
           await page.screenshot({ path: join(output, "assets-controls-320.png") });
         }
         if (width === 390) {
@@ -104,20 +105,21 @@ try {
         await page.goto(`${nightApp.url}/#night`);
         const library = page.locator('[data-testid="night-library"] [data-chip-id="synthetic-48"]');
         await library.waitFor();
+        await page.locator('.nt-slot [data-chip-id="synthetic-48"] .nv-reverse-name').waitFor();
         assert.ok((await library.getAttribute("aria-label"))?.includes(name),
           `${width} long chip retains its full accessible name`);
         const geometry = await page.evaluate(() => {
-          const measure = selector => {
+          const measure = (selector, nameSelector, subSelector) => {
             const chip = document.querySelector(selector);
             const c = chip.getBoundingClientRect();
-            const n = chip.querySelector(".nv-chip-name").getBoundingClientRect();
-            const sub = chip.querySelector(".nv-chip-sub")?.getBoundingClientRect();
+            const n = chip.querySelector(nameSelector).getBoundingClientRect();
+            const sub = chip.querySelector(subSelector)?.getBoundingClientRect();
             return { nameOutside: n.right > c.right + 1,
               nameBelow: !!sub && n.bottom > sub.top + 1,
               clipped: chip.scrollWidth > chip.clientWidth + 1 };
           };
-          return { library: measure('[data-testid="night-library"] [data-chip-id="synthetic-48"]'),
-            slot: measure('.nt-slot [data-chip-id="synthetic-48"]'),
+          return { library: measure('[data-testid="night-library"] [data-chip-id="synthetic-48"]', '.nv-chip-name', '.nv-chip-sub'),
+            slot: measure('.nt-slot [data-chip-id="synthetic-48"]', '.nv-reverse-name', '.nv-reverse-purpose'),
             overflow: document.documentElement.scrollWidth - innerWidth };
         });
         assert.ok(geometry.overflow <= 0, `${width} night overflow ${geometry.overflow}`);

@@ -28,6 +28,7 @@ export const typeLabel = {
   MCP: "MCP 配置",
   // 焚决（切片 1.3b）：资产仓库第五种类型，数据仍在主库顶层 scrolls，不进 assets。
   Scroll: "焚决",
+  Design: "设计",
 };
 export const typeCode = {
   Skill: "SKL",
@@ -36,13 +37,14 @@ export const typeCode = {
   Rule: "RUL",
   MCP: "MCP",
   Scroll: "FJ",
+  Design: "DES",
 };
 // 规则的小角标用像素卷轴（用户 2026-09-30 与封面对调），尺寸与其他线条小图标一致。
 export function TypeIcon({ type, size = 24, className = "" }) {
-  if (type === "Rule")
+  if (type === "Rule" || type === "Design")
     return (
       <Pixel
-        sprite="rule_scroll"
+        sprite={type === "Design" ? "Design" : "rule_scroll"}
         fit={size}
         className={`type-icon-pixel ${className}`}
       />
@@ -99,19 +101,6 @@ export function ScrollFade({ children, className = "" }) {
     return () => { resize.disconnect(); changes.disconnect(); row.removeEventListener("scroll", measure); };
   }, []);
   return <div ref={root} className={`scroll-fade ${className}`} data-left={edges.left} data-right={edges.right}>{children}</div>;
-}
-// 页头下一行的边界说明（UI v15）：把“只读 / 只存本机 / 需授权”收成小标签，正文里不再重复。
-export function Bounds({ items }) {
-  return (
-    <ul className="page-bounds" aria-label="边界">
-      {items.map((item) => (
-        // 以“!”开头的是需要授权的门禁，用灰色标记。
-        <li key={item} className={item.startsWith("!") ? "gate" : ""}>
-          {item.replace(/^!/, "")}
-        </li>
-      ))}
-    </ul>
-  );
 }
 export function Badge({ children, tone = "" }) {
   return <span className={`badge ${tone}`}>{children}</span>;
@@ -171,7 +160,7 @@ export function Empty({ icon: Icon, sprite = "egg", title, children, action }) {
 }
 // 页头：编号、英文眉题、标题、一句话定位、成熟度，全部来自 pages.js。
 // titleHidden：大标题只给读屏（页面另有醒目的主标题时用，如日历的大日期）。
-export function PageHeading({ page, eyebrow, title, description, action, titleHidden = false, help, bounds }) {
+export function PageHeading({ page, eyebrow, title, description, action, titleHidden = false, help }) {
   const meta = page ? pageOf(page) : null;
   return (
     <>
@@ -193,7 +182,6 @@ export function PageHeading({ page, eyebrow, title, description, action, titleHi
       {action && <div className="page-heading-action">{action}</div>}
 
     </header>
-    {!description && (bounds || meta?.bounds) && <Bounds items={bounds || meta.bounds} />}
     </>
   );
 }

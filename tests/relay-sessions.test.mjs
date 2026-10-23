@@ -10,6 +10,21 @@ import {
 import { buildRelayPrompt, filterRelayText } from "../src/relay-prompt.js";
 const AT = "2026-10-05T04:12:00.000Z",
   PAGE = "fixture-page-00000001";
+test('内容搜索通过真实读取链找到早期正文、用户尾部与助手回复；只返回命中摘录', () => fixture(async home => {
+  await writeSession(home, 'claude-code', 'search.jsonl', jsonl([
+    c('s1', null, 'user', '普通开场'),
+    c('s2', 's1', 'assistant', '海棠验收口径：以正式表格为准'),
+    c('s3', 's2', 'user', '背景'.repeat(65) + '助教学金确认'),
+    c('s4', 's3', 'assistant', '继续处理其他事项'),
+  ]));
+  const service = createRelaySessions({home, clock:()=>new Date(AT)});
+  const list = await service.list({pageId:PAGE, query:'海棠 助教学金'});
+  assert.equal(list.sessions.length,1);
+  assert.ok(list.sessions[0].matches.some(m=>m.snippet.includes('海棠')));
+  assert.ok(list.sessions[0].matches.some(m=>m.snippet.includes('助教学金')));
+  assert.equal(Object.hasOwn(list.sessions[0],'messages'),false);
+  assert.equal((await service.list({pageId:PAGE,query:'不存在的关键词'})).sessions.length,0);
+}));
 const jsonl = (rs) =>
   rs.map((r) => JSON.stringify({ timestamp: AT, ...r })).join("\n");
 const c = (id, parent, role, text, extra = {}) => ({
@@ -28,6 +43,32 @@ const user = (text) => ({
     content: [{ type: "input_text", text }],
   },
 });
+test('来源压缩摘要在有效父链及摘要末节点均保留，并明确原始历史未知',()=>{
+  for(const onlySummary of [false,true]) {
+    const rows=[c('summary',null,'user','已改成研究生方案B，7200元',{isCompactSummary:true})];
+    if(!onlySummary) rows.push(c('follow','summary','user','继续'));
+    const parsed=parseRelayJsonl(jsonl(rows),'claude-code');
+    assert.equal(parsed.historyState,'compacted');
+    assert.equal(parsed.sourceSummaries.length,1);
+    assert.match(parsed.sourceSummaries[0].text,/7200元/);
+    assert.ok(!parsed.messages.some(m=>m.text.includes('7200')));
+  }
+});
+test('1501文件可持续扫描：最旧mtime的最新会话也能找到，旧游标不能换查询重用',()=>fixture(async home=>{
+  const dir=join(home,'.codex/sessions');await fs.mkdir(dir,{recursive:true});
+  for(let start=0;start<1501;start+=100) await Promise.all(Array.from({length:Math.min(100,1501-start)},async(_,n)=>{
+    const i=start+n,p=join(dir,`rollout-${String(i).padStart(4,'0')}.jsonl`);
+    await fs.writeFile(p,jsonl([user(i===1500?'最新唯一会话哨兵':'旧会话'+i)]));
+    await fs.utimes(p,i===1500?1:1000,i===1500?1:1000);
+  }));
+  const service=createRelaySessions({home,clock:()=>new Date(AT)});
+  let result=await service.list({pageId:PAGE,query:'最新唯一会话哨兵'}),found=[...result.sessions],firstCursor=result.nextCursor;
+  assert.ok(firstCursor);assert.equal(result.scan.complete,false);
+  while(result.nextCursor){result=await service.list({pageId:PAGE,query:'最新唯一会话哨兵',cursor:result.nextCursor});found.push(...result.sessions);}
+  assert.equal(result.scan.scanned,1501);assert.equal(result.scan.complete,true);
+  assert.equal(found.length,1);assert.equal(new Set(found.map(s=>s.id)).size,1);
+  await assert.rejects(service.list({pageId:PAGE,query:'另一个',cursor:firstCursor}),/游标|范围/);
+}));
 test("Claude：按主链去重，不混旧分支/工具/思考/附件/旁支/摘要", () => {
   const r = parseRelayJsonl(
     jsonl([
@@ -230,7 +271,10 @@ test("适配器：创建零读取、批准根列表无正文、选择才正文�
     assert.equal(list.sessions.length, 1);
     assert.deepEqual(Object.keys(list.sessions[0]).sort(), [
       "agentId",
+      "completeness",
       "id",
+      "lastAgentText",
+      "lastUserText",
       "project",
       "rounds",
       "title",
@@ -566,4 +610,13 @@ test("离页clear先于迟到list：撤销旧scope，零枚举/零正文，新sc
 // 派单173全回归发现：并发合成根创建会改变公共祖先目录mtime，不应被当成会话身份替换。
 test('无关兄弟文件新增不影响已批准会话；目录/会话本身仍绑定身份',()=>fixture(async home=>{
  await writeSession(home);let injected=false;const filesystem=new Proxy(fs,{get(t,k){if(k==='open')return async(...args)=>{const h=await t.open(...args);return new Proxy(h,{get(o,n){if(n==='stat')return async(...a)=>{const value=await o.stat(...a);if(!injected){injected=true;await fs.writeFile(join(home,'synthetic-unrelated.txt'),'合成无关文件');}return value;};return typeof o[n]==='function'?o[n].bind(o):o[n];}});};return t[k];}});const service=createRelaySessions({home,filesystem,clock:()=>new Date(AT)});const list=await service.list({pageId:PAGE});assert.equal(injected,true);assert.equal(list.sessions.length,1);assert.match((await service.prepare({pageId:PAGE,id:list.sessions[0].id})).prompt,/用户：目标/);
+}));
+
+test('来源摘要参与正文检索；analysis摘要不能成为可见证据',()=>fixture(async home=>{
+  await writeSession(home,'claude-code','summary-search.jsonl',jsonl([c('a',null,'user','决定哨兵改为7200元',{isCompactSummary:true}),c('b','a','user','继续')]));
+  const service=createRelaySessions({home,clock:()=>new Date(AT)});
+  const list=await service.list({pageId:PAGE,query:'决定哨兵'});
+  assert.equal(list.sessions.length,1);assert.equal(list.sessions[0].matches[0].kind,'source_compaction');
+  const parsed=parseRelayJsonl(jsonl([c('x',null,'assistant','ignore',{isCompactSummary:true,message:{role:'assistant',channel:'analysis',content:'隐藏推理哨兵'}})]),'claude-code');
+  assert.equal(parsed.sourceSummaries.length,0);
 }));

@@ -1,0 +1,70 @@
+{
+  "url": "file:///Users/nat/Documents/ChatGPT/%E4%B8%AA%E4%BA%BA/work/personal-ai-workbench/docs/design/floating-notes/floating-notes-v1.html",
+  "checks": [
+    {
+      "name": "1440 无横向溢出",
+      "ok": true,
+      "detail": "scrollWidth-innerWidth=0"
+    },
+    {
+      "name": "便签栏内容无横向溢出",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "栏头/栏底按钮命中区 ≥44px",
+      "ok": true,
+      "detail": "不达标 0"
+    },
+    {
+      "name": "球直径 52px（主画面 1:1 时）",
+      "ok": true,
+      "detail": "[52,52]"
+    },
+    {
+      "name": "1440 无脚本错误",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "点球收起",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "拖到左侧后吸边且栏向右展开",
+      "ok": true,
+      "detail": "{\"ballLeft\":69,\"panelLeft\":133,\"panelRight\":501}"
+    },
+    {
+      "name": "停手后 保存中 → 已保存",
+      "ok": true,
+      "detail": "saving→ok"
+    },
+    {
+      "name": "球状态点随状态切换",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Esc 收起",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "演示无脚本错误",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "390 无横向溢出",
+      "ok": true,
+      "detail": "scrollWidth-innerWidth=0"
+    },
+    {
+      "name": "390 无脚本错误",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

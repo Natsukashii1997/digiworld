@@ -7,6 +7,15 @@ const INK = "var(--px-ink)";
 const mono = (rows) => ({ palette: { X: "currentColor" }, frames: [rows] });
 
 export const SPRITES = {
+  Design: {
+    palette: { K: "currentColor", N: "var(--px-glyph-fill)", P: "color-mix(in srgb, currentColor 40%, transparent)", L: "var(--design-highlight)" },
+    frames: [[
+      ".KKKKKKKKKKKKKK.", "KLNNNNNNNNNNNNPK", "KN...........NPK", "KN..LL.......NPK",
+      "KN..LL.......NPK", "KN...........NPK", "KN.......K...NPK", "KN......KLK..NPK",
+      "KN..K..KLNPK.NPK", "KN.KLKKLNNNPKNPK", "KNKLNNNNNNNNKPPK", "KPPPPPPPPPPPPPPK",
+      ".KKKKKKKKKKKKKK.", "................", "................", "................",
+    ]],
+  },
   // 数码蛋：最初的对称椭圆（用户 2026-09-30 改回），与伙伴液晶屏里的蛋同一形状。
   egg: {
     palette: { X: INK, O: "var(--px-egg)", S: "var(--px-egg-spot)", H: "#fff" },

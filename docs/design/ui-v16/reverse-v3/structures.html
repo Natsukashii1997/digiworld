@@ -1,0 +1,85 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>逆向工程 · 结构草图</title>
+<style>
+body{margin:0;padding:24px;background:#fff;color:#111;font:13px/1.45 -apple-system,"PingFang SC",sans-serif;width:1392px}
+h1{font-size:18px;margin:0 0 6px}.lead{margin:0 0 16px;color:#444}
+.grid{display:grid;grid-template-columns:1fr;gap:20px}
+.opt{border:2px solid #111;padding:14px}
+.opt>h2{margin:0 0 4px;font-size:16px}.opt>p{margin:0 0 10px;color:#444}
+.b{border:1.5px solid #111;padding:6px 8px;border-radius:4px}.d{border:1.5px dashed #111;padding:6px 8px;border-radius:4px;color:#555}
+.f{background:#111;color:#fff;padding:6px 8px;border-radius:4px}
+.row{display:flex;gap:8px}.col{display:flex;flex-direction:column;gap:8px}.g{flex:1}
+small{color:#666}.t{font-weight:700}
+.lcd{border:1.5px solid #111;border-radius:4px;padding:4px 8px;font:12px/1.4 ui-monospace,Menlo,monospace}
+.ev{display:inline-block;border:1px solid #111;border-radius:3px;padding:0 4px;font:11px ui-monospace,Menlo,monospace;margin-left:4px}
+.arrow{align-self:center;font-size:16px}
+.mini{font-size:12px}
+.cap{border:2.5px solid #111;border-radius:40px;padding:18px;text-align:center}
+.frag{border:1.5px solid #111;border-radius:2px;padding:4px 6px;font-size:12px}
+.fragd{border:1.5px dashed #111;border-radius:2px;padding:4px 6px;font-size:12px;color:#555}
+.door{border:2px solid #111;border-radius:14px 14px 4px 4px;padding:10px;text-align:center;flex:1}
+.common{border:2px solid #111;padding:14px;margin-bottom:20px}
+.common h2{margin:0 0 8px;font-size:16px}
+</style></head><body>
+<h1>逆向工程 · 三种结构（只看结构，不看样式）</h1>
+<p class="lead">这页做什么：弄懂一件好东西（看得见的作品，或拆得开的软件），得到带证据的配方，再走向两个终点之一：<b>炼成 Skill</b> 或 <b>实现到我的项目</b>。液晶眉题、大标题、发光、像素伙伴等质感签名三套都保留，这里不画。</p>
+
+<section class="common"><h2>三套共用 · 页头的 REA 装备读数与一键更新</h2>
+<div class="row">
+ <div class="b g"><span class="t">页头右侧</span>：液晶读数 <span class="lcd">REA 6.4.0 · 已是最新</span> 　或　 <span class="lcd">REA 6.4.0 → 6.5.0 可更新</span> <span class="b">一键更新</span></div>
+</div>
+<div class="row" style="margin-top:8px">
+ <div class="b g mini">① 点击：查 GitHub 正式发布版</div><div class="arrow">→</div>
+ <div class="b g mini">② 预演：列出将改的 Claude Code / Codex 配置与 Skill，附更新说明链接</div><div class="arrow">→</div>
+ <div class="f g mini">③ 你确认后才写入（自动留备份）</div><div class="arrow">→</div>
+ <div class="b g mini">④ 回读核对 + 适配检查（任务包用到的工具还在）</div><div class="arrow">→</div>
+ <div class="b g mini">⑤ 提示重启 Claude Code / Codex</div>
+</div></section>
+
+<div class="grid">
+
+<section class="opt"><h2>A · 鉴定台升级（原骨架）</h2><p>保留左标本架 + 右工作台。步骤条末端分叉成两个终点；“功能·REA”标本在工作台里多一页“取证”。改动最小，熟悉感最强。</p>
+<div class="row" style="min-height:230px">
+ <div class="b" style="width:22%"><span class="t">标本架</span><br><small>待逆推 · 待复刻 · 已验证 · 已完成</small><br>▢ TXT 某篇文案<br>▢ IMG 某张海报<br>■ <b>APP</b> Notion · 剪贴板<br>▢ WEB 某落地页</div>
+ <div class="col g">
+  <div class="b"><span class="t">SPECIMEN · APP</span>　Notion 富格式剪贴板<br><small>步骤：投入 → 取证逆推 → 复刻验证 → 〈 炼成 Skill ｜ 实现到项目 〉</small></div>
+  <div class="row"><div class="f">取证</div><div class="b">配方</div><div class="b">对照与打分</div><div class="b">终点</div></div>
+  <div class="row g">
+   <div class="b g"><span class="t">取证（本页签）</span><br>流程：复制块 → preload → 主进程写剪贴板 <span class="ev">证据 a1b2</span><br>数据：同时写 HTML 与私有格式 <span class="ev">证据 c3d4</span><br><small>观察 / 推断分色</small></div>
+   <div class="d" style="width:30%"><span class="t">未知项（2）</span><br>服务端是否参与<br>私有格式版本</div>
+  </div>
+ </div>
+</div></section>
+
+<section class="opt"><h2>B · 双台：鉴定台 ／ 解剖台</h2><p>先按“东西本身”分两种台面。看得见的作品（文字/图片/网页）上鉴定台，主角是原件↔复刻对照；拆得开的软件上解剖台，主角是证据链和未知项。两台共用标本架与终点。</p>
+<div class="row" style="min-height:250px">
+ <div class="b" style="width:20%"><span class="t">标本架</span><br><div class="row" style="margin:4px 0"><div class="b mini">作品</div><div class="f mini">软件</div></div>■ Notion · 剪贴板<br>▢ 飞书 · 拖拽排序<br>▢ Claude · 会话检索</div>
+ <div class="col g">
+  <div class="f">解剖台 · Notion.app　<small style="color:#ccc">SHA e0f0… · Electron · 取证于 REA 6.4.0</small></div>
+  <div class="row g">
+   <div class="b" style="width:24%"><span class="t">目标身份</span><br>路径<br>版本 / SHA<br>想弄懂：复制块<br>授权 ✓</div>
+   <div class="b g"><span class="t">证据链（主角）</span><br>
+    <div class="row mini" style="margin-top:6px"><div class="b">界面：复制按钮</div><div class="arrow">→</div><div class="b">渲染进程 API <span class="ev">a1b2</span></div><div class="arrow">→</div><div class="b">IPC 通道 <span class="ev">c3d4</span></div><div class="arrow">→</div><div class="b">主进程写入 <span class="ev">e5f6</span></div></div>
+    <small>每个节点：观察 / 推断；点节点看结论原文</small></div>
+   <div class="d" style="width:22%"><span class="t">未知项（2）</span><br>服务端是否参与<br>私有格式版本</div>
+  </div>
+  <div class="row"><div class="b g"><span class="t">验收用例</span> AC-01…AC-06（复刻时逐条打勾）</div><div class="b"><span class="t">终点</span>：炼成 Skill ｜ 实现到项目</div></div>
+ </div>
+</div>
+<small>作品选中时，中间换成鉴定台：原件 ↔ 复刻滑块对照 + 分项打分（即现有对照台）。</small>
+</section>
+
+<section class="opt"><h2>C · 数码扫描舱（数码世界母题）</h2><p>标本放进中央扫描舱，伙伴带着 REA 扫描它；扫出来的配方是一块块“数据碎片”，按观察 / 推断 / 未知三色归位，未知是虚线的“未解析区”。舱底两扇出舱门就是两个终点。扫描线沿用全站已有动效。</p>
+<div class="row" style="min-height:260px">
+ <div class="b" style="width:18%"><span class="t">标本架</span><br>■ Notion · 剪贴板<br>▢ 某海报<br>▢ 某落地页</div>
+ <div class="col g">
+  <div class="row">
+   <div class="col" style="width:22%"><div class="frag">流程 · 观察 <span class="ev">a1b2</span></div><div class="frag">状态 · 推断</div><div class="frag">数据 · 观察 <span class="ev">c3d4</span></div></div>
+   <div class="cap g"><span class="t">扫描舱</span><br>Notion.app · 复制块<br><small>扫描仪：REA 6.4.0（铭牌，可一键更新）· 操作员：机械邪龙兽</small><br><span class="f" style="display:inline-block;margin-top:8px">开始扫描 = 复制任务包</span></div>
+   <div class="col" style="width:22%"><div class="frag">边界 · 推断</div><div class="frag">文案 · 观察</div><div class="fragd">未解析：服务端？</div><div class="fragd">未解析：私有格式</div></div>
+  </div>
+  <div class="row"><div class="door"><span class="t">出舱门 ①</span><br>孵化数码蛋（炼成 Skill）</div><div class="door"><span class="t">出舱门 ②</span><br>传送到项目（实现 + 验收用例）</div></div>
+  <small>作品类标本同样进舱；复刻对照放在出舱前的“比对窗”。</small>
+ </div>
+</div></section>
+
+</div></body></html>

@@ -1,6 +1,8 @@
 import { Reading, ReadReveal } from './ScanMotion.jsx';
 import { flyData } from './data-flight.js';
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {useWebDraft} from './useWebDraft.js';
+import {registerPageGuard} from './navigation-guard.js';
 import { Plus, RefreshCw } from "lucide-react";
 import { Badge, Button } from "./components.jsx";
 import { request } from "./api.js";
@@ -20,12 +22,24 @@ export function AgentTargets({
   notify,
   onEvidence,
   onSelect,
+  showConfig = true,
+  onPendingChange,
 }) {
   const [options, setOptions] = useState(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [stale, setStale] = useState(false);
-  const [draft, setDraft] = useState(null);
+  const [draft, setDraftValue] = useState(null);
+  const recovery=useWebDraft('target:'+agentId,v=>!!v&&(!v.draft||typeof v.draft.label==='string'&&typeof v.draft.programId==='string'&&typeof v.draft.homeId==='string'));
+  const draftRef=useRef(null),selection=useRef(null),hydrated=useRef(false),composing=useRef(false);
+  useEffect(()=>registerPageGuard(()=>composing.current?'中文输入尚未完成，请先确认输入。':''),[]);
+  function setDraft(value){
+    draftRef.current=value;setDraftValue(value);
+    if(options&&value){const program=options.programs.find(p=>p.id===value.programId),home=options.homes.find(h=>h.id===value.homeId);selection.current={program:program?{path:program.path,kind:program.kind}:null,home:home?{id:home.id,path:home.path}:null};}
+    if(!value)selection.current=null;
+    if(hydrated.current)try{recovery.save({draft:value,selection:selection.current});}catch{}
+  }
+  useLayoutEffect(()=>{if(!recovery.ready||hydrated.current)return;hydrated.current=true;selection.current=recovery.value?.selection||null;draftRef.current=recovery.value?.draft||null;setDraftValue(draftRef.current);if(draftRef.current)setStale(true);},[recovery.ready]);
   const [removing, setRemoving] = useState(null);
   const lock = useRef(false),
     sequence = useRef(0);
@@ -39,10 +53,12 @@ export function AgentTargets({
   useEffect(() => {
     if (draft) editor.current?.focus();
   }, [draft?.id, !!draft]);
+  useEffect(() => { onPendingChange?.(!!busy || !!draft || !!removing); }, [busy, draft, removing, onPendingChange]);
+  useEffect(() => () => onPendingChange?.(false), [onPendingChange]);
   const targets = (state.connections?.agentTargets || []).filter(
     (t) => t.agentId === agentId,
   );
-  const usable = options && !stale && !options.errors.length && !busy;
+  const usable = recovery.ready && !recovery.error && options && !stale && !options.errors.length && !busy;
   async function refresh() {
     if (lock.current) return;
     lock.current = true;
@@ -60,6 +76,12 @@ export function AgentTargets({
         setError(value.errors.join("；"));
         if (!options) setOptions(value);
       } else {
+        if(draftRef.current){
+          const old=selection.current,next={...draftRef.current,
+            programId:value.programs.find(p=>p.path===old?.program?.path&&p.kind===old?.program?.kind&&p.status==='present')?.id||'',
+            homeId:value.homes.find(h=>h.id===old?.home?.id&&h.path===old?.home?.path&&h.status==='present')?.id||''};
+          draftRef.current=next;setDraftValue(next);recovery.save({draft:next,selection:old});
+        }
         setOptions(value);
         setStale(false);
         onEvidence({ programs: value.programs, stale: false });
@@ -99,7 +121,8 @@ export function AgentTargets({
     );
   }
   async function mutate(action, data) {
-    if (lock.current) return;
+    if (lock.current || !recovery.ready || recovery.error) return;
+    if(action==='save')try{recovery.save({draft:draftRef.current,selection:selection.current});}catch{return;}
     lock.current = true;
     const ticket = ++sequence.current;
     setBusy(action);
@@ -158,9 +181,9 @@ export function AgentTargets({
             ? `检查于 ${new Date(options.at).toLocaleString("zh-CN")}`
             : "尚未检查版本与目标"}
       </p>
-      {error && (
+      {(recovery.error||error) && (
         <p className="inline-error" role="alert">
-          {error} · 请检查版本与目标后重试。
+          {recovery.error||error} · 请检查版本与目标后重试。
         </p>
       )}
       {targets.map((target) => (
@@ -188,11 +211,11 @@ export function AgentTargets({
             <code>{target.home.path}</code>
           </div>
           <p className="detail-footnote">用户关联 · 未验证运行</p>
-          <AgentConfig
+          {showConfig && <AgentConfig
             target={target}
             revision={state.revision}
             adoptState={adoptState}
-          />
+          />}
           {(state.connections?.skillCopies || []).some(
             (c) => c.targetId === target.id,
           ) && (
@@ -304,6 +327,8 @@ export function AgentTargets({
             <input
               ref={editor}
               value={draft.label}
+              onCompositionStart={()=>{composing.current=true;}}
+              onCompositionEnd={()=>{composing.current=false;}}
               maxLength={100}
               required
               disabled={!!busy}

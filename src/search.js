@@ -1,6 +1,9 @@
-// 本机搜索：只读已加载的主库，不访问服务端、知识库正文或 Agent 配置。
+// 主库快照内的纯搜索；读取/重试由搜索面板处理。收藏用独立只读投影，不读知识库或 Agent 配置。
 // 范围与边界见 ASSET-SEARCH.md。
 import { current } from "./store.js";
+import {entryName, liveEntries} from './scrolls.js';
+import {buildReplicaPack} from './reverse-v4.js';
+import {filterRelayText} from './relay-prompt.js';
 
 export const GROUP_LIMIT = 20;
 const SNIPPET = 40;
@@ -105,6 +108,7 @@ export function searchWorkspace(state, query) {
   if (!words.length) return null;
   const { hits: assets, archived } = searchAssets(state.assets, words);
   const notes = searchPlain(state.notes, words, (n) => [
+    field("标题", n.title),
     field("正文", n.text, true),
   ]);
   const references = searchPlain(state.references, words, (r) => [
@@ -113,12 +117,6 @@ export function searchWorkspace(state, query) {
     field("笔记", r.note, true),
   ]);
   const projects = [
-    ...searchPlain(state.projects, words, (p) => [
-      field("名称", p.name),
-      field("目标", p.goal, true),
-      field("下一步", p.next, true),
-      field("位置", p.location),
-    ]),
     ...searchPlain(state.connections?.projects || [], words, (p) => [
       field("名称", p.name),
       field("仓库", p.repoKey),
@@ -127,7 +125,22 @@ export function searchWorkspace(state, query) {
       field("位置", (p.localPaths || []).join(" ")),
     ]),
   ];
-  return { words, assets, archived, notes, references, projects };
+  const scrolls = (state.scrolls || []).filter(s=>!s.deletedAt).flatMap(scroll=>{
+    const entries=liveEntries(scroll);
+    const hits=searchPlain(entries,words,e=>[field('卷名',scroll.name),field('名称',entryName(e)),field('正文',e.text,true)]);
+    if(!entries.length && matches((scroll.name||'').toLowerCase(),words))
+      return [{item:{id:scroll.id,name:scroll.name},scrollId:scroll.id,where:'卷名',source:scroll.name}];
+    return hits.map(hit=>({...hit,scrollId:scroll.id,entryId:hit.item.id,source:scroll.name}));
+  });
+  const reverse = (state.reverseRecords || []).filter(r=>!r.deletedAt).flatMap(item=>{
+    const pack=buildReplicaPack(item);
+    if(!pack)return [];
+    const source=filterRelayText(item.material?.target?.path || item.material?.target?.url || item.material?.url || '本机材料').text;
+    const title=filterRelayText(item.title).text;
+    const hits=searchPlain([item],words,r=>[field('标题',title),field('来源',source),field('当前任务包',pack,true)]);
+    return hits.map(hit=>({...hit,item:{id:item.id,title},source}));
+  });
+  return { words, assets, archived, notes, references, projects, scrolls, reverse };
 }
 
 // 资产库标签筛选：只统计未归档资产的当前版本，按使用数量、再按名称排序。

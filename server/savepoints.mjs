@@ -1,3 +1,4 @@
+import { identityOptions } from "./directory-identity.mjs";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import {
@@ -168,7 +169,7 @@ export function createSavepoints(
       root = registered;
     }
     if (!root) throw failure("请选择该项目已登记的本机位置", 409);
-    const dir = await projectDirectory(c.roots, root);
+    const dir = await projectDirectory(c.roots, root, identityOptions(project, root));
     assertDirectoryConfirmed(project, root, dir.identity);
     const loc = project.locations?.find((l) => l.path === root);
     if (loc && loc.status !== "present")

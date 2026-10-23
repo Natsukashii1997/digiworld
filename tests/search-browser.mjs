@@ -53,8 +53,9 @@ function workspace() {
   s.references = [
     { id: "r1", title: "写作手册", url: "https://example.com/guide", note: "关于周报结构的建议" },
   ];
-  s.projects = [
-    { id: "p1", name: "季度复盘", goal: "汇总周报", next: "", location: "", status: "进行中" },
+  s.connections={roots:[],projects:[],agents:[],github:{status:"",login:"",message:"",at:""},errors:[],truncated:false};
+  s.connections.projects = [
+    { id: "p1", name: "季度复盘", description: "汇总周报", kind: "Git", localPaths: ["/fixture/projects/review"], repoKey: "review", active: false },
   ];
   return s;
 }
@@ -66,7 +67,9 @@ const opened = [];
 async function session(state, viewport = { width: 1440, height: 1000 }) {
   const app = await fixture();
   opened.push(app);
+  const connections=state.connections;delete state.connections;
   await app.repository.write(state, { initialize: true });
+  if(connections)await app.repository.updateConnections(()=>connections);
   const context = await browser.newContext({ viewport, reducedMotion: "reduce" });
   opened.push(context);
   const page = await context.newPage();
@@ -127,6 +130,7 @@ try {
     await palette(page).getByRole("button", { name }).click();
     await page.waitForFunction((r) => location.hash === "#" + r, route);
   }
+  if(await page.getByRole("dialog").count())await page.keyboard.press("Escape");
   await search(page, "周报");
   assert.equal(await scope.getByRole("button", { name: "查看已归档" }).count(), 0);
   await page.goto(app.url + "/#assets");
@@ -138,11 +142,11 @@ try {
   const empty = palette(page).locator(".search-empty");
   assert.equal(await empty.innerText(), "没有匹配“完全不存在的词”的记录。");
   assert.equal(await scope.locator(".search-empty").count(), 0);
-  assert.match(await scope.innerText(), /知识库正文、历史版本和二进制文件不在此搜索/);
+  assert.match(await scope.innerText(), /不查历史版本、回收内容、私人会话或知识库正文/);
   assert.doesNotMatch(await scope.innerText(), /已归档/);
-  await scope.getByRole("button", { name: "去知识仓库查询" }).click();
-  await page.waitForFunction(() => location.hash === "#knowledge");
-  console.log("PASS 无结果提示与搜索范围说明分开，可去知识仓库");
+  assert.equal(await scope.getByRole("button", { name: "去知识仓库查询" }).count(),0);
+  await page.keyboard.press("Escape");
+  console.log("PASS 无结果提示与搜索范围说明分开，不恢复撤下页面");
 
   // 资产库：正文搜索、标签筛选组合、清除筛选、已归档提示。
   await page.goto(app.url + "/#assets");

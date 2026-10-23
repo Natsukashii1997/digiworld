@@ -206,9 +206,9 @@ try {
     "PASS 真实目录缺失/符号链接受阻不删关系；读取失败标旧结果过期，四档长错误不溢出且axe通过",
   );
   await page.keyboard.press("Escape");
-  await page.goto(app.url + "/#agents");
+  await page.goto(app.url + "/#settings");
   await page.reload();
-  await openAgentInventory(page,"codex","Codex");
+  await page.getByRole("radio", {name:"资产交付目标",exact:true}).click();
   const linkedAssets = page.getByRole("region", {
     name: "隔离 Codex 的关联资产",
     exact: true,

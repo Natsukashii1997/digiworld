@@ -1,3 +1,4 @@
+import { observationForRegistration } from "./directory-identity.mjs";
 import { randomUUID } from "node:crypto";
 import { digest, failure } from "./repository.mjs";
 import { inspectProjectLocation } from "./project-scan.mjs";
@@ -16,6 +17,7 @@ function revision(value) {
   if (!Number.isSafeInteger(value) || value < 1) throw failure("主库版本无效");
 }
 function location(observation, previous, accept) {
+  observation = observationForRegistration(observation, previous, accept);
   const changed =
     !accept &&
     previous?.identity &&
@@ -33,6 +35,7 @@ function location(observation, previous, accept) {
     path: observation.path,
     status: changed ? "changed" : observation.status,
     ...(identity ? { identity } : {}),
+    ...((accept || !previous?.identity ? observation.identityVersion : previous.identityVersion) === 2 ? { identityVersion: 2 } : {}),
     ...(observedIdentity ? { observedIdentity } : {}),
     checkedAt: observation.checkedAt,
     ...(changed
@@ -104,7 +107,7 @@ export function createProjectIdentity(
         candidate &&
         (old?.status === "changed" ||
           old?.observedIdentity ||
-          (old?.identity && old.identity !== item.identity))
+          (old?.identity && old.identity !== observationForRegistration(item, old).identity))
       )
         throw conflict("候选目录身份已变化，请先在候选项目中重新确认目录");
       const expected = candidate?.repoKey || project.repoKey || "";
@@ -208,10 +211,11 @@ export function createProjectIdentity(
           [project.id, candidate?.id].includes(b.projectId),
         ),
         evidence: evidence.map(
-          ({ path, status, identity, scopeSignature, repoKey }) => ({
+          ({ path, status, identity, identityVersion, scopeSignature, repoKey }) => ({
             path,
             status,
             identity,
+            identityVersion,
             scopeSignature,
             repoKey,
           }),
@@ -294,12 +298,14 @@ export function createProjectIdentity(
                 ? { ...current.merged, relationVersion: input.token }
                 : p,
             );
-          for (const p of projects)
-            p.identityConflict =
+          for (const p of projects) {
+            const identityConflict =
               !!p.repoKey &&
               projects.some(
                 (other) => other.id !== p.id && other.repoKey === p.repoKey,
               );
+            if (identityConflict !== !!p.identityConflict) p.identityConflict = identityConflict;
+          }
           return { ...connections, projects };
         },
         { expectedRevision: input.revision },

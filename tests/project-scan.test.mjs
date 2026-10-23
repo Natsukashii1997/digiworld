@@ -122,7 +122,7 @@ test("目录改名保留底层身份，新路径重新签名；旧目录仅实�
   assert.equal((await inspectProjectLocation([root], after)).status, "missing");
 });
 
-test("扫描截断与已知路径额外探测共享预算，未探测目录不冒充缺失", async (t) => {
+test("扫描截断与已知路径优先探测共享预算，未探测目录不冒充缺失", async (t) => {
   const root = await fixture(t);
   const project = join(root, "project");
   const absent = join(root, "absent");
@@ -134,14 +134,14 @@ test("扫描截断与已知路径额外探测共享预算，未探测目录不�
   });
   assert.equal(scan.visited, 1);
   assert.equal(scan.truncated, true);
-  assert.equal(scan.items.length, 0);
+  assert.equal(scan.items.length, 1);
   assert.equal(
     scan.locations.find((row) => row.path === absent)?.status,
     "unknown",
   );
   assert.equal(
     scan.locations.find((row) => row.path === project)?.status,
-    "unknown",
+    "present",
   );
   const shallow = await scanLocalProjects([root], {
     maxDepth: 0,
@@ -157,7 +157,7 @@ test("扫描截断与已知路径额外探测共享预算，未探测目录不�
   assert.equal(shallow.items.length, 1);
   assert.equal(
     shallow.locations.find((row) => row.path === absent)?.status,
-    "unknown",
+    "missing",
   );
 });
 

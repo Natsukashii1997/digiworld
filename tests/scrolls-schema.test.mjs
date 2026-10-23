@@ -8,6 +8,7 @@ import { openRepository } from "../server/repository.mjs";
 import { validateState } from "../server/schema.mjs";
 import { mergeBackup } from "../server/merge.mjs";
 import { seed } from "../src/store.js";
+import { addEntry, editEntry, entryName, scrollHit } from "../src/scrolls.js";
 
 const AT = "2026-09-30T08:00:00.000Z";
 const entry = (id, text, extra = {}) => ({
@@ -77,6 +78,12 @@ test("焚决：严格校验字段、类型与长度上限", () => {
     [(s) => (s.scrolls = {}), /焚决/],
     [(s) => (s.scrolls[0].extra = 1), /不支持的字段/],
     [(s) => (s.scrolls[0].entries[0].html = "<b>x</b>"), /不支持的字段/],
+    [(s) => (s.scrolls[0].entries[0].name = ""), /焚决名称/],
+    [(s) => (s.scrolls[0].entries[0].name = "   "), /焚决名称/],
+    [(s) => (s.scrolls[0].entries[0].name = "名".repeat(61)), /焚决名称/],
+    [(s) => (s.scrolls[0].entries[0].name = "a\nb"), /焚决名称/],
+    [(s) => (s.scrolls[0].entries[0].name = "a\tb"), /焚决名称/],
+    [(s) => (s.scrolls[0].entries[0].name = 1), /焚决名称/],
     [(s) => (s.scrolls[0].name = ""), /卷名/],
     [(s) => (s.scrolls[0].name = "   "), /卷名/],
     [(s) => (s.scrolls[0].name = "名".repeat(61)), /卷名/],
@@ -245,3 +252,38 @@ test("备份：含焚决与富文本随手记的新备份经 HTTP 同款导出�
     const again = await r.importBackup(backup, preview.token);
     assert.deepEqual(again.scrolls, saved.scrolls);
   }));
+
+
+test("焚决：独立名称与全文保存往返，旧条目不迁移，编辑保留历史标签与来源", async () => {
+  const original = entry("e1", "\n旧正文首行\n完整正文  ", {tags:["历史"],uses:3,source:{reverseId:"r1"}});
+  const initial = [scroll("s1", "心法", [original])];
+  assert.equal(entryName(original), "旧正文首行");
+  assert.equal("name" in original, false);
+  const made = addEntry(initial, "s1", "  全文与名称不同\n末尾换行\n", [], undefined, "  专用名称  ");
+  assert.equal(made.entry.name, "专用名称");
+  assert.equal(made.entry.text, "  全文与名称不同\n末尾换行\n");
+  assert.equal(scrollHit(made.scrolls[0], ["专用名称"]), true);
+  assert.equal(scrollHit(made.scrolls[0], ["历史"]), false);
+  const changed = editEntry(made.scrolls, "s1", "e1", "更新正文\n", original.tags, "旧条目补名");
+  assert.equal(changed[0].entries[0].name, "旧条目补名");
+  assert.equal(changed[0].entries[0].text, "更新正文\n");
+  assert.deepEqual(changed[0].entries[0].tags, ["历史"]);
+  assert.deepEqual(changed[0].entries[0].source, {reverseId:"r1"});
+  assert.equal(changed[0].entries[0].uses, 3);
+  assert.equal(initial[0].entries[0], original);
+  const legacyImport = addEntry([], "missing", "原逆向正文", ["旧标签"], {reverseId:"r2"}).entry;
+  assert.equal("name" in legacyImport, false);
+  assert.deepEqual(legacyImport.tags, ["旧标签"]);
+  assert.deepEqual(legacyImport.source, {reverseId:"r2"});
+  await withRepository(async r => {
+    const state = withScrolls(changed);
+    // source 的逆向记录校验由专门来源测试覆盖；此往返只验证本轮可选名称。
+    delete state.scrolls[0].entries[0].source;
+    await r.write(state, {initialize:true});
+    const saved = await r.read();
+    assert.deepEqual(saved.scrolls, changed);
+    const backup = mergeBackup(seed(), saved).state;
+    assert.equal(backup.scrolls[0].entries[1].name, "专用名称");
+    assert.equal(backup.scrolls[0].entries[1].text, made.entry.text);
+  });
+});

@@ -21,6 +21,11 @@ export function compareVersions(before, after) {
       : after[key] || "";
     if (left !== right) fields.push({ key, label, before: left, after: right });
   }
+  for (const [key, label] of [["kind", "设计形式"]]) {
+    const display = value => key === "kind" ? ({ skill: "Skill 包", prompt: "Prompt" }[value] || "") : value || "";
+    const left = display(before.design?.[key]), right = display(after.design?.[key]);
+    if (left !== right) fields.push({ key: `design.${key}`, label, before: left, after: right });
+  }
   const contentChanged = (before.content || "") !== (after.content || "");
   const files = [];
   const leftFiles = new Map(

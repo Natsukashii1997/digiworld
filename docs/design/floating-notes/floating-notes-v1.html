@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>桌面随手记 v1</title>
+<style>
+/* ==========================================================================
+   FN-516 · 桌面随手记悬浮球与便签栏 · 视觉稿 v1（待常浩确认）
+   令牌全部取自现有源码：src/styles.css、src/ui-v14.css；便签纸与“编辑中暖黄”取自 src/notes-v16.css。
+   像素铅笔 = src/pixel.jsx 的 mark_pencil（已批准素材，零生图）。
+   本文件只是视觉与交互参照，不是实现；数据为合成内容，演示状态只在本页内存。
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --bg: #070b16; --bg-2: #0a1020; --panel: #0f1729; --panel-2: #131d33; --panel-3: #1a2641; --field: #0a1120;
+  --line: rgba(140,178,255,.11); --line-2: rgba(140,178,255,.19); --line-3: rgba(140,178,255,.32);
+  --text: #e9eeff; --text-2: #b4bfda; --text-hi: #c9d7ff; --muted: #8b98b8; --faint: #5d6987;
+  --orange: #ff8a24; --orange-2: #ffb35c; --orange-ink: #1f0f00; --cyan: #4de3ff; --lcd: #a6e36e;
+  --yellow: #ffd166; --red: #ff6b6b; --red-2: #ff9a9a; --blue: #6fb0ff;
+  --r-xs: 4px; --r-s: 8px; --r: 12px; --r-l: 16px; --r-pill: 999px;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+  --fs-label: 11px; --fs-small: 12px; --fs-caption: 13px; --fs-body: 14px; --fs-read: 15px; --fs-title: 16px; --fs-section: 20px; --fs-page: 38px;
+  --ease: cubic-bezier(.2,.8,.2,1); --ease-back: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 160ms; --t-mid: 240ms;
+  --m-panel: linear-gradient(180deg, #152039 0%, #0f1729 40%, #0c1325 100%);
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--cyan);
+  /* 本稿新增的语义令牌（仅组合现有色值，不引入新颜色） */
+  --fn-ball: 52px;
+  --fn-panel-w: 368px;
+  --fn-panel-h: 600px;
+  --fn-gap: 12px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+button:focus-visible, [contenteditable]:focus-visible { outline: none; box-shadow: var(--focus); }
+svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---------- 看板外框（只属于设计稿，不是产品界面） ---------- */
+.board { max-width: 1360px; margin: 0 auto; padding: var(--s-7) var(--s-4) var(--s-8); }
+.bd-head { display: grid; gap: var(--s-3); margin-bottom: var(--s-7); }
+.bd-eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); font: 600 var(--fs-small)/1 var(--mono); letter-spacing: .08em; color: var(--yellow); }
+.bd-eyebrow span { padding: 4px 8px; border: 1px solid color-mix(in srgb, var(--yellow) 45%, transparent); border-radius: var(--r-xs); }
+.bd-eyebrow .st { color: var(--orange-2); border-color: color-mix(in srgb, var(--orange) 50%, transparent); }
+.bd-head h1 { margin: 0; font-size: var(--fs-page); line-height: 1.15; letter-spacing: -.01em; }
+.bd-head p { margin: 0; color: var(--text-2); font-size: var(--fs-read); line-height: 1.7; max-width: 760px; }
+.bd-sec { margin-top: var(--s-8); }
+.bd-sec > header { display: flex; align-items: baseline; gap: var(--s-3); margin-bottom: var(--s-5); border-bottom: 1px solid var(--line); padding-bottom: var(--s-3); }
+.bd-sec > header b { font: 600 var(--fs-small) var(--mono); color: var(--faint); letter-spacing: .08em; }
+.bd-sec > header h2 { margin: 0; font-size: var(--fs-section); }
+.bd-sec > header em { margin-left: auto; font-style: normal; font: 500 var(--fs-small) var(--mono); color: var(--muted); }
+.bd-note { color: var(--muted); font-size: var(--fs-caption); line-height: 1.7; margin: var(--s-3) 0 0; }
+.demo-tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: var(--r-xs); border: 1px dashed color-mix(in srgb, var(--cyan) 55%, transparent); color: var(--cyan); font: 600 var(--fs-label) var(--mono); letter-spacing: .08em; }
+
+/* ---------- 桌面示意（壁纸、菜单栏、他人窗口均为示意） ---------- */
+.desk-fit { position: relative; width: 100%; }
+.desk {
+  position: relative; width: 1280px; height: 800px; overflow: hidden; border-radius: var(--r-l);
+  transform-origin: 0 0; border: 1px solid var(--line-2);
+  background:
+    radial-gradient(60% 70% at 18% 20%, #3d4f6e 0%, transparent 70%),
+    radial-gradient(50% 60% at 85% 80%, #6b5a4a 0%, transparent 70%),
+    linear-gradient(160deg, #2b3446 0%, #4a4d55 55%, #5c5850 100%);
+  user-select: none;
+}
+.desk.light { background: radial-gradient(60% 70% at 20% 10%, #f1efe8 0%, transparent 70%), linear-gradient(160deg, #d8dde6 0%, #ece7dc 100%); }
+.mbar { position: absolute; inset: 0 0 auto; height: 28px; display: flex; align-items: center; gap: 18px; padding: 0 16px; background: rgba(20,24,34,.35); backdrop-filter: blur(20px); color: rgba(255,255,255,.88); font-size: 13px; }
+.mbar b { font-weight: 700; }
+.mbar .r { margin-left: auto; font-variant-numeric: tabular-nums; }
+.dock { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: 520px; height: 62px; border-radius: 18px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: space-evenly; padding: 0 12px; }
+.dock i { width: 44px; height: 44px; border-radius: 11px; background: rgba(255,255,255,.22); }
+.win { position: absolute; left: 120px; top: 96px; width: 760px; height: 520px; border-radius: 12px; background: #f6f5f2; box-shadow: 0 30px 60px -20px rgba(0,0,0,.55); overflow: hidden; color: #2b2b2b; }
+.win .tb { height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: #ebe9e4; border-bottom: 1px solid #dcd9d2; font-size: 13px; color: #555; }
+.win .tb i { width: 12px; height: 12px; border-radius: 50%; background: #d4d1ca; }
+.win .tb span { margin-left: 12px; }
+.win .doc { padding: 28px 40px; font-size: 15px; line-height: 1.9; color: #333; }
+.win .doc p { margin: 0 0 10px; }
+.desk-cap { position: absolute; left: 16px; bottom: 82px; padding: 4px 8px; border-radius: var(--r-xs); background: rgba(0,0,0,.45); color: rgba(255,255,255,.75); font: 500 11px var(--mono); letter-spacing: .06em; }
+
+/* ---------- 悬浮球 ---------- */
+.fn-ball {
+  position: absolute; width: var(--fn-ball); height: var(--fn-ball); padding: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer; touch-action: none;
+  background: var(--m-panel);
+  border: 1px solid var(--line-3);
+  box-shadow: inset 0 0 0 3px #0c1325, inset 0 0 0 4.5px color-mix(in srgb, var(--yellow) 32%, transparent),
+              inset 0 1px 0 4px rgba(255,255,255,.04), 0 10px 22px -8px rgba(0,0,0,.7), 0 2px 4px rgba(0,0,0,.35);
+  color: var(--yellow); opacity: .94;
+  transition: transform var(--t-fast) var(--ease), box-shadow var(--t-mid) var(--ease), opacity var(--t-fast) var(--ease);
+}
+.fn-ball .tape { position: absolute; top: -3px; left: 50%; width: 24px; height: 8px; transform: translateX(-50%) rotate(-8deg); border-radius: 2px;
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--yellow) 70%, transparent) 0 4px, color-mix(in srgb, var(--yellow) 52%, transparent) 4px 6px); }
+.fn-ball svg.px { width: 22px; height: 22px; margin: 2px 0 0 1px; shape-rendering: crispEdges; }
+.fn-ball:hover, .fn-ball.is-hover { opacity: 1; transform: translateY(-2px); box-shadow: inset 0 0 0 3px #0c1325, inset 0 0 0 4.5px color-mix(in srgb, var(--yellow) 60%, transparent), 0 14px 28px -8px rgba(0,0,0,.75), 0 2px 4px rgba(0,0,0,.35); }
+.fn-ball.is-open { opacity: 1; box-shadow: inset 0 0 0 3px #0c1325, inset 0 0 0 4.5px var(--yellow), 0 0 0 4px color-mix(in srgb, var(--yellow) 14%, transparent), 0 12px 26px -8px color-mix(in srgb, var(--yellow) 40%, transparent); }
+.fn-ball.is-drag { cursor: grabbing; transform: scale(1.06); opacity: 1; box-shadow: inset 0 0 0 3px #0c1325, inset 0 0 0 4.5px color-mix(in srgb, var(--yellow) 60%, transparent), 0 22px 36px -10px rgba(0,0,0,.8); }
+.fn-ball .dot { position: absolute; top: 1px; right: 1px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #0c1325; display: none; }
+.fn-ball[data-s=draft] .dot { display: block; background: var(--yellow); }
+.fn-ball[data-s=failed] .dot, .fn-ball[data-s=conflict] .dot { display: block; background: var(--red); }
+.fn-ball .arc { position: absolute; inset: -3px; border-radius: 50%; border: 2px solid transparent; border-top-color: var(--yellow); display: none; animation: spin 1s linear infinite; }
+.fn-ball[data-s=saving] .arc { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.fn-tip { position: absolute; white-space: nowrap; padding: 6px 10px; border-radius: var(--r-s); background: var(--panel-3); border: 1px solid var(--line-2); color: var(--text); font-size: var(--fs-caption); box-shadow: 0 10px 20px -10px #000; pointer-events: none; }
+.fn-tip kbd { margin-left: 8px; font: 500 var(--fs-small) var(--mono); color: var(--muted); }
+.fn-snap { position: absolute; top: 40px; bottom: 80px; width: 3px; border-radius: 2px; background: color-mix(in srgb, var(--yellow) 70%, transparent); box-shadow: 0 0 12px color-mix(in srgb, var(--yellow) 60%, transparent); display: none; }
+
+/* ---------- 便签栏 ---------- */
+.fn-panel {
+  position: relative; width: var(--fn-panel-w); height: var(--fn-panel-h); display: grid; grid-template-rows: auto 1fr auto;
+  border-radius: 14px; overflow: hidden; background: var(--m-panel);
+  border: 1px solid var(--line-2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 30px 60px -20px rgba(0,0,0,.85), 0 0 0 .5px rgba(0,0,0,.6);
+  text-align: left;
+}
+.desk .fn-panel { position: absolute; transform-origin: var(--ox, 100%) var(--oy, 0); transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease); }
+.desk .fn-panel.is-hidden { opacity: 0; transform: scale(.92); pointer-events: none; }
+.fn-hd { display: flex; align-items: center; gap: var(--s-2); height: 52px; padding: 0 var(--s-1) 0 var(--s-4); border-bottom: 1px solid var(--line); cursor: grab; }
+.fn-hd svg.px { width: 14px; height: 14px; color: var(--yellow); shape-rendering: crispEdges; }
+.fn-hd h3 { margin: 0; font-size: var(--fs-title); font-weight: 700; }
+.fn-hd .n { font: 500 var(--fs-small) var(--mono); color: var(--muted); letter-spacing: .04em; }
+.fn-hd .sp { flex: 1; }
+.fn-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: var(--r-s); background: none; color: var(--text-2); cursor: pointer; }
+.fn-icon:hover { color: var(--text); background: color-mix(in srgb, var(--line-3) 30%, transparent); }
+.fn-icon.on { color: var(--yellow); }
+.fn-icon svg.i { width: 17px; height: 17px; }
+.fn-scroll { overflow-y: auto; padding: var(--s-4) var(--s-4) var(--s-5); display: grid; gap: var(--s-4); align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
+.fn-pad { display: flex; align-items: center; gap: var(--s-2); width: 100%; min-height: 56px; padding: 0 var(--s-4); border: 1.5px dashed var(--line-3); border-radius: var(--r-s); background: color-mix(in srgb, var(--bg) 35%, transparent); color: var(--muted); font-size: var(--fs-read); cursor: text; }
+.fn-pad:hover { border-color: color-mix(in srgb, var(--yellow) 55%, transparent); color: var(--text-2); }
+.fn-pad kbd { margin-left: auto; font: 500 var(--fs-small) var(--mono); color: var(--muted); }
+.fn-ft { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-1) 0 var(--s-4); border-top: 1px solid var(--line); font-size: var(--fs-caption); color: var(--muted); }
+.fn-ft .lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--lcd); flex: none; }
+.fn-ft[data-s=saving] .lamp { background: none; border: 1.5px solid var(--yellow); border-top-color: transparent; animation: spin .9s linear infinite; }
+.fn-ft[data-s=draft] .lamp { background: var(--yellow); }
+.fn-ft[data-s=failed] .lamp, .fn-ft[data-s=conflict] .lamp { background: var(--red); }
+.fn-ft[data-s=failed] .msg, .fn-ft[data-s=conflict] .msg { color: var(--red-2); }
+.fn-ft[data-s=draft] .msg { color: var(--yellow); }
+.fn-ft .msg { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fn-ft .open { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 var(--s-3); border: 0; background: none; color: var(--text-2); font-size: var(--fs-caption); cursor: pointer; border-radius: var(--r-s); white-space: nowrap; }
+.fn-ft .open:hover { color: var(--cyan); }
+.fn-ft .open svg.i { width: 14px; height: 14px; }
+.fn-ft .retry { min-height: 32px; padding: 0 var(--s-3); border: 1px solid color-mix(in srgb, var(--red) 55%, transparent); border-radius: var(--r-s); background: none; color: var(--red-2); font-size: var(--fs-caption); cursor: pointer; }
+
+/* 便签（继承 notes-v16 的 .sn：深色纸淡染 + 顶部胶带；便签栏里不倾斜） */
+.sn { --paper: var(--text-hi); --a: .05; position: relative; display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-4) var(--s-3);
+  border: 1px solid color-mix(in srgb, var(--paper) 20%, transparent); border-radius: var(--r-s);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--paper) calc(var(--a) * 200%), transparent), color-mix(in srgb, var(--paper) calc(var(--a) * 100%), transparent) 60%), var(--panel);
+  box-shadow: 0 12px 24px -18px rgba(0,0,0,.9); }
+.sn.tone-red { --paper: var(--red); --a: .06; } .sn.tone-blue { --paper: color-mix(in srgb, var(--blue) 40%, var(--muted)); --a: .04; }
+.sn.tone-green { --paper: color-mix(in srgb, var(--lcd) 40%, var(--muted)); --a: .04; } .sn.tone-yellow { --paper: var(--yellow); --a: .06; }
+.sn-tape { position: absolute; top: -6px; left: 50%; width: 56px; height: 12px; transform: translateX(-50%) rotate(-2deg); border-radius: 2px; opacity: .85;
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--paper) 60%, transparent) 0 6px, color-mix(in srgb, var(--paper) 45%, transparent) 6px 8px); }
+.sn.tone-plain .sn-tape { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--text-2) 32%, transparent) 0 6px, color-mix(in srgb, var(--text-2) 22%, transparent) 6px 8px); }
+.sn header { display: flex; align-items: center; gap: var(--s-2); min-height: 20px; }
+.sn-time { font: 500 var(--fs-small) var(--mono); color: var(--muted); letter-spacing: .04em; }
+.sn-chip { margin-left: auto; padding: 1px 7px; border-radius: var(--r-xs); font-size: var(--fs-small); border: 1px dashed color-mix(in srgb, var(--yellow) 70%, transparent); color: var(--yellow); }
+.sn-body { display: grid; gap: 2px; font-size: var(--fs-body); line-height: 1.65; color: var(--text); overflow-wrap: anywhere; outline: none; }
+.sn-body p { margin: 0; }
+.sn-body > p:first-child { font-weight: 700; }
+.sn-body .ln { display: flex; gap: 8px; align-items: flex-start; }
+.sn-body .ln .pre { flex: none; min-width: 18px; font-family: var(--mono); color: var(--muted); }
+.sn-body .box { flex: none; width: 16px; height: 16px; margin-top: 4px; border: 1.5px solid var(--text-2); border-radius: var(--r-xs); display: grid; place-items: center; }
+.sn-body .box svg.i { width: 12px; height: 12px; stroke-width: 3.5; }
+.sn-body .done > span:last-child { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--text-2); }
+.ink-red { color: var(--red); } .ink-blue { color: var(--blue); } .ink-green { color: var(--lcd); } .ink-yellow { color: var(--yellow); } .ink-gray { color: var(--muted); }
+.sn.is-long .sn-body { max-height: 162px; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent); mask-image: linear-gradient(180deg, #000 62%, transparent); }
+.sn-more { justify-self: start; min-height: 28px; padding: 0; border: 0; background: none; color: var(--cyan); font-size: var(--fs-caption); cursor: pointer; }
+/* 编辑中：唯一亮起来的一张（暖黄，同 notes-v16 .sn-pad.editing） */
+.sn.is-edit { border-color: color-mix(in srgb, var(--yellow) 75%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--yellow) 18%, transparent), color-mix(in srgb, var(--yellow) 9%, transparent)), var(--panel-2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 10%, transparent), 0 18px 36px -22px color-mix(in srgb, var(--yellow) 45%, transparent); }
+.sn.is-edit .sn-tape { display: none; }
+.sn.is-edit .sn-body { min-height: 66px; }
+/* 编辑中整张便签已亮起作为焦点指示，正文区不再叠加青色焦点框 */
+.sn.is-edit .sn-body:focus-visible { box-shadow: none; }
+.sn-caret { display: inline-block; width: 2px; height: 1.2em; margin-left: 1px; vertical-align: -3px; background: var(--yellow); animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.sn-tools { display: flex; align-items: center; gap: 0; margin: var(--s-1) calc(var(--s-2) * -1) 0; padding-top: var(--s-1); border-top: 1px solid color-mix(in srgb, var(--yellow) 20%, transparent); }
+.sn-tools .fn-icon { width: 40px; height: 40px; }
+.sn-tools .fn-icon.on { color: var(--text); background: color-mix(in srgb, var(--yellow) 12%, transparent); }
+.sn-tools .sep { width: 1px; height: 20px; margin: 0 4px; background: color-mix(in srgb, var(--yellow) 25%, transparent); }
+.sn-tools .ink { display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 52px; color: var(--red); }
+.sn-tools .ink b { font: 800 var(--fs-title) var(--sans); box-shadow: inset 0 -3px 0 currentColor; }
+.sn-tools .ink svg.i { width: 12px; height: 12px; color: var(--muted); }
+.sn-state { margin-left: auto; padding-right: var(--s-2); font-size: var(--fs-small); color: var(--muted); white-space: nowrap; }
+.sn-state.saving { color: var(--yellow); }
+.sn-state.draft { color: var(--yellow); }
+/* 保存失败：红色描边，内容原样留在卡上 */
+.sn.is-failed { border-color: color-mix(in srgb, var(--red) 70%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 15%, transparent); }
+.sn-alert { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; padding: var(--s-2) var(--s-3); border-radius: var(--r-s); font-size: var(--fs-caption); line-height: 1.5; }
+.sn-alert.red { background: color-mix(in srgb, var(--red) 10%, transparent); color: var(--red-2); }
+.sn-alert.amber { background: color-mix(in srgb, var(--orange) 10%, transparent); color: var(--orange-2); border: 1px solid color-mix(in srgb, var(--orange) 35%, transparent); }
+.sn-alert .grow { flex: 1 1 100%; }
+.sn-alert .acts { display: flex; gap: var(--s-2); }
+.sn-btn { min-height: 32px; padding: 0 var(--s-3); border-radius: var(--r-s); border: 1px solid var(--line-3); background: none; color: var(--text); font-size: var(--fs-caption); cursor: pointer; }
+.sn-btn.pri { border: 0; background: var(--yellow); color: var(--orange-ink); font-weight: 700; }
+.sn-btn.red { border-color: color-mix(in srgb, var(--red) 55%, transparent); color: var(--red-2); }
+/* 冲突：别处的版本作为引文，放在自己的内容之上 */
+.sn.is-conflict { border-color: color-mix(in srgb, var(--orange) 65%, transparent); }
+.sn-other { display: grid; gap: 2px; padding: var(--s-2) var(--s-3); border-left: 2px solid color-mix(in srgb, var(--orange) 70%, transparent); background: color-mix(in srgb, var(--bg) 45%, transparent); border-radius: 0 var(--r-xs) var(--r-xs) 0; font-size: var(--fs-caption); color: var(--text-2); line-height: 1.6; }
+.sn-other b { font: 500 var(--fs-small) var(--mono); color: var(--orange-2); letter-spacing: .04em; font-weight: 500; }
+.sn-mine { font: 500 var(--fs-small) var(--mono); color: var(--yellow); letter-spacing: .04em; }
+.fn-empty { display: grid; justify-items: center; gap: var(--s-3); padding: var(--s-8) var(--s-4) 0; text-align: center; color: var(--muted); }
+.fn-empty svg.px { width: 40px; height: 40px; color: var(--faint); shape-rendering: crispEdges; }
+.fn-empty b { color: var(--text-2); font-size: var(--fs-read); }
+.fn-empty span { font-size: var(--fs-caption); line-height: 1.6; }
+
+/* ---------- 演示控制 ---------- */
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-top: var(--s-4); }
+.ctl button { min-height: 40px; padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1px solid var(--line-2); background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--text-2); font-size: var(--fs-caption); cursor: pointer; }
+.ctl button.on { border-color: var(--cyan); color: var(--text); background: color-mix(in srgb, var(--cyan) 8%, transparent); }
+.ctl .lbl { font: 600 var(--fs-small) var(--mono); color: var(--faint); letter-spacing: .06em; margin-right: var(--s-2); }
+
+/* ---------- 状态看板 ---------- */
+.balls { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-3); }
+.bcell { display: grid; gap: var(--s-2); }
+.bstage { position: relative; height: 120px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); }
+.bstage.dark { background: linear-gradient(160deg, #2b3446, #4a4d55); }
+.bstage.light { background: linear-gradient(160deg, #d8dde6, #ece7dc); }
+.bstage .fn-ball { left: calc(50% - 26px); top: calc(50% - 26px); }
+.bcell b { font-size: var(--fs-caption); }
+.bcell span { font-size: var(--fs-small); color: var(--muted); line-height: 1.5; }
+.panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(368px, 100%), 1fr)); gap: var(--s-6) var(--s-5); justify-items: center; }
+.pcell { display: grid; gap: var(--s-3); width: 100%; max-width: 368px; }
+.pcell > .fn-panel { width: 100%; height: 560px; }
+.pcell h4 { margin: 0; font-size: var(--fs-title); display: flex; gap: var(--s-2); align-items: baseline; }
+.pcell h4 b { font: 600 var(--fs-small) var(--mono); color: var(--faint); }
+.pcell p { margin: 0; font-size: var(--fs-caption); color: var(--muted); line-height: 1.6; }
+.zoom { display: flex; align-items: center; gap: var(--s-6); flex-wrap: wrap; padding: var(--s-5); border: 1px solid var(--line); border-radius: var(--r); background: var(--bg-2); }
+.zoom .fn-ball { position: relative; }
+.zoom .x2 { transform: scale(2); transform-origin: left center; margin-right: 52px; }
+.anat { display: grid; gap: 6px; font-size: var(--fs-caption); color: var(--text-2); line-height: 1.6; }
+.anat code { font-family: var(--mono); color: var(--yellow); font-size: var(--fs-small); }
+
+/* 位置示意 */
+.pos { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--s-5); }
+.pos figure { margin: 0; display: grid; gap: var(--s-2); }
+.mini { position: relative; aspect-ratio: 16/10; border-radius: var(--r); border: 1px solid var(--line-2); background: linear-gradient(160deg, #2b3446, #4a4d55); overflow: hidden; }
+.mini .mb { position: absolute; inset: 0 0 auto; height: 3.5%; background: rgba(20,24,34,.45); }
+.mini .dk { position: absolute; left: 30%; right: 30%; bottom: 1%; height: 7.75%; border-radius: 6px; background: rgba(255,255,255,.18); }
+.mini .b { position: absolute; width: 4.06%; aspect-ratio: 1; border-radius: 50%; background: #131d33; box-shadow: inset 0 0 0 2px var(--yellow); }
+.mini .p { position: absolute; width: 28.75%; border-radius: 6px; background: #131d33; border: 1px solid var(--line-3); box-shadow: 0 10px 20px -8px #000; }
+.mini .p::before { content: ""; position: absolute; inset: 6% 8% auto; height: 4%; border-radius: 2px; background: var(--line-3); }
+.mini .p::after { content: ""; position: absolute; left: 8%; right: 8%; top: 16%; height: 22%; border-radius: 3px; border: 1px solid color-mix(in srgb, var(--yellow) 70%, transparent); background: color-mix(in srgb, var(--yellow) 12%, transparent); }
+.mini .ghost { position: absolute; width: 4.06%; aspect-ratio: 1; border-radius: 50%; border: 1.5px dashed rgba(255,255,255,.55); }
+.mini .arrow { position: absolute; height: 2px; background: rgba(255,255,255,.55); transform-origin: 0 50%; }
+.mini .edge { position: absolute; top: 6%; bottom: 12%; width: 2px; background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+.pos figcaption { font-size: var(--fs-caption); color: var(--text-2); line-height: 1.6; }
+.pos figcaption b { color: var(--text); }
+
+/* 规格表 */
+.spec { width: 100%; border-collapse: collapse; font-size: var(--fs-caption); line-height: 1.6; }
+.spec th, .spec td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.spec th { color: var(--muted); font-weight: 600; font-size: var(--fs-small); white-space: nowrap; }
+.spec td:first-child { color: var(--text); font-weight: 600; white-space: nowrap; }
+.spec td { color: var(--text-2); }
+.spec code { font-family: var(--mono); font-size: var(--fs-small); color: var(--yellow); }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); }
+.rec { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr)); gap: var(--s-4); }
+.rec article { padding: var(--s-5); border: 1px solid var(--line-2); border-radius: var(--r); background: var(--panel); display: grid; gap: var(--s-2); align-content: start; }
+.rec h3 { margin: 0; font-size: var(--fs-title); }
+.rec .pick { font-size: var(--fs-read); color: var(--yellow); font-weight: 700; }
+.rec p { margin: 0; font-size: var(--fs-caption); color: var(--text-2); line-height: 1.7; }
+.rec .q { font: 600 var(--fs-small) var(--mono); color: var(--orange-2); letter-spacing: .06em; }
+ul.plain { margin: 0; padding-left: 1.2em; color: var(--text-2); font-size: var(--fs-caption); line-height: 1.8; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .fn-ball .arc { border-color: color-mix(in srgb, var(--yellow) 70%, transparent); border-style: dashed; }
+}
+</style>
+</head>
+<body>
+<main class="board">
+  <header class="bd-head">
+    <div class="bd-eyebrow"><span>FN-516</span><span>VISUAL v1</span><span class="st">待常浩确认</span></div>
+    <h1>桌面随手记 · 悬浮球与便签栏</h1>
+    <p>桌面上一颗贴着胶带的小圆球，点开就是一列便签：最上面直接写新的一条，下面的点哪条改哪条，写完自动保存，收起也不丢。便签纸、编辑中的暖黄、像素铅笔都沿用数码世界随手记，不另起风格。</p>
+    <p class="bd-note">本页内容全部为合成数据。桌面壁纸、菜单栏、程序坞和左侧文稿窗口只是“这是 Mac 桌面”的示意；标 <span class="demo-tag">演示</span> 的交互只在本页内存里运行，不代表桌面程序已实现。</p>
+  </header>
+
+  <!-- §1 主画面 + 交互演示 -->
+  <section class="bd-sec" id="main">
+    <header><b>01</b><h2>主画面 · 在别的应用上方写一条</h2><em>1280 × 800 示意屏</em></header>
+    <div class="desk-fit" id="deskFit">
+      <div class="desk" id="desk">
+        <div class="mbar"><b>文稿</b><span>文件</span><span>编辑</span><span>显示</span><span class="r">周四 16:42</span></div>
+        <div class="win"><div class="tb"><i></i><i></i><i></i><span>季度复盘提纲.txt（示意窗口）</span></div>
+          <div class="doc"><p><b>三季度复盘</b></p><p>一、目标回顾：新用户留存从 31% 提到 38%，基本达成。</p><p>二、做得好的：周会改成问题清单，决策更快。</p><p>三、没做好的：需求变更没有及时同步给设计，返工两次。</p><p>四、下季度重点……</p></div></div>
+        <div class="dock"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="desk-cap">示意桌面 · 非真实截图</div>
+        <div class="fn-snap" id="snap"></div>
+        <div id="deskPanel"></div>
+        <button class="fn-ball is-open" id="ball" data-s="ok" aria-label="随手记" aria-expanded="true"></button>
+        <div class="fn-tip" id="tip" hidden>随手记<kbd>⌃⌥N</kbd></div>
+      </div>
+    </div>
+    <div class="ctl" role="group" aria-label="演示状态">
+      <span class="demo-tag">演示</span><span class="lbl">切换状态</span>
+      <button data-demo="ok" class="on">正常</button>
+      <button data-demo="draft">连不上数码世界</button>
+      <button data-demo="failed">保存失败</button>
+      <button data-demo="conflict">网页里也改了这条</button>
+      <button data-demo="empty">清空（空状态）</button>
+    </div>
+    <p class="bd-note">可以试：点圆球展开/收起；按住圆球拖动，松手吸到最近的左右边，便签栏总往屏幕内侧展开；点任一条便签直接改字，停手约 1 秒显示“保存中… → 已保存”；点“写一条…”新建；Esc 收起。钉住按钮在演示里只切换图标状态。</p>
+  </section>
+
+  <!-- §2 悬浮球 -->
+  <section class="bd-sec" id="ball-sec">
+    <header><b>02</b><h2>悬浮球 · 造型、尺寸与状态</h2><em>直径 52pt · 命中区 60pt</em></header>
+    <div class="zoom">
+      <div class="fn-ball x2" data-s="ok" id="zoomBall"></div>
+      <div class="anat">
+        <div><code>①</code> 深墨蓝圆盘（同数码世界面板材质），1px 冷色描边，在深色或浅色壁纸上都有轮廓。</div>
+        <div><code>②</code> 内圈一道暖黄细环：平时 32% 淡，悬停加深，展开时全亮，和“正在编辑的那张便签”同一种黄。</div>
+        <div><code>③</code> 顶部斜贴一小截胶带：一眼读成“便签”，而不是普通按钮或录屏工具。</div>
+        <div><code>④</code> 中间是随手记页面已用的像素铅笔 <code>mark_pencil</code>，22pt，整数倍像素不模糊。</div>
+        <div><code>⑤</code> 右上角状态点：只在需要你注意时出现（黄＝草稿还没进数码世界，红＝没保存上或需要选择）。不闪烁、不跳数字。</div>
+      </div>
+    </div>
+    <div class="balls" id="balls" style="margin-top:var(--s-5)"></div>
+  </section>
+
+  <!-- §3 便签栏状态 -->
+  <section class="bd-sec" id="panel-sec">
+    <header><b>03</b><h2>便签栏 · 全部状态</h2><em>368 × 600pt（看板中按 560 高展示）</em></header>
+    <div class="panels" id="panels"></div>
+  </section>
+
+  <!-- §4 位置 -->
+  <section class="bd-sec" id="pos-sec">
+    <header><b>04</b><h2>拖动、贴边与展开方向</h2><em>按屏幕可用区计算，不压菜单栏和程序坞</em></header>
+    <div class="pos" id="pos"></div>
+  </section>
+
+  <!-- §5 规格 -->
+  <section class="bd-sec" id="spec-sec">
+    <header><b>05</b><h2>主要组件与状态规范</h2><em>给 Codex 的数值依据</em></header>
+    <div class="tbl-wrap"><table class="spec">
+      <tr><th>组件</th><th>尺寸与几何</th><th>令牌 / 素材</th><th>备注</th></tr>
+      <tr><td>悬浮球</td><td>直径 <code>52pt</code>，透明命中区 <code>60pt</code>；距屏幕边 <code>12pt</code></td><td>底 <code>--m-panel</code>；描边 <code>--line-3</code>；内环 <code>--yellow</code> 32% / 60% / 100%；铅笔 <code>mark_pencil</code> 22pt</td><td>平时不透明度 0.94；不抢焦点（点它不让当前应用失去输入焦点，展开面板时才接收输入）</td></tr>
+      <tr><td>胶带</td><td><code>24×8pt</code>，旋转 -8°，压在球顶 3pt</td><td><code>--yellow</code> 70%/52% 条纹 4+2</td><td>与随手记页 <code>.sn-tape</code> 同一做法，缩小版</td></tr>
+      <tr><td>状态点</td><td><code>12pt</code>，2pt 深色描边，球右上</td><td>草稿 <code>--yellow</code>；失败/需选择 <code>--red</code></td><td>正常与已保存时不显示</td></tr>
+      <tr><td>保存中弧线</td><td>球外 3pt，2pt 宽，1 秒一圈</td><td><code>--yellow</code></td><td>减少动态效果时改为静止虚线环</td></tr>
+      <tr><td>便签栏</td><td><code>368pt</code> 宽；高 = min(<code>600</code>, 可用高 − 24)；圆角 <code>14</code>；离球 <code>12pt</code></td><td>底 <code>--m-panel</code>；边 <code>--line-2</code>；外阴影 0 30 60 -20</td><td>不透明背景，任何壁纸上正文对比度不变</td></tr>
+      <tr><td>栏头</td><td>高 <code>52</code>；左 16；按钮命中 <code>44</code></td><td>标题 16/700；数量 12 等宽 <code>--muted</code></td><td>整条栏头可拖动整个面板（面板拖动不改球的位置记忆）</td></tr>
+      <tr><td>新建条</td><td>高 <code>56</code>；1.5px 虚线；圆角 8</td><td><code>--line-3</code>，悬停 <code>--yellow</code> 55%</td><td>点击即在该位置变成一张亮起来的空白便签</td></tr>
+      <tr><td>便签卡</td><td>内边距 16/16/12；间距 16；不倾斜</td><td>纸色、胶带、字色全部同 <code>notes-v16 .sn</code></td><td>窄栏里取消 ±1° 倾斜，保证正文对齐好读</td></tr>
+      <tr><td>正文</td><td><code>14px / 1.65</code>；首行加粗</td><td><code>--text</code>；五种字色同随手记</td><td>约 21 个汉字一行；收起时最高 <code>162px</code>（约 7 行）后渐隐 + “展开全文”</td></tr>
+      <tr><td>编辑中</td><td>卡片原地亮起；工具条在卡片底部，按钮 <code>40</code></td><td>同 <code>.sn-pad.editing</code> 暖黄</td><td>工具条用随手记 390 已确认版式：无序 / 有序 / 待办 | 字色 A▾；右侧显示保存状态，不放“贴上”按钮</td></tr>
+      <tr><td>栏底状态行</td><td>高 <code>44</code></td><td>灯：<code>--lcd</code> / <code>--yellow</code> / <code>--red</code></td><td>整栏只有这一处说“存没存上”；右侧“在数码世界打开”</td></tr>
+      <tr><td>失败条 / 冲突条</td><td>卡内，圆角 8，按钮高 32</td><td>失败 <code>--red</code> 10% 底；冲突 <code>--orange</code> 10% 底 + 35% 边</td><td>文字一句话，不出现接口、版本号等技术词</td></tr>
+    </table></div>
+
+    <div class="tbl-wrap" style="margin-top:var(--s-5)"><table class="spec">
+      <tr><th>保存状态</th><th>球</th><th>卡片</th><th>栏底</th><th>用户能确定的事</th></tr>
+      <tr><td>已保存</td><td>无点</td><td>工具条右侧“已保存”</td><td>绿灯 · 已保存 16:42</td><td>数码世界随手记里已经有这条</td></tr>
+      <tr><td>保存中</td><td>黄色弧线转动</td><td>“保存中…”</td><td>黄色转圈 · 保存中…</td><td>内容已留在本机，正在送进数码世界</td></tr>
+      <tr><td>草稿待保存</td><td>黄点</td><td>右上“草稿”虚线小签</td><td>黄灯 · 草稿已留在本机，连上后自动保存</td><td>不会丢；暂时只在这台 Mac 的便签栏里</td></tr>
+      <tr><td>保存失败</td><td>红点</td><td>红色描边 + “没保存上，内容还在” [重试] [复制]</td><td>红灯 · 1 条没保存上 [重试]</td><td>字一个没丢；需要点一下重试</td></tr>
+      <tr><td>结果未知</td><td>黄色弧线</td><td>“正在核对是否已保存…”</td><td>同左</td><td>先核对再决定，不会重复存出两条</td></tr>
+      <tr><td>同条冲突</td><td>红点</td><td>橙色描边；上方“别处的版本”引文 + 自己的内容；[两条都留] [用别处的]；选好之前收起工具条</td><td>红灯 · 1 条需要你选一下</td><td>两边的字都还在，选之前谁也不覆盖谁</td></tr>
+    </table></div>
+  </section>
+
+  <!-- §6 推荐 -->
+  <section class="bd-sec" id="rec-sec">
+    <header><b>06</b><h2>交互说明与三个待定项的推荐</h2><em>推荐，可改</em></header>
+    <div class="rec">
+      <article><span class="q">失焦是否收起</span><div class="pick">推荐：默认点外面就收起；栏头“钉住”后不收起</div>
+        <p>主要用法是“正在别的应用里干活 → 点开记一句 → 回去接着干”。点回原应用就自动收起，少一次点击；自动保存保证收起时内容已留在本机。需要边看别的窗口边写时，点一下钉住，栏就留在原处。</p>
+        <p>收起前先把正在写的字落到本机草稿，再收起；中文输入法候选框弹出时不算失焦（给开发的注意点）。</p></article>
+      <article><span class="q">是否置顶</span><div class="pick">推荐：球和展开的栏都浮在普通窗口之上；每个桌面空间都在；全屏应用里默认不出现</div>
+        <p>球要在“正在用别的应用时”可点，所以必须在普通窗口之上。全屏看视频、演示时一颗球挡在画面上很打扰，默认隐藏；全屏时仍可用快捷键直接呼出便签栏。</p></article>
+      <article><span class="q">快捷键</span><div class="pick">推荐：⌃⌥N 呼出 / 收起（可在设置里改）</div>
+        <p>⌃⌥ 组合很少被常用应用占用，N 取 Note。栏内：<b>⌘N</b> 新建一条，<b>Esc</b> 结束编辑并收起，<b>⌘↵</b> 写完这条（光标离开、立即保存），<b>↑↓</b> 在便签之间移动焦点。和随手记页面的 ⌘↵ 含义一致：都是“这条写好了”。</p></article>
+      <article><span class="q">其他已定的行为</span><div class="pick">保存与位置</div>
+        <ul class="plain">
+          <li>每次停手约 0.3 秒先写本机草稿；停手约 1 秒或收起时送进数码世界。空白的新便签不会被保存。</li>
+          <li>新建的便签出现在栏的最上面，和数码世界随手记页“最新在前”的顺序一致。</li>
+          <li>球的位置按显示器分别记住；换显示器或分辨率变化后，自动挪回可见区域内。</li>
+          <li>栏里只做新建、查看、编辑、勾待办。复制、炼入焚决、删除去数码世界页面做（栏底“在数码世界打开”）。</li>
+        </ul></article>
+    </div>
+  </section>
+
+  <section class="bd-sec" id="demo-sec">
+    <header><b>07</b><h2>本稿边界</h2><em>哪些只是演示</em></header>
+    <ul class="plain">
+      <li>本页是网页做的视觉稿和交互演示，<b>不是</b>桌面悬浮球已实现；真正的悬浮、置顶、跨桌面空间、全局快捷键需要后续的轻量 Mac 桌面程序承载。</li>
+      <li>演示里的保存、失败、冲突都是按钮模拟；没有连接数码世界服务，也不读写任何真实便签。</li>
+      <li>拖动吸附、展开方向、Esc 收起在演示里可试；失焦收起、钉住、快捷键、全屏隐藏只做了视觉表达，没有模拟系统行为。</li>
+      <li>文字编辑用浏览器自带的可编辑区域演示“直接在卡片上改”；实现时复用数码世界现有的随手记编辑器（中文输入、列表、待办、字色）。</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+/* ---------- 素材与小图标 ---------- */
+const PENCIL = ["..........XX",".........X.X","........X.X.",".......X.X..","......X.X...",".....X.X....","....X.X.....","...X.X......","..X.X.......",".XXX........",".XX.........","X..........."]; // = src/pixel.jsx mark_pencil
+const px = cls => { let r = ''; PENCIL.forEach((row, y) => { let x = 0; while (x < row.length) { if (row[x] !== 'X') { x++; continue; } let e = x + 1; while (row[e] === 'X') e++; r += `<rect x="${x}" y="${y}" width="${e - x + .02}" height="1.02"/>`; x = e; } }); return `<svg class="px ${cls || ''}" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">${r}</svg>`; };
+const I = {
+  pin: 'M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z',
+  min: 'M5 12h14', plus: 'M12 5v14M5 12h14', ext: 'M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6',
+  ul: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01', ol: 'M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1',
+  task: 'm3 7 2 2 4-4M3 17l2 2 4-4M13 6h8M13 12h8M13 18h8', check: 'M20 6 9 17l-5-5', down: 'm6 9 6 6 6-6',
+};
+const ic = (k, extra = '') => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${extra}><path d="${I[k]}"/></svg>`;
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+/* ---------- 合成便签 ---------- */
+const LONG = '这次复盘最想记住的一点：需求一旦变了，要在当天同步给设计和开发，而不是等周会再说。上个月两次返工都是因为变更晚了三四天才传到位，每次大约浪费一个人两天。下季度试一个很小的办法：谁改了需求，谁在群里发一句“改了什么、为什么、影响谁”，再把这句话贴进需求文档的变更记录里。先试一个月，看返工次数有没有下降；如果没有，再换别的办法，不要一开始就上流程工具。';
+const NOTES = () => [
+  { id: 'n1', at: '10/15 16:40', tone: 'yellow', lines: [{ t: 'p', s: [['复盘提纲周五前发给小林', 'yellow']] }, { t: 'task', done: true, s: [['先列三个问题']] }, { t: 'task', s: [['补留存数据截图']] }] },
+  { id: 'n2', at: '10/15 11:05', tone: 'blue', lines: [{ t: 'p', s: [['下周采购', 'blue']] }, { t: 'ol', n: 1, s: [['燕麦、咖啡豆']] }, { t: 'ol', n: 2, s: [['5 号电池 × 8']] }, { t: 'ol', n: 3, s: [['给猫换猫砂']] }] },
+  { id: 'n3', at: '10/14 22:18', tone: 'plain', long: true, lines: [{ t: 'p', s: [[LONG]] }] },
+  { id: 'n4', at: '10/14 09:30', tone: 'red', lines: [{ t: 'p', s: [['体检报告周三下午取', 'red']] }, { t: 'p', s: [['带身份证，三楼窗口']] }] },
+  { id: 'n5', at: '10/12 20:02', tone: 'green', lines: [{ t: 'p', s: [['好的空状态保持页面形态', 'green']] }, { t: 'p', s: [['没有数据时也要看得出这页是做什么的。']] }] },
+];
+const runs = s => s.map(([t, ink]) => ink ? `<span class="ink-${ink}">${esc(t)}</span>` : esc(t)).join('');
+function body(n, caret) {
+  return n.lines.map((l, i) => {
+    const c = caret && i === n.lines.length - 1 ? '<span class="sn-caret"></span>' : '';
+    if (l.t === 'task') return `<div class="ln${l.done ? ' done' : ''}"><span class="box">${l.done ? ic('check') : ''}</span><span>${runs(l.s)}${c}</span></div>`;
+    if (l.t === 'ol') return `<div class="ln"><span class="pre">${l.n}.</span><span>${runs(l.s)}${c}</span></div>`;
+    if (l.t === 'ul') return `<div class="ln"><span class="pre">•</span><span>${runs(l.s)}${c}</span></div>`;
+    return `<p>${runs(l.s)}${c}</p>`;
+  }).join('');
+}
+const tools = (state) => `<div class="sn-tools"><button class="fn-icon" aria-label="无序列表">${ic('ul')}</button><button class="fn-icon" aria-label="有序列表">${ic('ol')}</button><button class="fn-icon on" aria-label="待办">${ic('task')}</button><span class="sep"></span><button class="fn-icon ink" aria-label="字色：红">${'<b>A</b>'}${ic('down')}</button>${state}</div>`;
+const STATE = { ok: '<span class="sn-state">已保存</span>', saving: '<span class="sn-state saving">保存中…</span>', draft: '<span class="sn-state draft">草稿已留在本机</span>', failed: '', conflict: '', checking: '<span class="sn-state saving">正在核对是否已保存…</span>' };
+
+function card(n, o = {}) {
+  const edit = o.edit, mark = o.mark || 'ok';
+  const cls = ['sn', 'tone-' + n.tone, edit ? 'is-edit' : '', n.long && !edit && !o.expanded ? 'is-long' : '', mark === 'failed' ? 'is-failed' : '', mark === 'conflict' ? 'is-conflict' : ''].join(' ');
+  let h = `<article class="${cls}" data-id="${n.id}"><span class="sn-tape"></span><header><span class="sn-time">${n.at}</span>${mark === 'draft' ? '<span class="sn-chip">草稿</span>' : ''}</header>`;
+  if (mark === 'conflict') h += `<div class="sn-alert amber"><span class="grow">这条在数码世界里也改过了</span></div><div class="sn-other"><b>别处的版本 · 16:41</b>复盘提纲周五前发给小林 / 已列三个问题 / 留存截图改用 9 月数据</div><span class="sn-mine">我的版本</span>`;
+  h += `<div class="sn-body" ${o.live ? 'contenteditable="true" spellcheck="false"' : ''}>${body(n, edit && !o.live)}</div>`;
+  if (n.long && !edit && !o.expanded) h += `<button class="sn-more">展开全文</button>`;
+  if (mark === 'failed') h += `<div class="sn-alert red"><span class="grow">没保存上，内容还在这里。</span><span class="acts"><button class="sn-btn red">重试</button><button class="sn-btn">复制文字</button></span></div>`;
+  if (mark === 'conflict') h += `<div class="sn-alert" style="padding:0;gap:8px"><button class="sn-btn pri">两条都留</button><button class="sn-btn">用别处的</button></div>`;
+  if (edit && mark !== 'conflict') h += tools(STATE[mark] ?? '');
+  return h + '</article>';
+}
+const FOOT = {
+  ok: ['ok', '已保存 · 16:42'], saving: ['saving', '保存中…'], draft: ['draft', '草稿已留在本机，连上后自动保存'],
+  failed: ['failed', '1 条没保存上', '<button class="retry">重试</button>'], conflict: ['conflict', '1 条需要你选一下'],
+  empty: ['ok', '与数码世界随手记同步'], checking: ['saving', '正在核对是否已保存…'],
+};
+function panel(o = {}) {
+  const notes = o.empty ? [] : (o.notes || NOTES());
+  const f = FOOT[o.foot || 'ok'];
+  let list = o.empty ? '' : notes.map(n => card(n, (o.cards || {})[n.id] || {})).join('');
+  if (o.newEdit) list = card({ id: 'new', at: '10/15 16:42', tone: 'plain', lines: o.newEdit }, { edit: true, mark: o.newMark || 'ok', live: o.live }) + list;
+  const pad = o.newEdit ? '' : `<button class="fn-pad" data-new>${ic('plus')}写一条…<kbd>⌘N</kbd></button>`;
+  const empty = o.empty && !o.newEdit ? `<div class="fn-empty">${px()}<b>还没有便签</b><span>写下的每一条，也会出现在<br>数码世界的随手记里。</span></div>` : '';
+  return `<div class="fn-panel${o.cls ? ' ' + o.cls : ''}" ${o.id ? `id="${o.id}"` : ''} role="dialog" aria-label="随手记便签栏">
+    <div class="fn-hd" data-drag>${px()}<h3>随手记</h3><span class="n">${String(notes.length + (o.newEdit ? 1 : 0)).padStart(2, '0')}</span><span class="sp"></span>
+      <button class="fn-icon${o.pinned ? ' on' : ''}" data-pin aria-label="钉住" aria-pressed="${!!o.pinned}">${ic('pin')}</button><button class="fn-icon" data-close aria-label="收起">${ic('min')}</button></div>
+    <div class="fn-scroll">${pad}${list}${empty}</div>
+    <div class="fn-ft" data-s="${f[0]}"><span class="lamp"></span><span class="msg">${f[1]}</span>${f[2] || ''}<button class="open">在数码世界打开${ic('ext')}</button></div></div>`;
+}
+const ball = (s, cls = '') => `<div class="fn-ball ${cls}" data-s="${s}"><span class="arc"></span><span class="tape"></span>${px()}<span class="dot"></span></div>`;
+
+/* ---------- §2 球的状态 ---------- */
+document.getElementById('zoomBall').innerHTML = '<span class="arc"></span><span class="tape"></span>' + px() + '<span class="dot"></span>';
+const BALLS = [
+  ['ok', '', 'dark', '平时', '安静，不闪不跳'], ['ok', '', 'light', '平时 · 浅色壁纸', '冷描边保证轮廓'],
+  ['ok', 'is-hover', 'dark', '悬停', '上浮 2pt，内环加深，出提示 ⌃⌥N'], ['ok', 'is-open', 'dark', '展开中', '内环全亮，是便签栏的锚点'],
+  ['ok', 'is-drag', 'dark', '拖动中', '放大 6%，阴影加深'], ['saving', '', 'dark', '保存中', '外圈一道黄弧转动'],
+  ['draft', '', 'dark', '草稿待保存', '黄点：只留在本机'], ['failed', '', 'light', '没保存上 / 需选择', '红点：点开看是哪条'],
+];
+document.getElementById('balls').innerHTML = BALLS.map(([s, c, bg, t, d]) => `<div class="bcell"><div class="bstage ${bg}">${ball(s, c)}</div><b>${t}</b><span>${d}</span></div>`).join('');
+
+/* ---------- §3 便签栏状态 ---------- */
+const N = NOTES();
+const editLines = [{ t: 'p', s: [['复盘提纲周五前发给小林', 'yellow']] }, { t: 'task', done: true, s: [['先列三个问题']] }, { t: 'task', s: [['补留存数据截图']] }, { t: 'task', s: [['问一下设计那边返工的时间']] }];
+const P = [
+  ['A', '空状态', '第一次打开或还没有便签：只有新建条和一句说明。', panel({ empty: true, foot: 'empty' })],
+  ['B', '多条便签', '最新在前；纸色、胶带、字色与随手记页一致；窄栏不倾斜。', panel({})],
+  ['C', '长中文', '收起时约 7 行后渐隐，“展开全文”就地展开；编辑时显示全文。', panel({ notes: [N[2], N[0], N[1]], cards: {} })],
+  ['D', '编辑中（新建）', '点“写一条…”：该位置直接变成亮起来的空白便签，光标就位；工具条贴在卡底。', panel({ newEdit: [{ t: 'p', s: [['周日给爸妈打电话']] }, { t: 'p', s: [['问问体检结果']] }], newMark: 'ok' })],
+  ['E', '编辑中（改旧便签）', '点哪条改哪条，原地亮起；其余便签保持原样可看。', panel({ cards: { n1: { edit: true, mark: 'ok' } }, notes: [Object.assign({}, N[0], { lines: editLines }), N[1], N[2]] })],
+  ['F', '保存中', '球上黄弧转动，卡片和栏底同时显示“保存中…”。', panel({ cards: { n1: { edit: true, mark: 'saving' } }, notes: [Object.assign({}, N[0], { lines: editLines }), N[1], N[3]], foot: 'saving' })],
+  ['G', '草稿待保存', '连不上数码世界时：字已留在本机，卡片挂“草稿”签，连上后自动补存。', panel({ cards: { n1: { edit: true, mark: 'draft' }, n4: { mark: 'draft' } }, notes: [Object.assign({}, N[0], { lines: editLines }), N[3], N[1]], foot: 'draft' })],
+  ['H', '保存失败', '红色描边、一句话说明、内容原样留着；可重试或先复制走。', panel({ cards: { n4: { mark: 'failed' } }, notes: [N[3], N[0], N[1]], foot: 'failed' })],
+  ['I', '同一条在别处也改了', '别处的版本以引文显示在上，自己的在下；选之前两边都不覆盖。默认推荐“两条都留”。', panel({ cards: { n1: { edit: true, mark: 'conflict' } }, notes: [Object.assign({}, N[0], { lines: editLines.slice(0, 3) }), N[1]], foot: 'conflict' })],
+];
+document.getElementById('panels').innerHTML = P.map(([k, t, d, h]) => `<div class="pcell"><h4><b>${k}</b>${t}</h4>${h}<p>${d}</p></div>`).join('');
+
+/* ---------- §4 位置示意（比例与主画面一致：屏 1280×800） ---------- */
+const W = 1280, H = 800, MB = 28, DOCK = 78, BALL = 52, M = 12, PW = 368;
+const PH = Math.min(600, H - MB - DOCK - 24);
+function layout(side, by) {
+  const bx = side === 'right' ? W - M - BALL : M;
+  const y = Math.max(MB + M, Math.min(by, H - DOCK - M - BALL));
+  const px_ = side === 'right' ? bx - 12 - PW : bx + BALL + 12;
+  const py = Math.max(MB + M, Math.min(y - 16, H - DOCK - M - PH));
+  return { bx, by: y, px: px_, py };
+}
+const pct = (v, t) => (v / t * 100).toFixed(2) + '%';
+const POS = [
+  ['right', 120, '<b>右上（默认）</b>：栏向左展开，顶边与球齐平（上移 16pt 对齐栏头）。'],
+  ['right', 640, '<b>右下</b>：栏底碰到程序坞上沿就整体上移，球位置不动。'],
+  ['left', 330, '<b>左侧中部</b>：吸到左边后，栏改为向右展开。'],
+  ['drag', 0, '<b>拖动</b>：离边 48pt 内出现黄色贴边线；松手吸到最近的左/右边，上下位置保留。'],
+];
+document.getElementById('pos').innerHTML = POS.map(([side, by, cap]) => {
+  if (side === 'drag') return `<figure><div class="mini"><div class="mb"></div><div class="dk"></div><div class="edge" style="right:0"></div><div class="ghost" style="left:${pct(860, W)};top:${pct(420, H)}"></div><div class="arrow" style="left:${pct(892, W)};top:${pct(446, H)};width:${pct(300, W)};transform:rotate(-12deg)"></div><div class="b" style="left:${pct(W - M - BALL, W)};top:${pct(370, H)}"></div></div><figcaption>${cap}</figcaption></figure>`;
+  const L = layout(side, by);
+  return `<figure><div class="mini"><div class="mb"></div><div class="dk"></div><div class="p" style="left:${pct(L.px, W)};top:${pct(L.py, H)};height:${pct(PH, H)}"></div><div class="b" style="left:${pct(L.bx, W)};top:${pct(L.by, H)}"></div></div><figcaption>${cap}</figcaption></figure>`;
+}).join('');
+
+/* ---------- §1 交互演示（仅本页内存） ---------- */
+const desk = document.getElementById('desk'), fit = document.getElementById('deskFit');
+function scale() { const s = Math.min(1, fit.clientWidth / 1280); desk.style.transform = `scale(${s})`; fit.style.height = 800 * s + 'px'; return s; }
+let S = scale(); addEventListener('resize', () => { S = scale(); });
+const ballEl = document.getElementById('ball'), tip = document.getElementById('tip'), snap = document.getElementById('snap'), slot = document.getElementById('deskPanel');
+ballEl.innerHTML = '<span class="arc"></span><span class="tape"></span>' + px() + '<span class="dot"></span>';
+const st = { side: 'right', by: 96, open: true, mode: 'ok', pinned: false, notes: NOTES(), editing: 'n1', saving: null };
+st.notes[0].lines = editLines.slice();
+function footFor() { return st.mode === 'empty' ? (st.notes.length ? st.save : 'empty') : st.mode === 'ok' ? st.save : st.mode; }
+st.save = 'ok';
+function render() {
+  const L = layout(st.side, st.by);
+  ballEl.style.left = L.bx + 'px'; ballEl.style.top = L.by + 'px';
+  ballEl.classList.toggle('is-open', st.open); ballEl.setAttribute('aria-expanded', st.open);
+  const bs = st.mode === 'ok' || st.mode === 'empty' ? (st.save === 'saving' ? 'saving' : 'ok') : st.mode;
+  ballEl.dataset.s = bs;
+  const cards = {};
+  st.notes.forEach(n => { cards[n.id] = { live: true, edit: st.editing === n.id, mark: st.editing === n.id ? (st.mode === 'ok' || st.mode === 'empty' ? st.save : st.mode) : 'ok' }; });
+  if (st.mode === 'failed' && st.notes[0]) cards[st.notes[0].id] = Object.assign(cards[st.notes[0].id], { mark: 'failed' });
+  if (st.mode === 'conflict' && st.notes[0]) cards[st.notes[0].id] = Object.assign(cards[st.notes[0].id], { mark: 'conflict', edit: true });
+  if (st.mode === 'draft' && st.notes[0]) cards[st.notes[0].id] = Object.assign(cards[st.notes[0].id], { mark: 'draft' });
+  slot.innerHTML = panel({ id: 'dp', notes: st.notes, cards, empty: !st.notes.length, foot: footFor(), pinned: st.pinned, cls: st.open ? '' : 'is-hidden' });
+  const p = document.getElementById('dp');
+  p.style.left = L.px + 'px'; p.style.top = L.py + 'px'; p.style.height = PH + 'px';
+  p.style.setProperty('--ox', st.side === 'right' ? '100%' : '0%'); p.style.setProperty('--oy', (L.by - L.py + 26) + 'px');
+  p.querySelectorAll('.sn-body[contenteditable]').forEach(b => b.setAttribute('contenteditable', 'true'));
+}
+function textToLines(t) { return t.split('\n').filter(Boolean).map(s => ({ t: 'p', s: [[s]] })); }
+let timer;
+slot.addEventListener('click', e => {
+  const t = e.target.closest('button, .sn-body'); if (!t) return;
+  if (t.matches('[data-close]')) { st.open = false; st.editing = null; return render(); }
+  if (t.matches('[data-pin]')) { st.pinned = !st.pinned; return render(); }
+  if (t.matches('[data-new]')) { const n = { id: 'u' + Date.now(), at: '10/15 16:42', tone: 'plain', lines: [{ t: 'p', s: [['']] }] }; st.notes.unshift(n); st.editing = n.id; render(); const b = slot.querySelector(`[data-id="${n.id}"] .sn-body`); b.innerHTML = '<p><br></p>'; b.focus(); return; }
+  if (t.matches('.sn-more')) { const id = t.closest('.sn').dataset.id; const n = st.notes.find(x => x.id === id); n.long = false; return render(); }
+  if (t.matches('.sn-btn, .retry')) { st.mode = 'ok'; document.querySelectorAll('[data-demo]').forEach(b => b.classList.toggle('on', b.dataset.demo === 'ok')); return render(); }
+  if (t.matches('.sn-body') && st.editing !== t.closest('.sn').dataset.id) {
+    const id = t.closest('.sn').dataset.id; const sel = getSelection(); const off = sel.focusOffset;
+    st.editing = id; render(); const b = slot.querySelector(`[data-id="${id}"] .sn-body`); b.focus();
+    const r = document.createRange(); r.selectNodeContents(b); r.collapse(false); sel.removeAllRanges(); sel.addRange(r);
+  }
+});
+slot.addEventListener('input', e => {
+  const b = e.target.closest('.sn-body'); if (!b) return;
+  const id = b.closest('.sn').dataset.id; const n = st.notes.find(x => x.id === id);
+  n.lines = textToLines(b.innerText); n.at = '10/15 16:42';
+  if (st.mode !== 'ok' && st.mode !== 'empty') return;
+  const s = b.closest('.sn').querySelector('.sn-state'); const f = slot.querySelector('.fn-ft');
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    st.save = 'saving'; if (s) { s.className = 'sn-state saving'; s.textContent = '保存中…'; } f.dataset.s = 'saving'; f.querySelector('.msg').textContent = '保存中…'; ballEl.dataset.s = 'saving';
+    setTimeout(() => { st.save = 'ok'; const s2 = slot.querySelector('.sn.is-edit .sn-state'); if (s2) { s2.className = 'sn-state'; s2.textContent = '已保存'; } f.dataset.s = 'ok'; f.querySelector('.msg').textContent = '已保存 · 16:42'; ballEl.dataset.s = 'ok'; }, 900);
+  }, 1000);
+});
+addEventListener('keydown', e => { if (e.key === 'Escape' && st.open) { st.open = false; st.editing = null; render(); ballEl.focus(); } });
+document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-demo]').forEach(x => x.classList.toggle('on', x === b));
+  st.mode = b.dataset.demo; st.save = 'ok'; st.editing = null; st.open = true;
+  st.notes = st.mode === 'empty' ? [] : NOTES();
+  if (st.mode === 'conflict') st.notes[0].lines = editLines.slice(0, 3);
+  render();
+}));
+/* 拖动：移动超过 4px 才算拖动；松手吸边 */
+let drag = null;
+ballEl.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, l: parseFloat(ballEl.style.left), t: parseFloat(ballEl.style.top), moved: false }; ballEl.setPointerCapture(e.pointerId); tip.hidden = true; });
+ballEl.addEventListener('pointermove', e => {
+  if (!drag) { const L = layout(st.side, st.by); if (!st.open) { tip.hidden = false; tip.style.top = (L.by + 14) + 'px'; if (st.side === 'right') { tip.style.left = ''; tip.style.right = (W - L.bx + 10) + 'px'; } else { tip.style.right = ''; tip.style.left = (L.bx + BALL + 10) + 'px'; } } return; }
+  const dx = (e.clientX - drag.x) / S, dy = (e.clientY - drag.y) / S;
+  if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+  drag.moved = true; ballEl.classList.add('is-drag'); document.getElementById('dp').classList.add('is-hidden');
+  const l = Math.max(0, Math.min(W - BALL, drag.l + dx)), t = Math.max(MB, Math.min(H - BALL, drag.t + dy));
+  ballEl.style.left = l + 'px'; ballEl.style.top = t + 'px';
+  snap.style.display = (l < 48 || l > W - BALL - 48) ? 'block' : 'none'; snap.style.left = l < W / 2 ? '0' : (W - 3) + 'px';
+});
+ballEl.addEventListener('pointerleave', () => { if (!drag) tip.hidden = true; });
+ballEl.addEventListener('pointerup', () => {
+  if (!drag) return; const d = drag; drag = null; ballEl.classList.remove('is-drag'); snap.style.display = 'none';
+  if (d.moved) { const l = parseFloat(ballEl.style.left); st.side = l + BALL / 2 < W / 2 ? 'left' : 'right'; st.by = parseFloat(ballEl.style.top); render(); }
+  else { st.open = !st.open; st.editing = null; tip.hidden = true; render(); }
+});
+render();
+</script>
+</body>
+</html>

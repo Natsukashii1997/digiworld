@@ -1,5 +1,8 @@
+import {createHash} from 'node:crypto';
+import {EXECUTORS,validateAiResult} from '../src/reverse-ai.js';
 import {
   validateRecipe,
+  validateReverseTarget,
   validateMedia,
   RECIPE_TYPES,
   RECIPE_AGENTS,
@@ -45,11 +48,13 @@ const mediaList = (v) => {
   if (new Set(v.map((m) => m.path)).size !== v.length) fail("逆向图片重复");
 };
 export function validateReverseSettings(v) {
-  keys(v, ["threshold"]);
+  keys(v, ["threshold","executor"]);
+  if(v.executor!==undefined&&!EXECUTORS.includes(v.executor))fail("执行器无效");
   if (!Number.isInteger(v.threshold) || v.threshold < 1 || v.threshold > 100)
     fail("复刻达标线需为1–100整数");
 }
 export function validateRecipeRecord(r) {
+  if (r.material?.target !== undefined) validateReverseTarget(r.material.target, r.type);
   if (!RECIPE_TYPES.includes(r.type)) fail("逆向类型无效");
   mediaList(r.referenceMedia === undefined ? [] : r.referenceMedia);
   if (r.recipe !== undefined) {
@@ -86,7 +91,8 @@ export function validateRecipeRecord(r) {
       validateRecipe(a.recipeSnapshot);
       keys(a.specimenSnapshot, ["type", "material", "referenceMedia"]);
       if (a.specimenSnapshot.type !== r.type) fail("原件快照类型不符");
-      keys(a.specimenSnapshot.material, ["text", "url"]);
+      keys(a.specimenSnapshot.material, ["text", "url", "target"]);
+      if (a.specimenSnapshot.material.target !== undefined) validateReverseTarget(a.specimenSnapshot.material.target, r.type);
       text(a.specimenSnapshot.material.text, 50000, "原件快照正文");
       text(a.specimenSnapshot.material.url, 2000, "原件快照链接");
       mediaList(a.specimenSnapshot.referenceMedia);
@@ -129,6 +135,67 @@ export function validateRecipeRecord(r) {
         fail("变体产物或伙伴无效");
     }
   }
+  if (r.reaRuns !== undefined) {
+    list(r.reaRuns, 8, "REA运行数量无效");
+    const seen = new Set();
+    for (const run of r.reaRuns) {
+      keys(run, ["id", "status", "startedAt", "finishedAt", "version", "target", "log", "sequence", "truncated", "summary", "error", "executor", "packVersionId"]);
+      if(run.executor!==undefined&&!EXECUTORS.includes(run.executor))fail("执行器无效");
+      if(run.packVersionId!==undefined)id(run.packVersionId);
+      id(run.id); if (seen.has(run.id)) fail("REA运行ID重复"); seen.add(run.id);
+      date(run.startedAt); if (run.finishedAt) date(run.finishedAt);
+      if (!['running','completed','failed','stopped','interrupted'].includes(run.status) || !/^\d+\.\d+\.\d+$/.test(run.version)) fail("REA运行状态或版本无效");
+      validateReverseTarget(run.target, r.type);
+      list(run.log, 2000, "REA日志过多");
+      if (!Number.isSafeInteger(run.sequence) || run.sequence < 0 || typeof run.truncated !== 'boolean' || Buffer.byteLength(JSON.stringify(run.log)) > 200*1024) fail("REA日志无效或过大");
+      let seq = 0;
+      for (const line of run.log) { keys(line, ['seq','text','detail']); if (!Number.isSafeInteger(line.seq) || line.seq <= seq || line.seq > run.sequence) fail("REA日志序号无效"); seq = line.seq; text(line.text, 2000, "REA日志文本"); if (line.detail !== undefined) text(line.detail, 16384, "REA命令详情"); }
+      if (run.error) { keys(run.error, ['kind','code','message']); text(run.error.kind, 100, 'REA错误类别'); text(run.error.code, 100, 'REA错误代码'); text(run.error.message, 2000, 'REA错误'); }
+      if (run.summary) {
+        keys(run.summary, ['kind','limitations','integrityMismatches','clues','evidenceId','sha256','modules','parsedJavaScriptFiles','ipcChannels','nativeBindings','scriptsObserved','scriptsAnalyzed','coverage','unknowns','clueLimitation']);
+        if (run.status !== 'completed' || !/^ev_[a-f0-9]{64}$/.test(run.summary.evidenceId || '') || Buffer.byteLength(JSON.stringify(run.summary)) > 30000) fail("REA摘要无效");
+        const summary = run.summary;
+        if (summary.kind !== run.target.kind) fail('REA摘要种类不一致');
+        for (const key of ['limitations','integrityMismatches',...(summary.kind === 'electron' ? ['modules','ipcChannels','nativeBindings'] : ['scriptsObserved','scriptsAnalyzed'])]) if (!Number.isSafeInteger(summary[key]) || summary[key] < 0) fail('REA摘要统计无效');
+        if (summary.kind === 'electron' && !/^[a-f0-9]{64}$/.test(summary.sha256 || '')) fail('REA摘要SHA无效');
+        if (summary.coverage !== undefined && !['complete','partial'].includes(summary.coverage)) fail('REA覆盖状态无效');
+        if (summary.parsedJavaScriptFiles !== undefined && (!Number.isSafeInteger(summary.parsedJavaScriptFiles) || summary.parsedJavaScriptFiles < 0)) fail('REA JS文件统计无效');
+        if (summary.unknowns !== undefined && (!Number.isSafeInteger(summary.unknowns) || summary.unknowns < 0)) fail('REA未知项统计无效');
+        if (summary.clueLimitation !== undefined) text(summary.clueLimitation, 500, 'REA线索限制');
+        list(summary.clues, 8, 'REA线索数量无效');
+        for (const clue of summary.clues) {
+          keys(clue, ['clue','hits','evidenceId','locations']); text(clue.clue, 80, 'REA线索');
+          if (!Number.isSafeInteger(clue.hits) || clue.hits < 0 || !/^ev_[a-f0-9]{64}$/.test(clue.evidenceId || '')) fail('REA线索统计或证据无效');
+          list(clue.locations, 5, 'REA线索位置'); clue.locations.forEach(v=>text(v, 500, 'REA线索位置'));
+        }
+      }
+      if(run.executor&&run.executor!=='rea'&&run.summary)fail('AI运行不可冒充REA摘要');
+      if(run.status==='completed'&&run.executor&&run.executor!=='rea'&&!run.packVersionId)fail('AI完成缺少包版本');
+      if (run.status === 'completed' && (!run.executor||run.executor==='rea') && !run.summary) fail("REA完成缺少摘要");
+    }
+  }
+  if(r.packVersions!==undefined){
+    list(r.packVersions,8,'任务包版本过多');const seen=new Set();
+    for(const v of r.packVersions){
+      keys(v,['id','at','executor','target','result','packHash','rea','nativeSource']);id(v.id);date(v.at);if(seen.has(v.id))fail('任务包版本重复');seen.add(v.id);
+      if(v.nativeSource!==undefined){
+        if(v.executor!=='codex')fail('原生来源只适用于Codex');
+        keys(v.nativeSource,['sessionId','threadId','turnId','itemId']);
+        for(const key of ['sessionId','threadId','turnId','itemId'])text(v.nativeSource[key],200,'原生来源编号');
+      }
+      if(!EXECUTORS.includes(v.executor))fail('任务包执行器无效');
+      if(v.executor==='rea'){keys(v.rea,['version','summary']);validateRecipeRecord({type:r.type,reaRuns:[{id:v.id,status:'completed',startedAt:v.at,finishedAt:v.at,target:v.target,version:v.rea.version,summary:v.rea.summary,log:[],sequence:0,truncated:false}]});}else if(v.rea!==undefined)fail('AI任务包不可冒充REA摘要');validateReverseTarget(v.target,r.type);validateAiResult(v.result);
+      if(Buffer.byteLength(JSON.stringify(v.result))>450000||createHash('sha256').update(v.result.pack).digest('hex')!==v.packHash)fail('任务包摘要不一致');
+    }
+  }
+  for(const run of r.reaRuns||[])if(run.status==='completed'&&run.executor&&run.executor!=='rea'){const v=r.packVersions?.find(v=>v.id===run.packVersionId);if(!v||v.id!==run.id||v.executor!==run.executor||!same(v.target,run.target))fail('AI成功运行与任务包不一致');}
+  for(const p of r.packSkills||[]){const v=r.packVersions?.find(v=>v.id===p.packVersionId);if(v&&v.packHash!==p.packHash)fail('Skill回执与任务包不一致');}
+  if(r.activePackVersionId!==undefined){id(r.activePackVersionId);if(!r.packVersions?.some(v=>v.id===r.activePackVersionId))fail('选中任务包版本不存在');}
+  if(r.packSkills!==undefined){list(r.packSkills,2000,'固定Skill数量超限');const seen=new Set();for(const p of r.packSkills){keys(p,['packVersionId','assetId','versionId','at','packHash']);id(p.packVersionId);id(p.assetId);id(p.versionId);date(p.at);if(!/^[a-f0-9]{64}$/.test(p.packHash)||seen.has(p.packVersionId))fail('固定Skill回执无效');seen.add(p.packVersionId);}}
+  if (r.savedSkill !== undefined) {
+    keys(r.savedSkill,['assetId','versionId','at','packHash']); id(r.savedSkill.assetId); id(r.savedSkill.versionId); date(r.savedSkill.at);
+    if (!/^[a-f0-9]{64}$/.test(r.savedSkill.packHash)) fail('任务包固定摘要无效');
+  }
   if (r.forge !== undefined) {
     keys(r.forge, ["assetId", "versionId", "at", "replicaId"]);
     id(r.forge.assetId);
@@ -139,11 +206,19 @@ export function validateRecipeRecord(r) {
       fail("炼成缺少达标复刻");
   }
 }
-export function validateReverseHistory(previous, next) {
+export function validateReverseHistory(previous, next, { allowReverseService = false, allowReverseImport = false, allowReverseSkill = false } = {}) {
   if (!previous) return; // 显式首次初始化只核历史自身；普通保存才核新增确认当前绑定。
   const lookup = new Map((next.reverseRecords || []).map((r) => [r.id, r]));
   for (const n of next.reverseRecords || []) {
     const prior = previous?.reverseRecords?.find((r) => r.id === n.id);
+    if (!allowReverseService && !(allowReverseImport && !prior) && !same(prior?.reaRuns || [], n.reaRuns || [])) fail("REA运行只能由本机运行器写入");
+    if (!allowReverseSkill && !(allowReverseImport && !prior) && !same(prior?.savedSkill, n.savedSkill)) fail('存Skill只能通过预览确认操作');
+    if(!(allowReverseImport&&!prior)){
+      if(!allowReverseService&&(!same(prior?.packVersions||[],n.packVersions||[])||prior?.activePackVersionId!==n.activePackVersionId))fail('任务包版本只能通过运行器或版本选择操作写入');
+      if(!allowReverseSkill&&!same(prior?.packSkills||[],n.packSkills||[]))fail('固定Skill只能通过预览确认写入');
+      for(const old of prior?.packVersions||[]){const kept=n.packVersions?.find(v=>v.id===old.id);if(kept&&!same(old,kept))fail('既有任务包不可改写');}
+      for(const old of prior?.packSkills||[])if(!same(old,n.packSkills?.find(p=>p.packVersionId===old.packVersionId)))fail('固定Skill回执不可改写或删除');
+    }
     for (const a of n.replicas || [])
       if (!(prior?.replicas || []).some((old) => old.id === a.id)) {
         const { total, conclusion, confirmedAt, ...input } = a;
@@ -166,17 +241,19 @@ export function validateReverseHistory(previous, next) {
         )
       )
         fail("已确认复刻不可改写或删除");
+    if (r.savedSkill && !same(r.savedSkill,n.savedSkill)) fail('已存Skill固定版本指针不可改写');
     if (r.forge && !same(r.forge, n.forge)) fail("炼成固定版本指针不可改写");
   }
 }
 export function validateForgeReferences(state) {
   for (const r of state.reverseRecords || []) {
-    if (!r.forge) continue;
-    const a = state.assets.find((a) => a.id === r.forge.assetId);
+    for (const pointer of [r.forge,r.savedSkill,...(r.packSkills||[])].filter(Boolean)) {
+    const a = state.assets.find((a) => a.id === pointer.assetId);
     if (
       a?.type !== "Skill" ||
-      !a.versions.some((v) => v.id === r.forge.versionId)
+      !a.versions.some((v) => v.id === pointer.versionId)
     )
-      fail("炼成Skill固定版本不存在");
+      fail("逆向Skill固定版本不存在");
+    }
   }
 }

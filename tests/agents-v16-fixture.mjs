@@ -1,7 +1,7 @@
 // 固定合成输入，与v16确认稿对齐；无真实会话、应用、目录或模型调用。
 import { fixture } from "./fixture.mjs";
 import { seed } from "../src/store.js";
-import { buildRelayPrompt } from "../src/relay-prompt.js";
+import { buildRelayPrompt, buildWorkHandoffPrompt } from "../src/relay-prompt.js";
 export const TITLE = "UI v16 · 智能体群页面简报",
   STAMP = "2026-10-04T20:12:00.000Z";
 export const AGENTS = [
@@ -34,8 +34,8 @@ export const contentResult = (id, brokenLinks = 2) => ({
     mcp: { status: "not_read", reason: "不读取MCP正文" },
   },
 });
-export async function agentsV16Fixture() {
-  const calls = { list: 0, prepare: 0, clear: 0, open: [], contents: 0 },
+export async function agentsV16Fixture(options = {}) {
+  const calls = { list: 0, listInputs: [], prepare: 0, clear: 0, open: [], contents: 0 },
     model = {
       empty: false,
       fail: false,
@@ -57,7 +57,7 @@ export async function agentsV16Fixture() {
       text: "确认，开始出 1440 和 390 视觉稿；亚古兽缩小到和加布兽一样大。",
     },
   ];
-  const prompt = buildRelayPrompt({
+  const prompt = (options.workHandoff ? buildWorkHandoffPrompt : buildRelayPrompt)({
     title: TITLE,
     agentName: "Claude Code",
     project: "~/work/personal-ai-workbench",
@@ -83,22 +83,26 @@ export async function agentsV16Fixture() {
         return contentResult(id, model.healthBrokenLinks ?? 2);
       },
       relaySessions: {
-        async list() {
+        async list({ query = "", earlier = false } = {}) {
           calls.list++;
+          calls.listInputs.push({ query, earlier });
           if (model.delayList) await model.delayList;
           if (model.fail)
             throw Object.assign(new Error("合成目录不可读"), { status: 400 });
-          return {
-            sessions: model.empty
-              ? []
-              : Array.from({ length: 15 }, (_, i) => ({
+          const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+          const sessions = model.empty ? [] : Array.from({ length: 15 }, (_, i) => ({
                   id: (i + 1).toString(16).padStart(64, "0"),
                   title: i ? TITLE + " · " + i : TITLE,
                   agentId: "claude-code",
                   project: "~/work/personal-ai-workbench",
                   updatedAt: STAMP,
                   rounds: 42,
-                })),
+                  ...(words.length ? { searchQuery: query.trim().toLocaleLowerCase(), matches: messages.flatMap((message, ordinal) => words.every(word => message.text.toLocaleLowerCase().includes(word)) ? [{ kind: "message", role: message.role, ordinal, start: 0, end: message.text.length, snippet: message.text }] : []) } : {}),
+                })).filter(session => words.every(word => [session.title, session.project, ...messages.map(message => message.text)].join(" ").toLocaleLowerCase().includes(word)));
+          return {
+            sessions,
+            scan: { scanned: model.empty ? 0 : 15, total: model.empty ? 0 : 15 },
+            nextCursor: null,
             sources: AGENTS.slice(0, 4).map(([agentId]) => ({
               agentId,
               status:
@@ -114,11 +118,12 @@ export async function agentsV16Fixture() {
             incomplete: false,
           };
         },
-        async prepare() {
+        async prepare({depth = "recent", currentState = {}} = {}) {
           calls.prepare++;
           if (model.delayPrepare) await model.delayPrepare;
-          return { ...prompt, nextStatus: "ok" };
+          return { ...(options.workHandoff ? buildWorkHandoffPrompt({title:TITLE,agentName:"Claude Code",project:"~/work/personal-ai-workbench",updatedAt:"10/05 04:12",next:"Claude 出智能体群 1440 + 390 视觉稿",messages,depth,currentState}) : prompt), nextStatus: "ok" };
         },
+        validate(){return {valid:true};},
         clear() {
           calls.clear++;
           return { cleared: true };
@@ -131,6 +136,7 @@ export async function agentsV16Fixture() {
           };
         },
       },
+      ...options.discovery,
     },
   });
   const state = seed();
@@ -163,6 +169,7 @@ export async function agentsV16Fixture() {
     projectScannedAt: STAMP,
     errors: [],
     truncated: false,
+    ...options.connections,
   }));
   return { ...app, relayCalls: calls, model, prompt: prompt.prompt };
 }

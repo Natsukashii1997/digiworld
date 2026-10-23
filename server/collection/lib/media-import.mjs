@@ -9,7 +9,7 @@ const execFileAsync = promisify(execFile);
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 const REQUEST_TIMEOUT_MS = 20_000;
-const MEDIA_HOST_SUFFIXES = ['.xhscdn.com', '.xhsimg.com'];
+const MEDIA_HOST_SUFFIXES = ['.xhscdn.com', '.xhsimg.com', '.douyinpic.com', '.byteimg.com'];
 const CONTENT_TYPE_EXTENSIONS = new Map([
   ['image/avif', '.avif'],
   ['image/gif', '.gif'],
@@ -25,7 +25,7 @@ const defaultOcrScriptPath = path.resolve(moduleDirectory, '..', 'macos-vision-o
 export function isAllowedRemoteImageUrl(value) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:'
+    return url.protocol === 'https:' && !url.username && !url.password && !url.port
       && MEDIA_HOST_SUFFIXES.some((suffix) => url.hostname.endsWith(suffix));
   } catch {
     return false;
@@ -38,7 +38,7 @@ function extensionFromContentType(contentType) {
 }
 
 async function fetchImageResponse(url, fetchImpl, redirectCount = 0) {
-  if (!isAllowedRemoteImageUrl(url)) throw new Error('图片地址不属于受支持的小红书图床');
+  if (!isAllowedRemoteImageUrl(url)) throw new Error('图片地址不属于受支持的收藏图床');
 
   const response = await fetchImpl(url, {
     redirect: 'manual',
@@ -46,7 +46,7 @@ async function fetchImageResponse(url, fetchImpl, redirectCount = 0) {
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     headers: {
       Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-      Referer: 'https://www.xiaohongshu.com/',
+      Referer: /\.(xhscdn|xhsimg)\.com$/.test(new URL(url).hostname) ? 'https://www.xiaohongshu.com/' : 'https://www.douyin.com/',
       'User-Agent': 'KanKanFavorites/0.1 local-media-import',
     },
   });
@@ -159,6 +159,7 @@ export async function localizeNoteMedia(note, options) {
   const localImageUrls = imageOcr.map((item) => item.imageUrl);
   const ocrText = imageOcr.map((item) => item.text).filter(Boolean).join('\n\n');
   const failedDownloads = downloads.length - successful.length;
+  const downloadDetails = downloads.flatMap((item,index)=>item.error?[`图片${index+1}：${String(item.error).replace(/https?:\/\/\S+/g,'[来源地址]').slice(0,180)}`]:[]);
   const failedOcr = imageOcr.filter(item => item.error).length;
 
   return {
@@ -171,6 +172,7 @@ export async function localizeNoteMedia(note, options) {
     mediaStatus: failedDownloads === 0 && !ocrError && !failedOcr ? 'ready' : 'partial',
     mediaError: [
       failedDownloads ? `${failedDownloads} 张图片保存失败` : '',
+      ...downloadDetails,
       ocrError,
       failedOcr ? `${failedOcr} 张图片OCR失败` : '',
     ].filter(Boolean).join('；'),

@@ -1,6 +1,6 @@
 # 逆向配方与复刻合同（UI v16，派单173）
 
-目的：把用户提供的参照物逆推成配方，实际复刻并人工评分，达标后炼成固定版本Skill。所有分析由原生伙伴完成；工作台只生成规则任务包、解析回复、保存事实和用户判定，不调用模型。
+目的：把用户提供的参照物逆推成配方，实际复刻并人工评分，达标后炼成固定版本Skill。作品分析由原生伙伴完成；软件标本可按派单487在逆向工程页调用本机AI做只读分析（见末节）。工作台保留事实和用户判定，不把AI分析当作复刻验收。
 
 ## 数据与兼容
 
@@ -35,3 +35,59 @@
 - 390对照台提供可操作原件/复刻切换；减少动态效果改按钮切换。14px评分色条保留外观，命中区至少44px；与静态稿的必要偏差逐项交接。
 
 验收：四类型解析与旧兼容、评分边界、媒体安全/备份/交付、完整真实组件交互均用合成资料；A/B每片全量回归；12组同宽同状态叠图与逐区说明。真实库/真实Agent/5178采用、Claude与用户验收分开报告。
+
+## REA取证（派单443）
+
+- FN可选截图/文字（默认）或本机软件（REA）；REA目标只支持Electron应用（绝对路径.app/.asar/已解包目录）与http(s)网站，功能必填且最多500字，须明确勾选拥有或获准分析。标题、看重点、截图继续可选。网站由用户用独立资料目录手动另开Chrome调试窗口（9222），录入提示可复制命令，取证后关闭；伙伴不得自行启动或使用日常资料目录（447纠正）。
+- material.target为可选严格白名单：kind、匹配kind的path或url、feature、authorized:true；仅FN允许。旧无target记录和历史快照不迁移；target进入原件快照，目标或功能变化使旧达标证据失效，历史保留。
+- POST /reverse/target/check仅lstat检查本机路径及祖先，返回exists、kind（app/asar/dir）与.app的appAsarExists；拒相对/上跳路径、任一级符号链接、非法类型，权限/观察身份变化明确失败。无文件内容读取、联网、REA调用或配置探测；检查不证明REA可用或分析成功。缺app.asar的.app提示改选实际.asar/已解包目录。
+- FN配方块可带evidence:string[]，每块最多20个、块内唯一，ID为^ev_[a-f0-9]{64}$（447以真实REA接口纠正；16位示例ID保留，照抄会被拒绝）；顶层unknowns最多50条，{id,text}白名单、唯一identity和1000字正文。非FN拒绝；伙伴“已验证”仍降为推断。Evidence ID是伙伴提供的索引，不代表工作台核验来源。
+- 任务包使用rea MCP；无工具则停止并提示安装命令与重启，不自动安装或猜测。Electron用analyze_javascript_application的summary及record-and-continue，.app指向Contents/Resources/app.asar；inspect_analysis_view与trace_application_feature按功能种子定点取证。网站任务包先给用户独立Chrome调试命令，待用户操作后以list_browser_targets和cdp_endpoint=http://127.0.0.1:9222选已打开页面，只做被动观察、不登录/提交；无已授权CDP连接时停止说明。按investigate_feature方法区分观察/推断/未知，仅回短结论、Evidence ID及unknowns，不回REA原始输出。复刻在用户项目完成并逐项回执，未验证写未知。
+- 有target时发车仅Codex（默认）/Claude Code可选，其他伙伴明确“无法访问本机 MCP”；按钮、键盘和复制前共同守护。无target保持原五伙伴能力。
+- 配方块徽标显示“证据”加ev_后8位，aria-label为“复制证据编号 ev_…”；点击复制完整ID；未知项独立分区、0条隐藏。炼成沿用人工达标门禁，SKILL.md证据边界列REA、目标种类、证据ID和未知项，不宣称已完整还原。
+- 不接后台REA CLI、原生/APK/.NET、自动安装/配置读取或verify_reconstruction；合成测试不运行REA。工程验证、正式服务采用、真实REA任务、Claude验收和常浩验收分别记录。
+
+## 逆向工程 v4（派单462，替代以上冲突规则）
+
+- 主线统一为投入参照物→软件本机REA取证/作品原件→复刻任务包；不选伙伴和项目，去掉评分、达标线、验收勾选与炼成门。旧配方、replicas、imports、回贴、评分和forge逐字段保留，在历史折叠区只读；旧forge直接回读原固定资产。
+- 软件为FN+target；新增可选clues（最多8条、每条80字、去重）及网站cdpEndpoint（显式端口的127.0.0.1或[::1] HTTP），授权必填。沿用447/449独立Chrome操作提示，不启动目标程序、不联网抓目标、不调用模型。
+- 本机运行仅固定doctor双客户端注册版本。路径凭证10分钟有效，绑定已检查路径身份；单运行、10分钟超时，参数数组spawn不经shell，停止结束进程树。服务重启把running标成interrupted，不自动重放。目标变化/REA错误/下载失败/超时/磁盘故障分别留痕。
+- stdout直接落reverse-evidence/<record>/<run>/analysis.json，日志限2000行和200KiB，主库只含最近8次有界运行摘要。原始证据不入普通导出或完整备份，备份界面和manifest明示；恢复后原件缺失明确提示，不把摘要当原件。
+- 软件任务包包含实际目标、SHA前8位、固定REA版本、功能、线索命中及证据ID、限制与未知项计数；要求本机rea MCP复核、区分观察/推断/未知，先列验收用例，在当前打开项目实施和自测。网站不支持应用图trace时直接说明限制。
+- 作品任务包保留类型配方字段、原文/链接/校验后的真实本机图片路径；先逆推配方，再只凭配方复刻，最后并排对照。预览与复制使用同字符串，过滤凭据，所有来源材料均不具指令权限。
+- “存成Skill”不要求复刻或评分，但保留预览→确认→同revision固定版本写入→回读；预览绑定任务包、媒体和revision，过期或漂移拒绝。明确“未经复刻验证”，不安装Agent；同一记录重复确认复用已存版本；已有forge复用原资产，当前任务变化不改写旧版本。
+- 只有点击检查才联网读取morluto/rea最新GitHub非draft/非prerelease正式版，并核对官方npm同名同版本；未同步不可更新。本机读数来自doctor双注册；旧doctor发现共同新固定版本时再次offline doctor核验，不解析Agent配置正文。
+- 更新预演固定版本setup双client dry-run，另取候选doctor的真实Skill版本；只允许两个客户端对应配置与REA Skill精确目标。原始计划detail不展示、不入账本，临时输出删除。CLI命令与五个MCP工具的输入schema同时校验；未支持约束或新增必填参数拒绝，不调用MCP工具。探针清除默认目标环境。
+- 确认只收服务端planId，5分钟内重新预演与适配，计划语义hash相同才先持久writing再同版本setup --yes。官方npm registry与环境快照一致，不使用latest、不安装其他工具。双客户端aligned且Skill等于预演期望才成功；提醒重启客户端，不宣称既有会话已采用。
+- 更新和取证互斥。writing/unknown/write_failed/mismatch账本不可被新检查预演覆盖；查询只读doctor，不重放setup。关闭会中断子进程，写入后异常保留待核对及备份位置。账本在rea-updates/state.json进入完整备份，绑定数据目录身份；恢复副本的旧批准不能执行。普通JSON不包含更新授权，原始REA证据仍不备份。
+- .rea.backup可能来自先前安装，Skill逐文件备份也不保证是本次新快照，不作自动回滚承诺。预演如不提供备份明确显示未提供。当前候选不代表正式5178已采用，也不代签真实REA、Claude或常浩验收。
+
+### 473 终端与 doctor 返修
+
+- doctor/更新元数据读取上限统一 8 MiB；doctor exit 1 只要合法 JSON 含 identity 仍读取注册，不把缺少无关分析器误报成下载失败。超限明确拒绝；坏 JSON/缺 identity 不放行。
+- 终端主流显示短命令，真实 argv 保留于有界、凭据过滤后的“完整命令”；连续同阶段进度原地更新，跨命令及诊断不合并。6.4 的 parse_javascript_source 按消息尾部 n/N 读取；摘要 JS 文件数独立取 statistics.parsed_javascript_files，不以进度分母推断。
+- 证据只缩短可见标签为 ev_ 加 12 位；悬停、键盘/点击详情可见和复制完整 ID，日志、任务包、Skill 均保留全文。新取证有 JS 文件数，旧摘要不迁移且缺值显示未记录。
+
+
+## 487 · 软件标本的 AI 只读执行例外
+
+仅逆向工程页可直接调用本机 Codex / Claude Code CLI，默认 Codex 并记住选择；“仅 REA 取证”继续原流程且不用模型额度。其他页仍在原生 Agent 中日常执行。开始前显示额度与“仅分析，不修改项目”。真实AI冒烟需按派单单独取得额度授权，候选测试仅用合成CLI。
+
+- 两客户端使用自己已注册的 rea MCP；不另注入服务，不主动读取私人会话或凭据；CLI可沿用登录和配置。Codex read-only/never；Claude restricted/dontAsk/Read，均只放行五个只读取证工具。macOS外层sandbox-exec覆盖全部子孙进程，默认拒绝写入，仅放行本次证据目录、所选AI的状态目录（Codex ~/.codex；Claude ~/.claude 和 ~/.claude.json）、npx ~/.npm及 /dev/null 数据丢弃；单独禁止改写/删除/替换Codex config.toml、Claude settings.json及各自worktrees项目目录，并禁止移动状态根；不支持隔离则拒绝启动，不降级。网络能力供现有AI与REA连接使用，不授权上传原始材料。
+- 空运行目录位于 reverse-evidence/记录/运行/cwd；临时文件和CLI诊断都限定本次运行目录。495授权客户端在上述状态/缓存内刷新登录与维护状态；其他路径仍拒绝，不开放整个HOME。~/.claude.json是本次明确允许的状态文件例外（也承载客户端MCP信息），不宣称所有Claude配置均禁写；Claude Code真实验证暂缓。状态根符号链接、受保护配置的符号/多硬链接，以及目标与状态/缓存/运行目录双向重叠时启动前拒绝。Swift兼容：本次运行目录经0700纯ASCII临时别名提供TMPDIR，并把模块缓存指回本次运行；不增加沙箱可写根，退出清理别名。macOS setuid版/bin/ps无法在沙箱内执行：仅在本次run/bin复制系统工具、去掉提权位并临时本地签名；对bin全禁写，再前置PATH，REA进程核查仍处于原沙箱，不豁免进程。当前实现仅macOS。生产可执行文件沿R3路径解析，不依赖登录shell。
+- 输入包含授权目标、文件SHA（目录/网站无单一SHA时明确）、功能、线索，已有REA摘要及可用analysis.json路径；优先利用摘要且核对SHA；旧路径/ID不是新MCP会话句柄，只有同会话retained或64KiB内完整inline证据可复用，否则披露限制后重新取证。只读Claude额外读取范围仅相应工作台证据子目录。未知/错误不猜补、不自动修复、无自动回退。
+- 原始JSON事件与stderr仅在reverse-evidence，64MiB总上限、单行2MiB；不进主库或备份。终端沿用2000行/200KiB，敏感文本过滤，短动作与工具结果，末行显示实际提供的token/费用。AI总超时30分钟；REA/AI/更新共享单锁，停止整进程组，重启中断且不重跑。
+- 最终一个严格JSON块，结论/未知各最多32项，证据编号必须为ev_加64位小写hex且出现在本次成功REA工具返回中。声称“已验证”的结论降为推断，包文本过滤凭据；格式错误保留旧包。
+- 成功时原子保存结果、版本与选中指针。最多8个可回退成功包，裁剪优先保留刚被替换的版本。REA版本自带摘要，独立于最近8条运行。切换包需要revision和目标匹配。复制/Skill只用选中快照；固定Skill回执独立保留、不可覆盖和删除引用保护。
+- 作品流程、旧forge/savedSkill保持；工程合成通过不等于真实AI、正式5178采用、Claude验收或用户首次真实逆推。
+
+
+## 507 · 网站免费预检与同次 AI 线索
+
+网站的 Codex、Claude Code、仅REA启动入口共用15秒被动预检（版本检查、list-browser-targets、元数据解析）；不导航或读取页面正文。完整URL恰好匹配一个page才创建运行；不匹配返回最多10个同源候选，重复要求只留一个，不可用显示独立Chrome命令。标题/URL过滤凭据，含凭据地址不得作为可采纳URL。预检阻断不调用AI、不写运行或推进revision。独立预检接口为POST /api/reverse/target/precheck（recordId、expectedRevision）；start接口自身仍强制复核，不能由客户端标记绕过。
+
+用户点候选后用现有workspace revision保存，独立回读确认再开始；新开始再次检查Chrome以防标签变化。未知启动响应保留原requestId查询，busy时不重提，不因未出现运行记录换ID重跑。Electron不增加网站预检。
+
+AI在同一次逆推中先报告3–8个英文线索词，结果可选clues数组最多8项、每项1–60字符，字符集A–Z/a–z/0–9/._:/-，解析时去重、非法整包拒收。旧结果无clues兼容；无单独模型调用。预检为零模型额度；线索提示/输出仍计入同次token，不能称零增量token。
+
+结果区显示“标本已有 / AI补充”，逐词加入标本需revision校验和回读。历史包、运行快照不改写；仅AI版本允许originalClues⊆currentClues⊆originalClues∪result.clues时继续显示该包/终端，其余目标字段必须完全相同。URL/功能/端点变化、删除原词或新增未经该包分析的词仍使旧包失效；运行最终提交与REA取证复用仍严格匹配完整目标。仅REA只追踪标本已有词，无词时明确只做整体解析并提示AI可自动定词。

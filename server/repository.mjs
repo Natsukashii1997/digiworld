@@ -133,6 +133,38 @@ export async function openRepository(directory) {
         return operation(stored);
       });
     },
+    updateNotes(update) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先打开工作台初始化资产库", 409);
+        const notes = update(structuredClone(stored.notes));
+        if (equivalent(notes, stored.notes)) return stored;
+        const state = { ...stored, notes, revision: stored.revision + 1 };
+        validateState(state); validateHistory(stored, state);
+        return commit(state);
+      });
+    },
+    updateReverseSkill(update) {
+      return serial(async () => {
+        const stored = await read(); if (!stored) throw failure('请先初始化资产库',409);
+        const result = await update(structuredClone(stored));
+        if (equivalent(result, stored)) return stored;
+        const state = {...stored, assets:result.assets, reverseRecords:result.reverseRecords, revision:stored.revision+1};
+        validateState(state); validateHistory(stored,state,{allowReverseSkill:true}); return commit(state);
+      });
+    },
+    updateReverse(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先初始化资产库", 409);
+        if (expectedRevision !== undefined && expectedRevision !== stored.revision) throw failure("记录已变化，请刷新后重试", 409);
+        const reverseRecords = await update(structuredClone(stored.reverseRecords || []));
+        if (equivalent(reverseRecords, stored.reverseRecords || [])) return stored;
+        const state = { ...stored, reverseRecords, revision: stored.revision + 1 };
+        validateState(state); validateHistory(stored, state, { allowReverseService: true });
+        return commit(state);
+      });
+    },
     updateAssets(update, { expectedRevision, allowAssetDelete = false, restrictAssetDeletion = false } = {}) {
       return serial(async () => {
         const stored = await read();
@@ -330,6 +362,7 @@ export async function openRepository(directory) {
           throw failure("导入预览已过期或主库已变化，请重新预览后确认。", 409);
         const { state } = mergeBackup(stored, input);
         validateHistory(stored, state, {
+          allowReverseImport: true,
           allowOrigins: true,
           allowKnowledge: true,
           allowActivity: true,
@@ -355,10 +388,10 @@ export async function openRepository(directory) {
         delete active.silver;
         validateState(active);
         if (!initialize && (active.revision ?? 0) !== (stored?.revision ?? 0))
-          throw failure(
+          throw Object.assign(failure(
             "另一个页面已更新主库，本次没有覆盖。请先保留未保存内容，再刷新。",
             409,
-          );
+          ), {revisionConflict:true});
         validateHistory(stored, active, { restrictAssetDeletion });
         return commit({ ...active, revision: (stored?.revision ?? 0) + 1 });
       });

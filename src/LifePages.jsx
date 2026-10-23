@@ -26,7 +26,7 @@ import { PageChoices } from "./PageChoices.jsx";
 import "./news-v14.css";
 import "./aihot-v16.css";
 import { useReducedMotion } from "./v14.jsx";
-import { topicTag, aihotUpdateText, aihotDate } from "./aihot.js";
+import { topicTag, aihotUpdateText, aihotDate, aihotItemDate, aihotRangeText } from "./aihot.js";
 import { Button, Empty, PageHeading, Dialog, Scanning } from "./components.jsx";
 import { httpLink } from "./learning.js";
 
@@ -77,7 +77,8 @@ function HotTag({ category }) {
   return tag ? <span title={tag.label} className={`ah-tag ${tag.tone}`}>{tag.label}</span> : null;
 }
 function HotMeta({ item }) {
-  return <footer className="mono">{item.source && <span>{item.source}</span>}{item.publishedAt && <span className="ah-meta-time">{item.source ? " · " : ""}<time dateTime={item.publishedAt}>{new Date(item.publishedAt).toLocaleTimeString("zh-CN",{hour:"2-digit",minute:"2-digit"})}</time></span>}</footer>;
+  const date = aihotItemDate(item);
+  return <footer className="mono">{item.source && <span>{item.source}</span>}<span className="ah-meta-time">{item.source ? " · " : ""}{date.value ? <time dateTime={date.value}>{date.text}</time> : date.text}</span></footer>;
 }
 function HotOpen({ item }) {
   const href = httpLink(item.url);
@@ -113,15 +114,15 @@ export function AiHot({ state, save, notify, navigate }) {
   return <div className="aihot-v16">
     <ReadReveal pending={!data&&!error} ready={!!data&&!error}/>
     <ReadReveal pending={busy} ready={refreshReady}/>
-    <PageHeading page="aihot" bounds={["aihot.news 公开接口", Number.isInteger(settings?.intervalHours) ? `每 ${settings.intervalHours} 小时更新` : "更新间隔未知"]} help={<button className="page-help" aria-label="这页怎么用" onClick={()=>setHelp(true)}>?</button>} action={<div className="ah-head-act">{canFetch && <button className="icon-button" aria-label="立即刷新" onClick={refresh} disabled={busy || first}><RefreshCw size={18}/></button>}<a className={`button${first ? " secondary" : ""}`} href="https://aihot.news/" target="_blank" rel="noopener noreferrer">去 aihot.news <ArrowUpRight size={16}/></a></div>}/>
+    <PageHeading page="aihot" help={<button className="page-help" aria-label="这页怎么用" onClick={()=>setHelp(true)}>?</button>} action={<div className="ah-head-act">{canFetch && <button className="icon-button" aria-label="立即刷新" onClick={refresh} disabled={busy || first}><RefreshCw size={18}/></button>}<a className={`button${first ? " secondary" : ""}`} href="https://aihot.news/" target="_blank" rel="noopener noreferrer">去 aihot.news <ArrowUpRight size={16}/></a></div>}/>
     {error && <p role="alert" className="inline-error">读取本机缓存失败：{error} <Button secondary onClick={reload}>重新读取缓存</Button></p>}
     {!data && !error && <Scanning label="读取本机缓存"/>}
     {data && <>
       {!canFetch && <p className="ah-disabled" role="status">网络访问已关闭 <button className="text-button" onClick={()=>navigate("settings")}>去设置开启</button></p>}
       {busy && <p className="ah-busy" role="status"><Reading mini label="正在拉取公开资讯"/></p>}
       {first ? <div className="ah-screen-empty"><RadioTower size={28}/><p>第一次使用需要你确认</p><small>点“开始拉取”后才会访问 aihot.news 公开接口，之后每 {settings.intervalHours} 小时自动更新，结果缓存在本机</small><Button onClick={refresh} disabled={busy}><Globe size={16}/>开始拉取</Button></div> : hasItems ? <>
-        <div className="ah-date">{refreshed>0&&<span key={refreshed} className="ah-date-scan" aria-hidden="true" onAnimationEnd={()=>setRefreshed(0)}/>}<h2>{date ? <><b className="mono">{date.month}</b>月<b className="mono">{date.day}</b>日</> : "缓存日期未知"}<span>今日精选</span></h2><span className={`ah-upd${cache.status==="failed"?" bad":""}`} role="status">{cache.status==="failed"&&<i aria-hidden="true"/>}{aihotUpdateText(cache,settings.intervalHours)}</span><button className="ah-fav" onClick={()=>navigate("learning")}><Star size={13}/>已收藏 <b className="mono">{collectionNotes.filter(note=>note.origin==='aihot').length}</b> · 去收藏看 →</button></div>
-        <div className="ah-board"><div className="ah-wall" aria-label="今日精选">
+        <div className="ah-date">{refreshed>0&&<span key={refreshed} className="ah-date-scan" aria-hidden="true" onAnimationEnd={()=>setRefreshed(0)}/>}<h2>{date ? <><b className="mono">{date.month}</b>月<b className="mono">{date.day}</b>日</> : "缓存日期未知"}<span>最新精选 · {selected.length} 条</span></h2><span className={`ah-upd${cache.status==="failed"?" bad":""}`} role="status">{cache.status==="failed"&&<i aria-hidden="true"/>}{aihotUpdateText(cache,settings.intervalHours)} · {aihotRangeText(cache)}</span><button className="ah-fav" onClick={()=>navigate("learning")}><Star size={13}/>已收藏 <b className="mono">{collectionNotes.filter(note=>note.origin==='aihot').length}</b> · 去收藏看 →</button></div>
+        <div className="ah-board"><div className="ah-wall" aria-label="最新精选">
           {selected.slice(0,3).map((item,i)=><article className={`ah-card ${i===0?"xl":"md"}${item.summary?"":" no-summary"}`} key={`${item.url||item.title}-${i}`}>
             {i===0&&<span className="ah-ghost mono" aria-hidden="true">01</span>}
             <HotOpen item={item}/><header><span className="ah-no mono">{String(i+1).padStart(2,"0")}</span><HotTag category={item.category}/>{star(item)}</header><h3>{item.title}</h3>{item.summary&&<p title={item.summary}>{item.summary}</p>}<HotMeta item={item}/>
@@ -131,7 +132,7 @@ export function AiHot({ state, save, notify, navigate }) {
         </div><aside className="ah-hot" aria-label="热点榜"><h3 className="en-head"><span className="en">HOT</span>热点</h3><ol>{hot.map((item,i)=><li className={i<3?"top":""} key={`${item.url||item.title}-${i}`}><HotOpen item={item}/><span className="ah-rank mono">{i+1}</span><span><b title={item.title}>{item.title}</b>{item.summary&&<small title={item.summary}>{item.summary}</small>}</span></li>)}</ol>{!hot.length&&<p className="ah-section-empty">热点暂时没有内容</p>}</aside></div>
       </> : <div className="ah-screen-empty"><RadioTower size={28}/><p>{cache.status==="failed"?"更新失败，还没有缓存":cache.status==="never"?"还没拉取过":"暂时没有内容"}</p><small>{canFetch?"点右上角刷新拉取一次":"去设置开启网络访问"}</small>{cache.status==="failed"&&<small role="status">{aihotUpdateText(cache,settings.intervalHours)}</small>}</div>}
     </>}
-    {help&&<Dialog title="AI HOT · 这页怎么用" onClose={()=>setHelp(false)}><p role="note" aria-label="访问说明">将访问 aihot.news 公开接口：只读取精选、热点和最新日报，默认每 {settings?.intervalHours??3} 小时一次，结果缓存在本机。返回的标题和摘要只当作文本显示，不执行其中的任何内容；仅个人非商业使用。可以在设置里关闭。</p><p>这页展示前10条精选与热点；点条目在新标签打开原文，摘要在卡片中只显示前几行。星只收藏到收藏画布；没有有效链接的条目不能打开或收藏。不读取或同步原站浏览器里的收藏。</p>{cache?.error&&<p>最近拉取错误：{cache.error}</p>}{cache&&<p>精选缓存：{when(cache.sections.selected?.fetchedAt)||"时间未知"}；热点缓存：{when(cache.sections.hot?.fetchedAt)||"时间未知"}；最近全部成功：{when(cache.lastSuccessAt)||"无"}。</p>}</Dialog>}
+    {help&&<Dialog title="AI HOT · 这页怎么用" onClose={()=>setHelp(false)}><p role="note" aria-label="访问说明">将访问 aihot.news 公开接口：只读取精选、热点和最新日报，默认每 {settings?.intervalHours??3} 小时一次，结果缓存在本机。返回的标题和摘要只当作文本显示，不执行其中的任何内容；仅个人非商业使用。可以在设置里关闭。</p><p>这页展示近7天最新10条精选及前10条热点，保留 AIHOT 的返回顺序；精选逐条标注北京时间的原文日期，缺失时明确标为收录日期，两者都缺失时显示日期未知。源站不足10条时按实际数量展示，不用其他内容补齐。点条目在新标签打开原文，摘要在卡片中只显示前几行。星只收藏到收藏画布；没有有效链接的条目不能打开或收藏。不读取或同步原站浏览器里的收藏。</p>{cache?.error&&<p>最近拉取错误：{cache.error}</p>}{cache&&<p>精选缓存：{when(cache.sections.selected?.fetchedAt)||"时间未知"}；热点缓存：{when(cache.sections.hot?.fetchedAt)||"时间未知"}；最近全部成功：{when(cache.lastSuccessAt)||"无"}。</p>}</Dialog>}
   </div>;
 }
 

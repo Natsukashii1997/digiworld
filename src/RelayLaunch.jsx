@@ -18,7 +18,7 @@ export function RelayLaunch({mode='agents',open,onPreview,busy,blocked=false,pre
     <Button className={project?'pj-go-big':'go'} disabled={busy||!prepared||blocked} onClick={()=>copy(true)}>带到 <b key={picked} className={`${collab?'relay-target-name ':''}${reduced?'':'flip'}`}>{character}</b> 继续<ArrowRight size={17}/></Button>
    </span>{extra}
   </div>
-  {open&&prepared&&<>{collab?<label className="relay-editor"><span>提示词，可直接编辑</span><textarea className="prompt" id="relay-prompt" aria-label="提示词" value={prepared.prompt} disabled={busy} onChange={e=>onPromptChange(e.target.value)}/></label>:<pre className="prompt" id="relay-prompt" aria-label="口令预览" tabIndex={0}>{prepared.prompt}</pre>}
+  {open&&prepared&&<>{onPromptChange?<label className="relay-editor"><span>提示词，可直接编辑</span><textarea className="prompt" id="relay-prompt" aria-label="提示词" value={prepared.prompt} disabled={busy} onChange={e=>onPromptChange(e.target.value)}/></label>:<pre className="prompt" id="relay-prompt" aria-label="口令预览" tabIndex={0}>{prepared.prompt}</pre>}
    {prepared.redactions>0&&<p className="relay-redactions">已隐去 {prepared.redactions} 段疑似凭据</p>}
    {!project&&!collab&&prepared.nextStatus!=='ok'&&<small className="relay-next-state">{prepared.nextStatus==='unreadable'?'项目 CURRENT 读取受阻，未生成唯一下一步':'未读到已登记项目的唯一下一步，未据会话推测'}</small>}
    {!project&&!collab&&<Button secondary className="mobile-copy" disabled={busy} onClick={()=>copy(false)}>只复制提示词</Button>}

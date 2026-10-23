@@ -4,18 +4,541 @@
 
 | 字段 | 当前值 |
 |---|---|
-| state_id | WB-20261012-382 |
-| 更新时间 | 2026-10-12 CST |
+| state_id | WB-20261023-628 |
+| 更新时间 | 2026-10-23 15:16 CST |
 | 更新者 | Claude |
-| 当前写入者 | 无 |
-| 当前任务 | 本轮UI优化（351批0–3、362五段、收藏B、扫描线371–379、审核缺陷381）常浩同意结束；Claude 做检查点提交（提交信息含 WB-20261012-382，未推送）。 |
-| 唯一下一步 | 无进行中任务；下一轮由常浩发起。可选打磨见审核380（收藏手机工具栏、存档点标签横滑渐隐、收藏卡片留白） |
-| 最新交接 | [Claude 381：审核380两个缺陷修复](docs/agents/handoffs/2026-10-12-claude-audit-fixes-381.md)；[Claude 380：本轮UI总审核与评分](docs/agents/handoffs/2026-10-11-claude-ui-round-audit-380.md)；[Claude 379：扫描线与内容显现不同步](docs/agents/handoffs/2026-10-11-claude-scan-geometry-379.md)；[Claude 378：切页后先后两道扫描线](docs/agents/handoffs/2026-10-11-claude-scan-sequential-378.md)；[Claude 验收377：扫描返修与收藏B通过](docs/agents/handoffs/2026-10-11-claude-scan-collection-acceptance-377.md)；[Codex 扫描返修与收藏B工程交回376：待Claude验收](docs/agents/handoffs/2026-10-11-codex-scan-collection-376.md)；[前后对比与验证报告376](docs/agents/handoffs/evidence-2026-10-11-codex-scan-collection-376/report.html)；[Codex 小修371独立复核373：通过结论已撤回](docs/agents/handoffs/2026-10-11-codex-scan-double-review-373.md)；[Claude 终验反馈小修371：切页扫描线叠两道](docs/agents/handoffs/2026-10-11-claude-scan-double-371.md)；[Claude 五段汇总验收370：通过](docs/agents/handoffs/2026-10-11-claude-continuous-acceptance-370.md)；[连续派单362五段总交接369](docs/agents/handoffs/2026-10-11-codex-continuous-final-369.md)；[第5段夜巡左库右板](docs/agents/handoffs/2026-10-11-codex-continuous-368-05-night.md)；[第4段扫描线动效方案A](docs/agents/handoffs/2026-10-11-codex-continuous-367-04-motion.md)；[第3段生活区与系统精修](docs/agents/handoffs/2026-10-11-codex-continuous-366-03-life.md)；[第2段工作区精修](docs/agents/handoffs/2026-10-11-codex-continuous-365-02-workspace.md)；[第1段R4与S1](docs/agents/handoffs/2026-10-11-codex-continuous-364-01-r4.md)；[连续执行派单362](docs/agents/handoffs/2026-10-11-claude-continuous-dispatch-362.md)；[批1复验361：R1–R3通过，R4返修](docs/agents/handoffs/2026-10-10-claude-ui-refine-batch1-recheck-361.md)；[批1返修交回360](docs/agents/handoffs/2026-10-10-codex-ui-refine-repair-360.md)；[批1三项返修交回360](docs/agents/handoffs/2026-10-10-codex-ui-refine-repair-360.md)；[18组全屏与6组原尺寸前后图](docs/agents/handoffs/evidence-2026-10-10-codex-ui-refine-repair-359/report.html)；[最终同构建T2](docs/agents/handoffs/evidence-2026-10-10-codex-ui-refine-repair-359/t2-visual-record.md)；[批1复核358：返修](docs/agents/handoffs/2026-10-10-claude-ui-refine-batch1-review-358.md)；[批1交回357](docs/agents/handoffs/2026-10-10-codex-ui-refine-batch1-357.md)；[批1精修工程交回357](docs/agents/handoffs/2026-10-10-codex-ui-refine-batch1-357.md)；[批1前后对照及字号](docs/agents/handoffs/evidence-2026-10-10-codex-ui-refine-356/report.html)；[批0验收355：通过](docs/agents/handoffs/2026-10-10-claude-silver-acceptance-355.md)；[批0银饰删除交接354](docs/agents/handoffs/2026-10-10-codex-silver-removal-354.md)；[精修派单351](docs/agents/handoffs/2026-10-10-claude-ui-refine-dispatch-351.md)；[原版精修审计350](docs/agents/handoffs/2026-10-10-claude-ui-reaudit-350.md)；[UI v17系统层349](docs/agents/handoffs/2026-10-10-claude-ui-v17-system-349.md)；[全站UI审计348](docs/agents/handoffs/2026-10-10-claude-ui-audit-348.md)；[分组索引签精修347](docs/agents/handoffs/2026-10-10-claude-collection-group-tab-347.md)；[收藏344应用采用346](docs/agents/handoffs/2026-10-10-codex-collection-adoption-346.md)； [收藏335返修344](docs/agents/handoffs/2026-10-10-codex-collection-ui-repair-344.md)； [收藏335验收341：返修](docs/agents/handoffs/2026-10-10-claude-collection-ui-acceptance-341.md)；[收藏335终核交回339](docs/agents/handoffs/2026-10-10-codex-collection-ui-redesign-339.md)（补充动态使用日志；替代337最终保护结论）；[收藏UI深度优化工程交接337](docs/agents/handoffs/2026-10-10-codex-collection-ui-redesign-337.md)；[收藏UI深度优化派单335](docs/agents/handoffs/2026-10-10-claude-collection-ui-redesign-dispatch-335.md)（替代333）；[收藏UI派单333](docs/agents/handoffs/2026-10-10-claude-collection-ui-u1-dispatch-333.md)；[收藏纯本地恢复331](docs/agents/handoffs/2026-10-09-codex-collection-obsidian-rollback-331.md)；[结果行修正326](docs/agents/handoffs/2026-10-09-codex-collection-feedback-326.md)；[本地删除单按钮324](docs/agents/handoffs/2026-10-09-codex-collection-local-delete-324.md)；[收藏回收整理322](docs/agents/handoffs/2026-10-09-codex-collection-recycle-322.md)；[收藏视觉修正320](docs/agents/handoffs/2026-10-09-codex-collection-visual-320.md)；[项目分区顺序317](docs/agents/handoffs/2026-10-09-codex-project-zone-order-317.md)；[MuseMap 删除315](docs/agents/handoffs/2026-10-09-codex-musemap-delete-315.md) |
+| 当前写入者 | Claude（阶段0：检查点提交 + 基地/资产仓库两版视觉稿） |
+| 当前任务 | 用户2026-10-23确认[深度评审与改造方案](docs/product/2026-10-23-深度评审与改造方案.md) D1–D9全部按推荐（含D9：本轮Claude负责结构/UI/数据模型，Codex独立复核）。Claude认领阶段0：①用户授权检查点提交10/12以来全部未提交改动（排除19G本机目录work/）②出基地、资产仓库各两版高保真静态视觉稿（真实数据）。不改产品代码、不重启、不动真实数据。 |
+| 唯一下一步 | Claude完成阶段0并交接；随后用户选定视觉方向，再开阶段1（底座）。 |
+| 最新交接 | [Claude 深度评审与改造方案（用户已确认D1–D9）](docs/product/2026-10-23-深度评审与改造方案.md)； [Codex627：旧REA提示正式采用·真实预演受标签解析阻断](docs/agents/handoffs/2026-10-23-codex-rea-recovery-adoption-627.md)； [Codex625：旧REA预演恢复已修复·验证完成待采用](docs/agents/handoffs/2026-10-23-codex-rea-preview-recovery-625.md)； [Codex623：C1正式采用与实际核验](docs/agents/handoffs/2026-10-23-codex-c1-adoption-623.md)； [Codex621：C1统一搜索与直达·已验证待正式采用](docs/agents/handoffs/2026-10-23-codex-unified-search-621.md)； [Codex619：恢复预览修复正式采用·实际核验完成](docs/agents/handoffs/2026-10-23-codex-restore-preview-adoption-619.md)； [Codex617：恢复预览裁切已修复·验证完成待采用](docs/agents/handoffs/2026-10-23-codex-restore-preview-617.md)； [Codex615：B批正式采用与实际核验](docs/agents/handoffs/2026-10-22-codex-b-adoption-615.md)； [Codex613：B批已验证·待正式采用](docs/agents/handoffs/2026-10-22-codex-b-reliability-613.md)； [Codex611：三项修复正式采用·已核验](docs/agents/handoffs/2026-10-22-codex-three-fixes-adoption-611.md)； [Codex609：三项修复已验证·待采用](docs/agents/handoffs/2026-10-22-codex-three-fixes-609.md)； [Codex607：三项原因与修复建议待确认](docs/agents/handoffs/2026-10-22-codex-three-issues-diagnosis-607.md)； [Codex605：A批正式采用与实际核验](docs/agents/handoffs/2026-10-22-codex-a-adoption-605.md)； [Codex603：A批六项修复·验证完成待采用](docs/agents/handoffs/2026-10-22-codex-a-fixes-603.md)； [Codex601：七板块审查与待确认清单](docs/agents/handoffs/2026-10-22-codex-workbench-audit-601.md)； [Codex599：随手记连接已恢复](docs/agents/handoffs/2026-10-22-codex-notes-reconnect-599.md)； [Codex597：现存错号已即时修复](docs/agents/handoffs/2026-10-21-codex-existing-notes-numbering-597.md)； [Codex595：自动编号修复已采用](docs/agents/handoffs/2026-10-21-codex-notes-numbering-595.md)； [Codex593：三图标新建与紧凑标题已采用](docs/agents/handoffs/2026-10-21-codex-notes-quick-create-593.md)； [Codex590：便签顶角操作精简已采用](docs/agents/handoffs/2026-10-21-codex-notes-actions-590.md)； [Codex588：三类型右键格式复验与修复已采用](docs/agents/handoffs/2026-10-20-codex-notes-context-format-588.md)； [Codex586：三类型便签完整复验与修复已采用](docs/agents/handoffs/2026-10-20-codex-notes-lifecycle-586.md)； [Codex584：原版UI随手记正式采用](docs/agents/handoffs/2026-10-20-codex-notes-adoption-584.md)； [Codex582：随手记原版UI恢复与功能保留](docs/agents/handoffs/2026-10-20-codex-notes-ui-restore-582.md)； [Codex579：七板块精简正式采用](docs/agents/handoffs/2026-10-20-codex-seven-sections-579.md)； [Codex577：Ghidra安装与双端实际验收](docs/agents/handoffs/2026-10-20-codex-ghidra-install-577.md)； [Codex575：原生REA正式采用与实际验收](docs/agents/handoffs/2026-10-20-codex-reverse-adoption-575.md)； [Codex573：原生REA候选交回](docs/agents/handoffs/2026-10-20-codex-reverse-native-573.md)； [Codex571：随手记图片粘贴已采用](docs/agents/handoffs/2026-10-20-codex-notes-images-571.md)； [Codex569：UI修复正式采用](docs/agents/handoffs/2026-10-19-codex-ui-adoption-569.md)； [Codex567：设计类型ChatGPT纠正已采用](docs/agents/handoffs/2026-10-19-codex-design-chatgpt-567.md)； [Codex565：UI布局与AIHOT候选](docs/agents/handoffs/2026-10-19-codex-ui-layout-565.md)； [Codex563：设计类型正式采用](docs/agents/handoffs/2026-10-19-codex-design-adoption-563.md)； [Codex561：设计类型C候选](docs/agents/handoffs/2026-10-19-codex-design-type-561.md)； [Codex559：恢复新像素图标](docs/agents/handoffs/2026-10-19-codex-notes-icon-restore-559.md)； [Codex557：桌面复制宿主修复](docs/agents/handoffs/2026-10-19-codex-notes-copy-host-557.md)； [Codex555：白字卡片自动多色](docs/agents/handoffs/2026-10-19-codex-notes-auto-paper-555.md)； [Codex553：只新增复制，原功能与形式还原](docs/agents/handoffs/2026-10-19-codex-notes-copy-only-553.md)； [Codex551：一键复制采用与格式入口纠正](docs/agents/handoffs/2026-10-19-codex-notes-copy-551.md)； [Codex549：列表换行光标与手动打开](docs/agents/handoffs/2026-10-19-codex-notes-caret-manual-549.md)； [Codex546：悬浮球去除外围方形阴影](docs/agents/handoffs/2026-10-19-codex-floating-notes-shadow-546.md)； [Codex544：随手记悬浮球常驻启用](docs/agents/handoffs/2026-10-19-codex-floating-notes-always-on-544.md)； [Codex542：桌面黑屏恢复](docs/agents/handoffs/2026-10-17-codex-app-black-screen-542.md)； [Codex540：原生验证、正式采用及Hermes环境变化](docs/agents/handoffs/2026-10-16-codex-agents-native-adoption-540.md)； [Codex538：智能体群7项修复与接手闭环](docs/agents/handoffs/2026-10-16-codex-agents-repair-538.md)； [Codex536：智能体群真实可用性复核·不通过](docs/agents/handoffs/2026-10-16-codex-agents-usability-review-536.md)； [Codex534：智能体群迁移与接力复刻](docs/agents/handoffs/2026-10-16-codex-agents-continuity-534.md)； [Codex532：炉子迁移与接力定向取证](docs/agents/handoffs/2026-10-16-codex-luzi-rea-532.md)； [Codex530：首页四板块与连续侧栏](docs/agents/handoffs/2026-10-16-codex-home-overview-530.md)； [Codex528：上线准备、备份与回退](docs/agents/handoffs/2026-10-15-codex-floating-notes-release-prep-528.md)； [Codex526：便签基本使用修复](docs/agents/handoffs/2026-10-15-codex-floating-notes-basic-fix-526.md)； [Codex523：桌面随手记批3原生候选·真机项待验](docs/agents/handoffs/2026-10-15-codex-floating-notes-batch3-523.md)； [Codex522：桌面随手记批2便签栏](docs/agents/handoffs/2026-10-15-codex-floating-notes-batch2-522.md)； [Codex521：桌面随手记批1工程交回](docs/agents/handoffs/2026-10-15-codex-floating-notes-batch1-521.md)； [Claude519：桌面随手记悬浮球实施派单](docs/agents/handoffs/2026-10-15-claude-floating-notes-dispatch-519.md)； [Claude517：桌面随手记悬浮球视觉稿v1·待确认](docs/agents/handoffs/2026-10-15-claude-floating-notes-visual-517.md)；[视觉稿](docs/design/floating-notes/floating-notes-v1.html)； [Codex515：桌面随手记悬浮球需求与调研](docs/agents/handoffs/2026-10-15-codex-floating-notes-research-515.md)； [Claude513：507已上线](docs/agents/handoffs/2026-10-15-claude-reverse-precheck-adoption-513.md)； [Claude511：507复验通过+真实免费预检](docs/agents/handoffs/2026-10-15-claude-reverse-precheck-recheck-511.md)； [Codex509：网站免费预检与AI线索词候选](docs/agents/handoffs/2026-10-15-codex-reverse-precheck-clues-509.md)；[三宽前后与验证](work/reverse508/report.html)； [Claude507：网站免费预检+AI线索词派单](docs/agents/handoffs/2026-10-15-claude-reverse-precheck-clues-dispatch-507.md)； [Claude505：重启生效](docs/agents/handoffs/2026-10-15-claude-restart-505.md)； [Claude503：Codex审批拒绝修复·待重启](docs/agents/handoffs/2026-10-15-claude-codex-approval-fix-503.md)； [Claude501：逆向AI执行器已上线](docs/agents/handoffs/2026-10-15-claude-reverse-ai-adoption-501.md)； [Claude499：R4/R5复验通过·真实Codex端到端成功](docs/agents/handoffs/2026-10-15-claude-reverse-ai-recheck-499.md)； [Codex497：R4/R5候选交回](docs/agents/handoffs/2026-10-14-codex-reverse-ai-repair-497.md)；[返修前后](work/reverse496/report.html)； [Claude495：真实Codex冒烟·沙箱需放行AI状态目录](docs/agents/handoffs/2026-10-14-claude-reverse-ai-smoke-495.md)； [Claude493：R3通过·AI执行器工程通过·真实AI冒烟待授权](docs/agents/handoffs/2026-10-14-claude-reverse-ai-recheck-493.md)； [Codex491：R3+只读AI逆推候选](docs/agents/handoffs/2026-10-14-codex-reverse-ai-runner-491.md)；[三宽前后与最终状态](work/reverse490/report.html)； [Codex489：R3工程完成](docs/agents/handoffs/2026-10-14-codex-reverse-r3-489.md)； [Claude487：逆向页AI执行器派单](docs/agents/handoffs/2026-10-14-claude-reverse-ai-runner-dispatch-487.md)； [Claude485：内容文稿青色页码框·已上线](docs/agents/handoffs/2026-10-14-claude-collection-page-boxes-485.md)； [Claude481：页码与画廊对齐·待采用](docs/agents/handoffs/2026-10-14-claude-collection-page-numbers-481.md)； [Claude479：内容文稿按图分页·待采用](docs/agents/handoffs/2026-10-14-claude-collection-content-pages-479.md)； [Claude477：逆向v4复验通过+一起采用·线上npx阻断R3](docs/agents/handoffs/2026-10-14-claude-reverse-v4-recheck-adoption-477.md)；[Claude：收藏阅读页内容文稿](docs/agents/handoffs/2026-10-14-claude-collection-reader-tabs.md)；[Claude：插件深色胶囊按钮](docs/agents/handoffs/2026-10-14-claude-collection-buttons-ui.md)； [Codex475：逆向v4 R1/R2返修交回](docs/agents/handoffs/2026-10-14-codex-reverse-v4-repair-475.md)；[返修前后对照](work/reverse474/report.html)； [Claude473：逆向v4验收不通过·R1/R2返修](docs/agents/handoffs/2026-10-14-claude-reverse-v4-acceptance-473.md)； [Codex471：逆向v4三段总交接](docs/agents/handoffs/2026-10-14-codex-reverse-v4-final-471.md)； [Codex470：逆向v4段3](docs/agents/handoffs/2026-10-14-codex-reverse-v4-segment3-470.md)； [Codex469：逆向v4段2](docs/agents/handoffs/2026-10-14-codex-reverse-v4-segment2-469.md)； [Codex468：逆向v4段1](docs/agents/handoffs/2026-10-14-codex-reverse-v4-segment1-468.md)； [Codex466：紧凑双色收藏按钮](docs/agents/handoffs/2026-10-14-codex-compact-collection-buttons-466.md)； [Codex464：GET正式采用](docs/agents/handoffs/2026-10-14-codex-get-adoption-464.md)； [Claude462：逆向v4派单](docs/agents/handoffs/2026-10-14-claude-reverse-v4-dispatch-462.md)； [Codex460：GET收藏候选完成](docs/agents/handoffs/2026-10-14-codex-get-candidate-460.md)；[Codex457：GET凭据已存/鉴权受阻](docs/agents/handoffs/2026-10-13-codex-get-auth-blocked-457.md)； [Codex455：GET接入前置验证](docs/agents/handoffs/2026-10-13-codex-get-preflight-455.md)； [Claude453：逆向页v3简报+视觉稿](docs/design/ui-v16/briefs/02-reverse-v3.md)； [Codex451：REA第一阶段正式采用](docs/agents/handoffs/2026-10-13-codex-rea-adoption-451.md)； [Codex449：REA R1–R3返修完成](docs/agents/handoffs/2026-10-13-codex-rea-repair-449.md)； [Claude447：REA第一阶段有条件通过](docs/agents/handoffs/2026-10-13-claude-rea-acceptance-447.md)； [Codex445：REA第一阶段候选](docs/agents/handoffs/2026-10-13-codex-rea-phase1-445.md)； [Claude443：REA接入派单](docs/agents/handoffs/2026-10-13-claude-rea-dispatch-443.md)； [Codex441：文稿与连续阅读已采用](docs/agents/handoffs/2026-10-13-codex-transcript-reading-441.md)； [Codex439：封面已修复/真实播放通过](docs/agents/handoffs/2026-10-13-codex-douyin-cover-playback-439.md)； [Codex437：抖音真实视频已保存/封面partial](docs/agents/handoffs/2026-10-13-codex-douyin-live-437.md)； [Codex435：项目来源筛选与数量统一](docs/agents/handoffs/2026-10-13-codex-project-source-filters-435.md)；[合成前后与验证](work/project-source434/report.html)； [Codex433：项目单一来源标识](docs/agents/handoffs/2026-10-13-codex-project-single-source-433.md)；[前后与实际图](work/project-source432/report.html)； [Codex431：资产圆角等值修复](docs/agents/handoffs/2026-10-13-codex-asset-radius-431.md)； [Codex 429：项目来源UI恢复](docs/agents/handoffs/2026-10-13-codex-project-source-ui-429.md)；[来源前后/验证](work/project-source428/report.html)； [Codex427：抖音收藏正式采用](docs/agents/handoffs/2026-10-13-codex-douyin-adoption-427.md)； [Codex425：抖音网页收藏候选](docs/agents/handoffs/2026-10-13-codex-douyin-425.md)； [Claude 422：焚决条目排布](docs/agents/handoffs/2026-10-12-claude-scroll-entry-422.md)； [Claude 419：窄屏修复+焚决卡细节](docs/agents/handoffs/2026-10-12-claude-scroll-card-419.md)； [Claude 415：两页细节打磨候选](docs/agents/handoffs/2026-10-12-claude-ui-polish-415.md)； [Claude 412：知识仓库/日历对照稿](docs/agents/handoffs/2026-10-12-claude-ui-sample-411.md)；[对照汇总](work/ui-sample411/report.html)； [Codex 410：三页有限打磨](docs/agents/handoffs/2026-10-12-codex-ui-polish-410.md)；[1440/390前后与验证](work/ui-polish409/report.html)； [Codex 408：三页UI诊断](docs/agents/handoffs/2026-10-12-codex-ui-diagnosis-408.md)；[1440/390截图诊断](work/ui-audit407/report.html)； [Codex 406：双框正式采用](docs/agents/handoffs/2026-10-12-codex-scroll-fields-adoption-406.md)；[前后与实际页](work/assets403/report.html)； [Codex 404：名称全文两框候选](docs/agents/handoffs/2026-10-12-codex-scroll-fields-candidate-404.md)；[候选前后](work/assets403/report.html)； [Codex 402：删除右侧卷字](docs/agents/handoffs/2026-10-12-codex-scroll-label-402.md)； [Codex 400：保留火焰表头、去名称条数小块](docs/agents/handoffs/2026-10-12-codex-scroll-header-400.md)；[最终前后/验证](work/assets398/report.html)； [Codex 397：焚决外层浏览与逐条复制](docs/agents/handoffs/2026-10-12-codex-scroll-preview-397.md)；[前后对照/验证](work/assets396/report.html)； [Codex 395：固定网格与393收尾](docs/agents/handoffs/2026-10-12-codex-assets-grid-final-395.md)；[最终对照/验证](work/assets394/report.html)；[Codex 390：全资产悬停三操作](docs/agents/handoffs/2026-10-12-codex-assets-hover-actions-390.md)；[六宽/实际页面与验证](work/assets389/report.html)； [Codex 388：卡片外层直接复制](docs/agents/handoffs/2026-10-12-codex-assets-quick-copy-388.md)；[复制按钮12组前后图与验证](work/assets387/report.html)； [Codex 386：资产仓库本地交回](docs/agents/handoffs/2026-10-12-codex-assets-warehouse-386.md)；[资产仓库30组前后图与验证](work/assets385/report.html)；[Codex 384：调酒本地自动进组工程交回](docs/agents/handoffs/2026-10-12-codex-cocktail-auto-group-384.md)；[Claude 381：审核380两个缺陷修复](docs/agents/handoffs/2026-10-12-claude-audit-fixes-381.md)；[Claude 380：本轮UI总审核与评分](docs/agents/handoffs/2026-10-11-claude-ui-round-audit-380.md)；[Claude 379：扫描线与内容显现不同步](docs/agents/handoffs/2026-10-11-claude-scan-geometry-379.md)；[Claude 378：切页后先后两道扫描线](docs/agents/handoffs/2026-10-11-claude-scan-sequential-378.md)；[Claude 验收377：扫描返修与收藏B通过](docs/agents/handoffs/2026-10-11-claude-scan-collection-acceptance-377.md)；[Codex 扫描返修与收藏B工程交回376：待Claude验收](docs/agents/handoffs/2026-10-11-codex-scan-collection-376.md)；[前后对比与验证报告376](docs/agents/handoffs/evidence-2026-10-11-codex-scan-collection-376/report.html)；[Codex 小修371独立复核373：通过结论已撤回](docs/agents/handoffs/2026-10-11-codex-scan-double-review-373.md)；[Claude 终验反馈小修371：切页扫描线叠两道](docs/agents/handoffs/2026-10-11-claude-scan-double-371.md)；[Claude 五段汇总验收370：通过](docs/agents/handoffs/2026-10-11-claude-continuous-acceptance-370.md)；[连续派单362五段总交接369](docs/agents/handoffs/2026-10-11-codex-continuous-final-369.md)；[第5段夜巡左库右板](docs/agents/handoffs/2026-10-11-codex-continuous-368-05-night.md)；[第4段扫描线动效方案A](docs/agents/handoffs/2026-10-11-codex-continuous-367-04-motion.md)；[第3段生活区与系统精修](docs/agents/handoffs/2026-10-11-codex-continuous-366-03-life.md)；[第2段工作区精修](docs/agents/handoffs/2026-10-11-codex-continuous-365-02-workspace.md)；[第1段R4与S1](docs/agents/handoffs/2026-10-11-codex-continuous-364-01-r4.md)；[连续执行派单362](docs/agents/handoffs/2026-10-11-claude-continuous-dispatch-362.md)；[批1复验361：R1–R3通过，R4返修](docs/agents/handoffs/2026-10-10-claude-ui-refine-batch1-recheck-361.md)；[批1返修交回360](docs/agents/handoffs/2026-10-10-codex-ui-refine-repair-360.md)；[批1三项返修交回360](docs/agents/handoffs/2026-10-10-codex-ui-refine-repair-360.md)；[18组全屏与6组原尺寸前后图](docs/agents/handoffs/evidence-2026-10-10-codex-ui-refine-repair-359/report.html)；[最终同构建T2](docs/agents/handoffs/evidence-2026-10-10-codex-ui-refine-repair-359/t2-visual-record.md)；[批1复核358：返修](docs/agents/handoffs/2026-10-10-claude-ui-refine-batch1-review-358.md)；[批1交回357](docs/agents/handoffs/2026-10-10-codex-ui-refine-batch1-357.md)；[批1精修工程交回357](docs/agents/handoffs/2026-10-10-codex-ui-refine-batch1-357.md)；[批1前后对照及字号](docs/agents/handoffs/evidence-2026-10-10-codex-ui-refine-356/report.html)；[批0验收355：通过](docs/agents/handoffs/2026-10-10-claude-silver-acceptance-355.md)；[批0银饰删除交接354](docs/agents/handoffs/2026-10-10-codex-silver-removal-354.md)；[精修派单351](docs/agents/handoffs/2026-10-10-claude-ui-refine-dispatch-351.md)；[原版精修审计350](docs/agents/handoffs/2026-10-10-claude-ui-reaudit-350.md)；[UI v17系统层349](docs/agents/handoffs/2026-10-10-claude-ui-v17-system-349.md)；[全站UI审计348](docs/agents/handoffs/2026-10-10-claude-ui-audit-348.md)；[分组索引签精修347](docs/agents/handoffs/2026-10-10-claude-collection-group-tab-347.md)；[收藏344应用采用346](docs/agents/handoffs/2026-10-10-codex-collection-adoption-346.md)； [收藏335返修344](docs/agents/handoffs/2026-10-10-codex-collection-ui-repair-344.md)； [收藏335验收341：返修](docs/agents/handoffs/2026-10-10-claude-collection-ui-acceptance-341.md)；[收藏335终核交回339](docs/agents/handoffs/2026-10-10-codex-collection-ui-redesign-339.md)（补充动态使用日志；替代337最终保护结论）；[收藏UI深度优化工程交接337](docs/agents/handoffs/2026-10-10-codex-collection-ui-redesign-337.md)；[收藏UI深度优化派单335](docs/agents/handoffs/2026-10-10-claude-collection-ui-redesign-dispatch-335.md)（替代333）；[收藏UI派单333](docs/agents/handoffs/2026-10-10-claude-collection-ui-u1-dispatch-333.md)；[收藏纯本地恢复331](docs/agents/handoffs/2026-10-09-codex-collection-obsidian-rollback-331.md)；[结果行修正326](docs/agents/handoffs/2026-10-09-codex-collection-feedback-326.md)；[本地删除单按钮324](docs/agents/handoffs/2026-10-09-codex-collection-local-delete-324.md)；[收藏回收整理322](docs/agents/handoffs/2026-10-09-codex-collection-recycle-322.md)；[收藏视觉修正320](docs/agents/handoffs/2026-10-09-codex-collection-visual-320.md)；[项目分区顺序317](docs/agents/handoffs/2026-10-09-codex-project-zone-order-317.md)；[MuseMap 删除315](docs/agents/handoffs/2026-10-09-codex-musemap-delete-315.md) |
 | 完整项目说明 | [Claude 项目交接](PROJECT-HANDOFF-CLAUDE-2026-09-28.md)（历史快照；与当前状态冲突时以本文件、ROADMAP 及当前切片契约为准） |
-| Codex 已读状态 | **WB-20261011-375**（本轮从373实读→374返修→用户追加B认领375；8项冻结源码/测试、1192串行单元、17浏览器、172扫描场景、实际14页、两轴0发现、同构建T2、17磁盘/7公开HTTP与保护回读通过；交接376及CURRENT写后回读释放；不代签Claude/真人）；**WB-20261011-373**（本轮实读入口、状态与协作；用户截图推翻通过，认领374返修全站扫描协调；旧373只覆盖850ms快切页，相关验收撤回）；**WB-20261011-371**（本轮按序实读入口、CURRENT、协作与371；无人写入；基线369冻结快照与小修差异核清；两轴0发现、1181单元、动效浏览器、5边界、14页扫描和5HTTP字节均通过；认领372仅登记交接，输出373写后回读并释放）；**WB-20261011-369**（362按序认领363，连续完成五段；100源码/测试冻结、1180单元/12浏览器/132六宽截图、双轴与工程T2、17磁盘/6公开HTTP、保护回读完成；交接369与CURRENT写后回读释放，待Claude汇总验收与常浩终验）；**WB-20261011-362**（本轮实读入口、CURRENT头表、协作协议、362/351/361和视觉权威；无人写入，认领363连续五段）；**WB-20261010-360**（358按序实读→359认领仅修R1–R3；最终887/17/7指纹、1176单元、9原浏览器专项、22返修记录、18+6配对图/64字号/19正常与14读取提示Axe、132图及同构建T2、5178静态字节与保护回读完成；交接360与CURRENT写后回读并释放；不代签Claude/真人，不启批2–3）；**WB-20261010-358**（入口、CURRENT、协作6及复核358全文实读；无人写入，357冻结224文件无漂移；认领359仅返修R1–R3）；**WB-20261010-357**（355按序实读→356认领批1；25前端/3测试精修，1175/15套件/专项、69组图/64组字号/同构建T2、5178静态与保护回读完成；交接357写后回读释放；不代签Claude/真人，不启批2–3）；**WB-20261010-355**（本会话按序实读入口、当前状态、协作、验收355、派单351和审计350；无人写入，认领356，基线保存）；**WB-20261010-353**（常浩指示接手352；本会话读回当前状态，按批0实施、验证与交回354后释放）；**WB-20261010-351**（入口、协作协议、派单351/审计350实读；无人写入，认领352，源码与dist基线已保存）； **WB-20261010-346**（344无人写入→345仅文档认领；真实应用可见/资源/指纹回读，无新构建或重启；346交接回读后释放）； **WB-20261010-344**（341按序实读→342认领→用户追加R3扩围343→344返修交回；所需隔离/18组对照/5178静态与保护回读完成；回读后释放，不代签Claude/真人验收）； **WB-20261010-341**（本轮按序实读AGENTS→CURRENT头表→COLLAB第4/6节→验收341全文→派单335 Z2/Z9；状态一致、无人写入；认领342，基线与旧dist已保存）； **WB-20261010-339**（337末次核对发现capability-use动态日志漂移→338仅文档认领→339如实补充；主库/收藏未变，日志未恢复；写后回读并释放）；**WB-20261010-337**（335按序输入→336认领；UI/D1、全量与七专项、叠图、5178字节及保护回读完成；写后再次核对并释放；不代签Claude/真人验收）；**WB-20261010-335**（按序实读入口/头表/协作/派单全文，无人写入；认领336并保存基线与旧dist）； **WB-20261009-309**（输入307无人写入，认领308；全站分层复查、T01/T10状态校正与交接309后回读释放；真实用户旅程待验）；**WB-20261008-305**（本轮回读无人写入；常浩确认通过，认领306、刷新原工作台并读回最终资产；输出307后释放）；**WB-20261008-302**（按序读回入口、CURRENT、协作协议与返修交接；无人写入，认领303并扩围304；本轮输出305后回读释放）；**WB-20261007-265**（用户授权采用；264认领→同Node/目录/数据/端口受控停启，16文件/6HTTP资源、新API及可见页面读回；265交接释放，真人验收分列）； **WB-20261007-263**（262按授权实施→同构建1164/106、额外修复1/1及18对图→263交接；写后核三字段与证据后释放；运行/原生/用户验收分列）；**WB-20261007-250**（读回交接250与用户单次授权，认领251；未代签运行采用）；**WB-20261007-249**（读回N3交接248与正式派单，认领N4；本轮交接250后回读释放）；**WB-20261006-221**（用户追加协同三控件/编辑/直接操作/帮助圈要求，认领延续；旧C验收证据失效，进入修正）；**WB-20261006-220**（实读219无人写入；按用户桌面目标纠正认领，保留历史角色ID，隔离验证）；**WB-20261006-219**（用户授权单次5178检查/重启/验证；旧404→新200，同目录/构建；八阶段线路已见，主库指针与518文件不变；交接回读后释放，停等确认）；**WB-20261006-218**（实读217无人写入；用户单次授权检查/重启/验证5178，旧PID/目录/404已核对）；**WB-20261006-217**（214按序实读→215授权登记→216认领→217工程交付；946单元/84入口/138图、F两轴与J构建T2；头表/成果/保护回读，写入者无，停等确认）；**WB-20261006-216**（输入214按序实读并核对无人写入；215正式登记→216认领及基线SHA回读）；**WB-20261006-213**（从209按序实读，210日历返修→211正式登记→212认领→213交回；925单元/83入口/138图、两轴与同构建T2通过；输出后回读并释放，停等确认）；**WB-20261006-209**（本轮按序实读，输入无写入者，用户确认206；认领210先修R1/P1）；**WB-20261006-208**（206登记→207认领→208工程交付；回读头表、成果与保护证据，写入者无，停等确认；不代签Claude/用户验收）；**WB-20261006-205**（本轮按序实读，输入无人写入；登记206→认领207）； **WB-20261006-204**（202登记→203认领→204工程交付，实际回读头表/成果链接/指针限制；写入者无，停等确认，不代签Claude或用户验收）；**WB-20261006-201**（按序实读；写入者无；用户确认198，登记202→认领203）； **WB-20261006-197**（本轮按序实读AGENTS→CURRENT头表→COLLAB6；写入者无；按用户修正基线登记198，待议功能延后）； **WB-20261006-195**（输入192→登记193→认领194→A/B分片回归与工程交付195；写后回读释放，无代签Claude或用户验收）；**WB-20261006-192**（按序实读AGENTS→CURRENT头表→COLLAB第6节，无写入者；193登记→194认领，基线/设计SHA回读）；**WB-20261006-188**（本轮按序实读AGENTS→CURRENT头部→COLLABORATION第6节，核对无写入者；189登记→190认领、前像与设计SHA回读）；**WB-20261005-184**（实读入口、CURRENT当前状态、协作、183/176与项目空间排队稿，写入者无；认领185）；**WB-20261005-182**（181输入与本人182交回后三字段实际回读；认领释放，不代签Claude或用户验收）； **WB-20261005-179**（173整单回读释放后按正式175认领180）； **WB-20261005-176**（按序实读入口/当前状态/协作/176/173及冻结输入；核对无写入者，认领177）； **WB-20261005-170**（输入168→认领169→工程交付170并回读释放；不是Claude或用户验收）；**WB-20261005-168**（本轮实读入口、CURRENT、COLLABORATION、派单168与全部输入；核对无写入者后认领169）； **WB-20261004-157**（输入155→认领156→C-01～C-11开发、合成完整回归与68组对比→总交接157；写后回读释放；非Claude或用户验收）；**WB-20261004-155**（实读AGENTS、CURRENT、COLLAB第6节、STYLE全文、派单155全文；写入者无；796源码/13dist回档逐项SHA回读；认领156）； **WB-20261004-152**（实际输入150→认领151→切片1/2每片全回归与回档→总交接152，写后回读并释放；非Claude或用户验收）；**WB-20261004-150**（输入148→认领149→切片0完整回归与回档→交接150，写后回读并释放认领；非Claude或用户验收）；**WB-20261004-148**（实际按序读AGENTS/CURRENT/COLLABORATION第6节/STYLE-GUIDE/派单148全文，写入者无；145产品文件0漂移、148源码/dist回档逐项SHA回读，认领149）；**WB-20261004-145**（输入143→认领144→返修与完整回归→交接145，写后回读，写入者无；不是Claude或用户验收）；**WB-20261004-143**（实际读回CURRENT与验收交接第五节，写入者无；143源码/dist已回档逐项SHA回读，认领144返修）； **WB-20261004-141**（输入139→认领140，输出141并回读；批次2/3完成，写入者释放，不是Claude或用户验收）；**WB-20261004-139**（实读137并按用户确认认领138；输出139后回读核对，释放认领；不是Claude或用户验收）；**WB-20261003-127**（本轮从125认领126，完成协同/全部验证/独立复核，写后回读交接127并释放；不是用户验收）； **WB-20261003-125**（本轮按指定顺序实读入口/交接125/123/README，状态一致且无人写入；预览哈希一致，用户确认改为源码点检；保存回档后认领126）； **WB-20261003-125**（本轮从123认领124，完成项目空间并写后回读交接125；不是用户验收）；此前 **WB-20261003-123**（本人实读AGENTS、CLAUDE、CURRENT、COLLABORATION、交接123/121与v14 README；编号一致、无人写入、HEAD15dd5ba且工作区干净；保存回档后认领124）；此前 **WB-20261003-119**（本人输出后须回读确认；输入117 → 认领118 → 回交119）；此前 **WB-20261003-117**（本会话按顺序实际读回入口与交接117；与派发一致，写入者无，Git 工作区干净；认领118）；此前 **WB-20261003-113**（2026-10-03本会话实际读回；编号与派发一致，写入者无；认领114）；此前 **WB-20260930-88**（176文件、11前像匹配，认领89）；此前 **WB-20260930-84**（172文件、13前像及A阶段指纹匹配，认领85）；此前 **WB-20260930-80**（172文件与9前像匹配，认领81）；此前 **WB-20260930-76**（本轮认领75后输出并回读；代码 D-R2/D-R3 未闭合、模板通过；166文件未变）；此前 **WB-20260929-74**（166文件指纹和10个前像匹配，认领75）；此前  **WB-20260929-70**（165 文件及 17 前像一致；用户确认主库新哈希为已知操作）；此前  **WB-20260929-62**（160文件匹配、2个前像一致，认领63，复核输出64）；此前 **WB-20260929-58**（160 文件指纹及三轮前像全部匹配，认领59，复核输出60）；此前 WB-20260929-45（157文件指纹匹配，认领46/扩围47，交接WB-20260929-48）；此前 WB-20260929-43（157文件指纹及3个代码前像一致，完成复核输出WB-20260929-45）；此前 WB-20260929-39（新157文件指纹及5个前像全部匹配；完成输出WB-20260929-41）；前轮复核输出 WB-20260929-37 |
-| Claude 已读状态 | **WB-20261011-369**（实读CURRENT头表、交接369与362；写入者无；认领370只读验收，交回370释放）；**WB-20261010-361**（2026-10-11 本会话实读CURRENT头表与复验361；写入者无；认领362存档派单后释放）；**WB-20261010-360**（实读CURRENT与交接360；写入者无；认领361只读复验，交回361释放）；**WB-20261010-357**（实读CURRENT、交接357、派单351批1；写入者无；认领358只读复核，交回358释放）；**WB-20261010-354**（2026-10-10 新会话按序实读 CLAUDE/AGENTS/CURRENT/COLLABORATION、派单351、交接354；写入者无；认领355验收批0，只读审查后交回355释放）；**WB-20261010-347**（2026-10-10 新会话按序实读 CLAUDE/AGENTS/CURRENT/COLLABORATION、v16 DIRECTION；写入者无；认领348做全站UI审计，输出交接348后回读释放）；**WB-20261010-346**（2026-10-10 新会话按序实读 CLAUDE/AGENTS/CURRENT/COLLABORATION；写入者无；认领347做分组签精修，输出交接347后回读释放；未做344复验）；**WB-20261010-339**（按序实读 AGENTS/CURRENT/COLLABORATION/交接339/派单335；写入者无；5178 活跃资源与 dist 一致、主库与收藏指纹不变；认领340，输出验收341后回读释放）；**WB-20261009-331**（2026-10-10 新会话按序实读 AGENTS/CURRENT/COLLABORATION/CLAUDE、交接302–331；写入者无；5178 首页+4资源与dist逐字节一致、主库rev135、收藏state38 SHA与15媒体51,826,422字节一致；认领332，输出派单333后回读释放）；**WB-20261008-300**（2026-10-08 新会话按序实读 AGENTS/CLAUDE/CURRENT/COLLABORATION/交接300与297；写入者无；4 个成果文件 SHA256 与交接300一致；认领301做独立视觉验收，输出302后回读释放）；**WB-20261006-222**（读 CURRENT 与 Codex 219/221/222、1 组前后对照；写入者无；输出223验收后释放）；**WB-20261006-213**（读 CURRENT 与 Codex 交接213、差异表、2 组对照；写入者无；输出214验收后释放）；**WB-20261006-208**（读 CURRENT 与 Codex 交接208、差异表、2 组对照；写入者无；输出209验收后释放）；**WB-20261006-204**（读 CURRENT 与 Codex 交接204、差异表、2 组对照；写入者无；输出205验收后释放）；**WB-20261006-200**（读 CURRENT 与 Codex 交接200、逐区差异、2 组对照；写入者无；输出201验收后释放）；**WB-20261006-195**（读 CURRENT 与 Codex 交接195、逐区差异、2 组对照；写入者无；输出196验收后释放）；**WB-20261006-191**（读 CURRENT 与 Codex 交接191、逐区差异、2 组对照；写入者无；输出192验收后释放）；**WB-20261006-186**（2026-10-06 新会话按序读 CLAUDE/AGENTS/CURRENT/COLLABORATION 第6节/交接176；读 Codex 交接186、逐区差异与 2 组对照图；写入者无；输出187验收后释放）；**WB-20261005-182**（读 CURRENT：Codex 交付179/182、写入者无；登记183后释放）；（本会话持续：174/175 后实读 CURRENT 写入者无、Codex 未认领173，输出176后释放）；**WB-20261005-171**（2026-10-05 新会话按序读 CLAUDE/AGENTS/CURRENT/COLLABORATION 第6节/交接171全文/DIRECTION/三份简报；写入者无；HEAD 15dd5ba，data 哈希一致；认领172，验收168并登记派单173后释放）；此前 **WB-20261005-170**（读 CURRENT：Codex 交付派单168、写入者无；本会话未验收170，留给下一会话；认领并输出171）；此前 **WB-20261004-164**（2026-10-05 新会话按序读 CLAUDE/AGENTS/CURRENT/COLLABORATION 第6节/164恢复说明；写入者为 Claude 未收尾认领；旧回归进程仍在运行未重跑；认领165，输出166 后写后回读并释放）；此前 **WB-20261004-157**（读 CURRENT 与 Codex 交接157；写入者无；最终清单 817 源 + 13 dist 0 漂移，data 哈希不变，HEAD 15dd5ba，依赖未变；认领158）；此前 **WB-20261004-152**（读 CURRENT、派单148、Codex 总交接152；写入者无；最终清单 794 源码 + 13 dist 0 漂移，data 哈希 cf914041… 不变，HEAD 15dd5ba；认领153）；此前 **WB-20261004-145**（读 CURRENT 与 Codex 返修交接145；写入者无；台账 changed 16 文件与 dist 0 漂移，server/依赖无改动，data 哈希 cf914041… 不变；HEAD 15dd5ba；认领146）；此前 **WB-20261004-141**（2026-10-04 按序读 CLAUDE/AGENTS/CURRENT/COLLABORATION/STYLE-GUIDE/统一交接141；写入者无；台账26文件、批次1其余11文件、dist 13文件、data/CURRENT.json 哈希 cf914041… 均 0 漂移；HEAD 15dd5ba；认领142）；此前 **WB-20261003-127**（2026-10-04 读回 Codex 交接125/127；写入者无；协同 5 个文件 SHA256 与交接127一致；HEAD `15dd5ba`，125/127 改动未提交；回档 source-WB127 `321dbcab…` / dist `835a0200…` 存于 evidence-2026-10-04-claude-128/rollback；认领128）；此前 **WB-20261003-121**（新会话按 CLAUDE → AGENTS → CURRENT → COLLABORATION → 交接121 → ui-v14 README 读回；写入者无；HEAD `e4f1233` 工作区干净；预览 SHA256 与 README 一致；认领122）；此前 **WB-20260930-90**（新会话读回 Codex 复核87：A通过、B 5组返修；176文件清单 `eb556480…3ead` 0 漂移；主库 `2457568d…` 仅核哈希；认领91云端接入）；此前 **WB-20260930-86**（读回 Codex 复核 83：A/B 通过、模板已真实收录 v1.0 并回读；172 文件 0 漂移；5178 PID 46572；主库 `2457568d…` 为授权收录；认领 87）；此前 **WB-20260930-82**（读回 Codex 复核 77：D-R2 通过、D-R3 两处残留、回归首败待定位、B 按 v131b 重做；172 文件 0 漂移；5178 PID 46572；主库 `36f1a788…`；认领 83）；此前 **WB-20260930-76**（读回 Codex 2.3 返修复核：D-R2/D-R3 残留、模板通过；166 文件指纹 0 漂移；5178 PID 47747 未重启；主库 `36f1a788…`；认领 77）；此前 **WB-20260929-72**（读回 Codex 2.3 复核：代码 7 项重要、模板 T-R1 阻断/T-S1 建议；165 文件指纹 0 漂移；5178 PID 47747；主库指针 `4a2e75e5…dacdd20` 为用户本人操作；认领 73）；此前 **WB-20260929-64**（新会话读回 Codex D-UI1 复核：通过；160 文件指纹 0 不匹配、清单 SHA256 `f9557502…c64d`；5178 PID 11559 的 HTML/JS/CSS 与 dist 一致；主库指针哈希 `a74e3e05…09db9` 不变；认领 65）；此前 **WB-20260929-60**（读回 Codex UI v12.1 复核：接受 D-UI1；160 文件指纹全部匹配）；此前 **WB-20260929-52**（1.4 复核：Codex 157 文件指纹全部匹配，改动 4 个文件与交接一致；npm test 397/397、独立脚本 24/24、D-KM 连续 10 次 0 失败、visual 无问题；5178 与 dist 一致；主库哈希不变）；此前 **WB-20260929-48**（读回：Codex 1.4 已交接待 Claude 复核；本轮先按用户指令做产品定义梳理，1.4 复核随后进行）；此前 **WB-20260929-41**（读回 Codex 1.3 修复复核，接受 D-S3；157 文件指纹全部匹配）；此前 **WB-20260929-37**（读回 Codex 1.3 复核：157 文件指纹全部匹配；接受 D-S1、D-S2、M-S1 与 D-KM 结论）；此前 **WB-20260929-32**（修复复核：新 154 文件指纹全部匹配，改动 5 文件与交接一致；独立重跑 npm test 381/381、独立脚本 23/23、视觉 problems=[]；5178 PID 11559 与 dist 逐字节一致，dist 与源码重建一致；主库指针哈希不变）；前轮 WB-20260929-28（2026-09-29 新会话读回并复核：154 文件指纹全部匹配，改动 17+6 与交接声明一致；独立重跑 npm test 378/378、独立脚本 23/23、视觉 problems=[]；5178 PID 91061 与 dist 逐字节一致，dist 与源码重建一致；主库指针哈希不变）；此前 WB-20260929-24（本人写入）；首次读回 WB-20260928-02（2026-09-28 Claude Code 桌面端读回；142 文件 SHA256 全部匹配、主库指针与 dist 哈希一致、5178 仍为 PID 13993；尚未认领写入） |
+| Codex 已读状态 | **WB-20261023-623→624→625**（旧REA无未决写入状态误转unknown复现；单后台文件修复，19专项/1528全量/三宽与双轴T2通过；正式467/业务数据保持，仅既有AIHOT周期缓存变化，候选冻结交回释放）； **WB-20261023-621→622→623**（3224文件完整备份、一次停启采用467文件C1；实际三来源/重开/截图独审与最终数据审核PASS，主库940/13便签/13收藏/50项目保持，旧REA提示登记；交回释放）； **WB-20261023-617→618→619**（3220文件完整备份、一次后端停启、465正式文件及实际四行/滚动/取消核验；2744数据仅3运行元数据变化且语义保全，UI风格/扫描根/12便签保持，独立回读释放）； **WB-20261022-615→WB-20261023-616→617**（首败165/99；单处CSS修复，13布局/1515全量/备份与设置/Safari/双轴与T2通过；465候选冻结，正式465和data2744全量保持，回读释放）； **WB-20261022-613→614→615**（3217文件备份、一次后端停启、465正式文件及真实页面/关键零写入路径核验；主库936/12便签/13收藏/50项目保持，既有预览裁切登记，回读释放）； **WB-20261022-613→614**（用户正式采用授权；实读入口/613/Matt合同，先备份后一次重启与实际核验，C不动）； **WB-20261022-611→612→613**（B批F07–F09修复、F10只读条件核查、F11入口治理；1515全量/近1GiB与exact1GiB/浏览器/双轴通过，465候选冻结；正式610及全data保持，回读释放）； **WB-20261015-528→WB-20261016-529**（本轮用户首页/导航指令；基线work/home529；隔离候选不采用5178）； **WB-20261015-526→527→528**（仅准备；616文件备份/隔离恢复校验、原生签名与独立审查通过，正式源/dist/服务/数据未动，交接回读释放）； **WB-20261015-519→520**（入口/派单/批准冻结实读，视觉完整SHA一致，work/floating520保存文件前像；三批隔离实现，不采用）； **WB-20261015-513→514→515**（入口/513/源码/官方资料核对；用户确认自动保存与收起保留；仅文档交接，12保护文件一致，无测试/构建/安装/运行采用；回读释放）； **WB-20261015-507→508→509**（19修改/19候选/6权威冻结，45专项/1314全量/新旧三宽、双轴0/T2；1903保护无范围外变化，正式dist与PID59484保持，交接回读释放）；**WB-20261015-507→508**（实读当前入口/507/503，写入者无，保存dirty文件基线后认领）；**WB-20261014-495→496→497**（实读入口与495派单，认领496；8项返修、最终48冻结无漂移、862保全、交接497及链接回读，释放写入者）；**WB-20261014-495→496**（入口/495实读，无写入者；R4/R5认领，work/reverse496保存dirty前像；放行仅明确AI状态缓存、配置与项目保持禁写；一次Codex额度已授权，Claude真实暂缓，不采用重启）； **WB-20261014-490→491**（487候选23源/19构建，1295全量/19专项/三宽AI与REA作品及R1R2/双轴0/T2通过；851保护、R3继承/PID55062不变，无模型调用或采用；交回释放待Claude读）； **WB-20261014-489→490**（R3交接回读后认领487，基线work/reverse490；先执行权限门禁，再候选与合成回归，不重启/真实AI调用）； **WB-20261014-487→488→489**（R3五项完成，44/1285/三宽与双轴通过；849保护无漂移、PID55062未重启；按用户授权继续487）； **WB-20261014-487→488**（实读入口/477/487，无写入者；先R3后487，有限基线work/reverse488；保留已上线收藏改动与dirty，不重启）； **WB-20261014-473→474→475**（R1/R2完成；最终1279全量/三宽专项与主流程/双轴T2通过，14源17候选冻结；5178与正式dist未采用未改；用户确认插件另改保留，收藏库运行期推进revision70据实记录；交接回读释放，待Claude专项复验）； **WB-20261014-473→474**（入口/473验收实读，无写入者；R1/R2限定返修，基线work/reverse474，继承未提交候选）； **WB-20261014-466→467→468→469→470→471**（462三段连续候选完成；最终1273全量/三宽主流程与更新/双轴T2通过；31源17构建冻结，843保全，5178与数据未采用未改；交接回读后释放，交Claude验收）； **WB-20261014-466→467**（实读入口/协作/462及v4，认领三段连续实现，work/reverse467保存基线）； **WB-20261014-464→465→466**（用户截图明确左右收藏/GET+；单一呈现源码和3既有测试适配，三宽/3专项/独立复核通过；742保全，dist与数据未变，不重启，Chrome重载待验，回读释放）； **WB-20261014-464→465**（用户明确要求紧凑并列双色按钮，当前无人写入；保留44px命中区和原收藏语义，基线work/buttons465）； **WB-20261014-462→463→464**（用户授权GET采用；19源/17构建一致，固定服务一次PID45724→50894/runs8→9，7HTTP/setup1.2.0/实际UI通过；742保全，Kimi仍删除，无GET重提，Chrome重载待验；回读释放）； **WB-20261014-462→463**（入口/协作/460/451实读；当前无人写入，候选19项与17构建核对一致；仅GET采用认领，保留462派单）； **WB-20261013-456→457**（用户授权剪贴板→专用钥匙串回读成功；两权限与应用核对；GET401/10004阻断，首败保留，生产保全，交回释放）； **WB-20261013-455→456**（用户要求自己继续完成；实时核验应用/两项权限/有效关联Key，未读回完整Key）； **WB-20261013-454→455**（隔离探针/安全录入向导/3检查/独立复核；认证待配置，0外部提交，交回释放）； **WB-20261013-453→454**（实读入口/协作/当前状态，无人写入；限定GET两链接验证，不重启生产）； **WB-20261013-449→450→451**（11交付/17候选冻结重建一致，一次PID41099→45724、runs7→8；17磁盘/7HTTP/4API及实际UI回读，数据配置与dirty保全；交接回读释放）； **WB-20261013-449→450**（当前入口/协作及449实读，11文件无漂移；按用户正式采用和一次重启授权认领）； **WB-20261013-447→448→449**（R1–R3完成，1232单元/三宽浏览器/双轴/T2通过，正式dist及主库指针保全；交接回读释放）； **WB-20261013-447→448**（验收447与当前入口/协作实读，保存dirty前像后认领R1–R3）； **WB-20261013-443→444→445**（REA第一阶段候选；1230单元、三宽完整链路/原两浏览器、双轴/T2、756文件189链接保护通过；正式dist/主库指针不变，不重启；交接回读释放）； **WB-20261013-443→444**（入口/状态/协作/派单实读，无人写入，保存现有源码与dist前像后认领）； **WB-20261013-437→438→439**（封面恢复与具体错误5项源码/测试；38单元与2相关浏览器通过、重要恢复缺陷关闭；用户授权一次PID13548→7922；实际封面640×360显示、视频10→34秒推进；原136MB视频/129段/分组/其余4收藏不变；741保护0丢失；交接读回释放）； **WB-20261013-435→436→437**（真实1.1.0两次读取失败后修复；28场景/2浏览器/5单元与只读审查通过；真实39分钟视频136MB及129段文稿保存，封面失败如实partial；Chrome拦截工作台导航，内页播放未验证；740基线保全，真实导入state变化，PID13548不变；交回释放）； **WB-20261013-433→434→435**（统一项目来源标签/计数/筛选；1211/1211、综合/项目/三宽浏览器通过，首败和中断保留；17磁盘5HTTP/实际6-5-1文本回读，真实截图交互受连接故障限制；2065文件189链接保全，收藏state期间外部变化保留不归因，其余220 data不变；原PID13548，交接读回释放）； **WB-20261013-431→432→433**（按用户最新规则两源展示修改；1211/1211、原项目浏览器、三宽来源/原筛选及同场景前后截图通过；真实5178每行一标、17磁盘5HTTP、2065文件189链接与数据保全；PID13548不变，交接读回释放）； **WB-20261013-429→430→431**（两CSS等值令牌修复；4/4令牌、1211/1211完整单元、同场景1440/390字节一致、构建与17磁盘/5HTTP通过；2065文件189链接和数据保全；原PID13548不变；LOCAL/GIT解释未改；交接读回释放）； **WB-20261013-427→428→429**（等待抖音正式采用释放后认领；两源恢复实心来源与已有GitHub关联标识；三浏览器/17磁盘5HTTP/实际1440与390/两轴T2通过；单元1210/1211旧资产6px失败保留；2065文件189链接及主库/收藏/抖音16项保全，动态日志保留；无提交推送重启；正式交接读回释放）； **WB-20261013-425→426→427**（常浩允许一次采用重启；16源/17dist冻结一致、固定Label身份与空闲核验后PID40600→13548仅一次；5HTTP逐字节与实际插件1.1.0说明回读，主库指针/收藏state/依赖保全，旧dist私有前像保存；未真实试写，待Chrome手动重载和抖音首验；写后回读释放）； **WB-20261012-423→424→425**（抖音单条网页收藏16项冻结；10组浏览器与详情补验通过，完整1211项首轮1209通过，HTTP构建环境错配修正后11项通过，剩1既有样式检查在原基线复现；双轴审查无新增，739基线无丢失，正式dist/数据指针/依赖保全；未重启或真实试写，候选交回释放，待采用授权及真实首验）； **WB-20261012-406→407→408**（按用户确认三页范围只诊断；有效设计与本轮11采用图、逐页九维度及独立复核完成；2193无丢失，源/测试/dist/依赖未改，动态使用日志保留，无测试/构建/重启；写后回读释放，等常浩确认施工）； **WB-20261012-404→405→406**（用户允许一次采用；候选无漂移、原API预览拒绝未apply，沿384独立维护一次PID40600；17磁盘/5HTTP/实页新增与编辑双框回读，2191保全和183链接不变，主库收藏不变；旧unknown未改，写后回读释放，不代签真实使用）； **WB-20261012-402→403→404**（两框与name可选兼容、标签UI移除候选完成；1207/七入口/最终9图与双只读审查通过；2191保全、两旧符号链接未改，17生产dist/PID保持402；待允许受控重启采用，写后回读释放）； **WB-20261012-400→401→402**（最新状态及400交接核验；单行删除、2191指纹保全、构建/17磁盘/三HTTP/实际DOM与实图完成，独立只读复核；写后回读释放，无提交/推送/重启）； **WB-20261012-397→398→用户纠正399→400**（误删Cover与橙框版撤回；最新基线只去小块，合并焚决 · 卷名，保留火焰/FJ次数和蓝灰边界；32/14、六宽/长名触屏/复制专项、1206单元/五原入口、review5双轴0发现/T2、17磁盘/5HTTP/实际5178回读完成；2191指纹与主库保全，仅使用日志动态变动，写后回读释放；不代签Claude/常浩）； **WB-20261012-395→396→397**（用户确认双卡高度内滚；261实际前像/2180指纹保全，复制跨筛选与路由锁红绿、1206单元/六浏览器、六宽/12px标签修正、review5两轴0发现与T2通过，17磁盘/5HTTP/真实5178只读采用；动态使用日志保留；正式交接写后回读释放，不代签Claude或常浩）； **WB-20261012-393→394→395**（HANDOFF完整读及入口/状态/协作/Git只读核对，常浩确认后续接；271前像/2179指纹保全、受控首败红绿、1206单元/六浏览器、六宽42+2、review2双轴0发现/T2、17磁盘/5HTTP与实际页只读采用完成；仅使用日志动态变化保留；395交接/CURRENT/tracker写后回读释放，不代签Claude/常浩）； **WB-20261012-389→390**（389实读认领及回读；全部六类三按钮、最终六宽/触屏/复制专项、1206单元/14原入口及最后CSS受影响5入口、两轴0新发现、同构建T2、17磁盘/5HTTP与实际页面只读采用完成；1116保护仅使用日志动态变化保留；交接390与CURRENT写后回读释放，不代签Claude/常浩）； **WB-20261012-388→389**（实读AGENTS/CURRENT/COLLAB及388交接；无人写入，用户纠正直接授权认领389；当前dirty前像和保护指纹保存work/assets389/baseline.json）； **WB-20261012-387→388**（387认领范围回读；两P2红绿关闭、最终5源码/测试冻结、1206单元/14相关浏览器/6宽12对照及3恢复态、两轴与同构建T2、17磁盘/5HTTP和真实现有页面只读回显完成；1116基线仅使用日志动态变化保留，主库指纹相同；交接388与CURRENT写后回读释放，不代签Claude/常浩）； **WB-20261012-386**（按序读回入口/状态/协作及386交接；无人写入；用户追加外层直接复制，认领387并冻结新基线）； **WB-20261012-384/385→386**（384按序实读无人写入→用户直接授权认领385；最终7源码/测试冻结、1206单元/9浏览器/6宽30组对照、两轴及同构建T2、17磁盘/5HTTP和真实空白表单回读完成；保护检查保留期间163焚决/缓存/使用日志动态变化，主库资产数组相同；交接386及CURRENT写后回读后释放，不代签Claude/常浩）； **WB-20261012-384**（本轮按序实读入口/状态/协作及交接384；无人写入，用户直接授权本批资产仓库修改，认领385）； **WB-20261012-382/383**（按入口/状态/协作实读382，无人写入→用户确认调酒本地保守规则认领383；有效red→green、66样本、1204单元、9收藏浏览器、candidate4两轴/T2、5178同服务采用及保护回读；交接384及CURRENT写后回读后释放，不代签Claude/常浩）；**WB-20261011-375**（本轮从373实读→374返修→用户追加B认领375；8项冻结源码/测试、1192串行单元、17浏览器、172扫描场景、实际14页、两轴0发现、同构建T2、17磁盘/7公开HTTP与保护回读通过；交接376及CURRENT写后回读释放；不代签Claude/真人）；**WB-20261011-373**（本轮实读入口、状态与协作；用户截图推翻通过，认领374返修全站扫描协调；旧373只覆盖850ms快切页，相关验收撤回）；**WB-20261011-371**（本轮按序实读入口、CURRENT、协作与371；无人写入；基线369冻结快照与小修差异核清；两轴0发现、1181单元、动效浏览器、5边界、14页扫描和5HTTP字节均通过；认领372仅登记交接，输出373写后回读并释放）；**WB-20261011-369**（362按序认领363，连续完成五段；100源码/测试冻结、1180单元/12浏览器/132六宽截图、双轴与工程T2、17磁盘/6公开HTTP、保护回读完成；交接369与CURRENT写后回读释放，待Claude汇总验收与常浩终验）；**WB-20261011-362**（本轮实读入口、CURRENT头表、协作协议、362/351/361和视觉权威；无人写入，认领363连续五段）；**WB-20261010-360**（358按序实读→359认领仅修R1–R3；最终887/17/7指纹、1176单元、9原浏览器专项、22返修记录、18+6配对图/64字号/19正常与14读取提示Axe、132图及同构建T2、5178静态字节与保护回读完成；交接360与CURRENT写后回读并释放；不代签Claude/真人，不启批2–3）；**WB-20261010-358**（入口、CURRENT、协作6及复核358全文实读；无人写入，357冻结224文件无漂移；认领359仅返修R1–R3）；**WB-20261010-357**（355按序实读→356认领批1；25前端/3测试精修，1175/15套件/专项、69组图/64组字号/同构建T2、5178静态与保护回读完成；交接357写后回读释放；不代签Claude/真人，不启批2–3）；**WB-20261010-355**（本会话按序实读入口、当前状态、协作、验收355、派单351和审计350；无人写入，认领356，基线保存）；**WB-20261010-353**（常浩指示接手352；本会话读回当前状态，按批0实施、验证与交回354后释放）；**WB-20261010-351**（入口、协作协议、派单351/审计350实读；无人写入，认领352，源码与dist基线已保存）； **WB-20261010-346**（344无人写入→345仅文档认领；真实应用可见/资源/指纹回读，无新构建或重启；346交接回读后释放）； **WB-20261010-344**（341按序实读→342认领→用户追加R3扩围343→344返修交回；所需隔离/18组对照/5178静态与保护回读完成；回读后释放，不代签Claude/真人验收）； **WB-20261010-341**（本轮按序实读AGENTS→CURRENT头表→COLLAB第4/6节→验收341全文→派单335 Z2/Z9；状态一致、无人写入；认领342，基线与旧dist已保存）； **WB-20261010-339**（337末次核对发现capability-use动态日志漂移→338仅文档认领→339如实补充；主库/收藏未变，日志未恢复；写后回读并释放）；**WB-20261010-337**（335按序输入→336认领；UI/D1、全量与七专项、叠图、5178字节及保护回读完成；写后再次核对并释放；不代签Claude/真人验收）；**WB-20261010-335**（按序实读入口/头表/协作/派单全文，无人写入；认领336并保存基线与旧dist）； **WB-20261009-309**（输入307无人写入，认领308；全站分层复查、T01/T10状态校正与交接309后回读释放；真实用户旅程待验）；**WB-20261008-305**（本轮回读无人写入；常浩确认通过，认领306、刷新原工作台并读回最终资产；输出307后释放）；**WB-20261008-302**（按序读回入口、CURRENT、协作协议与返修交接；无人写入，认领303并扩围304；本轮输出305后回读释放）；**WB-20261007-265**（用户授权采用；264认领→同Node/目录/数据/端口受控停启，16文件/6HTTP资源、新API及可见页面读回；265交接释放，真人验收分列）； **WB-20261007-263**（262按授权实施→同构建1164/106、额外修复1/1及18对图→263交接；写后核三字段与证据后释放；运行/原生/用户验收分列）；**WB-20261007-250**（读回交接250与用户单次授权，认领251；未代签运行采用）；**WB-20261007-249**（读回N3交接248与正式派单，认领N4；本轮交接250后回读释放）；**WB-20261006-221**（用户追加协同三控件/编辑/直接操作/帮助圈要求，认领延续；旧C验收证据失效，进入修正）；**WB-20261006-220**（实读219无人写入；按用户桌面目标纠正认领，保留历史角色ID，隔离验证）；**WB-20261006-219**（用户授权单次5178检查/重启/验证；旧404→新200，同目录/构建；八阶段线路已见，主库指针与518文件不变；交接回读后释放，停等确认）；**WB-20261006-218**（实读217无人写入；用户单次授权检查/重启/验证5178，旧PID/目录/404已核对）；**WB-20261006-217**（214按序实读→215授权登记→216认领→217工程交付；946单元/84入口/138图、F两轴与J构建T2；头表/成果/保护回读，写入者无，停等确认）；**WB-20261006-216**（输入214按序实读并核对无人写入；215正式登记→216认领及基线SHA回读）；**WB-20261006-213**（从209按序实读，210日历返修→211正式登记→212认领→213交回；925单元/83入口/138图、两轴与同构建T2通过；输出后回读并释放，停等确认）；**WB-20261006-209**（本轮按序实读，输入无写入者，用户确认206；认领210先修R1/P1）；**WB-20261006-208**（206登记→207认领→208工程交付；回读头表、成果与保护证据，写入者无，停等确认；不代签Claude/用户验收）；**WB-20261006-205**（本轮按序实读，输入无人写入；登记206→认领207）； **WB-20261006-204**（202登记→203认领→204工程交付，实际回读头表/成果链接/指针限制；写入者无，停等确认，不代签Claude或用户验收）；**WB-20261006-201**（按序实读；写入者无；用户确认198，登记202→认领203）； **WB-20261006-197**（本轮按序实读AGENTS→CURRENT头表→COLLAB6；写入者无；按用户修正基线登记198，待议功能延后）； **WB-20261006-195**（输入192→登记193→认领194→A/B分片回归与工程交付195；写后回读释放，无代签Claude或用户验收）；**WB-20261006-192**（按序实读AGENTS→CURRENT头表→COLLAB第6节，无写入者；193登记→194认领，基线/设计SHA回读）；**WB-20261006-188**（本轮按序实读AGENTS→CURRENT头部→COLLABORATION第6节，核对无写入者；189登记→190认领、前像与设计SHA回读）；**WB-20261005-184**（实读入口、CURRENT当前状态、协作、183/176与项目空间排队稿，写入者无；认领185）；**WB-20261005-182**（181输入与本人182交回后三字段实际回读；认领释放，不代签Claude或用户验收）； **WB-20261005-179**（173整单回读释放后按正式175认领180）； **WB-20261005-176**（按序实读入口/当前状态/协作/176/173及冻结输入；核对无写入者，认领177）； **WB-20261005-170**（输入168→认领169→工程交付170并回读释放；不是Claude或用户验收）；**WB-20261005-168**（本轮实读入口、CURRENT、COLLABORATION、派单168与全部输入；核对无写入者后认领169）； **WB-20261004-157**（输入155→认领156→C-01～C-11开发、合成完整回归与68组对比→总交接157；写后回读释放；非Claude或用户验收）；**WB-20261004-155**（实读AGENTS、CURRENT、COLLAB第6节、STYLE全文、派单155全文；写入者无；796源码/13dist回档逐项SHA回读；认领156）； **WB-20261004-152**（实际输入150→认领151→切片1/2每片全回归与回档→总交接152，写后回读并释放；非Claude或用户验收）；**WB-20261004-150**（输入148→认领149→切片0完整回归与回档→交接150，写后回读并释放认领；非Claude或用户验收）；**WB-20261004-148**（实际按序读AGENTS/CURRENT/COLLABORATION第6节/STYLE-GUIDE/派单148全文，写入者无；145产品文件0漂移、148源码/dist回档逐项SHA回读，认领149）；**WB-20261004-145**（输入143→认领144→返修与完整回归→交接145，写后回读，写入者无；不是Claude或用户验收）；**WB-20261004-143**（实际读回CURRENT与验收交接第五节，写入者无；143源码/dist已回档逐项SHA回读，认领144返修）； **WB-20261004-141**（输入139→认领140，输出141并回读；批次2/3完成，写入者释放，不是Claude或用户验收）；**WB-20261004-139**（实读137并按用户确认认领138；输出139后回读核对，释放认领；不是Claude或用户验收）；**WB-20261003-127**（本轮从125认领126，完成协同/全部验证/独立复核，写后回读交接127并释放；不是用户验收）； **WB-20261003-125**（本轮按指定顺序实读入口/交接125/123/README，状态一致且无人写入；预览哈希一致，用户确认改为源码点检；保存回档后认领126）； **WB-20261003-125**（本轮从123认领124，完成项目空间并写后回读交接125；不是用户验收）；此前 **WB-20261003-123**（本人实读AGENTS、CLAUDE、CURRENT、COLLABORATION、交接123/121与v14 README；编号一致、无人写入、HEAD15dd5ba且工作区干净；保存回档后认领124）；此前 **WB-20261003-119**（本人输出后须回读确认；输入117 → 认领118 → 回交119）；此前 **WB-20261003-117**（本会话按顺序实际读回入口与交接117；与派发一致，写入者无，Git 工作区干净；认领118）；此前 **WB-20261003-113**（2026-10-03本会话实际读回；编号与派发一致，写入者无；认领114）；此前 **WB-20260930-88**（176文件、11前像匹配，认领89）；此前 **WB-20260930-84**（172文件、13前像及A阶段指纹匹配，认领85）；此前 **WB-20260930-80**（172文件与9前像匹配，认领81）；此前 **WB-20260930-76**（本轮认领75后输出并回读；代码 D-R2/D-R3 未闭合、模板通过；166文件未变）；此前 **WB-20260929-74**（166文件指纹和10个前像匹配，认领75）；此前  **WB-20260929-70**（165 文件及 17 前像一致；用户确认主库新哈希为已知操作）；此前  **WB-20260929-62**（160文件匹配、2个前像一致，认领63，复核输出64）；此前 **WB-20260929-58**（160 文件指纹及三轮前像全部匹配，认领59，复核输出60）；此前 WB-20260929-45（157文件指纹匹配，认领46/扩围47，交接WB-20260929-48）；此前 WB-20260929-43（157文件指纹及3个代码前像一致，完成复核输出WB-20260929-45）；此前 WB-20260929-39（新157文件指纹及5个前像全部匹配；完成输出WB-20260929-41）；前轮复核输出 WB-20260929-37 |
+| Claude 已读状态 | **WB-20261023-627**（实读AGENTS/CLAUDE/HANDOFF/CURRENT头表/COLLABORATION/审查601；写入者无；认领628）；**WB-20261015-515**（实读CLAUDE/AGENTS/CURRENT头表/COLLABORATION/交接515/执行合同/视觉SOP；写入者无；认领516→交回517，回读释放）；**WB-20261015-517**（实读头表；写入者无；常浩批准FN-516 v1，认领518→派单519，回读释放）；**WB-20261015-509**（实读AGENTS/CURRENT头表/COLLABORATION/派单507/交接509；写入者无；认领510）；**WB-20261014-497**（实读CURRENT头表与交接497；写入者无；认领498）；**WB-20261014-491**（实读CURRENT头表与交接491；写入者无；认领492）；**WB-20261014-485**（实读CURRENT头表；写入者无；认领486）；**WB-20261014-483→484→485**（写入者无，认领484改页码样式并上线；回读释放）；**WB-20261014-481→482→483**（常浩确认上线；替换正式dist、线上回读，未重启；回读释放）；**WB-20261014-479→480→481**（写入者无，认领480改页码口径；候选与测试完成，回读释放）；**WB-20261014-477→478→479**（写入者无，认领478做内容文稿分页；候选与测试完成，采用被权限拦截待确认；回读释放）；**WB-20261014-475→476→477**（实读CURRENT头表、交接475/473；认领476复验通过并按用户授权一起采用，一次重启；线上npx阻断交R3；交接回读释放）；**WB-20261014-471**（实读CURRENT头表与交接471；写入者无；认领472验收）；**WB-20261014-460**（实读CURRENT头表；写入者无；认领461）；**WB-20261013-451**（实读CURRENT头表；写入者无；REA第一阶段已采用；认领452）；**WB-20261013-445**（实读CURRENT头表与交接445；写入者无；认领446验收）；**WB-20261013-441**（2026-10-13 实读CLAUDE/AGENTS/CURRENT头表/COLLABORATION；写入者无；认领442只写派单与CURRENT）；**WB-20261012-410**（2026-10-12 新会话按序实读 CLAUDE/AGENTS/CURRENT头表/COLLABORATION/交接408；写入者无；只读截取14页1440图；常浩确认方向后认领411对照稿）；**WB-20261011-369**（实读CURRENT头表、交接369与362；写入者无；认领370只读验收，交回370释放）；**WB-20261010-361**（2026-10-11 本会话实读CURRENT头表与复验361；写入者无；认领362存档派单后释放）；**WB-20261010-360**（实读CURRENT与交接360；写入者无；认领361只读复验，交回361释放）；**WB-20261010-357**（实读CURRENT、交接357、派单351批1；写入者无；认领358只读复核，交回358释放）；**WB-20261010-354**（2026-10-10 新会话按序实读 CLAUDE/AGENTS/CURRENT/COLLABORATION、派单351、交接354；写入者无；认领355验收批0，只读审查后交回355释放）；**WB-20261010-347**（2026-10-10 新会话按序实读 CLAUDE/AGENTS/CURRENT/COLLABORATION、v16 DIRECTION；写入者无；认领348做全站UI审计，输出交接348后回读释放）；**WB-20261010-346**（2026-10-10 新会话按序实读 CLAUDE/AGENTS/CURRENT/COLLABORATION；写入者无；认领347做分组签精修，输出交接347后回读释放；未做344复验）；**WB-20261010-339**（按序实读 AGENTS/CURRENT/COLLABORATION/交接339/派单335；写入者无；5178 活跃资源与 dist 一致、主库与收藏指纹不变；认领340，输出验收341后回读释放）；**WB-20261009-331**（2026-10-10 新会话按序实读 AGENTS/CURRENT/COLLABORATION/CLAUDE、交接302–331；写入者无；5178 首页+4资源与dist逐字节一致、主库rev135、收藏state38 SHA与15媒体51,826,422字节一致；认领332，输出派单333后回读释放）；**WB-20261008-300**（2026-10-08 新会话按序实读 AGENTS/CLAUDE/CURRENT/COLLABORATION/交接300与297；写入者无；4 个成果文件 SHA256 与交接300一致；认领301做独立视觉验收，输出302后回读释放）；**WB-20261006-222**（读 CURRENT 与 Codex 219/221/222、1 组前后对照；写入者无；输出223验收后释放）；**WB-20261006-213**（读 CURRENT 与 Codex 交接213、差异表、2 组对照；写入者无；输出214验收后释放）；**WB-20261006-208**（读 CURRENT 与 Codex 交接208、差异表、2 组对照；写入者无；输出209验收后释放）；**WB-20261006-204**（读 CURRENT 与 Codex 交接204、差异表、2 组对照；写入者无；输出205验收后释放）；**WB-20261006-200**（读 CURRENT 与 Codex 交接200、逐区差异、2 组对照；写入者无；输出201验收后释放）；**WB-20261006-195**（读 CURRENT 与 Codex 交接195、逐区差异、2 组对照；写入者无；输出196验收后释放）；**WB-20261006-191**（读 CURRENT 与 Codex 交接191、逐区差异、2 组对照；写入者无；输出192验收后释放）；**WB-20261006-186**（2026-10-06 新会话按序读 CLAUDE/AGENTS/CURRENT/COLLABORATION 第6节/交接176；读 Codex 交接186、逐区差异与 2 组对照图；写入者无；输出187验收后释放）；**WB-20261005-182**（读 CURRENT：Codex 交付179/182、写入者无；登记183后释放）；（本会话持续：174/175 后实读 CURRENT 写入者无、Codex 未认领173，输出176后释放）；**WB-20261005-171**（2026-10-05 新会话按序读 CLAUDE/AGENTS/CURRENT/COLLABORATION 第6节/交接171全文/DIRECTION/三份简报；写入者无；HEAD 15dd5ba，data 哈希一致；认领172，验收168并登记派单173后释放）；此前 **WB-20261005-170**（读 CURRENT：Codex 交付派单168、写入者无；本会话未验收170，留给下一会话；认领并输出171）；此前 **WB-20261004-164**（2026-10-05 新会话按序读 CLAUDE/AGENTS/CURRENT/COLLABORATION 第6节/164恢复说明；写入者为 Claude 未收尾认领；旧回归进程仍在运行未重跑；认领165，输出166 后写后回读并释放）；此前 **WB-20261004-157**（读 CURRENT 与 Codex 交接157；写入者无；最终清单 817 源 + 13 dist 0 漂移，data 哈希不变，HEAD 15dd5ba，依赖未变；认领158）；此前 **WB-20261004-152**（读 CURRENT、派单148、Codex 总交接152；写入者无；最终清单 794 源码 + 13 dist 0 漂移，data 哈希 cf914041… 不变，HEAD 15dd5ba；认领153）；此前 **WB-20261004-145**（读 CURRENT 与 Codex 返修交接145；写入者无；台账 changed 16 文件与 dist 0 漂移，server/依赖无改动，data 哈希 cf914041… 不变；HEAD 15dd5ba；认领146）；此前 **WB-20261004-141**（2026-10-04 按序读 CLAUDE/AGENTS/CURRENT/COLLABORATION/STYLE-GUIDE/统一交接141；写入者无；台账26文件、批次1其余11文件、dist 13文件、data/CURRENT.json 哈希 cf914041… 均 0 漂移；HEAD 15dd5ba；认领142）；此前 **WB-20261003-127**（2026-10-04 读回 Codex 交接125/127；写入者无；协同 5 个文件 SHA256 与交接127一致；HEAD `15dd5ba`，125/127 改动未提交；回档 source-WB127 `321dbcab…` / dist `835a0200…` 存于 evidence-2026-10-04-claude-128/rollback；认领128）；此前 **WB-20261003-121**（新会话按 CLAUDE → AGENTS → CURRENT → COLLABORATION → 交接121 → ui-v14 README 读回；写入者无；HEAD `e4f1233` 工作区干净；预览 SHA256 与 README 一致；认领122）；此前 **WB-20260930-90**（新会话读回 Codex 复核87：A通过、B 5组返修；176文件清单 `eb556480…3ead` 0 漂移；主库 `2457568d…` 仅核哈希；认领91云端接入）；此前 **WB-20260930-86**（读回 Codex 复核 83：A/B 通过、模板已真实收录 v1.0 并回读；172 文件 0 漂移；5178 PID 46572；主库 `2457568d…` 为授权收录；认领 87）；此前 **WB-20260930-82**（读回 Codex 复核 77：D-R2 通过、D-R3 两处残留、回归首败待定位、B 按 v131b 重做；172 文件 0 漂移；5178 PID 46572；主库 `36f1a788…`；认领 83）；此前 **WB-20260930-76**（读回 Codex 2.3 返修复核：D-R2/D-R3 残留、模板通过；166 文件指纹 0 漂移；5178 PID 47747 未重启；主库 `36f1a788…`；认领 77）；此前 **WB-20260929-72**（读回 Codex 2.3 复核：代码 7 项重要、模板 T-R1 阻断/T-S1 建议；165 文件指纹 0 漂移；5178 PID 47747；主库指针 `4a2e75e5…dacdd20` 为用户本人操作；认领 73）；此前 **WB-20260929-64**（新会话读回 Codex D-UI1 复核：通过；160 文件指纹 0 不匹配、清单 SHA256 `f9557502…c64d`；5178 PID 11559 的 HTML/JS/CSS 与 dist 一致；主库指针哈希 `a74e3e05…09db9` 不变；认领 65）；此前 **WB-20260929-60**（读回 Codex UI v12.1 复核：接受 D-UI1；160 文件指纹全部匹配）；此前 **WB-20260929-52**（1.4 复核：Codex 157 文件指纹全部匹配，改动 4 个文件与交接一致；npm test 397/397、独立脚本 24/24、D-KM 连续 10 次 0 失败、visual 无问题；5178 与 dist 一致；主库哈希不变）；此前 **WB-20260929-48**（读回：Codex 1.4 已交接待 Claude 复核；本轮先按用户指令做产品定义梳理，1.4 复核随后进行）；此前 **WB-20260929-41**（读回 Codex 1.3 修复复核，接受 D-S3；157 文件指纹全部匹配）；此前 **WB-20260929-37**（读回 Codex 1.3 复核：157 文件指纹全部匹配；接受 D-S1、D-S2、M-S1 与 D-KM 结论）；此前 **WB-20260929-32**（修复复核：新 154 文件指纹全部匹配，改动 5 文件与交接一致；独立重跑 npm test 381/381、独立脚本 23/23、视觉 problems=[]；5178 PID 11559 与 dist 逐字节一致，dist 与源码重建一致；主库指针哈希不变）；前轮 WB-20260929-28（2026-09-29 新会话读回并复核：154 文件指纹全部匹配，改动 17+6 与交接声明一致；独立重跑 npm test 378/378、独立脚本 23/23、视觉 problems=[]；5178 PID 91061 与 dist 逐字节一致，dist 与源码重建一致；主库指针哈希不变）；此前 WB-20260929-24（本人写入）；首次读回 WB-20260928-02（2026-09-28 Claude Code 桌面端读回；142 文件 SHA256 全部匹配、主库指针与 dist 哈希一致、5178 仍为 PID 13993；尚未认领写入） |
 
 运行中的任务必须遵循 [COLLABORATION.md](COLLABORATION.md)。登记不是系统锁或实时消息回执。Claude 已读回 WB-20260929-41 并完成 D-S3 修复 WB-20260929-43；Codex 已读回45并按用户授权完成1.4交接48。Claude 已读回48并于53通过1.4复核；Codex 已读回58，认领59并完成三轮 UI 复核输出60（有条件通过）；又读回62，复核D-UI1修复输出64（通过）。没有向另一个客户端发消息。
+## 旧REA提示修复正式采用交回627（2026-10-23）
+
+用户批准625后完整备份3227文件并验证，一次bootout/bootstrap采用release626/PID48730，467文件绑定冻结候选，HTTP9资源正确；只变后台旧状态恢复逻辑，前端dist/61CSS保持。实际Safari WebApp首次进入、刷新、离开返回、窗口关闭重开无误弹；此前旧账本原字节保留，主动检查与一次重新检查均真实执行。新发现GitHub正式tag rea-agents-6.7.0而解析仅剥v，npm同版可用但检查被拦截，故真实预演未通过，未确认更新或写Agent配置。此遗留单列建议下一轮修，未追加改动/第二次重启。业务revision940、13便签、13收藏、50项目、扫描根、目录身份、原生App/草稿/偏好和16配置Skill文件保持；data仅5离线诊断新增及4已解释运行文件变化。实际视觉与独立终审通过；不冒称真实预演通过或用户验收。见[交接627](docs/agents/handoffs/2026-10-23-codex-rea-recovery-adoption-627.md)。写入者无。
+
+## 旧REA预演恢复修复交回625（2026-10-23）
+
+旧身份network_failed被统一转unknown，触发误弹并阻断重新检查。现仅无未决写入且身份明确的旧检查/预演在内存失效，清除旧计划/版本指针；原账本读取不变，用户明确重新检查才持久新结果。已写入/未知/缺失身份/persistencePending与目录再变继续阻断。只改一后台文件，前端dist及61CSS保持；19专项、1528全量、新恢复/既有三宽浏览器、独立双轴/T2及末轮审核均通过，467候选冻结。正式仍622/PID5775，主库940/13便签/13收藏/50项目/扫描根/原生状态保持；2749data仅已有AIHOT三小时刷新缓存变化。未重启/更新REA或改真实配置。见[交接625](docs/agents/handoffs/2026-10-23-codex-rea-preview-recovery-625.md)。唯一下一步待用户确认正式采用，其他C项不做，写入者释放。
+
+## C1统一搜索与直达正式采用交回623（2026-10-23）
+
+用户明确批准后，3224文件完整备份并核验，后端仅一次停启至release622，467文件与621冻结候选一致，9项HTTP资源回读一致。原Safari实际收藏、焚决、逆向当前任务包搜索/直达和⌘K关闭重开通过，截图独审及数据末轮审核PASS。主库940/13便签、收藏131/13条、50项目、原扫描根与原生程序/草稿/偏好保持；原2748data无缺失，3运行元数据变化另加原有逆向页offline doctor诊断1份，业务语义全量保持。旧10月18日REA更新预演提示单列未修，未执行更新。见[交接623](docs/agents/handoffs/2026-10-23-codex-c1-adoption-623.md)。其他C项不做，唯一下一步正常使用，写入者释放。
+
+## 恢复预览修复正式采用交回619（2026-10-23）
+
+用户明确批准后，3220文件完整备份并逐项校验，仅一次停启采用release618，465文件和HTTP资源精确匹配617冻结候选。原Safari WebApp从来源重载，合成ZIP预览四行统计完整，滚动到底部说明及两按钮可见，取消正常，两目标均未创建。主库936/12便签、收藏131/13条、50项目、原扫描根、草稿/偏好保持；2744data仅锁journal/启动日志/原生会话时间三项运行变化，业务语义全量相同。独立候选/备份/实际视觉/最终数据复核通过。未真实恢复/扫描/迁移/刷新AIHOT/开启C批，未改产品源或重建。见[交接619](docs/agents/handoffs/2026-10-23-codex-restore-preview-adoption-619.md)。唯一下一步为常浩正常使用验收，写入者释放。
+
+## 恢复预览裁切交回617（2026-10-23）
+
+仅恢复正文Grid自然行高修复，统计四行完整、原风格与固定操作区保持；新增真实文件选择布局回归。13组布局、1515全量、完整备份恢复、设置六宽、Safari实际核验与独立Standards/Spec/T2均通过。465文件候选已冻结；正式465、真实data2744、扫描根、启动配置及原工作区dist不变，未采用/重启/真实恢复/扫描/迁移，C批未动。详见[交接617](docs/agents/handoffs/2026-10-23-codex-restore-preview-617.md)。唯一下一步为常浩确认是否正式采用，不把候选验证当作正式已生效。
+
+## B批正式采用交回615（2026-10-22）
+
+用户明确批准后，已采用613冻结候选到正式release614，完整备份3217文件/817461589字节并逐文件校验，后端仅一次停启，465发布文件与HTTP资源一致。原Safari工作台/设置/目录面板、原生12便签已保存、合成ZIP预览取消及恢复查询/409范围冲突保护均核验；主库936、收藏131/13条、50项目、扫描根及全部业务内容保持。仅三项启动运行元数据变化已做语义核对。既有1515及专项隔离证据绑定同一候选，C批未开发。
+
+实际复核发现当前Safari恢复预览统计区底部裁切，取消功能正常；区块标记与CSS同旧610，按UI不变要求登记待确认，未扩改。详见[615正式采用交接](docs/agents/handoffs/2026-10-22-codex-b-adoption-615.md)。本轮不做真实恢复、撤权、额外扫描/迁移或第二次重启；唯一下一步为用户正常使用验收。写入者无。
+
+## Codex A批六项修复交回603（2026-10-22）
+
+- 已按用户确认完成601 A批F01–F06：跨页草稿/原ID恢复、异常身份重试、标题搜索定位、收藏读取错误清除/未知导入核对、项目继续/复制前新鲜读取。原UI/CSS和B批、新功能不动。
+- 最终1486全量、27定向、11草稿场景、13生命周期、12右键格式、连接/图片/搜索/收藏/目标/项目七宽回归通过；独立Spec/Standards无未关闭重要项，同构建T2 VISUAL_PASS。首轮既有空PID竞态保留、单项及最终全量通过。
+- 20产品文件；冻结work/audit602/release-candidate 459文件，manifest SHA761b7094869d24b2733d8a575706e2ae04f5ad2036793984f896fdbb6eae1fdf。8组前后测量同版UI、CSS入口SHA完全相同；正式465文件、根dist/依赖/既有dirty保全。
+- [完整交接603](docs/agents/handoffs/2026-10-22-codex-a-fixes-603.md)、[前后对照](work/audit602/ui/report.html)。未正式采用、重启、提交推送或写真实数据；自然使用未代签。写入者释放。
+
+## Codex 便签顶角操作精简590（2026-10-21）
+
+- 单张置顶入口取消、旧单张强制非置顶，整栏钉住保留。右上角复制＋删除改为14px图标/28px按钮/2px间距；删除先保存确认、原子版本校验、未知持久化后仅查询。原UI其他部分不变。
+- 1450全量、12定向、六组格式/生命周期等回归及Mac隔离实际三类型删除通过，Spec/Standards无阻断、局部T2通过。release589/PID43538、原生PID43996各一次停启/启动；461程序与实际界面回读通过。
+- 采用时revision718、11便签、1图片、草稿和偏好完整保持；后续719/10为用户明确确认手动删除1条，其他内容不变，不回滚。基线1052无范围外产品变化，HEAD与既有dirty保留。见[交接590](docs/agents/handoffs/2026-10-21-codex-notes-actions-590.md)；写入者释放。
+
+## Codex UI局部修复候选交回565（2026-10-19）
+
+- 用户五图要求已实现：仅删页头提示标签、保留介绍；首页摘要贴近标题；同排项目槽等宽等高、空态一致；AIHOT最新10条逐条日期，来源不足如实显示。原3条由24h窗口真实来源量导致，7d可得10条。
+- 1393全量、最终33专项、8宽32布局及相关四套浏览器通过；Spec/Standards无未关闭阻塞、T2通过。20项改动、19构建、437完整候选冻结；9收藏扩展与563原版一致。
+- [交接565](docs/agents/handoffs/2026-10-19-codex-ui-layout-565.md)，证据work/ui564。831保护项无计划外变化；正式563/根dist/真实数据指针保持。未采用、重启、提交、发消息；Claude与用户验收待完成，写入者释放。
+
+## Codex UI修复正式采用569（2026-10-19）
+
+- 常浩明确免Claude验收并授权采用/一次重启/实际页面验证。基于正式567保留7设计源和9收藏扩展，叠加565 UI10源重新构建，437文件全部核对。
+- 1395单元/8宽32布局/AIHOT与设计浏览器通过，独立包审查与T2通过。release569已运行，PID50745→59259，仅一次bootout/bootstrap；公开资源匹配，实际窗口5页验证完成。AIHOT18:20刷新为10条真实精选，10条日期齐全。
+- 主库revision670、身份、随手记程序/偏好保持；未试写真实业务数据。[交接569](docs/agents/handoffs/2026-10-19-codex-ui-adoption-569.md)，证据work/ui568与本聊天outputs。用户自然验收单列，写入者释放。
+
+## Codex 设计类型正式采用563（2026-10-19）
+
+- 用户“确认”后采用冻结设计前后端，release563、PID23349；一次bootout/bootstrap，公开资源逐字匹配。原主库revision669指纹/目录身份、随手记程序与偏好保持。
+- 预检拦住候选缺少9个旧收藏扩展文件；从555原样补齐，最终437/437独立核验通过，未混入旧构建包。首败与纠正在work/design562/review.md。
+- 数码世界桌面已刷新，设计筛选/新建/Skill包上传/Prompt模式实际可见，取消空表单未保存。真实Skill安装和生图未执行，用户自然使用待验。
+- [交接563](docs/agents/handoffs/2026-10-19-codex-design-adoption-563.md)；私有新鲜备份与旧555保留，未提交推送或发送消息；写入者释放。
+
+## Codex UI局部修复认领564（2026-10-19）
+
+- 用户直接要求修复五张截图；最新澄清只删除红框提示标签，保留一句介绍。输入563、写入者无已核验；基线work/ui564/baseline.json与before保留原dirty。
+- 限定src/components.jsx、src/LifePages.jsx、src/home-v16.css、src/projects-v16.css、src/ProjectsV16.jsx，以及server/aihot.mjs、src/aihot.js、src/pages.js、NotesV16、NightV16和相关测试与交接。用户确认最新精选10条逐条标日期：7d&limit10，原序，原文日期缺失明确标收录日期，范围不足如实说明。
+- 沿用现有视觉与用户截图，Gate1 SATISFIED_BY_EXISTING_AUTHORITY，生图0；使用implement、visual-app-development-sop、code-review。功能接缝为共享页头、首页布局、项目槽、AIHOT缓存呈现，保留访问/写入门禁。
+- 仅合成fixture/隔离服务和候选dist；不改正式release563/dist、重启5178、主库/私人Agent/Vault、依赖、提交推送。全量回归、相关浏览器、前后同宽截图/几何与T2；Claude和用户验收单列。
+
+## Codex 设计类型C候选交回561（2026-10-19）
+
+- 用户选择C并授权实现：新增Design两形态、完整ZIP上传、先检查/安装后生图与直接调用两种复制；固定粉色像素画框，原卡片/三操作位置保持。
+- 1389全量、设计完整路径、三项原资产浏览器回归通过；三宽几何/Axe与T2通过，两轴最终重要0。跨类型名称锁死缺陷已修复，首败保留。
+- 冻结`work/design560/release-candidate`428文件与final-manifest；起始408运行输入匹配release555，795保护项无范围外变化。正式服务/数据未采用或重启，未安装调用真实Skill。
+- [交接561](docs/agents/handoffs/2026-10-19-codex-design-type-561.md)；`work/design560/ADOPTION.md`备妥。正式采用、Claude/用户验收待办；写入者释放，未发送消息。
+
+## Codex 智能体群修复交回538（2026-10-16）
+
+- 536七项失败全部修复：正文/摘要检索、完整容量与最新决定、来源顺序、分批扫描、缺技能目录/配置兼容、Skill未知撤回历史恢复。补充迁移后目标/文件/Skill状态核对、可复制接手材料、复制前重读与漂移阻断。
+- 全量1369/1369、独立真实HTTP12/12、迁移54/54、真实接力/迁移各6场景、旧五宽/六宽回归通过。Spec四项P2及Standards一项P2已关闭，同构建T2 VISUAL_PASS，未代签Claude或用户。
+- 冻结候选work/agents537/candidate-dist及final-manifest.json；正式19资源、5178首页、HEAD保全。未写真实Agent配置/凭据/会话，未启动真实AI、采用、重启或提交推送。真实原生加载、MCP认证与调用、真人接续效果仍未验证。
+- 534是局部接口/流程逆向，不是炉子底层算法全还原；此前简化导致用户目标遗漏，已纠正验收范围。530/528待采用候选保留；本轮干净合成预览http://127.0.0.1:57428/#agents。见[交接538](docs/agents/handoffs/2026-10-16-codex-agents-repair-538.md)。写入者释放。
+
+## Codex 智能体群复刻候选交回534
+
+- 已实现会话筛选、12/40轮可编辑接力与Codex/Hermes四类迁移、查询和撤回。58专项、新六宽/旧五宽、真实HTTP合成文件链路通过；双轴重要0，T2通过。首轮全量1342/1343，既有PID竞态单项复查通过，首败保留。
+- [交接534](docs/agents/handoffs/2026-10-16-codex-agents-continuity-534.md)、[审查与证据](work/agents533/reviews.md)、[最终清单](work/agents533/final-manifest.json)。正式19文件/5178与530源9文件保护回读一致；无真实Agent读写或正式采用。Claude与用户验收待完成；写入者已释放。
+
+## Codex 智能体群复刻认领533
+
+用户已明确要求复刻。修改范围：智能体群、接力提示与会话读取、Agent迁移适配及其路由、专项测试和交接。固定基线 work/agents533/baseline.json；既有dirty原样保留。使用 implement 与 visual-app-development-sop，继承现有卡片、表单、抽屉、预览确认组件，不另造视觉方向。仅合成资料和隔离适配器验证；不读取或写入真实Agent内容，不构建到正式dist、不重启5178。
+
+## Codex 炉子REA定向取证交回532（2026-10-16）
+
+- 已按用户授权确认/agents实际入口，将B38A从community对齐并回读；免费预检ready；唯一新运行c8c51efd已completed，旧包保留，busy=false/persistencePending=false。
+- 自动结果到路由/接口候选；独立补读实际脚本、桌面桥接与有限原生模板字符串，区分资产迁移、历史会话迁移、提示词接力。底层写入和目标真实接续未验。
+- 本轮未改源码/dist、未重启采用、未写真实Agent配置或提交会话。530/528待验保留。[交接532](docs/agents/handoffs/2026-10-16-codex-luzi-rea-532.md)。写入者释放。
+
+## Codex 首页与连续侧栏候选交回530（2026-10-16）
+
+- 按本轮用户明确要求完成：侧栏去工作/生活区分组；个人收藏紧接资产仓库；首页1资产仓库、2收藏、3待处理、4AIHOT。数据只读摘要，来源未知/失败不报空，保留原快捷入口和记一笔。
+- 候选work/home529/candidate-dist；首页17场景与导航通过，两轴重要0、T2视觉通过。全量1330/1331，既有OS测试读空PID竞态单项复查通过，首败及稳定性待办保留，不称全量一次通过。
+- 814保护项无变化；正式dist/公开运行资源/HEAD一致，未采用、重启、安装或改真实数据。当前源码含528待采用候选，不能整包直接覆盖正式页。[交接530](docs/agents/handoffs/2026-10-16-codex-home-overview-530.md)；常浩内容确认、Claude复核与正式采用待办，写入者释放。
+
+## Codex 桌面随手记上线准备交回528（2026-10-15）
+
+- 按常浩“先准备，Claude视觉复核通过后再确认正式接入和安装”执行。限定备份616文件约25.75MB，含正式前端、526候选、相关源码、159功能前server前像与revision197主库检查点；隔离恢复616/616及App签名通过，独立只读复核通过。
+- [交接528](docs/agents/handoffs/2026-10-15-codex-floating-notes-release-prep-528.md)、[上线与回退执行单](docs/agents/handoffs/evidence-2026-10-15-codex-floating-notes-release527/RELEASE-PLAN.md)。默认回退程序保留新便签及草稿；采用前刷新备份。个人应用目录落点已预检，尚未安装。
+- 526候选未改；正式dist/主库指针/源码/依赖/HEAD保全，服务PID29709/runs4不变，9项公开HTTP匹配。未采用、安装、自启、重启或提交推送。Claude视觉与正式授权仍待；写入者释放，未发送消息。
+
+## Codex 基本使用修复交回526（2026-10-15）
+
+- 常浩收窄为点球开关和便签正常使用，停止快捷键/全屏测试。用户确认“能收起再打开，文字还在”；原生删空重写、连续输入、撤销重做、保存回读、空白草稿和已保存内容退出重开均通过。
+- 修复NoteEditor被原生DOM重排后卸载的黑屏路径；1331单元、8项针对回归及便签/富文本/悬浮页浏览器通过。修复一项测试跨场景断网注入竞态，不改保存逻辑。
+- 新前端`work/floating524/candidate-dist`、原生`work/floating524/native-basic/随手记.app`；preview.command已指向新版。全屏实验撤回，原生源码/构建脚本恢复524基线。全屏已知未通过、真实中文候选窗点击未验，不作为本轮通过项。
+- [交接526](docs/agents/handoffs/2026-10-15-codex-floating-notes-basic-fix-526.md)、`work/floating524/final-manifest.json`、`native-basic-results.json`。合成预览53056保留；正式页面/服务/真实数据未采用，未安装自启提交。写入者释放，未向Claude发消息。
+
+## Codex 真机故障修复认领525（2026-10-15）
+
+- 用户回报：全屏球仍显示，但物理ControlOptionN可打开便签；中文输入测试出现空白网格。CUA两次确认HTML页面存在但便签根UI缺失，首败图/AX/诊断/草稿前像保留于work/floating524/first-failure。
+- 范围扩为这两项缺陷的最小修复：NoteEditor、原生宿主与相应回归；仅work新构建/合成服务，不改冻结视觉稿、523产物、正式dist/服务/数据、依赖。start_head仍e6e5d8b74474ea408ebb171ab70415e32d57ada4。
+- 工程测试边界：真实编辑器输入与DOM重构后的页面存活/保存，系统全屏状态与悬浮球可见性。技术测试结构由Codex负责；不能用合成组合事件代签系统候选点击。
+
+## Codex 原生三项验证认领524（2026-10-15）
+
+- 用户明确要求继续补齐中文候选窗、全局快捷键、全屏隐藏，视觉复核交Claude。输入523的93项固定清单全部匹配。
+- 范围：work/floating524隔离数据与证据、CURRENT、交接文档；发现实现缺陷再记录精确证据与最小修复。无需修改视觉稿或正式数据/服务。
+- 基线：work/floating524/baseline.json、git-status-before.txt；保留全部既有dirty。完成标准：真实系统输入/全屏路径及持久化回读，不能用静态审查代替。
+
+## Codex 桌面随手记批3交回523（2026-10-15）
+
+- 三批工程候选已形成，批1/2单独交接保留；1331/1331、隔离浏览器/共享编辑器、原生几何与恢复区检查通过。
+- 实机已证实中文粘贴/撤销重做/自动保存、离线壳重试、左吸边及正常退出重开位置。真实候选窗、全局热键/全屏等仍待验证，不能标记可采用。
+- [总交回523](docs/agents/handoffs/2026-10-15-codex-floating-notes-batch3-523.md)、[状态对照](work/floating520/report.html)、[原生验证矩阵](work/floating520/native-verification.md)、[合成预览说明](desktop/floating-notes/README.md)。Claude需裁定复制例外/44px/J/未知文案后做最终T2。
+- 786保护项无范围外变化；正式dist19文件/主库指针/依赖/HEAD不变。未安装自启、未重启5178、未提交推送；测试进程已清理，写入者释放。
+
+## Codex 桌面随手记批2交回522（2026-10-15）
+
+- 独立便签栏、自动保存/恢复、同条冲突、未知先查询、双窗口恢复锁与离线退避重连已完成；批2浏览器与共享编辑器回归通过。
+- [批2交回522](docs/agents/handoffs/2026-10-15-codex-floating-notes-batch2-522.md)、[逐状态对照](work/floating520/report.html)、29项冻结`work/floating520/batch2-manifest.json`。复制例外/44px/J离线组合交Claude T2判断。
+- Codex520继续批3；原生候选可构建，部分真机行为仍待验证。不改正式dist、不重启、不安装、不提交。
+
+## Claude 桌面随手记派单519（2026-10-15）
+
+- 常浩原话：“确认 FN-516 v1 视觉稿及三项推荐（失焦收起+钉住、置顶且全屏隐藏、⌃⌥N），请形成给 Codex 的实施派单。”批准记录与冻结哈希已写入[设计说明](docs/design/floating-notes/README.md)。
+- [派单519](docs/agents/handoffs/2026-10-15-claude-floating-notes-dispatch-519.md)：批1 单条便签写接口（幂等新建、按正文基准判冲突、不改schema、网页端revision过期刷新）；批2 便签栏页面复用NoteEditor，九态+“服务未启动”；批3 AppKit/NSPanel/WKWebView宿主，吸边、失焦收起与钉住、输入法不误收、全屏隐藏、⌃⌥N。不安装、不加登录项、不替换数码世界.app。
+- 本轮仅文档；未改源码/dist/数据/依赖/服务。写入者已释放，未向Codex发消息，待其读取。
+
+
+## Claude 桌面随手记悬浮球视觉稿517（2026-10-15）
+
+- 按515交接出视觉稿 FN-516 v1：[视觉稿与交互演示](docs/design/floating-notes/floating-notes-v1.html)、[设计说明](docs/design/floating-notes/README.md)、shots/ 截图与 checks.json（13/13 PASS）。沿用随手记便签纸/暖黄编辑/像素铅笔 mark_pencil，零生图。
+- 球：52pt 深墨蓝圆片+胶带+像素铅笔，状态点黄（草稿）/红（失败或需选择）；栏：368×600，新建条+最新在前便签列，点哪条改哪条，自动保存无“贴上”；覆盖空/多条/长中文/编辑/保存中/草稿/失败/冲突。
+- T1a 7条（6修1拒）、T1b 1条已修，READY_FOR_USER_APPROVAL。待常浩确认视觉对象及三项推荐；确认前不派单不实现。未改源码/dist/数据/依赖/服务，未安装重启提交。
+- [完整交接517](docs/agents/handoffs/2026-10-15-claude-floating-notes-visual-517.md)。写入者已释放。
+
+
+## Codex 桌面随手记需求与调研交回515（2026-10-15）
+
+- 常浩新增Mac桌面悬浮球，点击多条便签栏直接填写，与现有随手记共用数据；明确选择自动保存、收起保留内容。
+- 小孩便签官方已更名云小记，桌面便签/贴边隐藏可借鉴，圆形悬浮球未获官方证实，按用户新增入口设计。现桌面入口为Safari Web App；建议轻量原生窗口+同源便签页，共用state.notes。草稿持久恢复、跨窗口刷新和冲突处理待开发。
+- 沿用项目Claude定方向/Codex开发分工；新增视觉需审核及常浩确认后实施。本轮仅交接文档与CURRENT，12保护文件一致；无源码改动、测试、构建、安装、重启、真实数据试写或消息发送，不代签Claude接手或验收。
+- [完整交接515](docs/agents/handoffs/2026-10-15-codex-floating-notes-research-515.md)。513已有运行状态与逆向R1/S1/S2保留，未顺带处理。写入者已释放。
+
+
+## Claude 507上线513（2026-10-15）
+
+- 常浩“授权上线”；重建dist与509候选逐字节一致；无子进程；kickstart一次PID59484→29709；公开资源与数据指针回读一致。见[Claude513：507已上线](docs/agents/handoffs/2026-10-15-claude-reverse-precheck-adoption-513.md)。写入者释放。
+
+## Claude 复验507 511（2026-10-15）
+
+- 工程复验通过；隔离真实免费预检通过（mismatch、候选/agents、5,177ms、AI 0次、revision不变）。R1测试健壮性、S1文案、S2 toast遮挡为非阻断项。见[Claude511：507复验通过+真实免费预检](docs/agents/handoffs/2026-10-15-claude-reverse-precheck-recheck-511.md)。写入者释放。
+
+## Codex候选交回509（2026-10-15）
+
+- 免费网站精确预检、同源候选改存回读启动、同次AI线索词及逐词采纳复用完成；未知启动响应保留ID查询，补CAS冲突空目录恢复。
+- 专项45/45、全量1314/1314，新流程及原AI/REA作品三宽、Spec/Standards0未闭合、T2通过；冻结19修改/19候选/6权威。见[交接509](docs/agents/handoffs/2026-10-15-codex-reverse-precheck-clues-509.md)、[对照图](work/reverse508/report.html)。
+- 1903基线保全，正式19文件dist与501采用版相同、5178 PID59484不变。未调用真实AI或真实Chrome，未改真实数据/配置、未采用重启。Claude/用户验收仍待完成，写入者释放。
+
+## Claude 派单507（2026-10-15）
+
+- 首次真实炉子逆推：修复生效、list_browser_targets成功，但目标网址与Chrome页面不一致，Codex按规则停在匹配阶段（输入110,367/缓存83,712/输出2,374）。常浩批准：免费预检+一键改用已打开页面；线索词由AI逆推时顺带解析。见[Claude507：网站免费预检+AI线索词派单](docs/agents/handoffs/2026-10-15-claude-reverse-precheck-clues-dispatch-507.md)。写入者释放。
+
+## Claude 重启生效505（2026-10-15）
+
+- 常浩“授权重启”；一次kickstart，503修复生效，回读正常。见[Claude505：重启生效](docs/agents/handoffs/2026-10-15-claude-restart-505.md)。写入者释放。
+
+## Claude Codex审批拒绝修复503（2026-10-15）
+
+- 线上首次炉子网页逆推失败：Codex `-a never` 自动拒绝需审批的 list_browser_targets。修复：为5个REA读工具加 approval_mode=approve；真实对照通过；1303/1303；仅服务端，待授权重启。见[Claude503：Codex审批拒绝修复·待重启](docs/agents/handoffs/2026-10-15-claude-codex-approval-fix-503.md)。写入者释放。
+
+## Claude 逆向AI执行器上线501（2026-10-15）
+
+- 常浩“授权上线”。重建dist与497候选逐字节一致；预检无子进程；kickstart一次PID4000→39698；逆向页REA读数恢复、数据指针不变。旧dist在work/claude-adopt500/before-live-dist。见[Claude501：逆向AI执行器已上线](docs/agents/handoffs/2026-10-15-claude-reverse-ai-adoption-501.md)。写入者释放。
+
+## Claude 复验R4/R5 499（2026-10-15）
+
+- 通过。真实Codex经工作台原生执行器跑通（中文路径、配置与夹具不变、用量输入39.9万/输出6.6千tokens）。见[Claude499：R4/R5复验通过·真实Codex端到端成功](docs/agents/handoffs/2026-10-15-claude-reverse-ai-recheck-499.md)。写入者释放。
+
+## Codex R4/R5返修交回497（2026-10-14）
+
+- R4已放行AI自身状态与npm缓存，配置/所有项目及其他运行数据仍拒写；补符号/硬链接与目标重叠防护。真实路径发现的Swift中文临时目录trap与setuid ps沙箱清理阻断已修，未扩大写权限或修改系统工具。
+- R5替换为本机OpenAI包的蓝紫Codex应用原图，保留名称；来源与验签限制已披露。最终1302/1302、专项21/21、三宽浏览器、双轴0未闭合、T2 VISUAL_PASS；8项本轮改动，24源+5R3+19候选冻结。
+- 两次真实Codex：首次Swift失败；第二次结果校验通过但REA首调用仍有清理错误。最后ps修复通过真实REA直接调用exit0、无清理错误；最终组合未再调用模型，交Claude一次Codex复验。Claude Code真实与Swift编译中取消覆盖仍待验。
+- 862基线无丢失/范围外修改，正式17文件dist与5178 PID55062未变，目标夹具与配置元数据不变；未采用/重启/提交/推送。详见[交接497](docs/agents/handoffs/2026-10-14-codex-reverse-ai-repair-497.md)与[前后对照](work/reverse496/report.html)。不代签Claude/用户验收，旧待办保留，写入者释放为无。
+
+## Claude 真实Codex冒烟495（2026-10-14）
+
+- 常浩授权只跑Codex。根因：外层sandbox-exec禁止Codex写自身状态与REA经npx写缓存；放行~/.codex与~/.npm后真实逆推成功、结果通过严格校验。返修R4/R5见[Claude495：真实Codex冒烟·沙箱需放行AI状态目录](docs/agents/handoffs/2026-10-14-claude-reverse-ai-smoke-495.md)。写入者释放。
+
+## Claude 复验R3+AI执行器493（2026-10-14）
+
+- R3与R1真实通过；487工程部分通过；外层沙箱可能挡住真实AI写自身状态，待第二部分真实冒烟验证。见[Claude493：R3通过·AI执行器工程通过·真实AI冒烟待授权](docs/agents/handoffs/2026-10-14-claude-reverse-ai-recheck-493.md)。写入者释放。
+
+## 2026-10-14 · Codex491 · R3与487只读AI逆推候选交回
+
+- 先R3（489），再487（490→491），本轮已完成工程候选；默认Codex/Claude Code/仅REA选择、实时短日志、严格结论未知项、版本回退与固定Skill。
+- 23源/19候选+R3继承5冻结：work/reverse490/manifest.json；1295/1295、19专项、三宽AI/原REA作品/R1R2通过，两轴0、T2 VISUAL_PASS。
+- 851保护基线无丢失或范围外变化；HEAD与5178 PID55062未变，正式dist/真实数据不采用。无真实AI/REA调用、无重启/安装/配置改写/提交推送。
+- Claude尚未读取或验收；真实两CLI冒烟先获额度授权，正式采用与重启待后续授权。详见最新491交接。
+
+## Codex AI执行器认领490
+
+用户授权先R3再487，前置489已完成。487严格只读CLI与进程树隔离为实施前门禁；记录work/reverse490/contract.md，候选和假CLI测试隔离，正式PID55062与数据不动。
+
+## Codex R3工程交回489
+
+服务可从精简PATH定位npx并补齐Node路径；MCP探针同修，launch错误可读503。44相关、1285全量、三宽提示和双轴通过；五项冻结见work/reverse488/r3-manifest.json。正式dist/数据/PID55062保持，未采用；继续487，见最新交接。
+
+## Claude 逆向页AI执行器派单487（2026-10-14）
+
+- 常浩要求在逆向工程里按参照图加“选择AI执行”（真实图标与名称：Codex、Claude Code），在工作台内完成逆推；确认：工作台直接调用所选AI命令行、只读分析不动任何项目。AGENTS.md“日常执行留在原生Agent”的原则经常浩同意仅对逆向页放开。
+- 派单要点：codex exec / claude -p 只读执行、用各自已注册的rea MCP、终端实时显示动作、结果为严格JSON（结论/未知项/任务包）；与REA取证/更新共用单运行锁；先完成R3并用同法定位codex与claude。本机实测：codex 0.160.1 在/opt/homebrew/bin，claude 2.1.285 在nvm路径。
+- 未改业务代码；写入者释放。见[Claude487：逆向页AI执行器派单](docs/agents/handoffs/2026-10-14-claude-reverse-ai-runner-dispatch-487.md)。
+
+## Codex 逆向v4返修交回475
+
+- 473 R1/R2完成：doctor合法JSON解析统一8MiB，≥72KiB exit1 identity夹具覆盖runner状态/开始及更新检查；短命令、逐文件单行进度、短证据可展开/复制、JS文件统计及旧记录兼容。
+- 最终1279/1279，1440/390/320专项与原主流程通过；Spec/Standards 0未关闭问题，T2 VISUAL_PASS。14源/17候选无漂移，首败留存。详见最新交接与work/reverse474/report.html。
+- 正式dist、主库指针与5178 PID50894未动；用户确认收藏插件另一项改动，保留。终核收藏库有11:18:49完成导入、revision70，本轮只读保留，不宣称其与基线一致。无真实REA/setup/更新/配置/提交/推送；候选未采用。
+- 唯一下一步Claude仅复验R1/R2和合成夹具真实冒烟，后续采用/首次真实目标取证由常浩授权；其他既有待验保留。交接回读后写入者释放为无。
+
+## Codex 473返修认领474
+
+R1/R2按验收单闭环，合成大doctor/真实格式进度先红绿，保留完整argv和证据；全量及受影响三宽/双轴T2。start_head和前像见work/reverse474，正式5178不动。
+
+## Claude 验收逆向v4 473（2026-10-14）
+
+- 471清单48项0漂移；全量1273/1273。首次用真实REA 6.4.0对合成迷你Electron夹具冒烟：分析、摘要字段、线索追踪均成立。
+- R1阻断：本机doctor退出码1（未装Hopper/Ghidra属常态）且输出68KB，reverse-process在exit≠0时只解析<64KB → 误判下载失败；取证status()与更新doctor()都走此路径，常浩机器上两功能均不可用。R2：终端显示完整npx argv、临时文件路径与逐文件英文进度，真实大应用会刷屏。
+- 证据：docs/agents/handoffs/evidence-2026-10-14-claude-reverse-v4-acceptance-473/。未改业务代码，写入者释放。见[Claude473：逆向v4验收不通过·R1/R2返修](docs/agents/handoffs/2026-10-14-claude-reverse-v4-acceptance-473.md)。
+
+## Codex 逆向v4最终交接471
+
+派单462按段1→2→3连续完成，468/469/470逐段交接。最终1273/1273单元、4令牌、1440/390/320软件/作品/Skill与更新18分支流程通过；规范/派单双轴无未关闭问题，同构建T2通过。31源/17候选冻结无漂移；843基线保全，正式dist/主库/收藏不变，5178仍PID50894，未真实REA、更新配置、安装、提交或推送。[总交接471](docs/agents/handoffs/2026-10-14-codex-reverse-v4-final-471.md)。工程/视觉不代签Claude或用户验收，唯一下一步Claude验收逆向v4。
+
+## Codex 逆向v4段3交接470
+
+固定版本检查/预演/适配/确认/doctor回读与持久恢复完成；最终1273单元、三宽主流程和更新异常、双轴/T2通过。候选31源/17构建冻结，正式5178不采用不重启。继续持笔完成总交接。[交接470](docs/agents/handoffs/2026-10-14-codex-reverse-v4-segment3-470.md)。
+
+## Codex逆向v4段2交接469
+
+v4单线/任务包/固定Skill及旧数据兼容完成，1261全量、三宽和旧FN专项通过；隔离构建，正式服务不变。继续持笔进入段3。[交接469](docs/agents/handoffs/2026-10-14-codex-reverse-v4-segment2-469.md)。
+
+## Codex 紧凑双色收藏按钮466（2026-10-14）
+
+- 按用户截图要求，插件左右“收藏 / GET+”，64×44px、6px间隔、青/紫区分；完整状态在按钮上方显示，原收藏/GET逻辑保持。
+- 小红书GET、插件异常恢复、抖音三浏览器专项及1440/390/320与独立只读复核通过；首败与修正证据保留。742基线无范围外变化，正式dist/数据不变，无重启/配对修改/远端试写。
+- [交接466](docs/agents/handoffs/2026-10-14-codex-compact-collection-buttons-466.md)、[按钮效果](work/buttons465/after-ui/buttons-detail.png)。Chrome需重新加载同一1.2.0插件并刷新详情页，真人效果及自然使用待验；GET464采用与462/441待办保留。写入者释放。
+
+## Codex GET正式采用464（2026-10-14）
+
+- 常浩“允许并重启”：460冻结19项源/17项候选无漂移，正式dist采用并保存17项旧构建；固定LaunchAgent只重启一次PID45724→50894/runs8→9。
+- 7公开HTTP逐字节、setup1.2.0、health、实际收藏页插件说明与独立复核通过。state/主库指针不变，revision63、4有效/5回收，Kimi保持删除，无GET重提；742基线保全。
+- 460的1241单元/三宽/双轴/T2按相同字节复用，非本轮重跑。Chrome插件需本人重新加载1.2.0、刷新作品页，真实自然使用及真人验收仍待。
+- [交接464](docs/agents/handoffs/2026-10-14-codex-get-adoption-464.md)。本次重启授权已用完，写入者释放；462逆向v4派单与441待验保留，无提交/推送/安装/镜像修改。
+
+## Codex GET正式采用认领463（2026-10-14）
+
+常浩明确“允许并重启”。范围：460冻结候选dist正式采用、固定LaunchAgent一次重启、只读运行及数据保护验证、work/get463证据和交接。无产品源码变更；不再提交GET真实样本，不恢复Kimi，不改既有GET/Obsidian镜像。基线与dirty保全见work/get463/baseline.json；start_head沿用e6e5d8b74474ea408ebb171ab70415e32d57ada4。
+
+## Claude 逆向v4派单462（2026-10-14）
+
+- 常浩否决v3（太乱、到处争抢），确认v4：工作台在本机直接跑REA（不含模型），终端显示真实过程，跑完出复刻任务包；不选伙伴/项目；主线到任务包为止+可选存成Skill（去掉打分与达标门禁）；作品同一条线无终端；一键更新沿用v3约定。
+- 落档：[简报v4](docs/design/ui-v16/briefs/02-reverse-v4.md)、视觉稿docs/design/ui-v16/reverse-v4/、[Claude462：逆向v4派单](docs/agents/handoffs/2026-10-14-claude-reverse-v4-dispatch-462.md)。v3简报标为已取代。
+- 未改业务代码；写入者释放。
+
+## GET收藏候选460（2026-10-14）
+
+鉴权已自主解决；抖音3022字、小红书2323字GET整理正文与网页及新适配器全文一致。实现双按钮、先本地后GET持久任务、同卡解析Tab、安全连续阅读、搜索与MCP来源。1241/1241单元、三宽浏览器和原路径回归通过，双轴无实质缺陷，T2同构建通过；查询时间建议暂缓且不冒充健康状态。
+
+736保护无丢失/范围外变化，正式dist/收藏state不变，Kimi仍删除，5178未重启。19项源/17候选冻结见[交接460](docs/agents/handoffs/2026-10-14-codex-get-candidate-460.md)、[前后与使用](work/get459/report.html)。唯一下一步是具体正式采用/一次重启授权。写入者释放；Claude质量/真人验收未代签。
+
+## Codex GET鉴权阻断457（2026-10-13）
+
+- 当前剪贴板完整Key已在用户授权下安全保存至专用钥匙串，并回读一致；未回显/落盘秘密。应用、关联Key、个人类型与两权限均核对。
+- GET拒绝此组凭据：HTTP401/code10004；两头格式及系统curl对照一致。没有重复提交。小红书首次URLError保留未知，抖音明确401拒绝，无成功task/note。
+- 真实整理正文验证及生产接入尚未完成。生产相关源码与收藏state哈希保全，无重启/安装/提交/支持消息；已删除Kimi未恢复。见[交接457](docs/agents/handoffs/2026-10-13-codex-get-auth-blocked-457.md)。下一步为GET鉴权层核查，写入者释放。
+
+## Codex GET接入前置验证455（2026-10-13）
+
+- 用户“OK推进”后，先行验证契约、隔离API探针及本机安全录入向导完成；并发提交保护首败已修复，3隔离检查/独立只读复核通过。
+- 已知GET认证位置无可用两项凭据；没有发GET请求或创建笔记。两链接与完整解析核对尚未执行，生产双按钮/Tab尚未实现。
+- 现有收藏与相关源码不变，Kimi保持删除。无安装/重启/提交/推送。[交接455](docs/agents/handoffs/2026-10-13-codex-get-preflight-455.md)。等待用户完成账户授权与隐藏录入后再认领；既有453/441待验保留。
+
+## Claude 逆向页v3设计453（2026-10-13）
+
+- 常浩要求：逆向工程可一键从GitHub更新REA；按REA重新设计这页，必要时推倒重来。经问答确认：更新取GitHub正式发布版；终点为双终点（炼成Skill / 落地到项目）；三套黑白结构草图中选B双台。
+- 产出：[简报v3](docs/design/ui-v16/briefs/02-reverse-v3.md)、docs/design/ui-v16/reverse-v3/（结构草图、解剖台与更新预演1440/390视觉稿、样式层、生成脚本）。视觉稿基于v16真实外壳/页头/标本架/发车条，只用现有令牌，两宽无横向溢出。
+- 未改业务代码；未派单（等常浩确认）。写入者释放。
+
+## Codex REA正式采用451（2026-10-13）
+
+- 常浩明确授权构建、正式采用及5178一次重启。11完整交付无漂移，新17文件与449候选逐字节一致；旧dist归档work/rea450/before-live-dist。
+- 固定LaunchAgent/PID/目录和空闲预检后仅一次kickstart：PID41099→45724，runs7→8。17磁盘、7公开HTTP、4组只读目标检查API、CUA正式页面REA控件/网站提示回读完成；未提交真实记录或运行REA。
+- 824保护无缺失/范围外变化，主库指针/收藏state/plist不变；449的1232单元/三宽/双轴/T2以相同源和构建复用。HTTP首次枚举错误与修正保留，不改路由、不重复重启。
+- [交接451](docs/agents/handoffs/2026-10-13-codex-rea-adoption-451.md)。本轮采用完成且一次授权用完；下一步选定并授权真实REA试用/真人验收。441待验独立，447无需Claude复验。
+
+## Codex REA返修交回449（2026-10-13）
+
+- 447 R1–R3完成：网站独立Chrome/CDP指引和复制命令、64位真实证据与短示例拒绝、证据徽标标识。6项源码/测试/契约最小修改。
+- 1232/1232全量单元、1440/390/320完整浏览器与截图专项通过；独立双轴0发现、同构建T2通过。首败与12张前后图保留。
+- 正式dist和5178未采用/未重启，主库指针与范围外工程文件不变，源/构建0漂移；无真实REA取证、安装或提交。
+- [交接449](docs/agents/handoffs/2026-10-13-codex-rea-repair-449.md)、[前后对照](work/rea448/report.html)。447明确无需Claude复验；下一步常浩授权正式采用并真实试用，441待验独立。
+
+## Claude 验收REA第一阶段447（2026-10-13）
+
+- 445的11项交付0漂移；逆向单元50/50、全量1230/1230通过。任务包参数与本机真实rea MCP schema逐项对照正确；目标检查只lstat；炼成边界符合。
+- 有条件通过，返修交Codex：R1网站路线需告诉用户另开独立资料目录的调试端口Chrome（list_browser_targets必填cdp_endpoint，日常Chrome没有）；R2证据ID按REA真实格式改为64位，保留16位示例使照抄被拒；R3证据徽标加“证据”标识。
+- Claude未改业务代码，未运行取证/重启/提交。见[Claude447：REA第一阶段有条件通过](docs/agents/handoffs/2026-10-13-claude-rea-acceptance-447.md)。
+
+## Claude REA接入派单443（2026-10-13）
+
+- 常浩要求把REA（morluto/rea）融进逆向工程，确认：装REA；第一阶段只做Electron/网站；工作台本地侦察不做。方向：工作台仍不调模型、不跑REA，FN新增“本机软件（REA）”取证，任务包交本机Codex/Claude Code，回贴带Evidence ID与未知项的FN配方，复刻/评分/炼成沿用。
+- 经授权执行 rea setup：~/.claude.json 与 ~/.codex/config.toml 加 rea MCP（6.4.0，备份 .rea.backup），skill装入；doctor两客户端aligned，Ghidra/IDA未装。只读冒烟Claude.app asar：需integrity_policy record-and-continue，72秒/107MB输出，故工作台不存原始输出。
+- 业务代码未改；派单与验收标准见[Claude443：REA接入派单](docs/agents/handoffs/2026-10-13-claude-rea-dispatch-443.md)。写入者释放。
+
+## 文稿与连续阅读采用441（2026-10-13）
+
+- SenseVoice本地多语言优先；视频去图片文字，正文/文稿连续下拉；Agent返回实际命中文稿上下文及时间、全文不截断。1222/1222单元、相关浏览器、冻结两轴和T2通过。
+- Kimi同作品隔离视频764段，搜索/Agent读回与Chrome实际画面/时间跳转通过。普通句子改善，Agent Swarms/MuonClip等专名仍可能错漏，用户知晓后批准采用，未宣称全片准确。
+- 一次授权重启PID7922→41099，正式资源与候选一致；真实state revision63/4有效/5回收逐字节不变，Kimi保持删除。旧文稿未自动重跑；无提交/推送/外传。写入者释放，常浩使用及Claude验收未代签。见[交接441](docs/agents/handoffs/2026-10-13-codex-transcript-reading-441.md)。
+
+## 抖音封面与播放闭环439（2026-10-13）
+
+- Kimi封面已本地保存并显示，mediaStatus ready；实际工作台跳转播放正常。视频字节、129段文稿、分组及其余4条收藏保持，详见[交接439](docs/agents/handoffs/2026-10-13-codex-douyin-cover-playback-439.md)。
+- 38项收藏单元、2相关浏览器及只读审查完成；一次授权重启PID13548→7922已采用。741保护基线0丢失；本条故障闭环，真人/其他作品验收分列。以下437为历史记录，封面和播放限制已由本次实测更新。
+
+## 抖音真实收藏复验437（2026-10-13）
+
+- 真实1.1.0修复数组播放地址及同作品视频数据补全；28场景、两个浏览器回归、5单元通过，用户重载后实际导入一条39分钟视频及129段文稿。
+- 封面下载失败，整体partial；工作台导航被Chrome拦截，内页播放未核实，不宣称全链路全部正常。实际结果与开放项见[交接437](docs/agents/handoffs/2026-10-13-codex-douyin-live-437.md)。无重启、提交或依赖变化，写入者释放。
+
+## 抖音网页收藏正式采用427（2026-10-13）
+
+- 常浩明确允许一次采用并重启；425的16项源/测试与17项候选无漂移，当前5178空闲和固定常驻身份核验后仅重启一次，PID40600→13548。
+- 正式dist/5公开HTTP逐字节一致，产品指纹前后一致，实际收藏“插件”弹窗显示1.1.0及抖音操作说明；主库指针/收藏state哈希不变，旧dist保存在work/douyin426/before-dist。
+- [正式采用交接427](docs/agents/handoffs/2026-10-13-codex-douyin-adoption-427.md)。425的隔离验证及1项既有样式失败边界保留。Chrome扩展安全限制无法代替用户重载，真实抖音导入及Claude/常浩验收仍待；本次重启授权已用完，写入者释放为无。
+
+## 抖音网页收藏候选交回425（2026-10-13）
+
+- 插件1.1.0复用点击/拖拽导入，支持抖音视频、图文及收藏弹层；按作品去重、SPA防串条、来源与媒体校验、失败/未知反馈。超过20张图明确拒绝，未做批量同步。
+- 10组浏览器与390/1440详情补验通过；完整单元首轮1209/1211，HTTP环境错配已独立修正复验11/11，剩1项原有资产样式检查在原基线复现。两轴冻结审查无新增问题。
+- 739基线无丢失/范围外变化，16项审查无漂移，正式dist与真实库指针、收藏state、依赖未改。候选在work/douyin424/dist，5178未重启，真实Chrome/抖音首验未完成；不代签Claude/常浩验收。
+- [交接与使用说明](docs/agents/handoffs/2026-10-13-codex-douyin-425.md)。唯一下一步：常浩决定是否允许一次受控重启采用；Chrome扩展重载需本人操作。写后回读释放为无。
+
+## 抖音网页收藏认领424（2026-10-13）
+
+输入423，无写入者；用户直接授权功能开发，沿用现有收藏视觉与配对权限。范围 browser-extension/collection、server/collection及媒体/来源适配、collection UI文案/类型、必要MCP ID兼容、tests、候选构建及项目交接。根串行写；子代理只读。start_head与全部现状前像见 work/douyin424/baseline.json、before/。
+
+可观察结果：抖音收藏列表打开作品后，点浮动按钮或拖拽到工作台，按作品ID去重保存文案/作者/来源/可获取媒体；不读Cookie、不绕过登录、批量同步不在本轮。失败与未知分别呈现，原小红书/分组/回收保留。测试边界为扩展消息→导入API→收藏展示与本地媒体，使用合成临时资料和隔离适配器；先红绿、全量单元与受影响浏览器，再双轴审查及运行页核对。不安装新依赖/提交/推送/外部写入/真实库试写。
+
+## 采用423（2026-10-12）
+
+- 常浩“采纳”422。dist 构建，5178 三个公开文件 HTTP 与磁盘一致，正式 dist 下四个焚决/资产回归通过，5412 已停。写入者释放为无，未提交。[交接422](docs/agents/handoffs/2026-10-12-claude-scroll-entry-422.md)
+
+## Claude 焚决条目排布认领421（2026-10-12）
+
+- 输入420（写入者无）。按常浩样图改条目排布；“复制 N 次”文案改“已复制 N 次”、逐条复制按钮由 32px 方钮改为图标+文字，相应测试断言同步更新。
+
+## 采用420（2026-10-12）
+
+- 常浩“采纳”。dist 已构建，5178 三个公开文件 HTTP 与磁盘 SHA 一致；正式 dist 下 6 个相关浏览器回归通过；5412 已停。写入者释放为无，未提交。[交接419（含采用节）](docs/agents/handoffs/2026-10-12-claude-scroll-card-419.md)
+
+## Claude 窄屏修复+焚决卡细节候选419（2026-10-12）
+
+- 依常浩逐条指示实现（去橙框→沿边像素火焰→按样图改为四角静态像素火苗 20×26）；6 个相关浏览器回归指向候选构建全部通过，测试未改；正式 dist/5178 未动。[交接419](docs/agents/handoffs/2026-10-12-claude-scroll-card-419.md)
+
+## 焚决卷框候选被否418（2026-10-12）
+
+- 常浩：“有点奇怪，和本页面格格不入。我觉得改偏了。”（左侧竖签+卡中套框+虚线新增行）。Assets.jsx 与 assets-quick-copy.css 已按 work/ui-scroll417/baseline 还原（SHA 一致，Codex 未提交改动保留）；测试未改；候选 dist 删除。窄屏修复保留在 src 待看。
+
+## Claude 窄屏修复+焚决重设计认领417（2026-10-12）
+
+- 输入416（写入者无）。Assets.jsx/Scrolls.jsx/scrolls.js/assets-quick-copy.css 含 Codex 386–410 未提交改动，基线按当前字节保存，在其上修改、不回滚。
+
+## 常浩否决并还原416（2026-10-12）
+
+- “不采纳，还原，不做了”。src 6 文件 SHA 与 work/ui-polish414/baseline 一致、git 无改动；候选 dist 删除，5412 停止；正式 dist/5178 未动、无提交。写入者释放为无。
+
+## Claude 两页细节打磨候选415（2026-10-12）
+
+- 4 文件候选（Calendar.jsx、calendar-v16.css、KnowledgeV16.jsx、knowledge-v16.css），构建至 work/ui-polish414/dist；正式 dist/5178 未动，无提交。
+- 回归：calendar-todo、knowledge、knowledge-agent-bright 浏览器通过；calendar-v16-browser 在候选与正式 dist 上同样失败于既有 motion“reduce SVG稳定”，去掉该步后两者均通过；相关单元 21/21。
+- 追加：常浩截图反馈 797 宽中枢重叠。经核为正式版既有缺陷（761–1000 旧规则覆盖竖排），已在候选中删除该规则并复核 7 个宽度、重跑 3 个知识浏览器回归。
+- [交接415](docs/agents/handoffs/2026-10-12-claude-ui-polish-415.md)。写入者保持 Claude 直至常浩决定。
+
+## Claude 两页原页细节打磨认领414（2026-10-12）
+
+- 输入413（写入者无）。常浩：“这四条都说对了……继续优化这两页，再一次我们看下效果”。范围限知识仓库、日历两页源码与样式；6 个文件基线已存 work/ui-polish414/baseline/（含 SHA256SUMS），均无他人未提交改动。
+
+## 常浩否决对照稿413（2026-10-12）
+
+- 常浩：“都别改，都不如之前”。知识仓库、日历保持原样；`work/ui-sample411/` 仅留作反面参考。
+- 教训：按规则推导出的结构重排（压缩中枢主视觉、复制液晶屏、加提示条/右栏卡片）会损失原页的焦点、留白和整体质感；原液晶屏的价值在于它独一份，不应复制。只改了 CURRENT，写入者仍为无。
+
+## Claude 知识仓库/日历对照稿交回412（2026-10-12）
+
+- 输入411认领→输出412。对照汇总页可切换改前/改后；改后稿侧栏/页头为实截图，主区为新稿；知识仓库含默认/搜索中两态，日历按本机实时时间运行。
+- 只写 work/ui-sample411/、交接与 CURRENT；src/测试/dist/server/数据/依赖未改，未重启5178，未提交推送；原有 dirty 保留。临时 5411 预览服务已停。
+- [交接412](docs/agents/handoffs/2026-10-12-claude-ui-sample-411.md)。唯一下一步：常浩看稿确认方向。写入者释放为无。
+
+## Claude 知识仓库/日历对照稿认领411（2026-10-12）
+
+- 输入410（写入者无）。常浩反馈：液晶屏与资产仓库最好，其余页“为形式而形式”或“太朴实”。Claude 提出“每页一个活的信号（真实数据驱动、小而精、有边界），其余内容为主”，不做 v14f/v17 式全站换皮。常浩答复“按你推荐的来，先做知识仓库和日历对照稿”。
+- 范围：只新建 `work/ui-sample411/`（截图与对照 HTML）、交接文档与本文件；src/测试/dist/服务/数据/依赖均不改，不重启 5178，不提交推送。
+
+## 三页UI有限打磨工程交回410（2026-10-12）
+
+- 输入408→认领409→交回410；常浩明确确认收藏→首页→资产有限清单。收藏两行控制栏/当前组可见；首页提醒分层与协同阶段、仅非必要间距；资产文字及六类两行/单选键盘。空组、批准方向、352/728/32、装置徽章及业务逻辑/数据保持。
+- 1207/1207串行单元、七相关浏览器首轮通过；Standards两令牌修正后首页复验通过，final2 Spec/Standards各0，同最终构建T2限范围VISUAL_PASS。三页1440/390、首页全页与表单前后；收藏1轮/首页2轮/资产1轮。
+- 最终9源/测试+17dist匹配，五公开HTTP逐字节一致，原5178/PID40600未重启；实际只读三页/空表单取消，提交区内滚与Tab可达。2217文件/183链接保护，旧bundle前像保存、主库收藏/服务/依赖及既有dirty保持，动态使用日志保留。无提交/推送/安装或真实测试写入。
+- 首页待处理提前88px但仍低于844首屏约2px，408完整首屏候选未达成，未擅缩装置；真机软键盘/读屏及Claude和常浩验收未完成。首次非公开theme素材HTTP探针404保留，五正式公开URL通过，未改服务。
+- [交接410](docs/agents/handoffs/2026-10-12-codex-ui-polish-410.md)；[前后报告](work/ui-polish409/report.html)。唯一下一步常浩使用验收，写入者释放为无。
+
+## Codex 焚决头部局部精简工程交回400（2026-10-12）
+
+- 按用户两次纠正恢复Cover/大火焰、FJ/总次数、卷标/标签与原三操作位置；仅去独立卷名和条数段落，类型行合并焚决 · 名称，8px紧跟图标。橙框/书脊/暖色背景撤回，原蓝灰边界、条目留白分隔、底部弱叠页；32px/14px逐条例外，728内滚/352普通/12px标签/详情和复制语义保持。
+- 完整1206/1206单元、五原入口、最终完整焚决专项/六宽/Axe/触屏长名、三操作专项通过。最后两条局部CSS仅重验视觉下游，JS字节不变，行为QA沿用依据qa-adoption-final；review5双轴0发现，T2 VISUAL_PASS，撤回旧版结果不当验收。
+- 最终17磁盘/5公开HTTP字节一致，实际心法Cover1/FJ01/总5/合并标题1/条数p0/32x32icon14/原次数2,3，原PID97328不重启。2191既有指纹无丢失、主库指针不变，仅授权文件/使用日志变化，保留不回滚；无提交/推送/安装/真实测试增删或Vault/Agent私有读写。
+- [交接400](docs/agents/handoffs/2026-10-12-codex-scroll-header-400.md)、[最终前后报告](work/assets398/report.html)。本地工程与静态采用完成；Claude质量审查及常浩使用/视觉验收待做，历史待验保留。写后回读释放写入者，无跨客户端消息或虚构接手。
+
+## Codex 焚决外层浏览与逐条复制工程交回397（2026-10-12）
+
+- 728px卷卡内滚，首行派生名称、完整正文、已有标签/复制次数与44px逐条复制；普通卡352px，详情/App/schema/后端不改。同卷会话锁跨筛选/路由，拒绝不计次、未知不重放，P2有效红绿关闭。
+- 1206/1206单元、最终焚决专项及五原入口通过；最终六宽几何/滚动/键盘/Axe、构建、review5双轴0发现、T2 VISUAL_PASS。标签仅局部改12px，视觉下游重验，未受影响行为QA沿用依据见qa-adoption-final.json。
+- 17磁盘/5HTTP逐字节一致，实际心法2条只读回显，原PID97328不重启；2180既有指纹无丢失、261实际前像，只有授权文件与使用日志变化，日志保留不回滚。无提交/推送/安装/真实测试增删或Vault/Agent私人读写。
+- [正式交接397](docs/agents/handoffs/2026-10-12-codex-scroll-preview-397.md)、[可读前后报告](work/assets396/report.html)。工程与静态采用完成；Claude质量验收/常浩使用验收待做，其他历史待验边界保留。写后回读释放写入者，不声称另一客户端已接手。
+
+## Codex 焚决外层浏览与逐条复制认领396（2026-10-12）
+
+- 用户直接授权优化并施工。一卷承载一类简短高价值提示词；卡面显示全部未删除条目，首行派生名称、完整正文、已有标签/复制次数，逐条复制完整正文。按双普通卡高度728px与内部纵向滚动实现，普通卡仍352px，详情保留。常浩已明确答复“双卡高度、内部纵向滚动”。
+- 基线HEAD不变，work/assets396/before与baseline保存既有dirty和保护指纹。范围src/Assets.jsx、资产CSS、必要合成测试/证据/dist、单票/tracker/CURRENT；生产后端、schema、ScrollDetail不改。沿用数码世界组件/样式/素材，视觉path3，不新增风格或生图。
+- 测试seam为隔离资产页真实控件与公开仓库回读；覆盖逐条成功计次/拒绝/未知/双击与整卷锁、六宽滚动/键盘/标签/空卷、普通卡不拉长及详情不变，再一次全量单元、构建/受影响浏览器/同构建T2/5178只读采用。
+
+## Codex 资产仓库固定网格工程交回395（2026-10-12）
+
+- 输入393→认领394→输出395，固定网格/无视图切换、352px留白及Pin橙色收尾完成；394生产只修帮助，旧SSR/UI断言和受控执行测试修复，生产执行逻辑未改。
+- 22定向、1206/1206完整串行单元、六项受影响浏览器最终通过。旧254夜巡背面选择器首败保留，仅定位/等待适配，原几何阈值未变。受控首败复现为启动观察窗口假设，历史具体I/O不冒认。旧393的16浏览器结果保留，余十二项复用不谎称重跑。
+- 最终构建17文件/5公开HTTP逐字节一致；原5178/PID97328未重启，实际6卡、帮助与聚焦只读回读完成；六宽42+2记录/13夹具图/2实际图、review2双轴0发现及同构建T2限范围VISUAL_PASS。见[正式交接395](docs/agents/handoffs/2026-10-12-codex-assets-grid-final-395.md)、[报告](work/assets394/report.html)。
+- 271前像与2179指纹保留，2169不变/9授权修改/0缺失；范围外仅使用日志动态变化不回滚，主库其余指纹相同。无安装/提交/推送/重启/真实测试增删/Agent或Vault操作。Claude/常浩未验，386/384待验保留；写后回读释放。
+
+## Codex 资产仓库393收尾续接394（2026-10-12）
+
+- 本会话01a12ef1-a0c3-76e2-8829-2b3d22396aad按HANDOFF完成只读核对，常浩明确确认继续。输入393，原中断认领Codex保留；9/9冻结文件及7个当前源码/测试匹配，无新增漂移，进程核对仅见原5178/PID97328，没有遗留测试/截图进程。
+- start_head=e6e5d8b74474ea408ebb171ab70415e32d57ada4。接手19项tracked dirty及未跟踪内容保留；271份源码/文档/测试/dist前像、2179项文件指纹及Git差异存于work/assets394/before与baseline.json。旧work/assets391首败、review3与392证据不覆盖。
+- 拟修改src/Assets.jsx帮助、work/assets391/contract.md、tests/digital-world-ui.test.mjs、tests/ui-final-254-browser.mjs、tests/ui-user-258-browser.mjs；受控执行先诊断，再决定最小技术处理，不改变业务/权限规则。必要回归、最终dist与证据、tracker及交接属于本轮。测试seam为原SSR/隔离页面及受控执行公开start/probe/stop，沿用既有合成适配器。
+- 继承现有数码世界、固定网格、六类三项32px/14px操作、编号/表单/复制/恢复语义、Pin橙色和352px留白。Gate1继承既有权威，生图预算0。权限仅本机修改/构建/合成隔离验证及5178只读回读；不安装、提交、推送、重启，不测试性写真实资产、Agent、Vault或读取凭据。Claude及常浩验收不代签。
+
+## Codex 资产卡片留白与置顶反馈认领391/392/393（2026-10-12）
+
+- 输入390，用户直接要求置顶按钮悬停也有颜色，以及单个卡片拉长、内容更舒展。本轮沿用现有数码世界结构/素材/色板；置顶橙色与已置顶状态统一，网格卡片约352px并增加内部和卡片间留白。
+- 拟改src/Assets.jsx、src/assets-quick-copy.css、src/styles.css的资产列表/切换残留样式及必要定向测试，dist及本地状态/交接/证据；其余交付逻辑、三个32px/14px操作、默认隐藏及全部类型覆盖沿用390。默认/悬停/键盘/已置顶、六宽两布局的既有浏览器回归和全量单元，前后截图及同构建视觉复核。
+- 393用户最新决定：直接删除列表视图，默认统一网格卡片。移除两个视图切换及组件内layout状态/分支，清除仅资产页使用的列表/切换CSS，三项专项去掉已删除视图的用例并保留网格、复制和恢复断言。源码确认原layout仅useState，无持久化迁移。前像before-grid-only及manifest已保存。
+- 392复核扩大仅测试定位：usage-browser首败为卡片/详情同时出现相同未知文案，原全页文本定位产生strict-mode冲突；限定本测试正在操作的详情，保留相同业务断言。Pin候选1只边框橙色、悬停图标仍受ui-v14通用未选中按钮颜色覆盖，按真实匹配规则修正优先级；首败与候选1证据保留。
+- 无其他写入者，实际dirty及保护前像见work/assets391/baseline.json和before；本机范围，无新依赖/提交/推送/重启/真实测试增删/Agent或Vault操作。用户决定是当前微调基线，Claude和常浩验收不代签。
+
+## Codex 全资产三操作工程交回390（2026-10-12）
+
+- 用户最新纠正已落实：全部六类三个32px按钮/14px图标；复制紧邻删除，默认隐藏、悬停/聚焦显示，触屏可见。Skill/MCP/焚决直接交付入口补齐。覆盖388的常驻/仅三类/44px旧口径，保留386/384待验。
+- 1206单元、14原浏览器通过；最后列表留白调整后的最终构建重跑受影响5入口及2复制专项。两轴0新发现、命名P3关闭，同构建T2限本票VISUAL_PASS。完整证据/首败/范围见[交接390](docs/agents/handoffs/2026-10-12-codex-assets-hover-actions-390.md)及[报告](work/assets389/report.html)。
+- dist17文件SHA `38f64d6dc3c3c892e009e0419812fccd88323b4921c514bed5698c4f351634ad`；5178/PID97328未重启，5项公开HTTP逐字节一致，实际页面6卡每卡三个32px且默认隐藏已回读。仅刷新/聚焦截图，无真实测试复制/增删。1116保护仅data/capability-use.json动态变化保留，主库指纹相同。未安装/提交/推送/操作Vault或真实Agent/凭据。
+- 写入者已释放，待Claude实际读取/质量审查、常浩使用验收，不代签。
+
+## Codex 全资产悬停操作认领389（2026-10-12）
+
+- 用户最新决定覆盖388的常驻/仅正文三类口径：复制紧邻删除；Skill、Prompt、Workflow、Rule、MCP、焚决卷都提供复制/删除/置顶；三按钮32px，桌面默认隐藏、悬停/键盘聚焦显示，触屏可见。用户明确要求缩小，记录为44px旧规范的局部例外。
+- [03单票](docs/agents/assets-warehouse/03-hover-actions.md)定义交付与验证：正文沿用固定版本；Skill沿用完整包安装口令；MCP直接复制公开结构化配置定义，不代选/写目标；焚决复制全部未删除条目，逐条计次沿用主库保存门禁。
+- start_head=e6e5d8b74474ea408ebb171ab70415e32d57ada4；现有dirty前像、旧dist及保护指纹见work/assets389/before与baseline.json。仅本机修改/构建/合成隔离验证及原5178回读；不提交/推送/安装/重启，不操作真实测试数据、Agent、Vault或凭据。
+
+
+## 资产卡片外层复制工程交回388（2026-10-12）
+
+- 输入386→认领387→交回388；Prompt/规则/工作流卡片常驻44px直接全文复制，固定版本/引用、成功计次、失败反馈、真实双击防重及卡片/详情共享未知记录恢复均已实现。共享样式与旧内容保留，Skill/MCP/焚决原交付规则保留。
+- 最终1206/1206串行单元、14相关浏览器通过；最后令牌调整后的外层专项/使用/仓库/布局复跑，其余源代码无变的入口不重复；6宽网格/列表12对及3稳定恢复态/Axe通过。两轴Spec新增0/P2闭合，Standards硬违反0/P3维护建议1暂缓；同构建T2限定VISUAL_PASS。
+- 最终17dist/5公开HTTP一致，PID97328未重启；用户现有浏览器已加载最终JS/CSS，5张Prompt卡片复制框可见。真实界面只读，剪贴板和写计次路径为隔离合成验证，真人使用待验。
+- 1116项保护基线，仅capability-use动态日志变化原样保留，其余真实主库/服务/依赖/既有dirty指纹保留；无提交/推送/安装/重启、Agent/Vault/凭据或收费操作。旧386、384待验状态保留。
+- [交接388](docs/agents/handoffs/2026-10-12-codex-assets-quick-copy-388.md)；[前后图与首败/审查/T2](work/assets387/report.html)。写后回读释放为无，Claude及常浩验收未代签。
+
+## 资产仓库外层复制认领387（2026-10-12）
+
+- 输入386，用户截图Prompt卡片要求不用打开详情即可复制到剪贴板。本票为现有正文复制的外层入口，Prompt/Rule/Workflow沿用既有复制语义与固定版本计次；Skill包交付、MCP目标配置、焚决逐条复制未改。
+- 拟改src/Assets.jsx、src/AssetUsage.jsx、资产页CSS、定向浏览器测试、dist与单票/状态/交接；沿用现有按钮与数码世界视觉，生成预算0，无新方向。复制按钮常驻、至少44px、网格/列表及6宽不与置顶/删除/序号重叠。
+- 技术seam：隔离真实HTTP页面按钮→剪贴板全文回读→固定版本计次；复制拒绝不计次、记录失败保留待核对、快速双击不重复记录。复核发现详情与卡片的待核对状态未同步，纳入同资产入口共享锁及恢复状态修复；样式按页归属。保留真实数据与其动态使用变化。
+- start_head=e6e5d8b74474ea408ebb171ab70415e32d57ada4；基线work/assets387/baseline.json。权限仅本机实施、构建与隔离验证/既有5178回读；无安装/提交/推送/重启，不读写真实Agent/Vault/凭据，不读取系统剪贴板旧内容。
+
+## 资产仓库本地交回386（2026-10-12）
+
+- 用户直接授权的四项改动已完成：未删除同类从01连续编号（含焚决卷）、Prompt在Skill前且全部/全空新建默认Prompt、去掉新建说明与来源输入、标签支持中英文逗号和空白。ID、引用、旧来源/版本及未修改的多词标签保留。
+- 1206/1206串行单元、9组浏览器入口和6宽专项通过；30组同状态前后图，候选2两轴无阻断，继承视觉的同最终构建T2限本票VISUAL_PASS。旧移动列表描述裁切前版亦存在，未改CSS；不声称全列表无裁字或真机通过。首败不覆盖。
+- 最终dist17文件SHA清单724b16bc8223581c5113660bdfbc0fd45e9feea02aeefdc550feff6aa45f8687；5178/PID97328未重启，5HTTP逐字节一致。真实页面同JS已见4个Prompt为01—04、新建表单顺序/删栏/标签占位；仅打开并取消空白表单，无真实测试增删。
+- 本票外源码/服务/测试、依赖锁与接手dirty指纹保留。期间真实主库162→163仅revision/scrolls变化，资产数组相同，发起来源未核实；AIHOT缓存/使用日志变化原样保留，不回滚或宣称整库未变。无提交、推送、安装、Vault/凭据操作。
+- [交接386](docs/agents/handoffs/2026-10-12-codex-assets-warehouse-386.md) / [前后图与完整证据](work/assets385/report.html)。已写入共享状态，待Claude实际读取与质量验收、常浩使用验收；调酒384待验保留。
+
+## Codex 资产仓库认领385（2026-10-12）
+
+- 输入384；用户直接要求接手资产仓库的编号与新建/编辑表单，替代头表下一步，调酒384独立验收仍待进行。规格与验收见[本批单票](docs/agents/assets-warehouse/01.md)。
+- 拟改src/Assets.jsx、src/scrolls.js、必要定向测试、dist及状态/证据。编号按未删除同类资产创建先后派生，搜索/标签/排序不重编号；焚决卷同口径。移除新建通用提示、Prompt在Skill前并作为全部页新建默认；移除来源输入但保留既有来源。标签按中英文逗号及空白分隔并去重。
+- 验证边界：合成夹具执行删除→新建→编辑→刷新与来源/历史保护，六宽表单/网格/列表和Axe；末次全量单元及相关原浏览器。技术seam为真实页面与隔离HTTP持久化，覆盖可观察结果，无需用户确认代码结构。
+- start_head=e6e5d8b74474ea408ebb171ab70415e32d57ada4；前像/保护清单work/assets385/baseline.json。目标仅本机修改与静态采用，无新依赖、提交、推送、真实测试数据写入或Agent/Vault操作。
+
+## 调酒本地自动进组384（2026-10-12）
+
+- 用户已确认只做调酒、本地明确规则、不确定留散卡、不调用付费AI、人工调整不再动、支持撤销。仅新收藏，已有标题/正文/文稿满足制作意图+基酒用量+动作才进入唯一调酒组；旧数据不回填。撤销/人工优先/并发门禁及网络未知先核对已实现。
+- 66合成样本（10进组/56散卡）样本误分0，1204单元、9收藏浏览器、六宽提示/阅读器Axe、两轴与T2通过；首败与审查修正保留。现有服务5178受控采用，同构建17本地/7公开HTTP回读，原4条收藏state全程指纹相同。证据、动态主库边界和限制见[交接384](docs/agents/handoffs/2026-10-12-codex-cocktail-auto-group-384.md)。
+- 文件/工程检查/本机采用与隔离路径通过，Claude及常浩真实使用验收待进行；不声称长期零误分。无安装/提交/推送，不读真实Vault/私有凭据，原有未跟踪项保留。
+
 ## 本轮UI优化结束与检查点382（2026-10-12）
 
 - 常浩：“按你建议”——结束本轮并做检查点提交。提交包含 10-09 检查点331以来全部源码/测试/交接正文（含批0删除的银饰文件）；未纳入 `work/`（本机临时日志脚本）、`tests/fixture-*` 三个遗留临时目录、已撤销的 `docs/design/ui-v17/`（证据目录按 .gitignore 不入库）。未推送。
@@ -1357,3 +1880,197 @@ R4正常/旧内容保留两态×1440/390，竖线清距由-5px变为7px；S1刷�
 - 最终串行1180/1180单元、12套受影响浏览器专项、132张六宽全站图通过；两轴无未闭合重要项，工程T2通过。首败、修正、前后对照、五种动效视频和夜巡确认稿/实际图均留存；内部工程检查不代签Claude与常浩验收。
 - 5178只同步静态dist，17磁盘与6公开HTTP字节一致；原PID65924未重启。585范围外文件、16项权威、HEAD与依赖不变。真实数据172份中170指纹保持；使用日志/AIHOT缓存动态变化保留，不归因、不回滚，无新增/删除；未主动访问真实API、操作真实数据或执行夜巡，无提交、推送、安装依赖或消息发送。
 - CURRENT写后回读，写入者释放为“无”；唯一下一步：Claude 汇总验收派单 362 全部五段。
+
+
+## Codex认领430：资产圆角令牌等值修复
+
+- 输入429/无写入者；当前HEAD与未提交工作区前像保存在 work/asset-radius430/baseline.json，目标CSS/CURRENT/台账及完整dist备份已保存。
+- 源码仅 src/ui-v14.css 根补全块新增6px圆角令牌、src/assets-quick-copy.css 引用；样式数值、功能、数据、项目来源标识保持。
+- 验证原令牌测试、完整单元、合成1440/390同场景像素对比与computed 6px、构建和原5178静态字节回读。只读独立复核；不增加测试豁免。
+- 不提交、推送、安装依赖、重启后端；不动真实数据；保护所有既有改动。
+
+
+## Codex资产圆角等值修复431（2026-10-13）
+
+- 429遗留6px字面圆角令牌失败已关闭；两CSS最小修复、原断言保持，全量1211通过；同场景双宽截图字节一致。
+- 完整证据见最新交接431与 work/asset-radius430；原5178静态采用、PID13548保持；源/数据/既有dirty保全，不提交推送重启。
+- 已解释本地项目关联GitHub会有LOCAL/GIT双标，未更改该呈现。写入者无，下一步常浩验收当前效果。
+
+
+## Codex认领432：项目列表单一来源标识
+
+- 输入431/无人写入。work/project-source432/baseline.json 与 before/、dist-before/ 保存现有工作区和完整构建前像。
+- 只改 src/ProjectsV16.jsx 左侧class/文案展示和移除右侧GIT、src/projects-v16.css 清理废弃标记样式；不改筛选、分类、项目路径、操作、功能与数据。
+- 全量单元、原项目浏览器、既有来源专项按新展示断言验证1440/390/320、同场景前后图；构建及5178静态采用与保护回读。
+- 不提交、推送、安装依赖或重启后端；既有改动和数据保留。
+
+
+## Codex项目单一来源标识433（2026-10-13）
+
+- 最新用户规则替代429双标：有githubUrl左侧紫GIT，否则青LOCAL，右侧GIT删除；仅列表展示，两源最小修正。
+- 1211/1211、原项目浏览器与三宽来源专项、前后图/真实5178、构建与HTTP、独立复核及保护均完成。数据与既有dirty保留，不提交推送重启；下一步常浩验收，写入者无。
+
+
+## Codex认领434：项目来源筛选与计数统一
+
+- 输入433/无写入者；保存2065文件189链接保护基线、目标JSX/正式测试/CURRENT/台账及完整dist前像到 work/project-source434。
+- 根因：433仅按当时仅展示授权修改左标，local计数和过滤仍按本地路径，导致与左标不一致。本轮用户明确授权统一筛选与数量，规则改为GitHub关联互斥分类。
+- 源码仅 src/ProjectsV16.jsx：共用单一来源判据，数量、匹配和左标一致；筛选为全部/LOCAL/GIT，移除重复已关联入口。正式 tests/browser.mjs 按新3/1/2规则验证两筛选和刷新；不改底层数据/项目扫描合并/Git能力。
+- 验证完整单元、正式综合浏览器与原项目浏览器、三宽来源专项和截图、构建和原5178回读；只读独立复核。
+- 保留既有未提交改动，不提交/推送/安装依赖/重启后端。
+
+
+## Codex项目来源筛选统一435（2026-10-13）
+
+- 用户纠正覆盖433旧筛选：有GitHub关联归GIT，无关联归LOCAL；标签/数量/筛选共用判据，移除已关联。真实5178文本为全部6/LOCAL5/GIT1。
+- 1211单元及综合/项目/来源三宽浏览器通过，1440/390合成前后复核、构建17磁盘5HTTP一致，后端13548保持。旧资产三处radio定位补正、首败/中断如实留档。真实页面截图与点击回读受CUA连接失败限制。
+- 2065基线文件189链接无丢失，范围外源/依赖与主库指针保全；收藏state期间变化原样保留不归因，其余220 data指纹一致。不提交推送重启，交接435，写入者无，下一步常浩验收。
+
+## Codex认领444：REA第一阶段
+
+- 输入443，无写入者；start_head与源码/测试/正式dist前像见 work/rea444/baseline.json 和 before/。
+- 范围：src/reverse-recipe.js、src/ReverseV16.jsx及所属CSS、server/reverse-schema.mjs、server/schema.mjs、server/http.mjs、新增只读目标校验模块、相关单元/浏览器fixture、REVERSE-RECIPE.md、台账及交接。
+- 接点：从严格数据校验、只读HTTP路径检查到录入/任务包/回贴/炼成纵向验证；临时合成目录与隔离适配器，不运行REA。
+- 根代理串行写入，子代理只读审查。全量单元串行、受影响浏览器、1440/390成对图、两轴审查与最终保护回读。
+- 后端变更先产候选dist在work/rea444，正式5178及dist保持，不重启或读写真实业务数据；不安装依赖、不读Agent配置/Vault、不提交推送。
+
+## Codex REA第一阶段交回445
+
+派单443范围本地候选完成：FN的REA目标、只读路径检查、本机伙伴任务包、证据/未知项、快照失效及炼成边界。最终1230/1230和新旧浏览器通过，两轴重要项关闭、同构建T2通过。工作台不运行REA；正式dist/5178未采用，未真实取证或代签验收。756基线文件和189链接保全，既有dirty保留。正式交接见最新445；写入者无，唯一下一步Claude验收REA第一阶段。
+
+## Codex认领448：REA返修R1–R3
+
+- 输入447无人写入，用户明确授权返修；只修改reverse-recipe.js、ReverseV16.jsx、必要局部CSS、REA单元与浏览器测试、REA契约及状态交接。保护基线work/rea448/baseline.json，实际前像work/rea448/before。
+- 用户可观察结果：网站录入可复制独立Chrome/CDP命令，任务包交代用户手动启动/关闭和字面回环端点；64位证据通过、短示例拒绝；徽标明确“证据”并复制完整ID。
+- 验证seam为公开任务包/配方解析与隔离浏览器真实录入/复制/回贴/回读；保留首败，定向及全量单元、候选构建/三宽浏览器/前后对比、固定diff双轴与T2。视觉path3继承既有数码世界，生图0。
+- 不改正式dist、不重启5178、不运行REA或启动真实调试浏览器、不安装提交推送；不读取Vault/凭据/私人会话；441真人验收独立。447已明确无需Claude复验。
+
+## Codex认领450：REA正式采用
+
+- 449无人写入，用户明确授权构建、正式采用REA第一阶段含447返修及5178一次重启；精确授权留痕work/rea450/authorized-once.json。
+- 范围仅本轮证据、正式dist及CURRENT/tracker/交接；11项完整REA交付冻结不变，不修改源/测试/依赖。start_head与实际dirty/保护指纹保存在work/rea450。
+- 重建隔离候选与448已验17文件逐字节比较，通过后保留旧dist再采用。核对固定LaunchAgent、PID、工作/数据目录和空闲任务，写一次意向后只执行一次kickstart；结果未知只查询不重放。
+- 完成以新PID/目录身份、17磁盘与公开HTTP、真实页面新录入控件和只读REA目标检查API回读为准；保护主库指针、收藏state和服务配置。不装依赖、不提交推送、不运行REA或写真实测试记录；真实REA/真人验收及441待验仍独立。
+
+
+## Codex540 · 智能体群原生验证与正式采用
+
+真实Codex会话搜索、纯文本Skill迁入实际Hermes、新会话原生加载与同ID接续通过；保留最新范围与排除528。默认内置记忆首轮偏差已披露并取得修正授权，新会话明确关闭默认记忆后复验通过，不复用旧会话。全量1377/1377、候选相关193/193、最终浏览器17+4+6+6、同构建T2及独立审查通过，非用户验收。
+
+正式5178已切至Library/Application Support/PersonalAIWorkbench/releases/wb-20261016-539，PID68445；首页/侧栏530、534/538及本轮修复采用，528排除。旧正式程序与回退plist保留；登记失败及依赖目录结构首败已记录和处理。主库/收藏指纹保持，repo/dist不再代表当前运行资源，后续不得直接重启混合dirty源码。
+
+最后回读发现17:29左右Hermes启动程序、配置及Skill已从原位置消失，当前不可用，原因待用户确认；没有擅自重装。历史原生成功与当前可用性分别记录。正式目标尚未登记；Hermes/OpenClaw历史读取、MCP启用、Codex内部评审记录过滤仍开放。详细证据、恢复边界及唯一下一步见最新540交接；写入者释放。
+
+## Codex 随手记常驻认领543（2026-10-19）
+
+输入542，确认无人写入。本轮用户要求悬浮球功能常态化打开，按立即显示、登录自动启动、收起保留草稿执行；授权范围为本机随手记启用所需的程序采用、个人应用安装和自启配置。旧528准备方案须按当前539正式发布修订，不得把旧候选整包覆盖正式539。拟写work/floating543隔离证据、必要安装/启动配置、相关交接与CURRENT/issue-tracker；不改其他业务、真实便签或Agent配置，不提交推送。基线见work/floating543/baseline.json。
+
+## Codex 随手记常驻交回544（2026-10-19）
+
+固定539正式程序限定集成15文件便签功能及首页并发恢复修复，433文件清单回读匹配；正式新入口wb-20261019-543，服务PID16205。固定526原生App已安装到个人应用程序，登录项运行、原生单实例PID16327、球可见并可开关，真实便签只读回读通过，主库revision216不变。
+
+隔离编辑/保存/冲突/同步/恢复和8项DOM专项通过，首页并发新增用例先红后绿，最终首页17场景通过；全量1377首次1375通过、2项隔离支持路径失败后专项8项通过，首败保留。误构建旧repo/dist已逐字节恢复，首次bootstrap5在确认未登记/端口空闲后只补登记成功。
+
+[交接544](docs/agents/handoffs/2026-10-19-codex-floating-notes-always-on-544.md)、work/floating543证据与新备份可读。实际重登/崩溃恢复、真人自然输入、Claude视觉验收尚未代签；全屏/中文候选边界仍保留。没有提交推送或范围外写入，写入者释放。
+
+## Codex 悬浮球去阴影交回546（2026-10-19）
+
+按用户截图只保留图标本身：BallView透明声明、绘制前clear、移除模糊阴影；原生真实绘制外圈597像素降至1、图像及独立审查通过。新App编译/几何/签名通过，正常退出保全后替换重开，单实例PID23379及实际图标回读。自启/恢复区不变，后端PID16205保持，主库不变。
+
+[交接546](docs/agents/handoffs/2026-10-19-codex-floating-notes-shadow-546.md)及work/floating545可读；544常驻部署保持，新App指纹以546为准。真实重登/崩溃和用户视觉验收未代签。写入者释放。
+
+## Codex 范围纠正548（2026-10-19）
+
+输入547。用户要求随手记不要快捷键、手动打开、改回错误快捷键设置。隔离原生测试沿用了旧App的全局快捷键注册，已停止测试进程，承认数据隔离未隔离宿主全局按键。新增范围仅取消原生展开/收起全局快捷键及设置入口，清理本App位置偏好内旧key/modifiers字段（若存在），保留位置与草稿、标准编辑菜单和登录常驻；不改macOS系统或其他App的快捷键设置。
+
+## Codex 列表光标与取消全局快捷键交回549（2026-10-19）
+
+CSS只补编辑态空行尺寸，三类红绿和精确保存、完整1377/1377、原生DOM8项及两组便签浏览器通过；实际WKWebView三类光标可见。用户纠正后移除全部原生全局展开/收起注册和设置入口，位置偏好旧key/modifiers清理，其余位置/草稿保留。旧测试注册宿主按键的遗漏已披露并停止，验证App已退出禁用。
+
+正式冻结程序wb-20261019-548的433文件及9公开资源回读一致，服务PID63756；新原生PID63855单实例，无HotKey导入，手动球开关回读通过。采用前后主库不变，保留用户自然编辑的最新版。[交接549](docs/agents/handoffs/2026-10-19-codex-notes-caret-manual-549.md)与work/caret547证据可读。真实重登/崩溃、用户自然使用验收未代签，写入者释放。
+
+## Codex认领560：设计资产类型
+
+输入559/无人写入。用户已批准C粉色像素画框并明确授权设计类型、完整包上传与两种复制逻辑。start_head、原文件前像、dirty清单与契约见work/design560；根代理串行写入，子代理只读。候选构建与合成验证，正式release555/5178/真实数据保持；不安装依赖、提交、推送。
+
+
+## Codex认领566：设计类型ChatGPT用法纠正
+
+输入565/无写入者，已核对565交接与20文件指纹。用户最新纠正覆盖调用名要求。9文件在本聊天隔离候选完成，最终1391/1391、设计主路径三宽及两轴/T2通过。根代理串行合入7源+2测试；保留565全部成果，不采用其待审界面更新。正式包只在563完整437文件上合入本次修正。基线和精确清单见work/design566；不安装Skill、不试写真实资产、不改Agent/Vault、不提交推送。
+
+
+## Codex设计ChatGPT纠正交回567
+
+9源测试文件合入，完整1391/1391、集成45/45、设计主路径三宽与两轴/T2通过。正式563→567单次切换，437文件和公开资源匹配，数据revision669及原生随手记保持。实际空表单去除调用名并显示ChatGPT默认生图说明，未创建真实资产。565的20文件完整保留、尚未采用；其旧563基底发布包不得覆盖567。详见最新567交接。写入者释放，用户自然验收未代签。
+
+
+## Codex随手记图片粘贴交回571（2026-10-20）
+
+本机图片paste/原子附件/保存恢复及图文复制闭环完成；1414全量、9浏览器和两轴通过，原生实际合成图粘贴、重开与系统富文本粘贴1图通过。正式release571的441文件和新宿主逐SHA回读，32px暴龙机、卡片/工具/布局不变，无全局键；主库670、完整草稿状态、位置/自启保持。隔离弹窗事故已清理，启动注销竞态按回执仅补未执行bootstrap，单次停启。详见最新571交接和work/note-images570；用户自然使用验收未代签，写入者释放。
+
+
+## Codex 认领572：原生 Codex REA
+
+输入571，无写入者。用户明确授权开发，澄清不要求同一聊天同步，要求逆向分析能力、模型、规则和权限一致。范围为 reverse 会话适配、HTTP、schema、页面、必要测试与交接；根代理串行写入，子代理只读。基线 work/reverse-native572/baseline.json，保留全部既有 dirty。验证使用合成资料/隔离目录与非5178端口；不读取真实会话、Vault或凭据，不安装/修改Agent配置、不提交推送、不切换正式571。
+
+## Codex认领578：七板块精简
+
+输入577，无写入者。用户再次明确开始，自动检查保持暂停。基线及精确范围见work/seven578/baseline.json与contract.md。保留既有dirty、最新REA与图片随手记；源码/测试/交接串行写入，子代理只读。
+
+## Codex 七板块精简交回579（2026-10-20）
+
+七项导航/搜索与旧深链已收敛，首页两卡不留空位；目标管理迁到设置并保护草稿/在途，旧权限关闭入口保留在历史授权。最终五套浏览器、两轴无重要问题与T2通过；最终全量1432/1433命中既有PID竞态，所在文件16项复查通过，首败保留。前端579静态叠加正式575-r1，PID22510未重启；19磁盘/9公开HTTP及实际数码世界窗口通过，448运行清单已保存。主库/原生便签保护指纹相等；848输入保护无范围外变化。正式目录src仍旧版，后续构建须读579交接及冻结前端源码；不把启动指纹当579。未提交推送/改真实权限，自动检查保持暂停，写入者释放，用户自然使用待验。
+
+## Codex认领580：三类型便签
+
+输入579，写入者已释放。用户“一致”确认图片与功能规则，继而明确“你直接开发”；本轮由Codex直接实现。此前在独立候选保存848项当前未提交源码前像，18项便签改动与579逐文件比较无重叠冲突后接入。范围：便签模型/schema/API、网页/便签栏/编辑器/剪贴板/草稿与原生多窗、相应测试和交接；不改导航与无关模块、不改真实数据、不安装/重启/提交。start_head e6e5d8b74474ea408ebb171ab70415e32d57ada4；正式采用及真人验收单列。
+
+## Codex原版UI随手记正式采用交回584（2026-10-20）
+
+用户明确授权恢复版正式采用并重启，581冻结功能与原版UI已采用。本轮没有产品源码/CSS变更。正式release583/PID31292一次服务重启，原生PID31921单实例启动；456程序、3原生、4原版样式/纸色及七板块11源匹配，HTTP与实际主窗口回读通过。三类型菜单、右键富文本/列表、工作台唤起同ID独立窗口与置顶/关闭验证通过。
+
+10条便签及图片保留；原1条dirty草稿按重启前内容恢复并自动保存，revision708→709，无其他业务字段变化，恢复区身份/原偏好/自启保持。新鲜私有备份和单次操作回执见work/notes583，最终回读final-readback.json；详见最新584交接。旧schema不接受新增字段，不得盲目切旧程序或恢复旧数据。没有提交推送，自动检查保持暂停，用户自然使用未代签；写入者释放。
+
+
+## Codex三类型便签完整复验交回586（2026-10-20）
+
+输入584、认领585；用户授权完整检查并直接修复，冻结UI。4个产品文件及3个测试文件修复独立勾选、跨窗交接/冷启动、标题输入法保护、日期校验、外部更新撤销、完成态保留和上传图片关闭。13生命周期、7已有三类型场景、6组旧浏览器回归、最终1446/1446及Mac原生三类型实际操作通过；双轴复核无阻断，1024文件基线无范围外变化，4份原UI匹配。
+
+正式release585/PID96036及原生PID96158一次重启；457程序、3原生、HTTP及实际主窗口/单张窗口回读通过。主库709→709，10条便签、图片、完整草稿、偏好/恢复目录/自启均保持。新鲜备份及单次回执见work/notes585，隔离测试已停止清理。详见最新586交接；不以应用重开替代macOS重登或崩溃验收，用户自然使用未代签。未提交推送，自动检查保持暂停；写入者释放。
+
+## Codex 三类型右键格式复验正式采用588（2026-10-20）
+
+- 三类型×三入口七项右键格式保存重开通过；修复续写未继承格式与Esc误取消编辑。1产品源+2测试，CSS/布局/纸色保持。
+- 12格式场景、6编辑场景、13生命周期、六组既有浏览器与1446全量通过；Mac原生三类型实际右键、退出重开、续写及Esc回读通过，双轴无阻断。
+- release587/PID13021、原生PID13105各一次受控启动；458发布文件和正式界面回读一致。主库709、10便签、1图片、草稿和偏好完全保持。
+- [交接588](docs/agents/handoffs/2026-10-20-codex-notes-context-format-588.md)，证据work/notes587。HEAD/既有dirty保持，未提交推送；自然使用未代签，写入者释放。
+
+
+## Codex 三类型快捷新建与紧凑标题交回593（2026-10-21）
+
+整行写一条、顶栏三图标直接新建与居中加粗紧凑标题完成；其他UI保持。9定向、8组旧回归、1450全量、双轴与最终T2通过。release589仅更新591前端，后端PID43538未重启；原生未改二进制、正常重开一次PID6818。463文件/19资源及正式窗口回读匹配，revision745、10便签、图片、草稿/偏好和自启全部保持。详见593交接及work/notes591；用户自然使用未代签，写入者释放。
+
+
+## Codex 有序编号修复交回595（2026-10-21）
+
+中间增删、拆分合并、列表切换/粘贴及时间轴排序统一重排受影响编号块，保留显式起点和未操作旧内容；修复HTML0起始丢失。14单元、4浏览器、8组回归、最终1464全量与两轴通过，Mac隔离回车1到6显示通过。release589叠加594前端，后端PID43538不重启，原生单次重开PID36722；464程序文件/19资源回读匹配，revision787、10便签、图片、草稿偏好、自启保持。595交接与work/notes594留证，用户自然使用未代签，写入者释放。
+
+
+## Codex 七板块深度审查601（2026-10-22）
+
+- 用户要求先审查、确认后优化。599基线，600仅认领文档，601释放；只写CURRENT与本次审查交接。11项发现分为日常可靠性6项、低频恢复/配置3项、条件性历史授权1项、维护建议1项，另给4个功能方向。
+- 便签标题漏搜、身份坏缓存重试由根代理纯内存复现；收藏同版本恢复不清错由独立代理回放。其他静态或条件性证据单列，未冒充真实故障验证。
+- 正式release589承载后续采用覆盖，与notes598当前manifest的465项一致；清单src/server与工作区一致。收尾前452个保护文件0变化0新增。仅观察原资产/首页并恢复原详情；未新建/编辑真实数据、构建、全量测试、运行AI、重启或发布。
+- [完整审查与确认范围](docs/agents/handoffs/2026-10-22-codex-workbench-audit-601.md)。建议先批准A批F01–F06，B/C及维护改动另选；当前未批准任何优化，不继续自动实施。
+
+
+## Codex A批修复认领602（2026-10-22）
+
+- 用户明确批准601报告F01–F06，B批与新增功能暂缓。start_head e6e5d8b74474ea408ebb171ab70415e32d57ada4；基线work/audit602/baseline.json及before保留全部相关既有dirty。根代理唯一写入，三路子代理仅只读分析/审查。
+- 修改范围：src/App、HomeV16、NotesV16、AgentTargets、api、floating notes、search、ProjectsV16，以及collection page/store/client/DeskView及必要的小型恢复与状态工具；对应测试、候选构建、审查证据及交接/跟踪。禁止改CSS、像素资产、依赖、真实数据、B批服务逻辑、正式dist/release或重启。
+- 继承已批准当前结构/样式/资产，Gate1 SATISFIED_BY_EXISTING_AUTHORITY，生图0；implement、diagnosing-bugs、tdd和视觉SOP适用保真/T2。测试seam由代理承担：公开session/store/search接口＋隔离真实HTTP/浏览器的跨页、重开、断线与接手路径；全量回归一次，新增修复时按影响复验。
+- 只在合成fixture与隔离适配器验证；不得读取真实Vault/凭据/私人Agent会话、扫描真实目录或运行收费AI。候选验证、双轴审查、UI保真与实际隔离窗口后交付，正式采用和用户自然使用单列。
+
+## B批可靠性修复交回613（2026-10-22）
+
+用户授权“开启B批”。候选实现与完整隔离验证完成，见[613交接](docs/agents/handoffs/2026-10-22-codex-b-reliability-613.md)。未正式采用、未重启、未真实恢复或撤权；C批未动。新恢复ID/只读结果查询、多窗范围冲突与统一ZIP容量均已覆盖失败恢复路径。1515/1515、浏览器与两轴通过，CSS同正式版。正式release610/PID68883/revision936/12便签/13收藏及完整data未变。唯一下一步等正式采用确认。

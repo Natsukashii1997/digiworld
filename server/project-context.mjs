@@ -1,4 +1,6 @@
 import { lstat, realpath, open } from "node:fs/promises";
+import * as fs from "node:fs/promises";
+import { createStableIdentityReader, identityOptions } from "./directory-identity.mjs";
 import { constants } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { digest, failure } from "./repository.mjs";
@@ -8,7 +10,9 @@ const within = (parent, child) => {
   const r = relative(parent, child);
   return r === "" || (!r.startsWith("..") && !isAbsolute(r));
 };
-export async function projectDirectory(roots, selected) {
+export async function projectDirectory(roots, selected, { identityVersion = 1, filesystem = fs, volumeUuid } = {}) {
+  const stable = identityVersion === 2 ? createStableIdentityReader({ filesystem, volumeUuid }) : null;
+  const stableChain = [];
   const base = roots
     .filter((p) => within(resolve(p), resolve(selected)))
     .sort((a, b) => b.length - a.length)[0];
@@ -22,19 +26,21 @@ export async function projectDirectory(roots, selected) {
   const chain = [];
   for (const part of ["", ...parts]) {
     if (part) cursor = join(cursor, part);
-    const info = await lstat(cursor);
+    const info = await filesystem.lstat(cursor);
     if (info.isSymbolicLink() || !info.isDirectory())
       throw failure("项目路径不能经过符号链接或非目录");
     chain.push([cursor, info.dev, info.ino, info.birthtimeMs]);
+    if (stable) stableChain.push([cursor, (await stable(cursor)).identity]);
   }
-  const canonicalBase = await realpath(base),
-    root = await realpath(selected);
+  const canonicalBase = await filesystem.realpath(base),
+    root = await filesystem.realpath(selected);
   if (root !== join(canonicalBase, ...parts))
     throw failure("项目目录链已变化，请重新预览", 409);
   return {
     root,
     stamp: digest(JSON.stringify([root, chain])),
-    identity: digest(JSON.stringify(chain.at(-1).slice(1))),
+    identity: stable ? stableChain.at(-1)[1] : digest(JSON.stringify(chain.at(-1).slice(1))),
+    ...(stable ? { identityVersion: 2, stableStamp: digest(JSON.stringify([root, stableChain])) } : {}),
   };
 }
 function documentPath(value) {
@@ -62,9 +68,10 @@ export function assertDirectoryConfirmed(project, root, actualIdentity) {
     (location?.observedIdentity &&
       location.observedIdentity !== location.identity)
   )
-    throw failure("项目目录已更换，请先重新确认目录，再预览来源", 409);
+    throw Object.assign(failure("项目目录已更换，请先重新确认目录，再预览来源", 409), { code: 'DIRECTORY_IDENTITY_CHANGED' });
 }
-async function sourceDocument(root, path, role) {
+async function sourceDocument(root, path, role, stable) {
+  const stableChain = [];
   documentPath(path);
   let target = root;
   const directoryChain = [];
@@ -72,8 +79,10 @@ async function sourceDocument(root, path, role) {
     target = join(target, part);
     const info = await lstat(target);
     if (info.isSymbolicLink()) throw failure("来源不能经过符号链接");
-    if (info.isDirectory())
+    if (info.isDirectory()) {
       directoryChain.push([target, info.dev, info.ino, info.birthtimeMs]);
+      if (stable) stableChain.push([target, (await stable(target)).identity]);
+    }
   }
   const file = await open(
     target,
@@ -137,7 +146,7 @@ async function sourceDocument(root, path, role) {
       content,
       bytes: length,
       sha256: digest(buffer.subarray(0, length)),
-      directoryStamp: digest(JSON.stringify(directoryChain)),
+      directoryStamp: digest(JSON.stringify(stable ? stableChain : directoryChain)),
       modifiedAt: after.mtime.toISOString(),
     };
   } finally {
@@ -155,22 +164,25 @@ export function createProjectContext(repository, clock = Date.now) {
       throw failure("请选择已发现项目的本地目录", 404);
     assertDirectoryConfirmed(project, input.root);
     try {
+      const options = identityOptions(project, input.root);
+      const stable = options.identityVersion === 2 ? createStableIdentityReader() : null;
       const directory = await projectDirectory(
         state.connections.roots,
         input.root,
+        options,
       );
       assertDirectoryConfirmed(project, input.root, directory.identity);
       const { root } = directory;
       const documents = [
-        await sourceDocument(root, input.currentPath, "current"),
+        await sourceDocument(root, input.currentPath, "current", stable),
       ];
       if (input.rulesPath) {
         if (input.rulesPath === input.currentPath)
           throw failure("状态和规则请选择不同文件");
-        documents.push(await sourceDocument(root, input.rulesPath, "rules"));
+        documents.push(await sourceDocument(root, input.rulesPath, "rules", stable));
       }
       if (
-        (await projectDirectory(state.connections.roots, input.root)).stamp !==
+        (await projectDirectory(state.connections.roots, input.root, options)).stamp !==
         directory.stamp
       )
         throw failure("读取期间项目目录发生变化，请重新预览", 409);
@@ -180,7 +192,7 @@ export function createProjectContext(repository, clock = Date.now) {
         relationVersion: project.relationVersion || "",
         directoryStamp: digest(
           JSON.stringify([
-            directory.stamp,
+            directory.stableStamp || directory.stamp,
             documents.map((d) => [d.role, d.directoryStamp]),
           ]),
         ),

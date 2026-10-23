@@ -57,9 +57,9 @@ const size = async (locator) => {
   assert.ok(box, "控件不可见");
   return box;
 };
-async function atLeast44(locator, name) {
+async function assertMinSize(locator, name, minimum = 44) {
   const { width, height } = await size(locator);
-  assert.ok(width >= 44 && height >= 44, `${name} 点击区域 ${width}x${height}，应至少 44px`);
+  assert.ok(width >= minimum && height >= minimum, `${name} 点击区域 ${width}x${height}，应至少 ${minimum}px`);
 }
 const coverUses = (page, a) =>
   page
@@ -99,7 +99,7 @@ try {
 
   // 置顶一个工作流：在全部与工作流标签、所有排序下都排第一，刷新后保持。
   const pin = button(page, `置顶 ${current(workflow).title}`);
-  await atLeast44(pin, "置顶按钮");
+  await assertMinSize(pin, "置顶按钮", 32); // 用户389要求缩小卡片操作，其他控件仍44px。
   await pin.click();
   const unpin = button(page, `取消置顶 ${current(workflow).title}`);
   await unpin.waitFor();
@@ -179,7 +179,7 @@ try {
 
   // 顶栏搜索：展开为可读搜索入口，至少 44px，位于待处理按钮旁。
   const search = page.locator(".topbar").getByRole("button", { name: "搜索", exact: true });
-  await atLeast44(search, "顶栏搜索按钮");
+  await assertMinSize(search, "顶栏搜索按钮");
   assert.match(await search.innerText(), /搜索工作台/);
   assert.match(await search.innerText(), /⌘K/);
   assert.equal(
@@ -218,11 +218,11 @@ try {
     await narrow.evaluate(() => document.documentElement.scrollWidth - innerWidth),
     0,
   );
-  await atLeast44(
+  await assertMinSize(
     narrow.locator(".topbar").getByRole("button", { name: "搜索", exact: true }),
     "窄屏搜索按钮",
   );
-  await atLeast44(button(narrow, `取消置顶 ${current(rule).title}`), "窄屏置顶按钮");
+  await assertMinSize(button(narrow, `取消置顶 ${current(rule).title}`), "窄屏置顶按钮", 32);
   await button(narrow, "新建").click();
   assert.equal(
     await narrow.evaluate(() => document.documentElement.scrollWidth - innerWidth),

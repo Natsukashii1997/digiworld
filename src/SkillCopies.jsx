@@ -461,7 +461,7 @@ export function SkillCopies({ asset, state, adoptState, notify }) {
             </label>
           </div>
           {!targets.length && (
-            <p className="detail-footnote">请先在 Agent 中心保存管理目标。</p>
+            <p className="detail-footnote">请先在设置的资产交付目标中保存管理目标。</p>
           )}
           {selectedTarget && (
             <div className="copy-target-paths">

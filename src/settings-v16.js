@@ -2,10 +2,9 @@
 export const SETTINGS_CATEGORIES = [
   ["security", "授权与安全"],
   ["data", "数据与备份"],
-  ["project", "项目与存档"],
-  ["knowledge", "知识与 MCP"],
-  ["calendar", "日历与提醒"],
-  ["network", "资讯"],
+  ["project", "项目设置"],
+  ["targets", "资产交付目标"],
+  ["legacy", "历史授权"],
 ];
 export function savepointThresholds(connections) {
   return {
@@ -82,13 +81,6 @@ export function permissionRows(state, settings, calendar, histories = {}, usage 
       status: shared ? "已开启" : sources.length ? "关闭" : "未接入",
       enabled: !!shared,
       last: latestUse(usage, "knowledge"),
-    },
-    {
-      id: "savepoints",
-      title: "存档点写入",
-      scope: "Git 提交与初始化 · 每次预览确认",
-      status: "逐次确认",
-      last: latestUse(usage, "savepoints"),
     },
     {
       id: "calendar",

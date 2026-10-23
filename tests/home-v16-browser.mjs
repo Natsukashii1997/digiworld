@@ -1,223 +1,144 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
-import { mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
-import { collabV16Fixture } from './collab-v16-fixture.mjs';
+import AxeBuilder from '@axe-core/playwright';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 import { fixture } from './fixture.mjs';
 import { seed } from '../src/store.js';
+import { createScroll, deleteScroll } from '../src/scrolls.js';
+import { validateState } from '../server/schema.mjs';
+import { aihot202Data } from './aihot-v16-fixture.mjs';
+import { syntheticNote } from './collection-fixture.mjs';
 
-const out = process.env.GUIJI_TEST_RESULTS || 'test-results/home-v16';
-await mkdir(out, { recursive: true });
-const browser = await chromium.launch();
-const now = '2026-10-08T14:30:00+08:00';
-const iso = time => new Date(`2026-10-08T${time}:00+08:00`).toISOString();
-const events = [
-  {id:'home-plan',title:'实现首页中枢',calendar:'工作台',workbench:true,start:iso('10:00'),end:iso('12:00'),allDay:false,modified:iso('09:00')},
-  {id:'home-meet',title:'验收讨论',calendar:'合成团队',workbench:false,start:iso('15:00'),end:iso('16:00'),allDay:false,modified:iso('09:00')},
-];
-const reminders = [
-  {id:'home-due',title:'核对页面交接',completed:false,due:iso('14:00'),dueHasTime:true,modified:iso('09:00')},
-  {id:'home-future',title:'整理项目存档',completed:false,due:iso('17:00'),dueHasTime:true,modified:iso('09:00')},
-];
-async function open(app, width=1440, mode='full', motion='reduce') {
-  const context = await browser.newContext({viewport:{width,height:900},timezoneId:'Asia/Shanghai',reducedMotion:motion});
-  const page = await context.newPage();
-  const errors=[];
-  page.on('pageerror', error=>errors.push(error.message));
-  await page.addInitScript(({time})=>{const BaseDate=Date;globalThis.Date=class extends BaseDate{constructor(...args){super(...(args.length?args:[time]));}static now(){return new BaseDate(time).getTime();}};},{time:now});
-  await page.route('**/api/calendar/status', route=>route.fulfill({json:{available:true,supported:true,access:{calendar:'authorized',reminders:'authorized'}}}));
-  await page.route('**/api/calendar/week', route=>route.fulfill({json:{available:true,events:mode==='full'?events:[]}}));
-  await page.route('**/api/calendar/todos', route=>route.fulfill({json:{available:true,reminders:mode==='full'?reminders:[]}}));
-  await page.goto(app.url+'/#home');
-  await page.locator('.hx').waitFor();
-  await page.locator('.hx-mod-a').getByText(mode==='full'?'核对页面交接':'今天没有已读取的安排').waitFor();
-  return {page,context,errors};
+const out=resolve(process.env.GUIJI_TEST_RESULTS || 'test-results/home-overview');
+await mkdir(out,{recursive:true});
+const browser=await chromium.launch();
+const checks=[],errors=[];
+const expectedNav=['世界总览','资产仓库','个人收藏','逆向工程','项目空间','随手记','设置'];
+const sharedState=seed();
+sharedState.assets.forEach((a,i)=>a.versions.forEach(v=>v.at=`2026-10-16T0${i}:00:00.000Z`));
+sharedState.assets[0].archived=true;
+const firstScroll=createScroll([], '合成判断方法');
+const secondScroll=createScroll(firstScroll.scrolls, '已删除不应出现');
+sharedState.scrolls=deleteScroll(secondScroll.scrolls,secondScroll.scroll.id);
+validateState(sharedState);
+const notes=[3,1,2].map(i=>({...syntheticNote(i),savedAt:`2026-10-1${i}T08:00:00.000Z`,category:'工作方法'}));
+let apps=[];
+async function launch(staticRoot) {
+  process.env.WORKBENCH_TEST_STATIC_ROOT=staticRoot;
+  const app=await fixture();apps.push(app);await app.repository.write(sharedState,{initialize:true});return app;
 }
-async function watchLaunchScroll(page) {
-  await page.evaluate(() => {
-    window.__launchScroll = [];
-    const original = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = function (options) {
-      if (this.classList.contains('cx-launch')) window.__launchScroll.push(options?.behavior);
-      return original.call(this, options);
-    };
-  });
+async function open(app,width=1440,mode='full') {
+ const context=await browser.newContext({viewport:{width,height:1000},timezoneId:'Asia/Shanghai',reducedMotion:'reduce'});
+ const page=await context.newPage();page.setDefaultTimeout(12000);
+ page.on('pageerror',e=>errors.push(e.message));
+ let fail=false,requests=[],delay=false;
+ const data=aihot202Data(mode==='empty'?'empty':mode==='disabled'?'disabled':mode==='cached-error'?'failed':'full',mode==='long');
+ if(mode==='corrupt') {data.cache.status='never';data.cache.error='缓存读取失败';data.cache.sections={selected:{items:[]},hot:{items:[]}};}
+ const items=mode==='empty'?[]:notes.map(n=>({...n,title:mode==='long'?'长标题EnglishWithoutSpaces'.repeat(20):n.title}));
+ await page.route('**/api/collection/notes',async route=>{
+  requests.push(route.request().method()+' collection');
+  if(delay)await new Promise(r=>setTimeout(r,500));
+  if(mode==='error'||fail)return route.fulfill({status:503,json:{error:'合成收藏读取失败'}});
+  return route.fulfill({json:{notes:items,revision:1,lastImportedAt:items[0]?.savedAt||''}});
+ });
+ await page.route('**/api/aihot',async route=>{
+  requests.push(route.request().method()+' aihot');
+  if(mode==='error'||fail)return route.fulfill({status:503,json:{error:'合成缓存读取失败'}});
+  return route.fulfill({json:data});
+ });
+ await page.route('**/api/calendar/status',r=>r.fulfill({json:{available:true,supported:true,access:{calendar:'authorized',reminders:'authorized'}}}));
+ await page.route('**/api/calendar/todos',r=>r.fulfill({json:{available:true,reminders:[{id:'home-due',title:'核对首页调整',completed:false,due:'2020-01-01T00:00:00.000Z',dueHasTime:true}]}}));
+ await page.goto(app.url+'/#home');await page.locator('.hx-mod').first().waitFor();
+ return {context,page,requests,setFail:v=>{fail=v;},setDelay:v=>{delay=v;}};
+}
+async function geometry(page,width) {
+ const g=await page.evaluate(()=>({
+  overflow:document.documentElement.scrollWidth-innerWidth,
+  cards:[...document.querySelectorAll('.hx-mod')].map(el=>{const r=el.getBoundingClientRect();return {id:el.className,x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};}),
+  controls:[...document.querySelectorAll('.hx button,.hx a')].filter(el=>el.getBoundingClientRect().width).map(el=>({label:el.getAttribute('aria-label')||el.textContent,height:el.getBoundingClientRect().height})),
+ }));
+ assert.equal(g.overflow,0,`${width} overflow`);
+ for(const c of g.cards)assert(c.w>0&&c.x>=-1&&c.right<=width+1,JSON.stringify(c));
+ for(const c of g.controls)assert(c.height>=43.5,`${width} small control ${JSON.stringify(c)}`);
+ if(width>760)for(const [l,r] of [[0,1]])assert(Math.abs(g.cards[l].y-g.cards[r].y)<1&&Math.abs(g.cards[l].bottom-g.cards[r].bottom)<1,`${width} unequal cards`);
+ else for(let i=1;i<2;i++)assert(g.cards[i].y>=g.cards[i-1].bottom,`${width} order`);
+ return g;
 }
 try {
-  const app=await collabV16Fixture();
-  try {
-    const {page,context,errors}=await open(app);
-    try {
-      await page.locator('time.hx-date').waitFor();
-      assert.match(await page.locator('.hx-date').getAttribute('datetime'),/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
-      assert.match(await page.locator('.hx-date').getAttribute('aria-label'),/\d{2}:\d{2} \d{1,2}月\d{1,2}日 [A-Z][a-z]+/);
-      assert.match(await page.locator('.hx-greet').innerText(),/好，被选召的孩子$/);
-      await page.locator('.hx-next-av').waitFor();
-      assert.equal(await page.locator('.hx-next-av .agent-sprite').count(),1);
-      assert.equal(await page.locator('.hx-mod').count(),4);
-      assert.equal(await page.locator('.hx-brief-entry').count(),0);
-      assert.equal(await page.locator('.hx-crest-stage .crest').count(),8);
-      assert.equal(await page.locator('.hx-crest-stage .hero-orbit.a').evaluate(el=>getComputedStyle(el,'::after').content),'none');
-      const layout=await page.evaluate(()=>Object.fromEntries(['a','b','c','d'].map(id=>{
-        const box=document.querySelector('.hx-mod-'+id).getBoundingClientRect();
-        return [id,{top:box.top,bottom:box.bottom,height:box.height}];
-      })));
-      for (const [left,right] of [['a','c'],['b','d']]) {
-        assert.ok(Math.abs(layout[left].top-layout[right].top)<=1,`${left}/${right} 上边线未对齐：${JSON.stringify(layout)}`);
-        assert.ok(Math.abs(layout[left].bottom-layout[right].bottom)<=1,`${left}/${right} 下边线未对齐：${JSON.stringify(layout)}`);
-      }
-      assert.equal(await page.locator('.hx-crest-stage .crest-ring').evaluate(el=>getComputedStyle(el).animationName),'none');
-      await page.locator('.hx-mini-line').waitFor();
-      assert.equal(await page.locator('.hx-mini-line circle').count(),9); // 8 nodes + current halo
-      await page.locator('.hx-mod-b .hx-q li').first().waitFor();
-      assert.equal(await page.locator('.hx-mod-b .hx-q li').count(),3);
-      const geometry=await page.evaluate(()=>{
-        const panel=document.querySelector('.hx').getBoundingClientRect();
-        return [...document.querySelectorAll('[data-trace]')].map(g=>{
-          const p=g.querySelector('path').getAttribute('d');
-          const start=g.querySelector('circle').getBoundingClientRect();
-          return {name:g.dataset.trace,path:p,panelWidth:panel.width,startWidth:start.width};
-        });
-      });
-      assert.deepEqual(geometry.map(x=>x.name),['a','b','c','d']);
-      assert.ok(geometry.every(x=>/^M [\d.]+ [\d.]+ H /.test(x.path) && x.panelWidth>1000));
-      await page.screenshot({path:join(out,'home-full-1440.png'),fullPage:true});
-      await page.getByRole('button',{name:'在待处理打开：核对页面交接'}).click();
-      const drawer=page.getByRole('dialog',{name:'待处理'});
-      await drawer.waitFor();
-      assert.equal(await drawer.locator('[data-item-id="todo-due-home-due"] .ib-card-btn').evaluate(el=>el===document.activeElement),true);
-      await drawer.getByRole('button',{name:'关闭待处理'}).click();
-      await watchLaunchScroll(page);
-      await page.locator('.hx-mod-c .hx-go').click();
-      await page.locator('.cx-launch').waitFor();
-      await page.waitForFunction(() => window.__launchScroll?.length);
-      assert.equal(await page.evaluate(() => window.__launchScroll.at(-1)), 'instant');
-      assert.match(await page.locator('.cx-runs [aria-selected="true"]').innerText(),/随手记页/);
-      assert.equal(await page.locator('.cx-launch .go').count(),1);
-      assert.equal((await app.workspace()).collabLog?.length || 0,0);
-      assert.deepEqual(errors,[]);
-    } finally {await context.close();}
-    const natural=await open(app,1440,'full','no-preference');
-    try {
-      const durations=await natural.page.evaluate(() => ({
-        module: getComputedStyle(document.querySelector('.hx-mod')).transitionDuration,
-        trace: getComputedStyle(document.querySelector('.hx-tr')).transitionDuration,
-        crests: getComputedStyle(document.querySelector('.hx-crest-stage .crest-ring')).animationName,
-        upright: getComputedStyle(document.querySelector('.hx-crest-stage .crest svg')).animationName,
-      }));
-      assert.ok(durations.module.split(',').every(value => parseFloat(value) >= .24), JSON.stringify(durations));
-      assert.ok(parseFloat(durations.trace) >= .24, JSON.stringify(durations));
-      assert.equal(durations.crests,'hx-crest-revolve');
-      assert.equal(durations.upright,'hx-crest-upright');
-      await natural.page.emulateMedia({reducedMotion:'reduce'});
-      assert.equal(await natural.page.locator('.hx-crest-stage .crest-ring').evaluate(el=>getComputedStyle(el).animationName),'none');
-      await natural.page.emulateMedia({reducedMotion:'no-preference'});
-      await watchLaunchScroll(natural.page);
-      await natural.page.locator('.hx-mod-c .hx-go').click();
-      await natural.page.locator('.cx-launch').waitFor();
-      await natural.page.waitForFunction(() => window.__launchScroll?.length);
-      assert.equal(await natural.page.evaluate(() => window.__launchScroll.at(-1)), 'smooth');
-      assert.deepEqual(natural.errors,[]);
-    } finally {await natural.context.close();}
-    const mid=await open(app,1280);
-    try {
-      const layout=await mid.page.evaluate(()=>{
-        const bounds=id=>{const box=document.querySelector('.hx-mod-'+id).getBoundingClientRect();return {top:box.top,bottom:box.bottom};};
-        const stage=document.querySelector('.hx-crest-stage').getBoundingClientRect();
-        const panel=document.querySelector('.hx').getBoundingClientRect();
-        return {a:bounds('a'),b:bounds('b'),c:bounds('c'),d:bounds('d'),stage:{left:stage.left,right:stage.right},panel:{left:panel.left,right:panel.right}};
-      });
-      for(const [left,right] of [['a','c'],['b','d']]) {
-        assert.ok(Math.abs(layout[left].top-layout[right].top)<=1,JSON.stringify(layout));
-        assert.ok(Math.abs(layout[left].bottom-layout[right].bottom)<=1,JSON.stringify(layout));
-      }
-      assert.ok(layout.stage.left>=layout.panel.left&&layout.stage.right<=layout.panel.right,JSON.stringify(layout));
-      assert.equal(await mid.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
-      await mid.page.screenshot({path:join(out,'home-full-1280.png'),fullPage:true});
-      assert.deepEqual(mid.errors,[]);
-    } finally {await mid.context.close();}
-    const mobile=await open(app,390);
-    try {
-      assert.equal(await mobile.page.locator('.hx-traces').evaluate(el=>getComputedStyle(el).display),'none');
-      assert.equal(await mobile.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
-      await mobile.page.screenshot({path:join(out,'home-full-390.png'),fullPage:true});
-      assert.deepEqual(mobile.errors,[]);
-    } finally {await mobile.context.close();}
-    const narrow=await open(app,320);
-    try {
-      const bounds=await narrow.page.evaluate(()=>{
-        const panel=document.querySelector('.hx').getBoundingClientRect();
-        return {panel:{left:panel.left,right:panel.right},crests:[...document.querySelectorAll('.hx-crest-stage .crest')].map(el=>{
-          const box=el.getBoundingClientRect();return {left:box.left,right:box.right};
-        })};
-      });
-      assert.ok(bounds.crests.every(box=>box.left>=bounds.panel.left-1&&box.right<=bounds.panel.right+1),JSON.stringify(bounds));
-      assert.equal(await narrow.page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
-      await narrow.page.screenshot({path:join(out,'home-full-320.png'),fullPage:true});
-      assert.deepEqual(narrow.errors,[]);
-    } finally {await narrow.context.close();}
-    const project=await open(app);
-    try {
-      await project.page.getByRole('button',{name:'今日项目简报'}).click();
-      await project.page.getByRole('dialog',{name:'今日项目简报'}).waitFor();
-      await project.page.keyboard.press('Escape');
-      await project.page.getByRole('button',{name:'打开项目：协同项目'}).click();
-      await project.page.getByRole('dialog',{name:'协同项目'}).waitFor();
-      assert.deepEqual(project.errors,[]);
-    } finally {await project.context.close();}
-  } finally {await app.close();}
-
-  // 问候固定为被选召的孩子；主线与支线计数仍由待处理列表显示。
-  for (const scenario of ['side', 'empty']) {
-    const app = await fixture();
-    try {
-      await app.repository.write(seed(), {initialize:true});
-      if (scenario === 'side') await app.repository.updateConnections(() => ({roots:[],projects:[],agents:[{id:'codex',name:'Codex',kind:'开发 Agent',status:'detected',programs:[],configFound:true}],github:{status:'not_connected',login:'',message:'',at:''},projectScannedAt:'',agentScannedAt:now,errors:[],truncated:false}));
-      const {page,context,errors} = await open(app,390,'empty');
-      try {
-        const expected = '下午好，被选召的孩子';
-        await page.locator('.hx-greet').filter({hasText:expected}).waitFor();
-        assert.equal(await page.locator('.hx-qcount .main b').innerText(),'0');
-        assert.equal(await page.locator('.hx-qcount .side b').innerText(), scenario === 'side' ? '1' : '0');
-        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
-        await page.screenshot({path:join(out,`home-${scenario}-390.png`),fullPage:true});
-        assert.deepEqual(errors,[]);
-      } finally {await context.close();}
-    } finally {await app.close();}
-  }
-
-  for (const failure of ['readback','write-unknown']) {
-    const app=await fixture();
-    try {
-      await app.repository.write(seed(),{initialize:true});
-      const {page,context,errors}=await open(app,1440,'empty');
-      try {
-        let puts=0,failRead=false,failWrite=false;
-        await page.route('**/api/workspace',async route=>{
-          const method=route.request().method();
-          if(method==='PUT') {
-            puts++;
-            if(failWrite) { failWrite=false; const response=await route.fetch(); assert.equal(response.status(),200); await route.abort(); return; }
-          }
-          if(method==='GET' && failRead) {failRead=false; await route.abort(); return;}
-          await route.continue();
-        });
-        const input=page.getByRole('textbox',{name:'记一笔'});
-        await input.fill('合成首页随手记 '+failure);
-        if(failure==='readback') failRead=true;
-        else {failWrite=true;failRead=true;}
-        await page.getByRole('button',{name:'保存随手记'}).click();
-        await page.getByRole('alert').filter({hasText:'保存结果暂时无法核实'}).waitFor();
-        assert.equal(await input.inputValue(),'合成首页随手记 '+failure);
-        assert.equal(puts,1);
-        await page.getByRole('button',{name:'核对并重试随手记'}).click();
-        await page.waitForFunction(() => document.querySelector('input[aria-label="记一笔"]')?.value === '');
-        assert.equal(await input.inputValue(),'');
-        assert.equal(puts,1,'已写入的同一 ID 不重放');
-        assert.equal((await app.repository.read()).notes.filter(n=>n.text==='合成首页随手记 '+failure).length,1);
-        assert.deepEqual(errors,[]);
-      } finally {await context.close();}
-    } finally {await app.close();}
-  }
-  console.log('home-v16-browser PASS: A-D, geometry, responsive, B/C/D navigation, readback faults');
-} finally {await browser.close();}
+ const base=process.env.HOME_BASELINE_DIST;
+ if(base){const app=await launch(base);for(const width of [1680,1440,390]){const {page,context}=await open(app,width);await page.screenshot({path:join(out,`before-${width}.png`),fullPage:true});await context.close();}await app.close();apps=apps.filter(a=>a!==app);}
+ const app=await launch(resolve(process.env.HOME_CANDIDATE_DIST || 'work/home529/candidate-dist'));
+ for(const width of [1680,1440,1280,430,393,390,375,320]){
+  const {page,context,requests}=await open(app,width);
+  try{
+   await page.locator('.hx-mod-b .hx-summary-total').waitFor();
+   assert.deepEqual(await page.locator('.hx-mod h2').allTextContents(),['ASSETS资产仓库','COLLECTION收藏']);
+   assert.deepEqual(await page.locator('.hx-port').allTextContents(),['1','2']);
+   assert.deepEqual(await page.locator('.nav-item > span').allTextContents(),expectedNav);
+   assert.equal(await page.locator('.nav-zone-title,.nav-divider,.nav-group,.nav-zone').count(),0);
+   assert.equal(await page.locator('.hx-mod-a .hx-summary-total b').innerText(),'6');assert.equal(await page.locator('.nav-item').filter({hasText:'资产仓库'}).locator('small').innerText(),'6');
+   assert.equal(await page.locator('.hx-mod-b .hx-summary-total b').innerText(),'3');
+   assert.deepEqual(await page.locator('.hx-mod-b .hx-summary-list b').allTextContents(),['合成收藏 3','合成收藏 2','合成收藏 1']);
+   assert.equal(await page.locator('.hx-mod-a').getByText('已删除不应出现',{exact:true}).count(),0);
+   await page.screenshot({path:join(out,`after-${width}.png`),fullPage:true});
+   checks.push({kind:'layout',width,geometry:await geometry(page,width)});
+   if(width===1440){
+    for(const id of ['a','b'])await page.locator('.hx-mod-'+id).screenshot({path:join(out,`card-${id}-1440.png`)});
+    assert.equal(await page.locator('.hx-crest-stage .crest').count(),8);
+    assert.match(await page.locator('.hx-date').getAttribute('datetime'),/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    await page.getByRole('button',{name:'A 键：打开资产仓库'}).click();assert.equal(new URL(page.url()).hash,'#assets');
+    await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-summary-total').waitFor();
+    await page.getByRole('button',{name:'B 键：背光'}).click();assert.equal(await page.locator('.dv-key.b').getAttribute('aria-pressed'),'true');
+    for(const [id,route]of [['a','assets'],['b','learning']]){
+     await page.locator('.hx-mod-'+id+' .hx-page-link').click();assert.equal(new URL(page.url()).hash,'#'+route);
+     await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-summary-total').waitFor();
+    }
+    assert.equal(await page.locator('.topbar-inbox').count(),0);
+    const a11y=await new AxeBuilder({page}).include('.hx').include('.nav').withTags(['wcag2a','wcag2aa']).analyze();
+    assert.deepEqual(a11y.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[]);
+    await page.locator('.hx-mod-a .hx-page-link').focus();assert.equal(await page.locator('.hx-mod-a .hx-page-link').evaluate(el=>el===document.activeElement),true);
+    await page.emulateMedia({reducedMotion:'no-preference'});assert.equal(await page.locator('.crest-ring').evaluate(el=>getComputedStyle(el).animationName),'hx-crest-revolve');
+   }
+   assert(requests.every(r=>r==='GET collection'),'only retained summary is requested');
+  }finally{await context.close();}
+ }
+ for(const mode of ['empty','error','long']){
+  const {page,context,setFail,setDelay}=await open(app,390,mode);
+  try{
+   if(mode==='error') {await page.locator('.hx-mod-b .source-read-error').waitFor();assert.equal(await page.locator('.hx-mod-b .hx-summary-total').count(),0);assert.equal(await page.getByText('还没有收藏，收录后会显示在这里').count(),0);}
+   else if(mode==='empty') await page.getByText('还没有收藏，收录后会显示在这里').waitFor();
+   else await page.locator('.hx-mod-b .hx-summary-list').waitFor();
+   await geometry(page,390);await page.screenshot({path:join(out,mode+'-390.png'),fullPage:true});checks.push({kind:'state',mode});
+  }finally{await context.close();}
+ }
+ const retained=await open(app,1440);
+ try{
+  await retained.page.locator('.hx-mod-b .hx-summary-total').waitFor();retained.setFail(true);
+  await retained.page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await retained.page.locator('.hx-mod-b .source-read-error').waitFor();
+  assert.equal(await retained.page.locator('.hx-mod-b .hx-summary-list li').count(),3);
+  retained.setFail(false);await retained.page.locator('.hx-mod-b .source-read-error button').click();await retained.page.waitForFunction(()=>!document.querySelector('.hx-mod-b .source-read-error'));
+  checks.push({kind:'retained-and-retry',pass:true});
+ }finally{await retained.context.close();}
+ // 保留原首页快速随手记未知写入/读回失败的同 ID 恢复覆盖。
+ for(const failure of ['readback','write-unknown']){
+  const {page,context}=await open(app);
+  try{
+   let puts=0,failRead=false,failWrite=false;
+   await page.route('**/api/workspace',async route=>{
+    if(route.request().method()==='PUT'){puts++;const response=await route.fetch();assert.equal(response.status(),200);failRead=true;if(failWrite){failWrite=false;await route.abort();return;}await route.fulfill({response});return;}
+    if(route.request().method()==='GET'&&failRead){failRead=false;await route.abort();return;}await route.continue();
+   });
+   const input=page.getByRole('textbox',{name:'记一笔'}),text='合成首页随手记 '+failure;
+   await input.fill(text);if(failure==='write-unknown')failWrite=true;
+   await page.getByRole('button',{name:'保存随手记'}).click();await page.getByRole('alert').filter({hasText:'保存结果暂时无法核实'}).waitFor();
+   assert.equal(await input.inputValue(),text);assert.equal(puts,1);
+   await page.getByRole('button',{name:'核对并重试随手记'}).click();await page.waitForFunction(()=>document.querySelector('input[aria-label="记一笔"]')?.value==='');
+   assert.equal(puts,1);assert.equal((await app.repository.read()).notes.filter(n=>n.text===text).length,1);checks.push({kind:'note-recovery',failure,pass:true});
+  }finally{await context.close();}
+ }
+ assert.deepEqual(errors,[]);
+ await writeFile(join(out,'results.json'),JSON.stringify({checks,errors},null,2));console.log(`PASS ${checks.length} scenarios`);
+}catch(error){await writeFile(join(out,'failure.json'),JSON.stringify({error:error.stack,checks,errors},null,2));throw error;}
+finally{for(const app of apps)await app.close();await browser.close();}

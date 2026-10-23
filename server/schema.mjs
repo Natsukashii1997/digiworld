@@ -1,7 +1,12 @@
+import { validateProjectScanDiagnostics } from "./project-scan-diagnostics.mjs";
+import {validNoteRich} from '../src/note-rich.js';
+import {validNoteMeta} from '../src/note-types.js';
+import {validNoteImages} from '../src/note-image-model.js';
 import { validateSkillSourceAdoptions, validateSkillSourceAdoptionHistory } from "./skill-source-updates-schema.mjs";
 import { validateActivity, validateActivityHistory } from "./asset-activity-schema.mjs";
 import { validateCollabLog, validateCollabHistory } from "./collab-schema.mjs";
 import { validateBriefReads, validateBriefHistory } from "./brief-schema.mjs";
+import { validateDesignVersion } from "../src/design-asset.js";
 import { safePath } from "../src/store.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
 import { validateMcpVersion } from "../src/mcp-config.js";
@@ -161,6 +166,7 @@ export function validateScrolls(scrolls) {
     for (const e of s.entries) {
       keys(e, [
         "id",
+        "name",
         "text",
         "tags",
         "uses",
@@ -182,6 +188,11 @@ export function validateScrolls(scrolls) {
         }
       }
       entryIds.push(e.id);
+      if (e.name !== undefined) {
+        text(e.name, "焚决名称", SCROLL_LIMITS.name);
+        if (!e.name.trim() || CONTROL.test(e.name) || /[\n\t]/.test(e.name))
+          invalid("焚决名称");
+      }
       text(e.text, "条目正文", SCROLL_LIMITS.text);
       if (!e.text.trim() || CONTROL.test(e.text)) invalid("条目正文");
       array(e.tags, "条目标签", SCROLL_LIMITS.tags);
@@ -315,7 +326,7 @@ export function validateReverseRecords(records) {
       "imports",
       "stage",
       "copies",
-      "type", "recipe", "recipeReply", "referenceMedia", "replicas", "replicaDraft", "variations", "forge",
+      "type", "recipe", "recipeReply", "referenceMedia", "replicas", "replicaDraft", "variations", "forge", "reaRuns", "savedSkill", "packVersions", "activePackVersionId", "packSkills",
     ]);
     id(r.id);
     text(r.title, "逆向标题", REVERSE_LIMITS.title);
@@ -324,14 +335,15 @@ export function validateReverseRecords(records) {
     date(r.createdAt);
     optionalDate(r.updatedAt);
     optionalDate(r.deletedAt);
-    keys(r.material, ["text", "url"]);
+    keys(r.material, ["text", "url", "target"]);
+    if (r.material.target !== undefined && r.type !== "FN") invalid("只有FN可使用REA目标");
     text(r.material.text, "逆向素材原文", REVERSE_LIMITS.material);
     if (CONTROL.test(r.material.text)) invalid("逆向素材原文");
     text(r.material.url, "逆向素材链接", REVERSE_LIMITS.url);
     httpUrl(r.material.url);
-    if (!r.material.text.trim() && !r.material.url && !r.referenceMedia?.length) invalid("逆向素材为空");
+    if (!r.material.text.trim() && !r.material.url && !r.referenceMedia?.length && r.material.target === undefined) invalid("逆向素材为空");
     if(r.type!==undefined)validateRecipeRecord(r);
-    else if(['recipe','recipeReply','referenceMedia','replicas','replicaDraft','variations','forge'].some(k=>r[k]!==undefined))invalid('旧逆向记录不接受新字段');
+    else if(['recipe','recipeReply','referenceMedia','replicas','replicaDraft','variations','forge','reaRuns','savedSkill','packVersions','activePackVersionId','packSkills'].some(k=>r[k]!==undefined))invalid('旧逆向记录不接受新字段');
     text(r.why, "好在哪里", REVERSE_LIMITS.why);
     if (CONTROL.test(r.why)) invalid("好在哪里");
     text(r.pack, "拆解任务包", REVERSE_LIMITS.pack);
@@ -468,7 +480,7 @@ export function validateState(state) {
         if (parent && parent.type !== "Skill") invalid("派生来源必须为 Skill");
       } else invalid("来源类型");
     }
-    if (!["Skill", "Prompt", "Workflow", "Rule", "MCP"].includes(a.type)) invalid("资产类型");
+    if (!["Skill", "Prompt", "Workflow", "Rule", "MCP", "Design"].includes(a.type)) invalid("资产类型");
     for (const key of ["demo", "favorite", "archived"])
       if (typeof a[key] !== "boolean") invalid("资产状态");
     // 置顶（切片 1.1）：可选；旧库缺失即未置顶，不写迁移。favorite 仅作兼容保留。
@@ -504,6 +516,7 @@ export function validateState(state) {
         "mediaManifest",
         "workflowTemplate",
         "mcpConfig",
+        "design",
       ]);
       id(v.id);
       if (v.references !== undefined) {
@@ -571,6 +584,9 @@ export function validateState(state) {
       )
         invalid("Skill 缺少 SKILL.md");
       if(v.mediaManifest!==undefined){if(a.type!=="Skill")invalid("只有Skill可有媒体清单");try{versionBytes=planSkillVersion(v).byteLength;}catch(e){invalid(e.message);}}
+      if (a.type === "Design") {
+        try { validateDesignVersion(v); } catch (error) { invalid(error.message); }
+      } else if (v.design !== undefined) invalid("只有设计资产可设置设计形态");
       if (versionBytes > 25 * 1024 * 1024) invalid("单版本文件超过 25 MB");
       totalBytes += versionBytes;
       if (totalBytes > 64 * 1024 * 1024)
@@ -580,15 +596,17 @@ export function validateState(state) {
   if (state.collabRunSettings !== undefined)
     validateCollabRunSettings(state.collabRunSettings, state.assets);
   for (const n of state.notes) {
-    keys(n, ["id", "text", "at", "format", "refined"]);
+    keys(n, ["id", "text", "at", "format", "refined", "images", "type", "title", "rich"]);
     id(n.id);
-    text(n.text, "随手记");
+    if(!validNoteMeta(n)||!validNoteRich(n))invalid("便签类型或标题");
+    if(!validNoteImages(n.images))invalid("便签图片引用");
+    if(n.text!=="")text(n.text, "随手记");
     date(n.at);
     // 切片 1.4：format 缺失为旧纯文本；md1 为受限 Markdown（列表、任务、五色字），
     // 只存文字，渲染时由前端解析并转义，不接受任何 HTML 字段。
     if (n.format !== undefined) {
       if (n.format !== "md1") invalid("随手记格式");
-      text(n.text, "随手记", NOTE_MAX);
+      if(n.text!=="")text(n.text, "随手记", NOTE_MAX);
       if (CONTROL.test(n.text)) invalid("随手记包含控制字符");
     }
     if (n.refined !== undefined) {
@@ -650,6 +668,7 @@ export function validateState(state) {
       "agents",
       "github",
       "projectScannedAt",
+      "projectScanDiagnostics",
       "agentScannedAt",
       "errors",
       "truncated",
@@ -887,6 +906,7 @@ export function validateState(state) {
     array(c.errors, "扫描错误", 10000);
     c.errors.forEach((e) => text(e, "扫描错误", 3000));
     if (typeof c.truncated !== "boolean") invalid("扫描完整性");
+    if (c.projectScanDiagnostics !== undefined) validateProjectScanDiagnostics(c.projectScanDiagnostics);
     for (const key of ["projectScannedAt", "agentScannedAt"])
       if (c[key]) date(c[key]);
     keys(c.github, ["status", "login", "message", "at"]);
@@ -959,10 +979,12 @@ export function validateState(state) {
             "path",
             "status",
             "identity",
+            "identityVersion",
             "observedIdentity",
             "checkedAt",
             "message",
           ]);
+          if (location.identityVersion !== undefined && (location.identityVersion !== 2 || !location.identity)) invalid("目录身份版本");
           text(location.path, "项目目录位置", 2000);
           if (!p.localPaths.includes(location.path))
             invalid("目录观测不属于项目");
@@ -1140,9 +1162,12 @@ export function validateHistory(
     allowProfile = false,
     allowCandidateImport = false,
     allowSkillSourceAdoptions = false,
+    allowReverseService = false,
+    allowReverseImport = false,
+    allowReverseSkill = false,
   } = {},
 ) {
-  validateReverseHistory(previous,next);
+  validateReverseHistory(previous,next,{ allowReverseService, allowReverseImport, allowReverseSkill });
   validateNightV2History(previous, next);
   if (
     !allowLearningFolders &&

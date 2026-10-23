@@ -1,3 +1,4 @@
+import { hasSkillPackage } from "./design-asset.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { Button, Badge } from "./components.jsx";
@@ -300,6 +301,9 @@ export function AssetHistory({
             <dd>{selected.tags.join(" / ") || "未设置"}</dd>
           </div>
         </dl>
+        {asset.type === "Design" && <dl className="history-fields">
+          <div><dt>内容形式</dt><dd>{selected.design.kind === "skill" ? "Skill 包" : "Prompt"}</dd></div>
+        </dl>}
         {asset.type === "MCP" ? (
           <dl className="history-fields" aria-label="MCP 版本结构">
             <div><dt>服务标识</dt><dd>{selected.mcpConfig.serverId}</dd></div>
@@ -318,7 +322,7 @@ export function AssetHistory({
             <WorkflowReferenceList version={selected} assets={state.assets} />
           </section>
         )}
-        {asset.type === "Skill" && (
+        {hasSkillPackage(asset, selected) && (
           <details>
             <summary>完整文件清单 · {selected.files.length} 项</summary>
             <div className="history-files">

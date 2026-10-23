@@ -30,6 +30,9 @@ export const shortText = (text) => {
   const s = text.replace(/\s+/g, " ").trim();
   return s.length > 20 ? `${s.slice(0, 20)}…` : s;
 };
+// 旧条目未存名称时，只派生显示名称；不迁移或改写原正文。
+export const entryName = (entry) => entry.name ||
+  entry.text.split(/\r?\n/).find(line => line.trim())?.trim().slice(0, NAME_MAX) || "未命名焚决";
 const cleanName = (name) =>
   name.replace(/[\x00-\x1f\x7f]/g, " ").trim().slice(0, NAME_MAX);
 const cleanText = (text) =>
@@ -75,10 +78,11 @@ export const restoreScroll = (scrolls, id) =>
   mapScroll(scrolls, id, ({ deletedAt, ...s }) => ({ ...s, updatedAt: now() }));
 
 // source：可选的来源（逆向工程入库时为 { reverseId, url? }），只记录，不参与显示与计次。
-export function addEntry(scrolls, scrollId, text, tags = [], source) {
+export function addEntry(scrolls, scrollId, text, tags = [], source, name) {
   const entry = {
     id: uid(),
     text: cleanText(text),
+    ...(name !== undefined ? { name: cleanName(name) } : {}),
     tags,
     uses: 0,
     createdAt: now(),
@@ -92,10 +96,11 @@ export function addEntry(scrolls, scrollId, text, tags = [], source) {
     entry,
   };
 }
-export const editEntry = (scrolls, scrollId, entryId, text, tags) =>
+export const editEntry = (scrolls, scrollId, entryId, text, tags, name) =>
   mapEntry(scrolls, scrollId, entryId, (e) => ({
     ...e,
     text: cleanText(text),
+    ...(name !== undefined ? { name: cleanName(name) } : {}),
     tags,
     updatedAt: now(),
   }));
@@ -126,10 +131,10 @@ export function moveEntry(scrolls, scrollId, entryId, step) {
   });
 }
 
-// 资产仓库里的焚决卡（切片 1.3b）：编号按创建先后，含已删卷，恢复后编号不变（与资产 serialsOf 同义）。
+// 资产仓库里的未删除焚决卡按创建先后连续编号；删除/恢复后按当前可见卷重新派生。
 export function scrollSerials(scrolls) {
   const out = {};
-  [...scrolls]
+  scrolls.filter((s) => !s.deletedAt)
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .forEach((s, i) => (out[s.id] = i + 1));
   return out;
@@ -146,11 +151,11 @@ export function scrollStats(scroll) {
     tags: [...counts].sort((a, b) => b[1] - a[1]).map(([t]) => t),
   };
 }
-// 页内搜索：每个关键词都要命中卷名、某条未删除条目的正文或标签（words 已是小写，见 search.js terms）。
+// 页内搜索：命中卷名、某条未删除条目的名称或正文；旧标签仅作数据兼容。
 export function scrollHit(scroll, words) {
   const text = [
     scroll.name,
-    ...liveEntries(scroll).flatMap((e) => [e.text, e.tags.join(" ")]),
+    ...liveEntries(scroll).flatMap((e) => [e.name || "", e.text]),
   ]
     .join("\n")
     .toLowerCase();

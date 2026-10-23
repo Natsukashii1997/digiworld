@@ -1,3 +1,4 @@
+import GetAnalysis from './GetAnalysis';
 import { Reading, ReadReveal } from '../../../ScanMotion.jsx';
 import { flyData } from '../../../data-flight.js';
 import { copyText } from '../../../data-flight.js';
@@ -26,8 +27,6 @@ import {
   Puzzle,
   Bot,
   ExternalLink,
-  ChevronLeft,
-  ChevronRight,
   Play,
 } from 'lucide-react';
 import { Note } from '../types/xiaohongshu';
@@ -41,9 +40,13 @@ import {
   getLocalServiceHealth,
   getLocalSetupInfo,
   importSharedNote,
+  resumeSharedImport,
+  pendingSharedImport,
+  acknowledgeSharedImport,
   openBrowserExtensionSetup,
   saveDeskWorkspace,
   updateNoteCategories,
+  undoNoteAutoGroup,
   pairExtension,
   revokeExtension,
   adoptRecycleRevision,
@@ -71,10 +74,7 @@ import {
 import { shouldUseLightweightCanvas } from '../lib/desk-performance.mjs';
 import {
   formatMediaTime,
-  paginatePlainText,
-  paginateTimedSegments,
 } from '../lib/video-transcript.mjs';
-import { stripDuplicateTagSuffix } from '../lib/note-content.mjs';
 import { filterNotesByQuery } from '../../scripts/lib/note-search.mjs';
 import {
   applyNoteCategoryUpdates,
@@ -336,24 +336,47 @@ function buildOrganized(
 }
 
 // ── Expanded note reader ──────────────────────────────────────────────────────
+function AutoGroupNotice({note,busy,disabled,error,onUndo}: {note:Note;busy:boolean;disabled:boolean;error?:string;onUndo:()=>void}) {
+  if(!note.autoGroup)return null;
+  return <div className="collection-auto-group" role="status">
+    <div className="collection-auto-group-copy">
+      <span title={note.title}>已自动放入「{note.autoGroup.groupName}」 · {note.title}</span>
+      <small>{note.autoGroup.reason}</small>
+      {error&&<span className="collection-auto-group-error" role="alert">{error}</span>}
+    </div>
+    <button type="button" className="collection-key" disabled={disabled} aria-busy={busy} aria-label={`撤销「${note.title}」的自动进组`} onClick={onUndo}>{busy?'撤销中':'撤销'}</button>
+  </div>;
+}
+
 function ExpandedCard({
   note,
   onClose,
   onDelete,
   isDeleting,
+  onUndoAutoGroup,
+  undoBusy,
+  undoDisabled,
+  undoError,
 }: {
   note: Note;
   onClose: () => void;
   onDelete: () => void;
   isDeleting: boolean;
+  onUndoAutoGroup?: () => void;
+  undoBusy: boolean;
+  undoDisabled: boolean;
+  undoError?: string;
 }) {
   const dialogRef = useDialogFocus(onClose);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [failedImageUrls, setFailedImageUrls] = useState<Set<string>>(() => new Set());
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const rawContent = stripDuplicateTagSuffix(note.rawContent || '', note.tags);
-  const ocrText = (note.ocrText || '').trim();
-  const [readerPage, setReaderPage] = useState(0);
+  // 用户 2026-10-14：图文只读「内容文稿」（图片文字去掉第 1 张封面），视频只读视频文稿；不再显示帖子正文。
+  // 只有一张图时它就是内容本身，不当封面去掉。按图分页显示页码，与画廊图号一致（封面是第 1 张，内容从 P2 起）；无字的页跳过但保留页码。
+  const imageOcr = note.imageOcr || [];
+  const contentPages = note.type === 'video' ? []
+    : imageOcr.length ? imageOcr.map((item, index) => ({ page: index + 1, imageUrl: item.imageUrl, text: (item.text || '').trim() })).slice(imageOcr.length > 1 ? 1 : 0).filter(item => item.text)
+    : (note.ocrText || '').trim() ? [{ page: 0, text: (note.ocrText || '').trim() }] : [];
   const videoRef = useRef<HTMLVideoElement>(null);
   const sourceImageUrls = Array.from(new Set(
     note.imageUrls?.length ? note.imageUrls : (note.coverUrl ? [note.coverUrl] : []),
@@ -362,31 +385,9 @@ function ExpandedCard({
   const resolvedImageIndex = Math.min(activeImageIndex, Math.max(imageUrls.length - 1, 0));
   const activeImageUrl = imageUrls[resolvedImageIndex];
   const isVideo = note.type === 'video' && Boolean(note.videoUrl);
-  const notePages = useMemo(
-    () => paginatePlainText(rawContent || '这条笔记没有可见正文。') as string[],
-    [rawContent],
-  );
-  const transcriptPages = useMemo(
-    () => paginateTimedSegments(note.transcriptSegments || []) as Array<Array<{
-      start: number;
-      duration: number;
-      text: string;
-    }>>,
-    [note.transcriptSegments],
-  );
-  const [readerTab, setReaderTab] = useState<'note' | 'transcript' | 'ocr'>(
-    note.type === 'video' && transcriptPages.length ? 'transcript'
-      : rawContent ? 'note' : ocrText ? 'ocr' : note.type === 'video' ? 'transcript' : 'note',
-  );
-  const readerPages = readerTab === 'transcript'
-    ? transcriptPages
-    : notePages;
-  const resolvedReaderPage = Math.min(readerPage, Math.max(readerPages.length - 1, 0));
-
-  const changeReaderTab = (tab: 'note' | 'transcript' | 'ocr') => {
-    setReaderTab(tab);
-    setReaderPage(0);
-  };
+  const transcriptSegments = note.transcriptSegments || [];
+  const [readerTab, setReaderTab] = useState<'content' | 'transcript' | 'get'>(note.type === 'video' ? 'transcript' : 'content');
+  const changeReaderTab = (tab: 'content' | 'transcript' | 'get') => setReaderTab(tab);
 
   const seekVideo = (time: number) => {
     if (!videoRef.current) return;
@@ -424,7 +425,7 @@ function ExpandedCard({
         <div className="collection-reader-info">
           <div className="collection-reader-bar">
             <span className="collection-reader-category" title={note.category}>{note.category}</span>
-            {/^https?:\/\//i.test(note.sourceUrl||'') && <a className="collection-key collection-original-link" href={note.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label="查看原帖"><ExternalLink size={14}/>原帖</a>}
+            {/^https?:\/\//i.test(note.sourceUrl||'') && <a className="collection-key collection-original-link" href={note.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label="查看原帖"><ExternalLink size={14}/>{note.origin === 'douyin' ? '抖音原帖' : '原帖'}</a>}
             {confirmingDelete ? <div className="collection-delete-confirm">
               <button type="button" className="collection-key" onClick={() => setConfirmingDelete(false)} disabled={isDeleting}>取消</button>
               <button type="button" className="collection-key collection-danger" onClick={onDelete} disabled={isDeleting}>
@@ -437,6 +438,7 @@ function ExpandedCard({
           <div className="collection-reader-meta"><span>@{note.author.name}</span><span>{formatDate(note.savedAt)}</span>
             <span><Heart size={13}/> {formatNumber(note.likes)}</span><span><BookMarked size={13}/> {formatNumber(note.collects)}</span>
           </div>
+          {onUndoAutoGroup&&<AutoGroupNotice note={note} busy={undoBusy} disabled={undoDisabled} error={undoError} onUndo={onUndoAutoGroup}/>}
           <div className="collection-reader-tabs" role="radiogroup" aria-label="阅读内容" onKeyDown={event => {
             const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
             if (!keys.includes(event.key)) return;
@@ -449,25 +451,26 @@ function ExpandedCard({
             radios[next].focus();
             radios[next].click();
           }}>
-            {rawContent && <button className="collection-key" role="radio" aria-checked={readerTab === 'note'} tabIndex={readerTab === 'note' ? 0 : -1} onClick={() => changeReaderTab('note')}>{note.type === 'video' ? '笔记正文' : '正文'}</button>}
-            {ocrText && <button className="collection-key" role="radio" aria-checked={readerTab === 'ocr'} tabIndex={readerTab === 'ocr' ? 0 : -1} onClick={() => changeReaderTab('ocr')}>图片文字</button>}
-            {transcriptPages.length > 0 && <button className="collection-key" role="radio" aria-checked={readerTab === 'transcript'} tabIndex={readerTab === 'transcript' ? 0 : -1} onClick={() => changeReaderTab('transcript')}>视频文稿</button>}
+            {note.getAnalysis && <button className="collection-key" role="radio" aria-checked={readerTab === 'get'} tabIndex={readerTab === 'get' ? 0 : -1} onClick={() => changeReaderTab('get')}>Get笔记解析</button>}
+            {note.type === 'video'
+              ? <button className="collection-key" role="radio" aria-checked={readerTab === 'transcript'} tabIndex={readerTab === 'transcript' ? 0 : -1} onClick={() => changeReaderTab('transcript')}>视频文稿</button>
+              : <button className="collection-key" role="radio" aria-checked={readerTab === 'content'} tabIndex={readerTab === 'content' ? 0 : -1} onClick={() => changeReaderTab('content')}>内容文稿</button>}
           </div>
-          {readerTab === 'note' && <p className="collection-reader-body">{notePages[resolvedReaderPage] || '这条笔记没有可见正文。'}</p>}
-          {readerTab === 'ocr' && <p className="collection-reader-body">{ocrText}</p>}
-          {readerTab === 'transcript' && (transcriptPages.length > 0 ? <div className="collection-transcript">
-            {transcriptPages[resolvedReaderPage]?.map((segment, index) => <div key={`${segment.start}-${index}`} className="collection-transcript-segment">
+          {readerTab === 'get' && note.getAnalysis && <GetAnalysis note={note}/>}
+          {readerTab === 'content' && (contentPages.length ? <div className="collection-transcript">
+            {contentPages.map(item => item.page > 0 ? <div key={item.page} className="collection-transcript-segment collection-content-page">
+              {/* 与视频文稿的时间戳同款：点页码把左侧画廊切到这张图。 */}
+              <button type="button" className="collection-key collection-timestamp collection-content-page-label" aria-label={`P${item.page}：在左侧查看这张图片`}
+                onClick={() => { const index = imageUrls.indexOf(item.imageUrl || ''); if (index >= 0) setActiveImageIndex(index); }}>P{item.page}</button><p className="collection-reader-body">{item.text}</p>
+            </div> : <p key="all" className="collection-reader-body">{item.text}</p>)}
+          </div> : <p className="collection-reader-body">这条笔记没有识别到图片文字。</p>)}
+          {readerTab === 'transcript' && (transcriptSegments.length > 0 ? <div className="collection-transcript">
+            {transcriptSegments.map((segment, index) => <div key={`${segment.start}-${index}`} className="collection-transcript-segment">
               <button type="button" className="collection-key collection-timestamp" onClick={() => seekVideo(segment.start)}>{formatMediaTime(segment.start)}</button><p className="collection-reader-body">{segment.text}</p>
             </div>)}
           </div> : <p className="collection-notice">{note.videoError || '这条视频没有识别到可转写的语音。'}</p>)}
-          {readerTab !== 'ocr' && readerPages.length > 1 && <div className="collection-reader-pagination">
-            <button type="button" className="collection-key collection-icon" aria-label="上一页" onClick={() => setReaderPage(page => Math.max(0, page - 1))} disabled={resolvedReaderPage === 0}><ChevronLeft size={14}/></button>
-            <span>{resolvedReaderPage + 1} / {readerPages.length}</span>
-            <button type="button" className="collection-key collection-icon" aria-label="下一页" onClick={() => setReaderPage(page => Math.min(readerPages.length - 1, page + 1))} disabled={resolvedReaderPage >= readerPages.length - 1}><ChevronRight size={14}/></button>
-          </div>}
-          {readerTab === 'note' && Array.isArray(note.tags) && note.tags.length > 0 && <div className="collection-reader-tags">{note.tags.map(tag => <span key={tag}>#{tag}</span>)}</div>}
           {note.mediaStatus === 'partial' && <p className="collection-notice">{note.mediaError || '部分图片或文字未能完整保存。'}</p>}
-          {note.videoStatus === 'partial' && note.videoError && readerTab !== 'transcript' && <p className="collection-notice">{note.videoError}</p>}
+          {note.videoStatus === 'partial' && note.videoError && (readerTab !== 'transcript' || transcriptSegments.length > 0) && <p className="collection-notice">{note.videoError}</p>}
         </div>
       </motion.div>
     </motion.div>
@@ -641,7 +644,7 @@ function SetupDialog({
           {loading ? <div className="collection-loading" role="status" aria-label="读取本地配置"><Reading label="读取本地配置"/></div>
             : panel === 'extension' ? <>
               <div className="collection-setup-state" role="status"><span className="collection-state-dot"/>{info ? (info.extension.available ? '插件文件夹已就绪' : '未找到插件文件夹') : '插件状态未读取'}{info?.extension.version && <span>v{info.extension.version}</span>}</div>
-              <div className="collection-step"><span className="collection-step-number">1</span><div><h3>安装插件</h3><p>在 Chrome 扩展页开启开发者模式，加载下面这个文件夹。</p>
+              <div className="collection-step"><span className="collection-step-number">1</span><div><h3>安装插件</h3><p>在 Chrome 扩展页开启开发者模式，加载下面这个文件夹。已安装则点插件的重新加载，再刷新抖音或小红书网页。</p>
                 <p className="collection-path" title={info?.extension.path}>{info?.extension.path || '路径未读取'}</p>
                 <div className="collection-action-row"><button type="button" className="collection-key" disabled={!info?.extension.path} onClick={() => copyText(info!.extension.path).then(() => {setPairError('路径已复制');setPairFailed(false);}).catch(() => {setPairError('复制失败，请手动选择路径');setPairFailed(true);})}>复制路径</button>
                   <button type="button" className="collection-key" onClick={onOpenExtension} disabled={!info?.extension.available}><ExternalLink size={15}/>配置 Chrome 插件</button></div>
@@ -650,7 +653,7 @@ function SetupDialog({
                 <button type="button" className="collection-key collection-pair" onClick={async () => {try {const result = await pairExtension();setPairingToken(result.token);setPairError('');setPairFailed(false);} catch(error) {setPairError(error instanceof Error ? error.message : '配对失败');setPairFailed(true);}}}>生成插件配对码</button>
                 {pairingToken && <div className="collection-pair-label"><label htmlFor="collection-pair-token">配对码</label><input id="collection-pair-token" readOnly value={pairingToken} aria-label="插件配对码" onFocus={event => event.currentTarget.select()}/><button type="button" className="collection-key" onClick={() => copyText(pairingToken).then(() => {setPairError('配对码已复制');setPairFailed(false);}).catch(() => {setPairError('复制失败，请手动选择配对码');setPairFailed(true);})}>复制配对码</button></div>}
               </div></div>
-              <div className="collection-step"><span className="collection-step-number">3</span><div><h3>在小红书点「收藏」</h3><p>帖子会落到这张桌上；也可以把帖子卡片直接拖进来。</p></div></div>
+              <div className="collection-step"><span className="collection-step-number">3</span><div><h3>在小红书或抖音点「收藏」</h3><p>打开作品后，点“直接收藏”保存原内容；点“收藏并添加Get笔记”，会在本机保存完成后交给GET整理。结果在同卡“Get笔记解析”查看，直接收藏按钮也可拖到画布。</p></div></div>
               <div className="collection-danger-zone"><p>不想再让这个浏览器收录？</p><button type="button" className="collection-key collection-danger collection-revoke" onClick={async () => {try {await revokeExtension();setPairingToken('');setPairError('配对已撤销');setPairFailed(false);} catch(error) {setPairError(error instanceof Error ? error.message : '撤销失败');setPairFailed(true);}}}>撤销插件配对</button></div>
               {pairError && <p className={`collection-notice${pairFailed ? ' is-error' : ''}`} role={pairFailed ? 'alert' : 'status'}>{pairError}</p>}
             </> : <>
@@ -673,7 +676,7 @@ function SetupDialog({
 }
 
 // ── Main view ─────────────────────────────────────────────────────────────────
-export function DeskView() {
+export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:string}|null;loadedJumpKey?:string|null}) {
   const { notes, setNotes } = useNotes();
   const { state, dispatch } = useApp();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -692,7 +695,21 @@ export function DeskView() {
   const savedRevisionRef=useRef(0);
   const [recoverableDraft,setRecoverableDraft]=useState<DeskDraft|null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const categoryRailRef = useRef<HTMLDivElement | null>(null);
   const [expanded, setExpanded] = useState<Note | null>(null);
+  const consumedJump=useRef<string|null>(null);
+  const [jumpMessage,setJumpMessage]=useState('');
+  useEffect(()=>{
+    if(!noteJump || loadedJumpKey!==noteJump.key || state.isLoading || state.error || consumedJump.current===noteJump.key)return;
+    consumedJump.current=noteJump.key;
+    const note=notes.find(n=>n.id===noteJump.id);
+    setExpanded(note||null);setJumpMessage(note?'':'这条收藏已删除或不可用，请重新搜索。');
+  },[noteJump?.key,loadedJumpKey,state.isLoading,state.error,notes]);
+  useEffect(()=>{
+    if(expanded && !state.isLoading && !state.error && !notes.some(n=>n.id===expanded.id)){
+      setExpanded(null);setJumpMessage('这条收藏已删除或不可用。');
+    }
+  },[notes,state.isLoading,state.error,expanded]);
   const [dims, setDims] = useState({ w: 1200, h: 800 });
   const [serviceHealth, setServiceHealth] = useState<LocalServiceHealth>({ ok: false, source: 'sidecar' });
   const [importFeedback, setImportFeedback] = useState<ImportFeedback>(IDLE_IMPORT_FEEDBACK);
@@ -704,6 +721,9 @@ export function DeskView() {
   const [dropTargetGroupId, setDropTargetGroupId] = useState<string | null>(null);
   const [groupDropTargetId, setGroupDropTargetId] = useState<string | null>(null);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+  const [undoBusyId,setUndoBusyId]=useState<string|null>(null);
+  const [undoError,setUndoError]=useState({noteId:'',message:''});
+  const undoInFlight=useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
   const reducedMotion = useReducedMotion();
   const [helpOpen, setHelpOpen] = useState(false);
@@ -718,6 +738,8 @@ export function DeskView() {
   const arrivalTimer = useRef<number|null>(null);
   useEffect(() => () => {if(arrivalTimer.current !== null)window.clearTimeout(arrivalTimer.current);}, []);
   const [importWarning,setImportWarning]=useState('');
+  const [importRecovery,setImportRecovery]=useState(''),[importChecking,setImportChecking]=useState(false);
+  const importInFlight=useRef(false);
   useEffect(() => {if(reducedMotion)setNewArrivalIds(new Set());}, [reducedMotion]);
   useEffect(() => {
     if(!deskReady || state.isLoading)return;
@@ -898,6 +920,17 @@ export function DeskView() {
     setSelectedNoteIds(new Set());
   }, [activeCategory]);
 
+  useEffect(() => {
+    const rail = categoryRailRef.current;
+    const selected = rail?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!rail || !selected) return;
+    const viewport = rail.getBoundingClientRect();
+    const chip = selected.getBoundingClientRect();
+    const offset = chip.left < viewport.left ? chip.left - viewport.left
+      : chip.right > viewport.right ? chip.right - viewport.right : 0;
+    if (offset) rail.scrollLeft += offset;
+  }, [activeCategory]);
+
   const groupNameById = useMemo(
     () => new Map(deskState.groups.map((group) => [group.id, group.name])),
     [deskState.groups],
@@ -937,56 +970,39 @@ export function DeskView() {
   const maxLabelY = labels.length ? Math.max(...labels.map(label => label.tagTop + GROUP_TAG_H)) : 0;
   const containerH = Math.max(maxY + CARD_H + 100, maxLabelY + 80, minH);
 
-  const runImport = async (value: string) => {
+  const runImport = async (value = '', resume = false) => {
     const input = value.trim();
-    if (!input || state.isLoading) return;
-
-    if (!canUseLocalService) {
-      setImportFeedback({
-        phase: 'error',
-        title: '本地服务未连接',
-        message: '请重新连接数码世界后再试',
-      });
-      dismissImportFeedback('error');
-      return;
-    }
-
-    setImportWarning('');
+    if ((!input && !resume) || state.isLoading || importInFlight.current) return;
+    if (!canUseLocalService) {setImportRecovery('本地服务未连接，请恢复连接后核对。');return;}
+    importInFlight.current=true;setImportChecking(true);setImportWarning('');
     dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
-    setImportFeedback({
-      phase: 'processing',
-      title: getDraggedNoteTitle(input),
-      message: '正在解析…',
-    });
-
+    setImportFeedback({phase:'processing',title:resume?'核对上次收藏':getDraggedNoteTitle(input),message:'正在核对…'});
     try {
-      const result = await importSharedNote(input);
-      savedDeskRef.current=JSON.stringify(ensureDeskState(result.workspace,result.notes));savedRevisionRef.current=result.workspace.revision;
-      setDeskState(moveNoteToGroup(
-        ensureDeskState(result.workspace, result.notes),
-        result.note.id,
-        LOOSE_GROUP_ID,
-      ) as DeskState);
-      setNotes(result.notes);
-      if(result.note.mediaStatus === 'partial' || result.note.videoStatus === 'partial')setImportWarning(`${result.note.title}：${result.note.mediaError || result.note.videoError || '部分内容未能完整保存，请打开收藏核对。'}`);
-      setImportFeedback(IDLE_IMPORT_FEEDBACK);
+      const result = resume ? await resumeSharedImport() : await importSharedNote(input);
+      if(!localDeleteMounted.current)return;
+      if(result){
+        if(!adoptRecycleResult(result))throw new Error('收藏已保存，请先处理分组草稿，再核对上次收藏；当前分组未被覆盖。');
+        await acknowledgeSharedImport(result.operationId);
+        if(!localDeleteMounted.current)return;
+        if(!result.note)setImportWarning('上次收藏曾保存，当前已被移除；本次核对没有重新创建它。');
+        else if(result.note.mediaStatus==='partial'||result.note.videoStatus==='partial')setImportWarning(`${result.note.title}：${result.note.mediaError||result.note.videoError||'部分内容未能完整保存，请打开收藏核对。'}`);
+      }
+      setImportRecovery('');setImportFeedback(IDLE_IMPORT_FEEDBACK);
       await loadLocalStatus();
     } catch (error) {
-      const message = error instanceof Error && error.message
-        ? error.message
-        : '导入失败，请检查链接后重试';
-      setImportFeedback({
-        phase: 'error',
-        title: '没有收录成功',
-        message,
-      });
-      dismissImportFeedback('error', 3600);
-      dispatch({ type: 'SET_ERROR', payload: message });
+      if(!localDeleteMounted.current)return;
+      const message=error instanceof Error?error.message:'收藏结果待核对，原操作记录已保留。';
+      setImportRecovery(message);setImportFeedback(IDLE_IMPORT_FEEDBACK);
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      importInFlight.current=false;
+      if(localDeleteMounted.current){setImportChecking(false);dispatch({type:'SET_LOADING',payload:false});}
     }
   };
+  useEffect(()=>{
+    let live=true;
+    pendingSharedImport().then(pending=>{if(live&&pending)setImportRecovery(pending.phase==='saved'?'上次收藏已保存，内容待回读核对。':'上次收藏结果待核对，原操作编号已保留。');}).catch(error=>{if(live)setImportRecovery(error.message);});
+    return()=>{live=false;};
+  },[]);
 
   const handleExternalDrop = (event: DragEvent<HTMLDivElement>) => {
     if (draggedNoteIdsRef.current.length || draggedGroupIdRef.current) {
@@ -1010,7 +1026,7 @@ export function DeskView() {
       setImportFeedback({
         phase: 'error',
         title: '没有识别到笔记',
-        message: '请直接拖动小红书搜索结果里的笔记卡片或封面',
+        message: '请拖动小红书笔记卡片，或抖音作品右下角的收藏按钮',
       });
       dismissImportFeedback('error');
     }
@@ -1019,6 +1035,7 @@ export function DeskView() {
   useEffect(() => {if(editingGroupId)scrollToGroup(editingGroupId, true);}, [editingGroupId]);
 
   const handleCreateGroup = () => {
+    if(undoInFlight.current)return;
     setDeskState((prev) => {
       const next = createDeskGroup(prev, '新分组') as DeskState;
       const created = next.groups.find((group) => !prev.groups?.some((current) => current.id === group.id) && group.kind === 'custom');
@@ -1032,11 +1049,13 @@ export function DeskView() {
   };
 
   const handleStartRename = (groupId: string, currentName: string) => {
+    if(undoInFlight.current)return;
     setEditingGroupId(groupId);
     setEditingGroupName(currentName);
   };
 
   const handleCommitRename = () => {
+    if(undoInFlight.current)return;
     if (!editingGroupId) {
       return;
     }
@@ -1047,6 +1066,7 @@ export function DeskView() {
   };
 
   const handleMoveNotesToGroup = (noteIds: string[], groupId: string) => {
+    if(undoInFlight.current)return;
     const nextDesk = moveNotesToGroup(deskState, noteIds, groupId) as DeskState;
     const nextCategory = categoryForGroup(nextDesk, groupId);
     setDeskState(nextDesk);
@@ -1060,7 +1080,7 @@ export function DeskView() {
   };
 
   const handleDeleteNote = async (note: Note) => {
-    if (deletingNoteId) return;
+    if (deletingNoteId || undoInFlight.current) return;
     setDeletingNoteId(note.id);
     try {
       const result = await deleteStoredNote(note.id);
@@ -1093,7 +1113,23 @@ export function DeskView() {
     return true;
   };
 
-  const localDeleteBlocked=!deskReady || deskSaving || !!recoverableDraft || JSON.stringify(deskState)!==savedDeskRef.current || !!deletingNoteId || importFeedback.phase==='processing';
+  const localDeleteBlocked=!deskReady || deskSaving || !!recoverableDraft || JSON.stringify(deskState)!==savedDeskRef.current || !!deletingNoteId || importFeedback.phase==='processing' || !!undoBusyId;
+  const undoBlocked=localDeleteBusy || localDeleteBlocked || !!editingGroupId;
+  const canUndoNote=(note:Note)=>!!note.autoGroup && deskState.noteGroupMap[note.id]===note.autoGroup.groupId;
+  const latestAutoNote=notes.filter(canUndoNote).sort((a,b)=>String(b.autoGroup?.assignedAt).localeCompare(String(a.autoGroup?.assignedAt)))[0];
+  const readerNote=expanded ? (notes.find(note=>note.id===expanded.id) || (state.error?expanded:null)) : null;
+  const handleUndoAutoGroup=async(note:Note)=>{
+    if(undoInFlight.current || undoBlocked || !canUndoNote(note))return;
+    undoInFlight.current=true;setUndoBusyId(note.id);setUndoError({noteId:'',message:''});
+    try {
+      const result=await undoNoteAutoGroup(note);
+      const next=ensureDeskState(result.workspace,result.notes) as DeskState;
+      savedDeskRef.current=JSON.stringify(next);savedRevisionRef.current=result.workspace.revision;
+      setDeskState(next);setNotes(result.notes);setSelectedNoteIds(new Set());setDeskError('');
+      setExpanded(current=>current?.id===note.id?(result.notes.find((item:Note)=>item.id===note.id)||null):current);
+    } catch(error) {setUndoError({noteId:note.id,message:error instanceof Error?error.message:'撤销未确认，请刷新核对'});}
+    finally {undoInFlight.current=false;setUndoBusyId(null);}
+  };
   const handleLocalDelete=async()=>{
     if(localDeleteInFlight.current || localDeleteBlocked)return;
     localDeleteInFlight.current=true;setLocalDeleteBusy(true);
@@ -1242,9 +1278,9 @@ export function DeskView() {
     <div
       className="collection-desk"
       ref={containerRef}
-      onClickCapture={(event)=>{if(localDeleteInFlight.current && !(event.target as Element).closest('.collection-recycle-entry')){event.preventDefault();event.stopPropagation();}}}
+      onClickCapture={(event)=>{if((localDeleteInFlight.current || undoInFlight.current) && !(event.target as Element).closest('.collection-recycle-entry')){event.preventDefault();event.stopPropagation();}}}
       onDragEnter={(event) => {
-        if(localDeleteInFlight.current){event.preventDefault();event.stopPropagation();return;}
+        if(localDeleteInFlight.current || undoInFlight.current){event.preventDefault();event.stopPropagation();return;}
         if (draggedNoteIdsRef.current.length || draggedGroupIdRef.current) {
           event.preventDefault();
           updateDragAutoScroll(event.clientY);
@@ -1260,7 +1296,7 @@ export function DeskView() {
         }
       }}
       onDragOver={(event) => {
-        if(localDeleteInFlight.current){event.preventDefault();event.dataTransfer.dropEffect='none';return;}
+        if(localDeleteInFlight.current || undoInFlight.current){event.preventDefault();event.dataTransfer.dropEffect='none';return;}
         if (draggedNoteIdsRef.current.length || draggedGroupIdRef.current) {
           event.preventDefault();
           event.dataTransfer.dropEffect = 'move';
@@ -1286,9 +1322,11 @@ export function DeskView() {
         if (draggedNoteIdsRef.current.length || draggedGroupIdRef.current) return;
         setImportFeedback(IDLE_IMPORT_FEEDBACK);
       }}
-      onDrop={(event)=>{if(localDeleteInFlight.current){event.preventDefault();event.stopPropagation();return;}handleExternalDrop(event);}}
+      onDrop={(event)=>{if(localDeleteInFlight.current || undoInFlight.current){event.preventDefault();event.stopPropagation();return;}handleExternalDrop(event);}}
 
     >
+      {jumpMessage&&<div className="collection-error" role="status">{jumpMessage}</div>}
+      {importRecovery&&<div className="collection-error" role="status">{importRecovery}<button disabled={importChecking||state.isLoading} onClick={()=>void runImport('',true)}>核对上次收藏</button></div>}
       {recoverableDraft&&<div className="collection-error" role="status">有未保存的分组草稿<button onClick={restoreDraft}>恢复草稿</button><button onClick={reloadDesk}>丢弃草稿并读取</button></div>}
       {deskError&&<div className="collection-error" role="alert">{deskError}{deskReady&&<button onClick={retryDeskSave}>重试保存分组</button>}<button onClick={reloadDesk}>重新读取分组</button></div>}
 
@@ -1347,11 +1385,11 @@ export function DeskView() {
       </AnimatePresence>
 
       <header className="collection-toolbar">
-        <ScrollFade className="collection-scroll"><div className="collection-chips" role="group" aria-label="收藏分组">
+        <ScrollFade className="collection-scroll"><div ref={categoryRailRef} className="collection-chips" role="group" aria-label="收藏分组">
           <button type="button" className="collection-key collection-chip" aria-pressed={!activeCategory} disabled={localDeleteBusy} onClick={() => setActiveCategory(null)}>全部 <b>{notes.length}</b></button>
           {labels.map(group => <button type="button" key={group.groupId} className="collection-key collection-chip" aria-pressed={activeCategory === group.groupId} disabled={localDeleteBusy}
             onClick={() => {setActiveCategory(current => current === group.groupId ? null : group.groupId);scrollToGroup(group.groupId);}} title={group.name}><span>{group.name}</span><b>{group.noteCount}</b></button>)}
-          <button type="button" className="collection-key collection-chip collection-add-group" aria-label="新建分组" disabled={!deskReady || localDeleteBusy} onClick={handleCreateGroup}><Plus size={14}/>分组</button>
+          <button type="button" className="collection-key collection-chip collection-add-group" aria-label="新建分组" disabled={!deskReady || localDeleteBusy || !!undoBusyId} onClick={handleCreateGroup}><Plus size={14}/>分组</button>
         </div></ScrollFade>
         <div className="collection-search"><Search size={14}/><input disabled={localDeleteBusy} value={searchQuery} onChange={event => {setSearchQuery(event.target.value);setActiveCategory(null);}}
           onKeyDown={event => {if(event.key === 'Escape')setSearchQuery('');}} placeholder={`搜索 ${notes.length} 条收藏`} aria-label="搜索收藏"/>
@@ -1362,6 +1400,9 @@ export function DeskView() {
           <button ref={localDeleteButton} type="button" className={`collection-key collection-tool collection-recycle-entry${selectedNoteIds.size ? " collection-danger" : ""}`} disabled={localDeleteBusy || localDeleteBlocked} aria-label="本地删除" aria-busy={localDeleteBusy} onClick={() => void handleLocalDelete()} title={localDeleteBlocked ? '分组保存或当前收藏操作完成后可用' : '本地删除'}>{localDeleteBusy ? <Reading mini label="处理本地删除"/> : <Trash2 size={16}/>}<span>本地删除</span></button>
         </div>
       </header>
+
+      {latestAutoNote&&<AutoGroupNotice note={latestAutoNote} busy={undoBusyId===latestAutoNote.id} disabled={undoBlocked}
+        error={undoError.noteId===latestAutoNote.id?undoError.message:undefined} onUndo={()=>void handleUndoAutoGroup(latestAutoNote)}/>}
 
       {importWarning && <p className="collection-import-warning" role="status">{importWarning}<button className="collection-key collection-icon" aria-label="关闭部分收录提示" onClick={() => setImportWarning('')}><X size={14}/></button></p>}
       {localDeleteFeedback.message && <p className="collection-local-delete-feedback" role={localDeleteFeedback.error?'alert':'status'}>{localDeleteFeedback.message}</p>}
@@ -1402,7 +1443,7 @@ export function DeskView() {
         <ReadReveal pending={(state.isLoading||(!deskReady&&!deskError))&&!state.error} ready={deskReady&&!state.error&&!deskError}/>
         {(state.isLoading||(!deskReady&&!deskError))&&!state.error && <div className="collection-loading"><Reading label="读取收藏画布"/></div>}
         {isEmpty && !state.isLoading && !state.error && <div className="collection-empty">
-          <div className="collection-empty-frames" aria-hidden="true"><i/><i/></div><h2>暂无收藏</h2><p>在小红书帖子上点收藏，就会落到这里</p>
+          <div className="collection-empty-frames" aria-hidden="true"><i/><i/></div><h2>暂无收藏</h2><p>在小红书或抖音作品上点收藏，就会落到这里</p>
           <button type="button" className="collection-key" onClick={() => void openSetupPanel('extension')}>配置插件</button>
         </div>}
         {state.error && <div className="collection-error collection-load-error" role="alert">{state.error}</div>}
@@ -1621,13 +1662,17 @@ export function DeskView() {
 
       {/* ── Expanded overlay ── */}
       <AnimatePresence>
-        {expanded && (
+        {readerNote && (
           <ExpandedCard
-            key={expanded.id}
-            note={expanded}
+            key={readerNote.id}
+            note={readerNote}
             onClose={() => setExpanded(null)}
-            onDelete={() => void handleDeleteNote(expanded)}
-            isDeleting={deletingNoteId === expanded.id}
+            onDelete={() => void handleDeleteNote(readerNote)}
+            isDeleting={deletingNoteId === readerNote.id}
+            onUndoAutoGroup={canUndoNote(readerNote)?()=>void handleUndoAutoGroup(readerNote):undefined}
+            undoBusy={undoBusyId===readerNote.id}
+            undoDisabled={undoBlocked}
+            undoError={undoError.noteId===readerNote.id?undoError.message:undefined}
           />
         )}
       </AnimatePresence>
@@ -1641,6 +1686,6 @@ function CollectionHelp({onClose}: {onClose: () => void}) {
   const ref = useDialogFocus(onClose);
   return <div className="collection-overlay collection-setup-overlay" onMouseDown={event => {if(event.target === event.currentTarget)onClose();}}><div className="collection-setup" ref={ref} role="dialog" aria-modal="true" aria-label="收藏怎么用" tabIndex={-1}>
     <header className="collection-dialog-heading"><h2>收藏怎么用</h2><button className="collection-key collection-icon" aria-label="关闭" onClick={onClose}><X size={16}/></button></header>
-    <div className="collection-dialog-body collection-help-body"><p>收进来：安装并配对 Chrome 插件，在小红书帖子上点收藏；也可以把帖子拖入画布。</p><p>本地删除：整理已经删除的记录，并请求在访达打开本地文件夹。</p><p>Agent：只复制收藏的只读 MCP 配置。粘贴进该 Agent 设置后可搜索和阅读，不能修改或删除。</p></div>
+    <div className="collection-dialog-body collection-help-body"><p>收进来：安装并配对 Chrome 插件，在小红书或抖音作品上选“直接收藏”或“收藏并添加Get笔记”。后者先保存原内容，再将GET整理正文收回同卡解析栏。抖音需从“我的收藏”打开单条作品；可拖动插件按钮到画布，目前不批量同步整个收藏夹。</p><p>调酒自动进组：已有唯一名为“调酒”的分组时，新收藏中标题和文字证据明确的制作教程会自动进去。不确定的留在散卡区；本地规则不调用付费 AI。点提示或阅读器里的“撤销”可退回散卡，人工调整过的不会再被自动移动。</p><p>本地删除：整理已经删除的记录，并请求在访达打开本地文件夹。</p><p>Agent：只复制收藏的只读 MCP 配置。粘贴进该 Agent 设置后可搜索和阅读，不能修改或删除。</p></div>
   </div></div>;
 }

@@ -6,6 +6,7 @@ import { request } from "./api.js";
 import { Button, Badge } from "./components.jsx";
 
 export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopyStart, onCopyEnd, onUsed, usageBlocked = false }) {
+  const design = asset.type === "Design";
   const [busy, setBusy] = useState(false),
     [delivery, setDelivery] = useState(null);
   const [copied, setCopied] = useState(false),
@@ -62,8 +63,8 @@ export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopy
         return;
       }
       setCopied(true);
-      notify("本机安装口令已复制");
-      await onUsed?.("copy-skill", { deliveryId: next.id });
+      notify(design ? "生图提示词已复制" : "本机安装口令已复制");
+      await onUsed?.(design ? "copy-design" : "copy-skill", { deliveryId: next.id });
       try {
         await request("/deliveries/copied", { id: next.id });
       } catch {
@@ -108,7 +109,7 @@ export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopy
       <div className="detail-actions">
         <Button onClick={generate} disabled={busy || usageBlocked}>
           <Copy size={16} />
-          {busy ? "正在处理…" : "复制本机安装口令"}
+          {busy ? "正在处理…" : design ? "复制生图提示词" : "复制本机安装口令"}
         </Button>
         <button
           className="outlined-icon"
@@ -158,7 +159,7 @@ export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopy
       )}
       {delivery && !copied && !expired && (
         <label className="delivery-fallback">
-          安装口令文本
+          {design ? "生图提示词文本" : "安装口令文本"}
           <textarea
             readOnly
             rows={7}

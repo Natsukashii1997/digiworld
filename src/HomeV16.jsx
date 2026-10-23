@@ -1,83 +1,23 @@
-import { Reading, ReadReveal } from './ScanMotion.jsx';
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Check, RotateCw } from "lucide-react";
-import { Dialog, SourceReadError } from "./components.jsx";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {useWebDraft} from './useWebDraft.js';
+import {registerPageGuard} from './navigation-guard.js';
+import { ArrowUpRight, Check, RotateCw } from "lucide-react";
 import { request } from "./api.js";
-import { addDays, dueText, eventsOfDay, startOfDay, todoIsDue, ymd } from "./calendar.js";
-import { useCalendarData } from "./Calendar.jsx";
-import { HomeBrief } from "./ProjectBrief.jsx";
-import { mergeAgentHealth, pendingItems, inboxSummary, rulePendingReady, projectSavepointAge } from "./pending.js";
-import { RUN_PHASES } from "./collab-protocol.js";
-import { sortSaveItems, readableCurrent } from "./projects-v16.js";
-import { savepointThresholds } from "./settings-v16.js";
+import { ymd } from "./calendar.js";
 import { CrestRing, DigiviceArt, partnerOf } from "./pixel.jsx";
 import { PartnerScreen } from "./PartnerScreen.jsx";
-import { AgentSprite, LcdText } from "./v14.jsx";
+import { LcdText } from "./v14.jsx";
 import { NOTE_MAX } from "./rich-note.js";
 import { now, uid } from "./store.js";
+import { AssetsScreen, CollectionScreen } from "./HomeOverviewContent.jsx";
 import "./home-v16.css";
 
-const ACTOR = {
-  "claude-code": "机械暴龙兽",
-  codex: "机械邪龙兽",
-  hermes: "亚古兽",
-  openclaw: "加布兽",
-  user: "你",
-};
 const pad = n => String(n).padStart(2, "0");
 const clockText = date => pad(date.getHours()) + ":" + pad(date.getMinutes());
 const hourPart = date => date.getHours() < 11 ? "早上" : date.getHours() < 18 ? "下午" : "晚上";
-const minute = date => date.getHours() * 60 + date.getMinutes();
 const weekEnglish = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const stageColor = actor => actor === "codex" ? "var(--cyan)" : actor === "claude-code" ? "var(--orange)" : actor === "user" ? "var(--yellow)" : "var(--muted)";
-
-export function currentHomeRun(board) {
-  if (!board?.loaded || board.error) return null;
-  for (const item of board.items || []) {
-    const run = item.protocol?.runs?.find(r => r.isCurrent);
-    if (run) return { item, run };
-  }
-  return null;
-}
-
 export function homeGreeting(date) {
   return hourPart(date) + "好，被选召的孩子";
-}
-
-export function homeProjectRows(state, projectStatus, savepointReads, timestamp) {
-  const active = (state.connections?.projects || []).filter(p => p.active);
-  const warnDays = savepointThresholds(state.connections).warn;
-  const rows = active.map(project => {
-    const read = projectStatus?.items?.find(item => item.projectId === project.id);
-    const item = read || {
-      projectId: project.id,
-      name: project.name,
-      root: project.localPaths?.[0] || "",
-      current: { state: projectStatus?.error ? "error" : "loading" },
-      activity: { state: "unknown" },
-      stage: { id: "unknown" },
-    };
-    const reliable = !!projectStatus?.loaded && !projectStatus?.error && readableCurrent(item);
-    const age = reliable ? projectSavepointAge(project, savepointReads?.[project.id], timestamp) : null;
-    return {
-      ...item,
-      name: item.name || project.name,
-      reliable,
-      savepointDays: age,
-      unsaved: age !== null && age > warnDays,
-      stalled: reliable && item.activity?.state === "stalled",
-    };
-  });
-  return sortSaveItems(rows).slice(0, 3);
-}
-
-export function homeSignalState({ dueTodos, mainCount, current, rows }) {
-  return {
-    a: !!dueTodos?.length,
-    b: mainCount > 0,
-    c: !!current?.run?.alerts?.some(alert => alert.kind === "waiting" && !alert.main),
-    d: !!rows?.some(row => row.unsaved),
-  };
 }
 
 function useTraces(panelRef, cardRefs, keyRefs) {
@@ -89,13 +29,13 @@ function useTraces(panelRef, cardRefs, keyRefs) {
     const calculate = () => {
       const box = panel.getBoundingClientRect();
       if (!box.width || !box.height) return;
-      const specs = [["a", "c", -8], ["b", "c", 8], ["c", "a", 0], ["d", "b", 0]];
+      const specs = [["a", "c", -8], ["b", "b", 8]];
       const next = specs.flatMap(([name, key, offset]) => {
         const card = cardRefs.current[name];
         const target = keyRefs.current[key];
         if (!card || !target) return [];
         const a = card.getBoundingClientRect(), b = target.getBoundingClientRect();
-        const left = name === "a" || name === "b";
+        const left = name === "a";
         const sx = (left ? a.right : a.left) - box.left;
         const sy = a.top + a.height / 2 - box.top;
         const tx = (left ? b.left : b.right) - box.left;
@@ -156,208 +96,9 @@ function Module({ id, code, english, title, navigate, destination, className = "
   );
 }
 
-function TodayScreen({ calendar, day, calendarTodos, calendarNow, navigate, refreshCalendarTodos }) {
-  const previousTodos = useRef([]);
-  useEffect(() => {
-    if (!calendarTodos?.error) previousTodos.current = calendarTodos?.loaded ? calendarTodos.reminders || [] : [];
-  }, [calendarTodos]);
-  const access = calendar.status?.access?.calendar;
-  const verified = !calendar.error && calendar.status?.available && access === "authorized" &&
-    calendar.week?.available && Array.isArray(calendar.week?.events);
-  const hasSnapshot = access === "authorized" && calendar.week?.available && Array.isArray(calendar.week?.events);
-  const segments = hasSnapshot ? eventsOfDay(calendar.week.events, day).timed : [];
-  const visible = segments.filter(item => item.bottom > 8 * 60 && item.top < 20 * 60);
-  const currentMinute = minute(day);
-  const active = segments.find(item => item.top <= currentMinute && item.bottom > currentMinute);
-  const next = segments.find(item => item.top > currentMinute);
-  // 只在本卡保留上次只读前像；待处理计数仍消费 App 的当前读取结果。
-  const reminderSnapshot = calendarTodos?.error ? previousTodos.current : calendarTodos?.reminders;
-  const todos = (calendarTodos?.loaded || calendarTodos?.error)
-    ? (reminderSnapshot || []).filter(item => !item.completed).slice().sort((a, b) =>
-        (a.due || "9999").localeCompare(b.due || "9999") || a.title.localeCompare(b.title)).slice(0, 2)
-    : [];
-  const marker = Math.min(100, Math.max(0, (currentMinute - 480) / 720 * 100));
-  let calendarMessage = "";
-  if (calendar.error) calendarMessage = "";
-  else if (!calendar.status) calendarMessage = "正在读取日历…";
-  else if (!calendar.status.available) calendarMessage = calendar.status.reason || "本机日历未接入";
-  else if (access !== "authorized") calendarMessage = "日历尚未授权，今天的安排待核实";
-  else if (!calendar.week) calendarMessage = "正在读取今天的安排…";
-  else if (!verified) calendarMessage = calendar.week.reason || "今天的安排读取不完整";
-  else if (!segments.length) calendarMessage = "今天没有已读取的安排";
-  let todoMessage = "";
-  if (calendarTodos?.error) todoMessage = "";
-  else if (!calendarTodos?.loaded) todoMessage = "提醒事项未读取，Todo 待核实";
-  else if (!todos.length) todoMessage = "没有未完成的 Todo";
-  return (
-    <>
-      <ReadReveal pending={calendarMessage.startsWith("正在读取")} ready={verified&&!calendar.error}/>
-      <ReadReveal pending={!calendarTodos?.loaded&&!calendarTodos?.error} ready={!!calendarTodos?.loaded&&!calendarTodos.error}/>
-      <SourceReadError title={calendar.error && calendarTodos?.error ? "日历与提醒事项" : "日历"} error={calendar.error}
-        retained={visible.length > 0 || Boolean(hasSnapshot && (active || next)) || Boolean(calendar.error && calendarTodos?.error && todos.length)}
-        onRetry={() => Promise.all([calendar.reload(), refreshCalendarTodos?.()])} />
-      {!calendar.error && <SourceReadError title="提醒事项" error={calendarTodos?.error} retained={todos.length > 0} onRetry={refreshCalendarTodos} />}
-      <div className={`hx-today-data${calendar.error ? " read-failed" : ""}`}>
-      <div className="hx-tl" role="group" aria-label="今日 8 点至 20 点时间轴">
-        <div className="hx-tl-axis" aria-hidden="true"><span>8</span><span>12</span><span>16</span><span>20</span></div>
-        <div className="hx-tl-bar" aria-hidden="true">
-          {visible.map(item => {
-            const left = Math.max(0, (item.top - 480) / 720 * 100);
-            const right = Math.min(100, (item.bottom - 480) / 720 * 100);
-            return <span key={item.event.id} className={"hx-blk " + (item.event.workbench ? "block" : "meet")}
-              style={{ left: left + "%", width: Math.max(0.7, right - left) + "%" }} />;
-          })}
-          <span className="hx-now" style={{ left: marker + "%" }} />
-        </div>
-      </div>
-      {hasSnapshot && (active || next) &&
-        <p className="hx-nowline"><b className="mono">{clockText(day)}</b>
-          {calendar.error ? "上次读取：" : ""}
-          {active ? (calendar.error ? "原安排 " : "正在 ") + active.event.title : calendar.error ? "原记录中没有此时安排" : "现在没有进行中的安排"}
-          {next ? (calendar.error ? " · 原后续 " : " · 下一个 ") + clockText(new Date(next.event.start)) + " " + next.event.title : ""}
-        </p>}
-      </div>
-      {calendarMessage && <p className="hx-state" role={calendar.error ? "alert" : "status"}>{calendarMessage.startsWith("正在读取") ? <Reading mini label={calendarMessage}/> : calendarMessage}</p>}
-      {!calendar.error && calendar.status?.available && access !== "authorized" &&
-        <button type="button" className="hx-authorize" onClick={() => navigate("calendar")}>授权日历 <ArrowRight size={14} aria-hidden="true" /></button>}
-      {!!todos.length &&
-        <ul className={`hx-todo${calendarTodos?.error ? " read-failed" : ""}`}>{todos.map(item =>
-          <li key={item.id} className={todoIsDue(item, calendarNow) ? "due" : ""}>
-            <span className="hx-box" aria-hidden="true" />
-            <b>{item.title}</b>
-            <small>{item.due ? dueText(item.due) : "未设时间"}</small>
-          </li>)}</ul>}
-      {todoMessage && <p className="hx-state" role={calendarTodos?.error ? "alert" : "status"}>{!calendarTodos?.error && !calendarTodos?.loaded ? <Reading mini label={todoMessage}/> : todoMessage}</p>}
-    </>
-  );
-}
-
-function InboxScreen({ pending, unresolved, navigate }) {
-  const sourceActions = {
-    "calendar-read-error": "核实提醒事项状态",
-    "collab-read-error": "核实协同协议",
-    "project-status-error": "核实项目状态与体检",
-  };
-  const groups = inboxSummary(pending);
-  const ordered = groups.flatMap(group =>
-    pending.filter(item => group.key === "intel"
-      ? !item.triage || item.triage === group.triage
-      : item.triage === group.triage));
-  return <>
-    <div className="hx-qcount" aria-label="待处理计数">
-      {groups.map(group => <span key={group.key} className={group.key}>
-        <b className="mono">{group.count}</b>{group.short}
-      </span>)}
-    </div>
-    {unresolved && <p className="hx-state" role="status">部分来源仍在读取，待处理可能不完整</p>}
-    {ordered.length > 0
-      ? <ul className="hx-q">{ordered.slice(0, 3).map(item =>
-          <li key={item.id} className={item.triage === "需要决定" ? "main" : item.triage === "等你确认" ? "side" : "intel"}>
-            <button type="button" onClick={() => navigate("inbox", { itemId: item.id })}
-              aria-label={"在待处理打开：" + (sourceActions[item.id] || item.title)}>
-              <b>{sourceActions[item.id] || item.title}</b><ArrowRight size={14} aria-hidden="true" />
-            </button>
-          </li>)}</ul>
-      : !unresolved && <p className="hx-empty">已读取的来源里没有要你处理的事</p>}
-  </>;
-}
-
-function CollabScreen(props) {
-  return <><ReadReveal pending={!props.board?.loaded} ready={!!props.board?.loaded&&!props.board.error}/><CollabBody {...props}/></>;
-}
-function CollabBody({ board, current, navigate, refresh }) {
-  if (!board?.loaded) return <p className="hx-state" role="status"><Reading label="正在读取协同协议"/></p>;
-  const error = <SourceReadError title="协同协议" error={board.error} retained={Boolean(current)} onRetry={refresh} />;
-  if (!current) {
-    const unknown = (board.items || []).some(item => !item.protocol || !["ok", "partial", "absent"].includes(item.protocol.state));
-    return <>{error}<p className="hx-empty">{board.error || unknown ? "协同协议待核实" : "还没有运行中的协同"}</p></>;
-  }
-  const { item, run } = current;
-  const phase = run.phase?.number || 0;
-  const stages = run.templateState === "unknown" ? [] : run.stations?.length ? run.stations : RUN_PHASES;
-  const skipped = stages.filter((stage) => stage.status === "skipped").map((stage) => stage.number);
-  const step = stages.length > 1 ? 280 / (stages.length - 1) : 0;
-  const at = (index) => 10 + index * step;
-  const blocked = board.error || run.conflict || run.copyBlocked || item.protocol?.copyBlocked || !run.isCurrent || !phase || !item.root;
-  const actor = run.holder || stages[Math.max(0, phase - 1)]?.actor || "unknown";
-  return <>
-    {error}<div className={board.error ? "hx-collab-data read-failed" : "hx-collab-data"}>
-    <p className="hx-run">{item.name} · {run.title} <span className="mono">{phase || "?"}/{stages.length || "?"}</span></p>
-    {!stages.length ? <p className="hx-state" role="alert">锁定模板版本待核实，协同线路不可用</p> : <>
-    <svg className="hx-mini-line" viewBox="0 0 300 28" preserveAspectRatio="none" role="img"
-      aria-label={"协同阶段 " + (phase || "未知") + " / " + stages.length + " · " + (stages[phase - 1]?.label || "阶段未知") + (skipped.length ? ` · 已跳过 ${skipped.join("、")} 站` : "")}>
-      <defs>{stages.slice(0, -1).map((stage, index) =>
-        <linearGradient key={stage.number} id={"hx-stage-gradient-" + stage.number} gradientUnits="userSpaceOnUse"
-          x1={at(index)} x2={at(index + 1)}>
-          <stop offset="0" stopColor={stageColor(stage.actor)} />
-          <stop offset="1" stopColor={stageColor(stages[index + 1].actor)} />
-        </linearGradient>)}</defs>
-      {stages.slice(0, -1).map((stage, index) =>
-        <line key={stage.number} x1={at(index)} y1="14" x2={at(index + 1)} y2="14"
-          className={stage.status === "skipped" || stages[index + 1].status === "skipped" ? "skip" : index + 2 > phase ? "future" : "past"}
-          stroke={stage.status === "skipped" || stages[index + 1].status === "skipped" ? "var(--muted)" : index + 2 > phase ? "var(--hw-dim)" : "url(#hx-stage-gradient-" + stage.number + ")"} />)}
-      {stages.map((stage, index) => {
-        const point = at(index), isCurrent = stage.number === phase, isFuture = stage.number > phase;
-        return <g key={stage.number}>
-          {isCurrent && <circle cx={point} cy="14" r="10" fill={stageColor(run.holder || stage.actor)} opacity=".22" />}
-          <circle cx={point} cy="14" r={isCurrent ? "5.5" : "4.5"}
-            fill={stage.status === "skipped" ? "none" : isCurrent ? "var(--text)" : isFuture ? "none" : "var(--hw-deep)"}
-            stroke={stage.status === "skipped" ? "var(--muted)" : isFuture ? "var(--hw-dim)" : stageColor(isCurrent ? run.holder || stage.actor : stage.actor)}
-            strokeWidth={isCurrent ? "3" : isFuture ? "1.5" : "2.5"}
-            strokeDasharray={stage.status === "skipped" || isFuture ? "2 2" : undefined} />
-        </g>;
-      })}
-    </svg>
-    <div className="hx-next">
-      <span className="hx-next-av"><AgentSprite agent={actor === "claude-code" ? "Claude Code" : actor} mode="body" fit={32} /></span>
-      <span><b>轮到{ACTOR[actor] || "谁待核实"}</b><small>{run.alerts?.find(a => a.kind === "waiting")?.label || stages[Math.max(0, phase - 1)]?.label || "阶段未知"}</small></span>
-      <button type="button" className="hx-go" disabled={blocked}
-        onClick={() => navigate("collab", { projectId: item.projectId, runId: run.id, launch: true })}>
-        继续 <ArrowRight size={16} aria-hidden="true" />
-      </button>
-    </div>
-    </>}
-    {run.partial && <small className="hx-state">部分协议未核实；继续时仍以协同页最新校验为准</small>}
-    {blocked && <small className="hx-state">当前协议需核对；到协同页查看详情</small>}
-    {!!run.events?.length && <ol className="hx-activity" aria-label="最近协同活动">{run.events.filter(e => e.at).slice(-2).reverse().map((event, index) =>
-      <li key={event.id || index}><time className="mono" dateTime={event.at}>{new Date(event.at).toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" })}</time>
-        <span>{event.result || stages.find(stage => stage.number === event.phase)?.label || "协议记录"}</span></li>)}</ol>}
-    </div>
-  </>;
-}
-
-function ProjectsScreen({ state, rows, projectStatus, navigate, refresh }) {
-  const active = (state.connections?.projects || []).filter(p => p.active);
-  if (!active.length) return <p className="hx-empty">还没有在推进的项目</p>;
-  return <>
-    <ReadReveal pending={!projectStatus?.loaded} ready={!!projectStatus?.loaded&&!projectStatus.error}/>
-    {!projectStatus?.loaded && <p className="hx-state" role="status"><Reading label="正在读取项目状态"/></p>}
-    <SourceReadError title="项目状态" error={projectStatus?.error}
-      retained={rows.some(row => projectStatus?.items?.some(item => item.projectId === row.projectId))} onRetry={refresh} />
-    <ol className={`hx-proj-list${projectStatus?.error ? " read-failed" : ""}`}>{rows.map((row, index) =>
-      <li key={row.projectId} className={row.stalled ? "sleep" : ""}>
-        <button type="button" onClick={() => navigate("projects", { projectId: row.projectId })}
-          aria-label={"打开项目：" + row.name}>
-          <span className="hx-slot mono">{pad(index + 1)}</span>
-          <b>{row.name}</b>
-          <span className={"hx-flag " + (row.unsaved ? "warn" : row.stalled ? "sleep" : "")}>
-            {row.unsaved ? "未存档 " + Math.floor(row.savepointDays) + " 天"
-              : row.stalled ? "停滞 " + row.activity.idleDays + " 天"
-              : row.reliable ? "在推进" : "状态待核实"}
-          </span>
-        </button>
-      </li>)}</ol>
-  </>;
-}
-
 export function HomeV16({
   state, navigate, openCreate, save, adoptState, notify,
-  ruleInstalls, projectStatus, agentContents, healthAudit, nightV2Reports,
-  vaultReceipts, savepointReads, knowledgeStatus, calendarTodos, calendarNow,
-  collabStatus,
-  refreshCollabStatus, refreshProjectStatus, refreshCalendarTodos,
 }) {
-  const date = new Date(calendarNow || Date.now());
   const [clockNow, setClockNow] = useState(Date.now);
   useEffect(() => {
     let timer;
@@ -378,53 +119,25 @@ export function HomeV16({
     };
   }, []);
   const displayDate = new Date(clockNow);
-  const dateKey = ymd(date);
-  const range = useMemo(() => {
-    const first = startOfDay(new Date(dateKey + "T12:00:00"));
-    return { from: first.toISOString(), to: addDays(first, 1).toISOString() };
-  }, [dateKey]);
-  const calendar = useCalendarData(range, { retainOnError: true });
-  useEffect(() => {
-    const refresh = () => { if (document.visibilityState === "visible") calendar.reload(); };
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [calendar.reload]);
   const partner = partnerOf(state);
   const stageScreen = useRef();
-  const [dvView, setDvView] = useState("egg"), [lit, setLit] = useState(false);
-  const pending = pendingItems(
-    state, ruleInstalls, projectStatus, mergeAgentHealth(healthAudit, agentContents),
-    undefined, vaultReceipts, { savepointReads, knowledgeStatus, calendarTodos, calendarNow, collabStatus, nightV2Reports },
-  );
-  const groups = inboxSummary(pending);
-  const current = currentHomeRun(collabStatus);
-  const displayCurrent = current || (collabStatus?.error ? currentHomeRun({ ...collabStatus, error: "" }) : null);
-  const rows = homeProjectRows(state, projectStatus, savepointReads, calendarNow || Date.now());
-  const dueTodos = calendarTodos?.loaded && !calendarTodos.error
-    ? (calendarTodos.reminders || []).filter(item => todoIsDue(item, calendarNow))
-    : [];
-  const signal = homeSignalState({ dueTodos, mainCount: groups[0].count, current, rows });
-  const unresolved = (!rulePendingReady(ruleInstalls) && !ruleInstalls?.error) || collabStatus?.loaded === false;
+  const [lit, setLit] = useState(false);
   const panelRef = useRef(null), cardRefs = useRef({}), keyRefs = useRef({});
   const lines = useTraces(panelRef, cardRefs, keyRefs);
   const [activePort, setActivePort] = useState("");
-  const [briefOpen, setBriefOpen] = useState(false);
   const [noteText, setNoteText] = useState(""), [noteBusy, setNoteBusy] = useState(false);
   const [noteAttempt, setNoteAttempt] = useState(null), [noteStatus, setNoteStatus] = useState("");
+  const recovery=useWebDraft('home',v=>!!v&&typeof v.text==='string'&&v.text.length<=NOTE_MAX&&(!v.attempt||typeof v.attempt.id==='string'&&typeof v.attempt.text==='string'));
+  const hydrated=useRef(false),liveNote=useRef(true),composingNote=useRef(false),noteLock=useRef(false),activeAttempt=useRef(null);
+  useEffect(()=>{liveNote.current=true;return()=>{liveNote.current=false;};},[]);
+  useEffect(()=>registerPageGuard(()=>composingNote.current?'中文输入尚未完成，请先确认输入。':''),[]);
+  useLayoutEffect(()=>{if(!recovery.ready||hydrated.current)return;hydrated.current=true;const value=recovery.value;if(value){setNoteText(value.text);setNoteAttempt(value.attempt||null);if(value.attempt){activeAttempt.current=value.attempt;noteLock.current=true;setNoteBusy(true);checkNote(value.attempt,false).finally(()=>{noteLock.current=false;if(liveNote.current)setNoteBusy(false);});}}},[recovery.ready]);
   const stateRef = useRef(state);
   stateRef.current = state;
-  useEffect(() => {
-    if (dvView === "number") stageScreen.current?.showNumber(pending.length);
-  }, [dvView, pending.length]);
-  const poke = () => {
-    if (dvView !== "egg") { setDvView("egg"); stageScreen.current?.showEgg(); }
-    stageScreen.current?.poke();
-  };
-  const finishNote = actual => {
+  const poke = () => stageScreen.current?.poke();
+  const finishNote = (actual,attempt) => {
+    if(!liveNote.current||activeAttempt.current?.id!==attempt.id)return;
+    recovery.save({text:'',attempt:null});activeAttempt.current=null;
     if (actual) adoptState?.(actual);
     setNoteText(""); setNoteAttempt(null); setNoteStatus("");
     notify?.("已保存本地随手记");
@@ -434,16 +147,16 @@ export function HomeV16({
       const actual = await request("/workspace");
       const found = actual.notes?.find(note => note.id === attempt.id);
       if (found) {
-        if (found.text === attempt.text) { finishNote(actual); return; }
+        if (found.text === attempt.text) { finishNote(actual,attempt); return; }
         setNoteStatus("同一记录已变化，先到随手记核对；输入仍保留。");
         return;
       }
       adoptState?.(actual);
       if (!replay) { setNoteStatus("没有查到这条记录，输入已保留；可核对并重试。"); return; }
-      const ok = await save({ ...actual, notes: [attempt, ...(actual.notes || [])] });
+      const ok = await save({ ...actual, notes: [attempt, ...(actual.notes || [])] }, { base: actual });
       const recheck = await request("/workspace");
       const after = recheck.notes?.find(note => note.id === attempt.id);
-      if (after?.text === attempt.text) finishNote(recheck);
+      if (after?.text === attempt.text) finishNote(recheck,attempt);
       else setNoteStatus("保存仍未确认，输入已保留；请核对后再试。");
     } catch (error) {
       setNoteStatus("保存结果暂时无法核实，输入已保留；请稍后核对并重试。");
@@ -451,11 +164,13 @@ export function HomeV16({
   }
   async function submitNote(event) {
     event?.preventDefault?.();
-    if (noteBusy) return;
+    if (noteLock.current || noteBusy || !recovery.ready || composingNote.current) return;
     const text = noteText.trim();
     if (!text) return;
     if (text.length > NOTE_MAX) { setNoteStatus("单条随手记最多 20000 字。"); return; }
     const attempt = noteAttempt || { id: uid(), at: now(), text };
+    try{recovery.save({text:noteText,attempt});}catch{return;}
+    activeAttempt.current=attempt;noteLock.current=true;
     setNoteAttempt(attempt);
     setNoteBusy(true);
     setNoteStatus("");
@@ -463,16 +178,16 @@ export function HomeV16({
       if (noteAttempt) await checkNote(attempt, true);
       else {
         const base = stateRef.current;
-        const ok = await save({ ...base, notes: [attempt, ...(base.notes || [])] });
+        const ok = await save({ ...base, notes: [attempt, ...(base.notes || [])] }, { base });
         if (ok) {
           const actual = await request("/workspace");
-          if (actual.notes?.some(note => note.id === attempt.id && note.text === attempt.text)) finishNote(actual);
+          if (actual.notes?.some(note => note.id === attempt.id && note.text === attempt.text)) finishNote(actual,attempt);
           else setNoteStatus("保存结果暂时无法核实，输入已保留；请核对并重试。");
         } else await checkNote(attempt, false);
       }
     } catch {
       setNoteStatus("保存结果暂时无法核实，输入已保留；请稍后核对并重试。");
-    } finally { setNoteBusy(false); }
+    } finally { noteLock.current=false;if(liveNote.current)setNoteBusy(false); }
   }
   const greeting = homeGreeting(displayDate);
   return <div className="hx" ref={panelRef}>
@@ -482,20 +197,16 @@ export function HomeV16({
       preserveAspectRatio="none" aria-hidden="true">
       {lines.map(line => <g key={line.name} data-trace={line.name} className={activePort === line.name ? "active" : ""}>
         <path className="hx-tr" d={line.d} />
-        {signal[line.name] && <path className={"hx-sig hx-sig-" + line.name} d={line.d} />}
         <circle className="hx-pin" cx={line.sx} cy={line.sy} r="4" />
         <circle className="hx-pin end" cx={line.tx} cy={line.ty} r="3" />
       </g>)}
     </svg>
     <div className="hx-col-l">
-      <Module id="a" code="A" english="TODAY" title="今日" destination="日历" navigate={() => navigate("calendar")}
+      <Module id="a" code="1" english="ASSETS" title="资产仓库" destination="全部" navigate={() => navigate("assets", { filter: "all" })}
         cardRefs={cardRefs} setActive={setActivePort}>
-        <TodayScreen calendar={calendar} day={date} calendarTodos={calendarTodos} calendarNow={calendarNow} navigate={navigate} refreshCalendarTodos={refreshCalendarTodos} />
+        <AssetsScreen state={state} />
       </Module>
-      <Module id="b" code="B" english="QUESTS" title="待处理" destination="全部" navigate={() => navigate("inbox")}
-        cardRefs={cardRefs} setActive={setActivePort}>
-        <InboxScreen pending={pending} unresolved={unresolved} navigate={navigate} />
-      </Module>
+
     </div>
     <div className="hx-core">
       <time className="hx-date" dateTime={ymd(displayDate) + "T" + clockText(displayDate)} aria-label={clockText(displayDate) + " " + (displayDate.getMonth() + 1) + "月" + displayDate.getDate() + "日 " + weekEnglish[displayDate.getDay()]}>
@@ -511,13 +222,10 @@ export function HomeV16({
           <div className="dv-wrap">
             <DigiviceArt size={290} className={lit ? "lit" : ""}>
               <PartnerScreen ref={stageScreen} mode="stage" cols={14} rows={15} />
-              {dvView === "number" && <span className="dv-label" aria-hidden="true">待处理</span>}
             </DigiviceArt>
             <button type="button" className="digivice-poke" aria-label={"戳一下" + partner.name} onClick={poke} />
             <button ref={el => { keyRefs.current.a = el; }} type="button" className="dv-key a" data-key="A"
-              aria-label={dvView === "egg" ? "A 键：显示待处理条数（" + pending.length + "）" : "A 键：切回数码蛋"}
-              aria-pressed={dvView === "number"}
-              onClick={() => { const next = dvView === "egg" ? "number" : "egg"; setDvView(next); if (next === "number") stageScreen.current?.showNumber(pending.length); else stageScreen.current?.showEgg(); }} />
+              aria-label="A 键：打开资产仓库" onClick={() => navigate("assets")} />
             <button ref={el => { keyRefs.current.b = el; }} type="button" className="dv-key b" data-key="B"
               aria-label="B 键：背光" aria-pressed={lit} onClick={() => setLit(!lit)} />
             <button ref={el => { keyRefs.current.c = el; }} type="button" className="dv-key c" data-key="C"
@@ -529,37 +237,25 @@ export function HomeV16({
       <form className="hx-cmd" onSubmit={submitNote}>
         <span className="hx-prompt mono" aria-hidden="true">&gt;</span>
         <input aria-label="记一笔" placeholder="记一笔：一个念头、一个问题……"
-          value={noteText} readOnly={!!noteAttempt || noteBusy}
-          onChange={event => setNoteText(event.target.value)}
+          value={noteText} readOnly={!recovery.ready || !!noteAttempt || noteBusy}
+          onCompositionStart={()=>{composingNote.current=true;}} onCompositionEnd={()=>{composingNote.current=false;}}
+          onChange={event => {const text=event.target.value;setNoteText(text);try{recovery.save({text,attempt:noteAttempt});}catch{}}}
           onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") submitNote(event); }} />
         <kbd className="hx-key mono">⌘↵</kbd>
-        <button type="submit" aria-label={noteAttempt ? "核对并重试随手记" : "保存随手记"} disabled={noteBusy || !noteText.trim()}>
+        <button type="submit" aria-label={noteAttempt ? "核对并重试随手记" : "保存随手记"} disabled={!recovery.ready || noteBusy || !noteText.trim()}>
           {noteAttempt ? <RotateCw size={16} /> : <Check size={16} />}
         </button>
       </form>
-      {noteStatus && <p className="hx-note-status" role="alert">{noteStatus}</p>}
+      {(recovery.error||noteStatus) && <p className="hx-note-status" role="alert">{recovery.error||noteStatus}</p>}
       <div className="hx-quick">
-        <button type="button" onClick={() => navigate("agents")}>接力</button>
-        <button type="button" onClick={() => navigate("knowledge", { anchor: "k-sources" })}>查知识</button>
         <button type="button" onClick={() => openCreate?.("Skill")}>新建资产</button>
       </div>
     </div>
     <div className="hx-col-r">
-      <Module id="c" code="C" english="WORKFLOW" title="协同" destination="线路图" navigate={() => navigate("collab")}
+      <Module id="b" code="2" english="COLLECTION" title="收藏" destination="全部" navigate={() => navigate("learning")}
         cardRefs={cardRefs} setActive={setActivePort}>
-        <CollabScreen board={collabStatus} current={displayCurrent} navigate={navigate} refresh={refreshCollabStatus} />
-      </Module>
-      <Module id="d" code="D" english="SAVE DATA" title="在推进" destination="项目空间" navigate={() => navigate("projects")}
-        cardRefs={cardRefs} setActive={setActivePort}>
-        <ProjectsScreen state={state} rows={rows} projectStatus={projectStatus} navigate={navigate} refresh={refreshProjectStatus} />
-        {(state.connections?.projects || []).some(project => project.active) &&
-          <button className="hx-brief-link" type="button" onClick={() => setBriefOpen(true)}>
-            今日项目简报 <ArrowUpRight size={14} aria-hidden="true" />
-          </button>}
+        <CollectionScreen />
       </Module>
     </div>
-    {briefOpen && <Dialog title="今日项目简报" drawer recoverFocus onClose={() => setBriefOpen(false)}>
-      <HomeBrief state={state} adoptState={adoptState} notify={notify} navigate={navigate} />
-    </Dialog>}
   </div>;
 }

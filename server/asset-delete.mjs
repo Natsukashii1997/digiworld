@@ -30,7 +30,7 @@ export function assetDeleteBlockers(state, assetId, ruleInstallItems = [], publi
     }
   }
   for (const record of state.reverseRecords || []) {
-    if (record.forge?.assetId === assetId || record.imports?.some(item => item.assetId === assetId))
+    if (record.forge?.assetId === assetId || record.savedSkill?.assetId === assetId || record.packSkills?.some(p=>p.assetId===assetId) || record.imports?.some(item => item.assetId === assetId))
       add("reverse", `逆向记录：${record.title}`, record.id, true);
   }
   for (const candidate of state.revisionCandidates || []) {

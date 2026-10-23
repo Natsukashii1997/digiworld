@@ -23,7 +23,11 @@ page.on("pageerror", (e) => errors.push(e.message));
 const prompt = initial.assets.find((a) => a.type === "Prompt");
 const skill = initial.assets.find((a) => a.type === "Skill");
 const workflow = initial.assets.find((a) => a.type === "Workflow");
-const button = (name) => page.getByRole("button", { name, exact: true });
+const detail = page.getByRole("dialog", { name: "资产详情", exact: true });
+const button = (name) => (name.startsWith("查看 ")
+  ? page
+  : page.getByRole("dialog", { name: "资产详情", exact: true })
+).getByRole("button", { name, exact: true });
 const records = async () => (await app.repository.read()).assetActivity || [];
 const uses = async (a = prompt) =>
   (await records()).filter((r) => r.kind === "use" && r.assetId === a.id)
@@ -146,7 +150,7 @@ try {
 
   await page.route("**/api/asset-activity*", (route) => route.abort());
   await button("复制全文").click();
-  await page.getByText(/记录结果未知/).waitFor();
+  await detail.getByText(/记录结果未知/).waitFor();
   assert.equal(await button("补记记录").count(), 0);
   assert.equal(await uses(), 3);
   const pendingUse = await page.evaluate(
@@ -155,7 +159,7 @@ try {
   );
   await page.reload();
   await open(prompt);
-  await page.getByText(/记录结果未知/).waitFor();
+  await detail.getByText(/记录结果未知/).waitFor();
   await page.unroute("**/api/asset-activity*");
   await button("查询记录").click();
   await button("补记记录").waitFor();
@@ -270,7 +274,7 @@ try {
   await button("好用").click();
   await page.getByLabel("反馈备注（可选）").fill("输入/输出都稳定");
   await button("保存反馈").click();
-  await page.getByText(/记录结果未知/).waitFor();
+  await detail.getByText(/记录结果未知/).waitFor();
   assert.equal(await button("补记记录").count(), 0);
   await page.unroute("**/api/asset-activity?*");
   await page.unroute("**/api/asset-activity");
@@ -377,7 +381,11 @@ try {
       window.__successFeedback = 0;
       addEventListener("guiji:data-caught", () => window.__successFeedback++);
     });
-    const b = (name) => p.getByRole("button", { name, exact: true });
+    const recoveryDetail = p.getByRole("dialog", { name: "资产详情", exact: true });
+    const b = (name) => (name.startsWith("查看 ")
+      ? p
+      : p.getByRole("dialog", { name: "资产详情", exact: true })
+    ).getByRole("button", { name, exact: true });
     const key = `workbench-activity-${a.id}`;
     const pending = () =>
       p.evaluate((key) => JSON.parse(sessionStorage.getItem(key)), key);
@@ -482,14 +490,14 @@ try {
           1,
         );
       } else if (scenario === "feedback-reload-unknown") {
-        await p.getByText(/记录结果未知/).waitFor();
+        await recoveryDetail.getByText(/记录结果未知/).waitFor();
         assert.deepEqual(Object.keys(await pending()).sort(), [
           "assetId",
           "id",
         ]);
         await p.reload();
         await b(`查看 ${current(a).title}`).click();
-        await p.getByText(/记录结果未知/).waitFor();
+        await recoveryDetail.getByText(/记录结果未知/).waitFor();
         await p.unroute("**/api/asset-activity?*");
         await p.unroute("**/api/asset-activity");
         await p.evaluate(() => { window.__successFeedback = 0; });
@@ -521,7 +529,7 @@ try {
         );
         await b("取消反馈").click();
       } else if (scenario.endsWith("unknown")) {
-        await p.getByText(/记录结果未知/).waitFor();
+        await recoveryDetail.getByText(/记录结果未知/).waitFor();
         const before = await pending();
         assert.equal(await b("补记记录").count(), 0);
         assert.equal(

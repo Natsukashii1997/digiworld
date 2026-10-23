@@ -48,7 +48,7 @@ export function ProfileProposals({ state, adoptState, notify, navigate, inbox = 
     if (lock.current) return;
     lock.current = true;
     setBusy(kind);
-    onBusyChange?.(true);
+    onBusyChange?.(kind !== "refresh");
     setError("");
     try {
       await operation();

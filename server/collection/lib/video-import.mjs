@@ -10,18 +10,19 @@ import { fileURLToPath } from 'node:url';
 import { runSenseVoiceVideoAnalyzer } from './local-speech-model.mjs';
 import { runLocalProcess } from './run-local-process.mjs';
 import {verifiedNativeRuntime} from './native-runtime.mjs';
+import {analyzeSpeech} from './speech-routing.mjs';
 
 const execFileAsync = runLocalProcess;
 const MAX_VIDEO_BYTES = 600 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 const REQUEST_TIMEOUT_MS = 120_000;
-const MEDIA_HOST_SUFFIXES = ['.xhscdn.com', '.xhsimg.com'];
+const MEDIA_HOST_SUFFIXES = ['.xhscdn.com', '.xhsimg.com', '.douyinvod.com', '.douyin.com', '.zjcdn.com'];
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 export function isAllowedRemoteVideoUrl(value) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:'
+    return url.protocol === 'https:' && !url.username && !url.password && !url.port
       && MEDIA_HOST_SUFFIXES.some((suffix) => url.hostname.endsWith(suffix));
   } catch {
     return false;
@@ -39,14 +40,14 @@ function findNativeAnalyzer() {
 }
 
 async function fetchVideoResponse(url, fetchImpl, redirectCount = 0) {
-  if (!isAllowedRemoteVideoUrl(url)) throw new Error('视频地址不属于受支持的小红书媒体域名');
+  if (!isAllowedRemoteVideoUrl(url)) throw new Error('视频地址不属于受支持的收藏媒体域名');
   const response = await fetchImpl(url, {
     redirect: 'manual',
     credentials: 'omit',
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     headers: {
       Accept: 'video/mp4,video/*;q=0.9,application/octet-stream;q=0.7',
-      Referer: 'https://www.xiaohongshu.com/',
+      Referer: /\.(xhscdn|xhsimg)\.com$/.test(new URL(url).hostname) ? 'https://www.xiaohongshu.com/' : 'https://www.douyin.com/',
       'User-Agent': 'KanKanFavorites/0.1 local-video-import',
     },
   });
@@ -112,27 +113,16 @@ export async function runNativeVideoAnalyzer(videoPath, analyzerPath = findNativ
   if (process.platform !== 'darwin') throw new Error('视频文稿目前仅支持 macOS');
   analyzerPath=await verifiedNativeRuntime('kankan-video-analyzer');
   if (!analyzerPath) throw new Error('本地视频分析组件未安装');
-  const systemResult = await executeNativeAnalyzer(analyzerPath, [videoPath], options);
-  if (systemResult.engine !== 'unavailable') return systemResult;
-
-  let senseVoiceError;
-  try {
-    return await runSenseVoiceVideoAnalyzer(videoPath, {
+  return analyzeSpeech({
+    multilingual: () => runSenseVoiceVideoAnalyzer(videoPath, {
       analyzerPath,
       modelDirectory: options.modelDirectory,
       fetchImpl: options.fetchImpl,
       deadline:options.deadline,
-    });
-  } catch (error) {
-    senseVoiceError = error instanceof Error ? error.message : '本地高精度语音识别失败';
-  }
-
-  const legacyResult = await executeNativeAnalyzer(analyzerPath, ['--legacy', videoPath],options);
-  if (legacyResult.transcriptSegments?.length) return legacyResult;
-  return {
-    ...legacyResult,
-    speechError: [senseVoiceError, legacyResult.speechError].filter(Boolean).join('；'),
-  };
+    }),
+    system: () => executeNativeAnalyzer(analyzerPath, [videoPath], options),
+    legacy: () => executeNativeAnalyzer(analyzerPath, ['--legacy', videoPath], options),
+  });
 }
 
 function cleanTranscriptSegments(value) {
@@ -147,13 +137,14 @@ function cleanTranscriptSegments(value) {
 export function applyVideoAnalysis(note, analysis, localVideoUrl) {
   const transcriptSegments = cleanTranscriptSegments(analysis.transcriptSegments);
   const transcriptText = transcriptSegments.map((entry) => entry.text).join('\n\n');
-  const warnings = [analysis.speechError].filter(Boolean).join('；');
+  const warnings = [analysis.speechError, !transcriptSegments.length && '没有识别到视频文稿'].filter(Boolean).join('；');
   const updated = {
     ...note,
     videoUrl: localVideoUrl,
     videoDuration: Number.isFinite(analysis.duration) ? analysis.duration : 0,
     transcriptText,
     transcriptSegments,
+    transcriptEngine: typeof analysis.engine === 'string' ? analysis.engine : 'unknown',
     videoStatus: warnings ? 'partial' : 'ready',
     videoError: warnings,
   };

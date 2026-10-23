@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {mkdir} from 'node:fs/promises';
+import {join} from 'node:path';
+import {fixture} from './fixture.mjs';
+import {seed} from '../src/store.js';
+import {editor175,replace175,post175,enterNew175} from './notes-editor-helpers175.mjs';
+const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'playwright');
+const output=process.env.FLOAT_NOTES_RESULTS;
+if(output)await mkdir(output,{recursive:true});
+const app=await fixture(),browser=await chromium.launch();
+const state=seed(),at='2026-10-15T08:00:00Z';state.notes=[{id:'base-note',text:'合成起点',at,format:'md1'}];await app.repository.write(state,{initialize:true});
+const {token}=await(await fetch(app.url+'/api/session',{headers:{'X-Workbench-Client':'1'}})).json();
+async function api(path,input){const r=await fetch(app.url+'/api'+path,{method:input?'PUT':'GET',headers:{'X-Workbench-Token':token,'Content-Type':'application/json'},...(input?{body:JSON.stringify(input)}:{})});assert.equal(r.status,200);return r.json();}
+const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'}),p=await context.newPage(),other=await context.newPage(),errors=[];
+p.on('pageerror',e=>errors.push(e.message));
+try{
+ await p.goto(app.url+'/#notes');await p.locator('[data-note-id="base-note"]').waitFor();
+ if(output)await p.screenshot({path:join(output,'notes-before.png'),fullPage:true});
+ await p.locator('[data-note-id="base-note"] .sn-body').click();await replace175(p,'网页正在写的内容');
+ await other.goto(app.url+'/#notes');
+ await api('/notes/desktop-added',{id:'desktop-added',at,format:'md1',text:'便签栏新加的记录',base:null});
+ await p.bringToFront();await p.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await p.locator('[data-note-id="desktop-added"]').waitFor();assert.match(await editor175(p).innerText(),/网页正在写的内容/);
+ await p.getByRole('button',{name:'保存修改',exact:true}).click();await editor175(p).waitFor({state:'detached'});assert.equal((await api('/notes/base-note')).note.text,'网页正在写的内容');
+ assert.equal((await api('/notes')).notes.length,2);console.log('PASS focus refresh keeps active draft and new remote notes');
+ await enterNew175(p);await replace175(p,'网页新建');
+ await api('/notes/desktop-second',{id:'desktop-second',at,format:'md1',text:'同时从桌面新建',base:null});
+ await post175(p);await p.getByRole('group',{name:'随手记正文：网页新建',exact:true}).waitFor();
+ const notes=(await api('/notes')).notes;assert.equal(notes.length,4);assert.ok(notes.some(n=>n.text==='同时从桌面新建'));console.log('PASS save refresh merges notes created by other window');
+ await p.locator('[data-note-id="base-note"] .sn-body').click();await replace175(p,'我的未保存冲突稿');
+ await api('/notes/base-note',{id:'base-note',text:'别处的新正文',format:'md1',base:{text:'网页正在写的内容',format:'md1'}});
+ await p.evaluate(()=>window.dispatchEvent(new Event('focus')));await p.waitForFunction(()=>document.body.textContent.includes('同时从桌面新建'));
+ await p.getByRole('button',{name:'保存修改',exact:true}).click();await p.getByText(/这条记录已被其他页面修改|这项内容已在别处修改/).first().waitFor();
+ assert.equal((await api('/notes/base-note')).note.text,'别处的新正文');
+ if(await editor175(p).count())assert.match(await editor175(p).innerText(),/我的未保存冲突稿/);
+ else{await p.getByRole('button',{name:'返回失败输入'}).click();assert.match(await editor175(p).innerText(),/我的未保存冲突稿/);}
+ if(output)await p.screenshot({path:join(output,'notes-conflict-draft-kept.png'),fullPage:true});
+ console.log('PASS same-note conflict preserves both versions');
+ await p.getByRole('button',{name:'用别处的',exact:true}).click();
+ await api('/notes/task-note',{id:'task-note',at,format:'md1',text:'- [ ] 合成待办',base:null});
+ await p.evaluate(()=>window.dispatchEvent(new Event('focus')));await p.locator('[data-note-id="task-note"]').waitFor();
+ await p.locator('.sn-filter button').filter({hasText:'待办'}).click();await p.locator('[data-note-id="task-note"] .sn-body').click();await replace175(p,'筛选中的未保存稿');
+ await api('/notes/task-note',{id:'task-note',format:'md1',text:'已变成普通正文',base:{text:'- [ ] 合成待办',format:'md1'}});
+ await p.evaluate(()=>window.dispatchEvent(new Event('focus')));await p.getByText('这条记录已被其他页面修改或删除，当前输入已保留。').waitFor();
+ assert.match(await editor175(p).innerText(),/筛选中的未保存稿/);
+ await p.getByRole('button',{name:'记一条新念头',exact:true}).click();assert.match(await editor175(p).innerText(),/筛选中的未保存稿/);
+ const remote=await app.repository.read();await app.repository.write({...remote,notes:remote.notes.filter(n=>n.id!=='task-note')});
+ await p.evaluate(()=>window.dispatchEvent(new Event('focus')));await p.waitForTimeout(100);assert.match(await editor175(p).innerText(),/筛选中的未保存稿/);
+ await p.getByRole('button',{name:'另存为新便签'}).click();await editor175(p).waitFor({state:'detached'});
+ assert.ok((await api('/notes')).notes.some(n=>n.text==='- [ ] 筛选中的未保存稿'));console.log('PASS filtered/deleted active drafts remain recoverable');
+ assert.deepEqual(errors,[]);
+}finally{await browser.close();await app.close();}

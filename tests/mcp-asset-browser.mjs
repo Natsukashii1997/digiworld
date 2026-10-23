@@ -76,6 +76,7 @@ try {
     await page.screenshot({path:join(out,`mcp-${width}.png`),fullPage:true});
   }
   await page.reload();
+  await page.getByRole('button', { name: '查看 openai_docs' }).waitFor();
   assert.equal(await page.getByRole('button', { name: '查看 openai_docs' }).count(), 1);
   assert.deepEqual(errors, []);
   console.log('mcp-asset-browser: create, reject, target, copy/count, download, reload passed');

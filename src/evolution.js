@@ -20,7 +20,7 @@ export const CANDIDATE_LIMITS = Object.freeze({
 });
 // 除换行与制表符外的控制字符（回车在解析时已统一成换行）。
 const CONTROL = /[\x00-\x08\x0b-\x1f\x7f]/;
-const TYPE_NAMES = { Prompt: "Prompt", Workflow: "工作流", Rule: "规则", Skill: "Skill" };
+const TYPE_NAMES = { Prompt: "Prompt", Workflow: "工作流", Rule: "规则", Skill: "Skill", Design: "设计生图提示词" };
 
 const day = (at) => (typeof at === "string" ? at.slice(0, 10) : "");
 const versionNumber = (asset, versionId) =>
@@ -54,6 +54,7 @@ export function buildRevisionPacket(asset, activity = []) {
     `- 名称：${v.title}`,
     `- 类型：${TYPE_NAMES[asset.type] || asset.type}`,
     `- 当前版本：v${number}.0（当前版本已成功复制 ${uses} 次）`,
+    ...(asset.type === "Design" ? [`- 内容形式：${v.design.kind === "skill" ? "Skill 包" : "Prompt"}`, "- 默认使用 ChatGPT 的生图能力。", "- 本次仅优化生图要求正文；保持内容形式和完整文件包不变，不改写或安装 Skill。"] : []),
     ...(v.description ? [`- 说明：${v.description}`] : []),
     "",
     `## 当前版本全文（v${number}.0）`,

@@ -1,3 +1,4 @@
+import { identityOptions } from "./directory-identity.mjs";
 import fs from "node:fs/promises";
 import { constants } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -369,7 +370,7 @@ export function createRuleTemplates(
     assertDirectoryConfirmed(project, root);
     let directory;
     try {
-      directory = await projectDirectory(state.connections.roots, root);
+      directory = await projectDirectory(state.connections.roots, root, identityOptions(project, root));
     } catch (error) {
       if (error.status) throw error;
       if (["ENOENT", "ENOTDIR"].includes(error.code))

@@ -1,9 +1,11 @@
+import { createReaProcess } from '../server/reverse-process.mjs';
+import { fileURLToPath } from 'node:url';
 import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer } from "../server/http.mjs";
 
-export async function fixture({ discovery = {}, nightV2 = {}, controlledExecution = {} } = {}) {
+export async function fixture({ discovery = {}, nightV2 = {}, controlledExecution = {}, reverse = {}, reverseNative = {}, reaUpdate = {} } = {}) {
   const directory = await realpath(await mkdtemp(join(tmpdir(), "guiji-ui-")));
   const calls = { projects: 0, agents: 0 };
   const stamp = () => new Date().toISOString();
@@ -12,7 +14,10 @@ export async function fixture({ discovery = {}, nightV2 = {}, controlledExecutio
     port: 0,
     staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
     nightV2,
+    reaUpdate: {execute:createReaProcess({command:process.execPath,prefix:[fileURLToPath(new URL('./fake-rea.mjs',import.meta.url))]}),fetchImpl:async()=>{throw Error('合成测试禁止外网');},probe:async()=>[],...reaUpdate},
     controlledExecution,
+    reverseNative: {connect:async()=>{throw new Error('合成测试禁止真实原生 Codex');},...reverseNative},
+    reverse: { executeAi:async()=>{throw new Error('合成测试禁止真实AI调用');},execute: createReaProcess({command:process.execPath,prefix:[fileURLToPath(new URL("./fake-rea.mjs",import.meta.url))]}), ...reverse },
     discovery: {
       calendarHelper: { platform: "linux", run: async () => { throw new Error("合成测试禁止宿主日历"); } },
       inspectAgentInventory: async (agentId) => ({

@@ -1,4 +1,5 @@
 const BUTTON_ID = 'kankan-note-import-button';
+const BUTTON_GROUP_ID = 'kankan-note-import-actions';
 const PAYLOAD_PREFIX = 'KANKAN_NOTE:';
 const CARD_PAYLOAD_PREFIX = 'KANKAN_CARD:';
 const PAGE_DATA_SOURCE = 'kankan-note-page-data';
@@ -9,11 +10,12 @@ let navigationGeneration = 0;
 const pendingOperations=new Map();
 function syncNoteContext() {
   const id=getNoteId().toLowerCase();
-  if(id!==requestedNoteId){navigationGeneration++;requestedNoteId=id;cachedPageData=null;document.getElementById(BUTTON_ID)?.remove();document.dispatchEvent(new CustomEvent(PAGE_DATA_REQUEST_EVENT));}
+  if(id!==requestedNoteId){navigationGeneration++;requestedNoteId=id;cachedPageData=null;document.getElementById(BUTTON_GROUP_ID)?.remove();document.dispatchEvent(new CustomEvent(PAGE_DATA_REQUEST_EVENT));}
   return id;
 }
 
 function getNoteId() {
+  if(location.hostname==='www.douyin.com'){const url=new URL(location.href),id=url.searchParams.get('modal_id')||url.pathname.match(/^\/(?:video|note)\/(\d{15,25})\/?$/)?.[1];return /^\d{15,25}$/.test(id||'')?'douyin-'+id:'';}
   return globalThis.KANKAN_CARD_DRAG_HELPERS?.noteIdFromHref(location.href) || '';
 }
 
@@ -161,14 +163,15 @@ function currentDetailRoot(id) {
 
 function captureCurrentNote() {
   const id = syncNoteContext();
-  if (!id) throw new Error('请先打开一条小红书笔记详情');
-  if(cachedPageData?.id!==id || !cachedPageData.ready)throw new Error('当前笔记尚在加载，请稍后再试');
+  if (!id) throw new Error('请先打开一条小红书笔记或抖音作品详情');
+  if(cachedPageData?.id!==id || !cachedPageData.ready)throw new Error(cachedPageData?.id===id && cachedPageData.error || '当前笔记尚在加载，请稍后再试');
   const generation=navigationGeneration,root=currentDetailRoot(id);
 
   const title = cachedPageData.title || '未命名收藏';
   const content = cachedPageData.content || '';
-  const imageUrls = collectImages(root);
-  const videoUrl = collectVideoUrl(root);
+  const douyin=id.startsWith('douyin-');
+  const imageUrls = douyin ? (cachedPageData.imageUrls || []) : collectImages(root);
+  const videoUrl = douyin ? (cachedPageData.videoUrl || '') : collectVideoUrl(root);
   const type = cachedPageData.type === 'video' ? 'video' : 'normal';
   if (type === 'video' && !videoUrl) {
     throw new Error('没有读取到视频，请先播放几秒再试');
@@ -177,55 +180,77 @@ function captureCurrentNote() {
 
   return {
     id,
-    sourceUrl: location.href,
+    sourceUrl: id.startsWith('douyin-') ? `https://www.douyin.com/${type==='video'?'video':'note'}/${id.slice(7)}` : location.href,
     title,
     content,
     imageUrls,
     coverUrl: imageUrls[0] || '',
     videoUrl,
     author: cachedPageData.author || {name:'未知作者'},
-    tags: collectTags(root),
+    tags: id.startsWith('douyin-') ? (cachedPageData.tags || []) : collectTags(root),
     type,
   };
 }
 
 function setButtonState(button, label, tone) {
-  button.textContent = label;
-  button.style.background = tone;
+  button.textContent = label.startsWith('正在') ? '收藏中' : label.startsWith('已收藏') ? '已收藏' : label.startsWith('已保存') ? '已保存' : label === '已更新' ? '已更新' : '请查看';
+  button.style.color = tone;
+  button.title = label;
+  button.setAttribute('aria-label', `${button.dataset.actionLabel}：${label}`);
+  const status = button.parentElement?.querySelector('[role="status"]');
+  if (status) { status.textContent = label; status.hidden = false; }
 }
 
 function installButton() {
-  const existing = document.getElementById(BUTTON_ID);
+  const existing = document.getElementById(BUTTON_GROUP_ID);
   if (!getNoteId()) {
     existing?.remove();
     return;
   }
   if (existing) return;
 
+  const group=document.createElement('div');group.id=BUTTON_GROUP_ID;
+  Object.assign(group.style,{position:'fixed',right:'24px',bottom:'24px',zIndex:'2147483647',display:'flex',flexDirection:'row',gap:'2px',padding:'3px',maxWidth:'calc(100vw - 48px)',boxSizing:'border-box',borderRadius:'14px',background:'rgba(17,23,30,0.92)',border:'1px solid rgba(255,255,255,0.12)',boxShadow:'0 8px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)',backdropFilter:'blur(10px)'});
+  // 悬停、按下、焦点和图标需要伪类，内联样式做不到；图标用 ::before，不进入按钮文字。
+  const sheet=document.createElement('style');
+  sheet.textContent=`#${BUTTON_GROUP_ID} button{transition:filter .15s ease,transform .15s ease,border-color .15s ease}
+#${BUTTON_GROUP_ID} button::before{content:'★';margin-right:4px;font-size:11px}
+#${BUTTON_GROUP_ID} #${BUTTON_ID}-get::before{content:'✦'}
+#${BUTTON_GROUP_ID} button:hover:not(:disabled){filter:brightness(1.3);border-color:currentColor}
+#${BUTTON_GROUP_ID} button:active:not(:disabled){transform:translateY(1px)}
+#${BUTTON_GROUP_ID} button:focus-visible{outline:2px solid #65dce2;outline-offset:2px}
+#${BUTTON_GROUP_ID} button:disabled{cursor:progress;opacity:.75}`;
+  group.appendChild(sheet);
+  const status = document.createElement('span');
+  status.setAttribute('role', 'status'); status.hidden = true;
+  Object.assign(status.style,{position:'absolute',right:'0',bottom:'calc(100% + 8px)',width:'max-content',maxWidth:'min(280px, calc(100vw - 48px))',boxSizing:'border-box',padding:'8px 12px',borderRadius:'6px',background:'#18212b',color:'#f4f7fb',font:'400 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',overflowWrap:'anywhere',boxShadow:'0 4px 14px rgba(0,0,0,0.2)'});
+  group.appendChild(status);
+  for(const mode of ['direct','get']) {
   const button = document.createElement('button');
-  button.id = BUTTON_ID;
-  button.dataset.collectionVersion = '1.0.1';
+  button.id = mode==='direct'?BUTTON_ID:BUTTON_ID+'-get';
+  button.dataset.collectionVersion = '1.2.0';
   button.type = 'button';
-  button.draggable = true;
-  button.textContent = '收藏到「数码世界」';
-  button.title = '拖到数码世界的收藏画布，或点击收藏当前笔记';
+  button.draggable = mode==='direct';
+  button.textContent = mode==='direct'?'收藏':'GET+';
+  button.dataset.actionLabel = mode==='direct'?'收藏':'收藏并添加Get笔记';
+  button.setAttribute('aria-label',button.dataset.actionLabel);
+  button.title = mode==='direct'?'拖到数码世界的收藏画布，或点击收藏当前作品':'先保存原内容，再交给GET整理；结果显示在同卡Get笔记解析';
   Object.assign(button.style, {
-    position: 'fixed',
-    right: '24px',
-    bottom: '24px',
-    zIndex: '2147483647',
     minHeight: '44px',
-    maxWidth: 'calc(100vw - 48px)',
-    padding: '11px 18px',
+    height: '44px',
+    width: '64px',
+    flex: '0 0 64px',
+    boxSizing: 'border-box',
+    padding: '0 6px',
     lineHeight: '1.5',
-    whiteSpace: 'normal',
-    border: '1px solid rgba(255,255,255,0.55)',
-    borderRadius: '6px',
-    background: '#65dce2',
-    color: '#10161b',
-    boxShadow: '0 10px 30px rgba(42,50,44,0.28)',
+    whiteSpace: 'nowrap',
+    border: '1px solid transparent',
+    borderRadius: '11px',
+    background: mode==='direct'?'rgba(101,220,226,0.12)':'rgba(196,181,253,0.12)',
+    color: mode==='direct'?'#65dce2':'#c4b5fd',
     font: '600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    cursor: 'grab',
+    letterSpacing: '0.02em',
+    cursor: mode==='direct'?'grab':'pointer',
   });
 
   button.addEventListener('dragstart', (event) => {
@@ -238,7 +263,7 @@ function installButton() {
       event.dataTransfer.setData('text/uri-list', note.sourceUrl);
     } catch (error) {
       event.preventDefault();
-      setButtonState(button, error instanceof Error ? error.message : '读取失败', '#B56A5B');
+      setButtonState(button, error instanceof Error ? error.message : '读取失败', '#ff9b8a');
     }
   });
 
@@ -247,34 +272,41 @@ function installButton() {
   });
 
   button.addEventListener('click', async () => {
+    if(button.disabled)return;
+    const lock=value=>group.querySelectorAll('button').forEach(item=>item.disabled=value);
+    lock(true);
     let note;
     try {
+      await new Promise((resolve,reject)=>{const id=syncNoteContext();const onData=event=>{if(event.source===window&&event.origin===location.origin&&event.data?.source===PAGE_DATA_SOURCE&&event.data.payload?.id===id){clearTimeout(timeout);window.removeEventListener('message',onData);resolve();}};const timeout=setTimeout(()=>{window.removeEventListener('message',onData);reject(new Error('当前作品尚在加载，请稍后再试'));},1500);window.addEventListener('message',onData);document.dispatchEvent(new CustomEvent(PAGE_DATA_REQUEST_EVENT));});
       note = captureCurrentNote();
     } catch (error) {
-      setButtonState(button, error instanceof Error ? error.message : '读取失败', '#B56A5B');
-      return;
+      setButtonState(button, error instanceof Error ? error.message : '读取失败', '#ff9b8a');
+      lock(false);return;
     }
 
     const send=message=>new Promise((resolve,reject)=>chrome.runtime.sendMessage(message,response=>{if(chrome.runtime.lastError || !response?.ok)reject(Object.assign(new Error(response?.error||'请先打开数码世界'),{statusCode:response?.statusCode,operationNotStarted:response?.operationNotStarted===true}));else resolve(response);}));
     const update=(label,tone)=>{if(note.id===getNoteId() && button.isConnected)setButtonState(button,label,tone);};
-    const existing=pendingOperations.get(note.id),operationId=existing||crypto.randomUUID();
-    pendingOperations.set(note.id,operationId);button.disabled=true;update('正在收藏…','#65dce2');
+    const pendingKey=note.id+':'+mode,existing=pendingOperations.get(pendingKey);let operationId=existing||crypto.randomUUID();
+    pendingOperations.set(pendingKey,operationId);update(mode==='get'?'正在保存原内容，随后GET解析…':'正在收藏…','#65dce2');
     try {
-      let response=await send(existing?{type:'GET_IMPORT_STATUS',operationId}:{type:'IMPORT_NOTE',note,operationId});
+      let response=await send(existing?{type:'GET_IMPORT_STATUS',operationId}:{type:'IMPORT_NOTE',note,operationId,mode});
+      operationId=response.id || operationId;pendingOperations.set(pendingKey,operationId);
       const deadline=Date.now()+40*60*1000;
       while(response.status==='processing' && Date.now()<deadline){await new Promise(resolve=>setTimeout(resolve,1200));response=await send({type:'GET_IMPORT_STATUS',operationId});}
-      if(response.status!=='complete'){if(['failed','interrupted'].includes(response.status))pendingOperations.delete(note.id);throw new Error(response.error||'结果待核对，请再次点击查询');}
-      pendingOperations.delete(note.id);update(response.created?'已收藏':'已更新','#85d39f');
+      if(response.status!=='complete'){if(['failed','interrupted'].includes(response.status))pendingOperations.delete(pendingKey);throw new Error(response.error||'结果待核对，请再次点击查询');}
+      pendingOperations.delete(pendingKey);const partial=response.mediaStatus==='partial'||response.videoStatus==='partial';update(partial?'已保存，部分媒体或文稿失败；请到收藏页查看':mode==='get'?'已收藏，GET状态请到同卡解析页查看':response.created?'已收藏':'已更新',partial?'#f1b6af':'#85d39f');
     } catch(error) {
       const missing=error.statusCode===404||error.message==='没有找到本次收藏操作';
       const unpaired=error.operationNotStarted||/^点插件图标，先填入|^插件配对已失效/.test(error.message||'');
-      if(unpaired||missing)pendingOperations.delete(note.id);
-      update(missing?'操作记录不存在；请再次点击重新收藏本帖':error.message||'结果待核对，请再次点击查询','#f1b6af');
+      if(unpaired||(missing&&mode==='direct'))pendingOperations.delete(pendingKey);
+      update(missing?(mode==='get'?'记录待核对，请在工作台查看GET状态；不会自动重提':'操作记录不存在；请再次点击重新收藏本帖'):error.message||'结果待核对，请再次点击查询','#f1b6af');
     }
-    finally {button.disabled=false;}
+    finally {lock(false);}
   });
 
-  document.documentElement.appendChild(button);
+  group.appendChild(button);
+  }
+  document.documentElement.appendChild(group);
 }
 
 window.addEventListener('message', (event) => {
@@ -303,7 +335,7 @@ setInterval(() => {
   syncNoteContext();
   installButton();
   const noteId = getNoteId();
-  if (noteId && noteId !== requestedNoteId) {
+  if (noteId && (noteId !== requestedNoteId || !cachedPageData?.ready)) {
     requestedNoteId = noteId;
     document.dispatchEvent(new CustomEvent(PAGE_DATA_REQUEST_EVENT));
   } else if (!noteId) {

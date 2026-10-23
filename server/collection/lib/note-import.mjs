@@ -4,6 +4,7 @@ const ALLOWED_HOSTS = new Set([
   'xiaohongshu.com',
   'www.xiaohongshu.com',
   'm.xiaohongshu.com',
+  'www.douyin.com',
 ]);
 
 const NOTE_PATH_PATTERNS = [
@@ -24,11 +25,11 @@ function parseSupportedUrl(value) {
   try {
     url = new URL(value);
   } catch {
-    throw new Error('没有识别到有效的小红书笔记链接');
+    throw new Error('没有识别到有效的小红书或抖音作品链接');
   }
 
-  if (url.protocol!=='https:' || url.username || url.password || !ALLOWED_HOSTS.has(url.hostname.toLowerCase())) {
-    throw new Error('只支持小红书笔记页面');
+  if (url.protocol!=='https:' || url.username || url.password || url.port || !ALLOWED_HOSTS.has(url.hostname.toLowerCase())) {
+    throw new Error('只支持小红书或抖音作品页面');
   }
 
   return url;
@@ -46,7 +47,7 @@ export function extractSharedNoteUrl(input) {
     .find(Boolean);
 
   if (!supportedUrl) {
-    throw new Error('没有识别到有效的小红书笔记链接');
+    throw new Error('没有识别到有效的小红书或抖音作品链接');
   }
 
   return supportedUrl.toString();
@@ -54,6 +55,10 @@ export function extractSharedNoteUrl(input) {
 
 export function extractNoteIdFromUrl(value) {
   const url = parseSupportedUrl(value);
+  if (url.hostname === 'www.douyin.com') {
+    const id = url.searchParams.get('modal_id') || url.pathname.match(/^\/(?:video|note)\/(\d{15,25})\/?$/)?.[1];
+    return /^\d{15,25}$/.test(id || '') ? `douyin-${id}` : null;
+  }
   for (const pattern of NOTE_PATH_PATTERNS) {
     const match = url.pathname.match(pattern);
     if (match) return match[1].toLowerCase();
@@ -127,13 +132,19 @@ export function normalizeImportedNote(payload) {
 
   const sharedUrl = extractSharedNoteUrl(cleanText(payload.sourceUrl, 5000));
   const sourceUrlObject = new URL(sharedUrl);
+  const sourceId = extractNoteIdFromUrl(sharedUrl);
+  const origin = sourceUrlObject.hostname === 'www.douyin.com' ? 'douyin' : 'xiaohongshu';
+  if (origin === 'douyin' && !sourceId) throw new Error('当前页面不是可识别的抖音作品');
+  if (origin === 'douyin' && Array.isArray(payload.imageUrls) && payload.imageUrls.length > 20) throw new Error('这条图文超过20张图片，暂不能完整收藏');
+  if (payload.id && sourceId !== cleanText(payload.id, 100).toLowerCase()) throw new Error('作品ID与来源链接不匹配');
+  if (origin === 'douyin') sourceUrlObject.pathname = `/${payload.type === 'video' ? 'video' : 'note'}/${sourceId.slice(7)}`;
   const albumId = sourceUrlObject.pathname.startsWith('/album/') ? extractNoteIdFromUrl(sharedUrl) : null;
   sourceUrlObject.search = albumId ? `?note_id=${albumId}` : '';
   sourceUrlObject.hash = '';
   const sourceUrl = sourceUrlObject.toString();
   const noteId = extractNoteIdFromUrl(sourceUrl) || cleanText(payload.id, 100);
-  if (!/^[0-9a-f]{24}$/i.test(noteId)) {
-    throw new Error('当前页面不是可识别的小红书笔记');
+  if (!/^(?:[0-9a-f]{24}|douyin-\d{15,25})$/i.test(noteId)) {
+    throw new Error('当前页面不是可识别的小红书或抖音作品');
   }
 
   const title = cleanText(payload.title, 300) || '未命名笔记';
@@ -150,6 +161,7 @@ export function normalizeImportedNote(payload) {
 
   return {
     id: noteId.toLowerCase(),
+    origin,
     sourceUrl,
     title,
     content,
@@ -188,6 +200,7 @@ export function normalizeImportedNote(payload) {
 
 export function noteFromSharedText(input) {
   const sourceUrl = extractSharedNoteUrl(input);
+  if (new URL(sourceUrl).hostname === 'www.douyin.com') throw new Error('请在抖音网页打开作品详情，再用收藏插件按钮点击或拖入');
   const withoutUrl = cleanText(input).replace(sourceUrl, '').trim();
   const lines = withoutUrl
     .split(/\n+/)

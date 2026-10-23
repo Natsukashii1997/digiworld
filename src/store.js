@@ -1,3 +1,4 @@
+import { validateDesignVersion } from "./design-asset.js";
 import { validateWorkflowTemplate } from "./workflow-template.js";
 import { nightV2Of } from "./night-v2-model.js";
 import { validateMcpConfig, validateMcpVersion } from "./mcp-config.js";
@@ -18,9 +19,10 @@ export function makeAsset(input) {
     mediaManifest,
     workflowTemplate,
     mcpConfig,
+    design,
   } = input;
   if (!title?.trim()) throw new Error("请填写资产名称");
-  if (!["Skill", "Prompt", "Workflow", "Rule", "MCP"].includes(type))
+  if (!["Skill", "Prompt", "Workflow", "Rule", "MCP", "Design"].includes(type))
     throw new Error("请选择资产类型");
   if (type === "Skill" && !files.some((f) => /(^|\/)SKILL\.md$/.test(f.path)))
     throw new Error("Skill 包中必须包含 SKILL.md");
@@ -41,11 +43,14 @@ export function makeAsset(input) {
     ...(references === undefined ? {} : { references }),
     ...(mediaManifest === undefined ? {} : { mediaManifest }),
     ...(mcpConfig === undefined ? {} : { mcpConfig }),
+    ...(design === undefined ? {} : { design }),
     ...(workflowTemplate == null
       ? {}
       : { workflowTemplate: validateWorkflowTemplate(workflowTemplate) }),
   };
   if (type === "MCP") validateMcpVersion(version);
+  if (type === "Design") validateDesignVersion(version);
+  else if (design !== undefined) throw new Error("只有设计资产可设置设计形态");
   return {
     id: uid(),
     type,
@@ -75,6 +80,8 @@ export function revise(asset, values) {
   if (!next.title.trim()) throw new Error("请填写资产名称");
   if (values.type !== undefined && values.type !== asset.type)
     throw new Error("资产类型不能在版本中改变");
+  if (asset.type === "Design") validateDesignVersion(next);
+  else if (next.design !== undefined) throw new Error("只有设计资产可设置设计形态");
   if (asset.type === "MCP") validateMcpVersion(next);
   else if (next.mcpConfig !== undefined) throw new Error("只有 MCP 资产可设置 MCP 配置");
   return { ...asset, versions: [...asset.versions, next] };

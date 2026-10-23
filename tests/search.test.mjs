@@ -48,6 +48,18 @@ function workspace() {
   return { s, prompt, skill, archived };
 }
 
+test('all three note types are searchable by their independent titles, including title-only notes', () => {
+  const { s } = workspace();
+  s.notes = ['plain', 'todo', 'timeline'].map((type, index) => ({
+    id: `title-${index}`, type, title: `同名便签 ${type}`, text: index ? '正文' : '',
+    at: '2026-10-22T00:00:00.000Z',
+  }));
+  assert.equal(searchWorkspace(s, '同名便签').notes.length, 3);
+  assert.equal(searchWorkspace(s, '同名便签 plain').notes[0].item.id, 'title-0');
+  assert.equal(searchWorkspace(s, 'timeline 正文').notes[0].where, '标题、正文');
+  assert.equal(searchWorkspace(s, 'plain').notes[0].where, '标题');
+});
+
 test("关键词按空白拆分、忽略大小写，所有词须出现", () => {
   assert.deepEqual(terms("  Weekly   周报 "), ["weekly", "周报"]);
   assert.deepEqual(terms("   "), []);
@@ -93,7 +105,7 @@ test("已归档资产只计数，不列入结果", () => {
   assert.ok(!hits.some((h) => h.asset.id === archived.id));
 });
 
-test("全局搜索覆盖随手记、参考、手动与扫描项目", () => {
+test("全局搜索覆盖随手记、参考和当前目录项目", () => {
   const { s } = workspace();
   const r = searchWorkspace(s, "周报");
   assert.equal(r.assets.length, 1);
@@ -102,7 +114,7 @@ test("全局搜索覆盖随手记、参考、手动与扫描项目", () => {
   assert.equal(r.notes[0].where, "正文");
   assert.equal(r.references.length, 1);
   assert.equal(r.references[0].where, "笔记");
-  assert.deepEqual(r.projects.map((p) => p.item.id), ["p1", "d1"]);
+  assert.deepEqual(r.projects.map((p) => p.item.id), ["d1"]);
   assert.equal(searchWorkspace(s, "example.com").references[0].where, "链接");
   assert.equal(searchWorkspace(s, "  "), null);
   const none = searchWorkspace(s, "完全不存在的词");
@@ -112,7 +124,7 @@ test("全局搜索覆盖随手记、参考、手动与扫描项目", () => {
 test("缺少扫描连接的旧主库也能搜索", () => {
   const { s } = workspace();
   delete s.connections;
-  assert.equal(searchWorkspace(s, "周报").projects.length, 1);
+  assert.equal(searchWorkspace(s, "周报").projects.length, 0);
 });
 
 test("标签统计只算未归档资产当前版本，按数量再按名称排序", () => {

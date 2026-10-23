@@ -1,3 +1,5 @@
+import { projectScanNotice } from "./project-scan-status.js";
+import {projectLaunchSignature} from './project-freshness.js';
 import { Reading, ReadReveal } from './ScanMotion.jsx';
 import { ProjectSettings } from "./ProjectSettings.jsx";
 import { savepointThresholds } from "./settings-v16.js";
@@ -111,6 +113,7 @@ function recent(p) {
       }) + (p.recentUpdate.state === "partial" ? " · 部分" : "")
     : "未知";
 }
+const projectSource = (project) => project.githubUrl ? "github" : "local";
 const unavailable = (item) =>
   item.current?.state === "absent"
     ? "文件不存在"
@@ -123,7 +126,6 @@ function SaveCard({
   launch,
   onContinue,
   onDetails,
-  onSavepoints,
   savepointDays,
   savepointWarnDays,
   readFailed,
@@ -271,13 +273,12 @@ function SaveCard({
         </small>
       )}
       {savepointDays > savepointWarnDays && (
-        <button
-          className="text-btn pj-savepoint-hint"
-          title="基于最近一次读取或项目扫描；打开存档点可刷新"
-          onClick={onSavepoints}
+        <span
+          className="pj-savepoint-hint"
+          title="基于最近一次读取或项目扫描"
         >
           未存档 {Math.floor(savepointDays)} 天
-        </button>
+        </span>
       )}
       <div className="pj-save-act">
         <Button
@@ -298,7 +299,7 @@ function SaveCard({
     </article>
   );
 }
-function ProjectLaunch({ item, liveItem, adoptState, notify, onClose }) {
+function ProjectLaunch({ item, liveItem, adoptState, notify, onClose, refreshProjectStatus, statusReading, sourceKey }) {
   const [agent, setAgent] = useState(
       castOf(item.current?.fields?.writer)?.id || "codex",
     ),
@@ -306,14 +307,16 @@ function ProjectLaunch({ item, liveItem, adoptState, notify, onClose }) {
     [seen, setSeen] = useState(false),
     [error, setError] = useState(""),
     [receipt, setReceipt] = useState(""),
-    [opening, setOpening] = useState(false);
+    [opening, setOpening] = useState(false), [checking,setChecking]=useState(false);
   const lock = useRef(false),
     live = useRef(true),
     copier = usePromptCopy({ adoptState, notify }),
     prepared = projectRelayPrompt(item, agent),
     snapshot = { stateId: item.current?.fields?.stateId };
   const stale =
+    (item.sourceKey!==sourceKey?"项目来源已变化，请重新继续并预览。":"") ||
     staleNote(snapshot, liveItem?.current?.fields?.stateId) ||
+    (projectLaunchSignature(item)!==projectLaunchSignature(liveItem)?"项目内容或目录已变化，请收起后重新继续并预览。":"") ||
     (!readableCurrent(liveItem)
       ? "项目 CURRENT 已不可读，请收起后重新读取。"
       : "");
@@ -331,19 +334,24 @@ function ProjectLaunch({ item, liveItem, adoptState, notify, onClose }) {
       window.removeEventListener("keydown", key);
     };
   }, []);
-  const busy = copier.busy || opening;
+  const busy = copier.busy || opening || checking || statusReading;
   async function copy(openApp) {
-    if (lock.current || stale || copier.pending) return;
+    if (lock.current || busy || stale || copier.pending) return;
     if (!seen) {
       setOpen(true);
       setSeen(true);
       notify("请先预览口令，再复制或带过去");
       return;
     }
-    lock.current = true;
+    lock.current = true;setChecking(true);
     setError("");
     setReceipt("");
     try {
+      const fresh=await refreshProjectStatus();
+      if(!live.current)return;
+      const latest=fresh?.items.find(p=>p.projectId===item.projectId);
+      if(!latest||!readableCurrent(latest)){setError('当前状态读取未确认，请重读后再复制。');return;}
+      if(fresh.sourceKey!==item.sourceKey||projectLaunchSignature(item)!==projectLaunchSignature(latest)){setError('项目内容或目录已变化，请收起后重新继续并预览。');return;}
       const ok = await copier.copy({
         text: prepared.prompt,
         kind: "start",
@@ -372,7 +380,7 @@ function ProjectLaunch({ item, liveItem, adoptState, notify, onClose }) {
       }
     } finally {
       lock.current = false;
-      if (live.current) setOpening(false);
+      if (live.current) {setOpening(false);setChecking(false);}
     }
   }
   return (
@@ -488,6 +496,8 @@ export function ProjectsV16({
   const [columns, setColumns] = useState(() =>
     window.innerWidth > 1180 ? 3 : window.innerWidth > 760 ? 2 : 1,
   );
+  const continueLock=useRef(false),pageLive=useRef(true);
+  useEffect(()=>{pageLive.current=true;return()=>{pageLive.current=false;};},[]);
   const settingsBusy = useRef(false);
   const dailyGeneration = useRef(0);
   const started = useRef(false),
@@ -565,7 +575,8 @@ export function ProjectsV16({
     }
     return () => clearTimeout(flightTimer.current);
   }, [reduced]);
-  const items = sortSaveItems(
+  const launchOrder=useRef(null);
+  const sortedItems = sortSaveItems(
     active.map((p) => {
       const item = projectStatus.items.find((i) => i.projectId === p.id) || {
         projectId: p.id,
@@ -586,6 +597,9 @@ export function ProjectsV16({
       };
     }),
   );
+  // Keep the active preview mounted while a background read changes card priority.
+  if(!launch||!launchOrder.current)launchOrder.current=sortedItems.map(item=>item.projectId);
+  const items=launch?[...sortedItems].sort((a,b)=>launchOrder.current.indexOf(a.projectId)-launchOrder.current.indexOf(b.projectId)):sortedItems;
   const slots = new Map(items.map((p, i) => [p.projectId, i + 1])),
     liveLaunch = launch && items.find((i) => i.projectId === launch.projectId);
   function closeLaunch() {
@@ -597,15 +611,11 @@ export function ProjectsV16({
     : all;
   const counts = {
     all: library.length,
-    local: library.filter((p) => p.localPaths.length).length,
-    github: library.filter((p) => p.githubUrl).length,
-    linked: library.filter((p) => p.githubUrl && p.localPaths.length).length,
+    local: library.filter((p) => projectSource(p) === "local").length,
+    github: library.filter((p) => projectSource(p) === "github").length,
   };
   const matches = (p) =>
-    (filter === "all" ||
-      (filter === "local" && p.localPaths.length) ||
-      (filter === "github" && p.githubUrl) ||
-      (filter === "linked" && p.githubUrl && p.localPaths.length)) &&
+    (filter === "all" || projectSource(p) === filter) &&
     [p.name, p.originalName, p.repoKey, ...p.localPaths]
       .join(" ").toLowerCase().includes(query.toLowerCase());
   const projects = library.filter(matches);
@@ -700,7 +710,7 @@ export function ProjectsV16({
       {c.truncated && (
         <p className="scan-notice warning" role="status">
           <strong>结果不完整：</strong>
-          扫描或时间读取达到上限。请在项目空间设置中缩小扫描目录后重新扫描。
+          {projectScanNotice(c)}
         </p>
       )}
       <section className={`pj-saves-sec${active.length ? "" : " pj-no-active"}`} aria-label="在推进项目">
@@ -710,6 +720,7 @@ export function ProjectsV16({
           <button
             type="button"
             className="text-btn"
+            title={projectStatus.checkedAt?`上次读取：${new Date(projectStatus.checkedAt).toLocaleString()}`:undefined}
             disabled={!projectStatus.loaded || !github.loaded}
             onClick={() => {
               refreshProjectStatus();
@@ -751,18 +762,19 @@ export function ProjectsV16({
                       index={i}
                       savepointDays={item.savepointDays}
                       savepointWarnDays={savepointThresholds(c).warn}
-                      readFailed={!!projectStatus.error}
-                      onSavepoints={() =>
-                        navigate("history", { projectId: item.projectId })
-                      }
+                      readFailed={!!projectStatus.error||!projectStatus.loaded}
                       launch={launch?.projectId === item.projectId}
                       onDetails={() => setSelectedId(item.projectId)}
-                      onContinue={(e) => {
-                        trigger.current = e.currentTarget;
-                        setLaunch({
-                          ...item,
-                          launchSerial: crypto.randomUUID(),
-                        });
+                      onContinue={async(e) => {
+                        if(continueLock.current||!projectStatus.loaded)return;
+                        trigger.current=e.currentTarget;continueLock.current=true;
+                        try{
+                          const fresh=await refreshProjectStatus();
+                          if(!pageLive.current)return;
+                          const current=fresh?.items.find(p=>p.projectId===item.projectId);
+                          if(!current||!readableCurrent(current)){notify('当前状态读取未确认，请重读后再继续。','warning');return;}
+                          setLaunch({...current,name:item.name,sourceKey:fresh.sourceKey,launchSerial:crypto.randomUUID()});
+                        }finally{continueLock.current=false;}
                       }}
                     />
                   ) : i < Math.max(3, items.length) ? (
@@ -785,12 +797,12 @@ export function ProjectsV16({
                           SLOT {String(i + 1).padStart(2, "0")}
                         </span>
                       </span>
-                      {i === items.length && <span className="pj-empty-hint">
+                      <span className="pj-empty-hint">
                         空存档
                         <small>
                           {library.length ? "从下面挑一盘开新档" : "先登记项目"}
                         </small>
-                      </span>}
+                      </span>
                     </button>
                   ) : null;
                 })}
@@ -803,6 +815,9 @@ export function ProjectsV16({
                       key={launch.projectId + launch.launchSerial}
                       item={launch}
                       liveItem={liveLaunch}
+                      refreshProjectStatus={refreshProjectStatus}
+                      statusReading={!projectStatus.loaded}
+                      sourceKey={projectStatus.sourceKey}
                       adoptState={adoptState}
                       notify={notify}
                       onClose={closeLaunch}
@@ -833,9 +848,8 @@ export function ProjectsV16({
             >
               {[
                 ["all", "全部"],
-                ["local", "本地"],
-                ["github", "GitHub"],
-                ["linked", "已关联"],
+                ["local", "LOCAL"],
+                ["github", "GIT"],
               ].map(([id, label]) => (
                 <button
                   type="button"
@@ -879,7 +893,7 @@ export function ProjectsV16({
               <ul>
                 {g.items.map((p) => (
                   <li
-                    className={`pj-cs${p.localPaths.length ? "" : " git"}${p.active ? " in-save" : ""}`}
+                    className={`pj-cs${projectSource(p) === "github" ? " git" : ""}${p.active ? " in-save" : ""}`}
                     key={p.id}
                   >
                     <button
@@ -888,7 +902,7 @@ export function ProjectsV16({
                       aria-label={`项目：${p.name}`}
                     >
                       <span className="pj-cs-code en">
-                        {p.localPaths.length ? "LOCAL" : "GIT"}
+                        {projectSource(p) === "github" ? "GIT" : "LOCAL"}
                       </span>
                       <span className="pj-cs-name">
                         <b>{p.name}</b>
@@ -1104,6 +1118,7 @@ export function ProjectsV16({
               <ProjectLocations
                 key={selected.id}
                 project={selected}
+                identityIssueRoot={projectStatus.error ? '' : projectStatus.items.find(item => item.projectId === selected.id && item.current?.code === 'DIRECTORY_IDENTITY_CHANGED')?.root || ''}
                 state={state}
                 adoptState={adoptState}
                 notify={notify}

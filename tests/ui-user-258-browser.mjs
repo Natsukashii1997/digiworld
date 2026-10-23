@@ -82,8 +82,10 @@ try {
     await page.locator(".asset-toolbar .segmented button").filter({ hasText: "Skills" }).click();
     assert.equal(await page.locator(".asset-toolbar .segmented button[aria-pressed=true]").innerText().then(text => text.includes("Skills")), true);
     await page.getByLabel("排序方式").selectOption("name");
-    await page.getByRole("button", { name: "列表视图" }).click();
-    assert.equal(await page.locator(".asset-grid.list-layout").count(), 1);
+    assert.equal(await page.locator(".asset-grid").count(), 1);
+    assert.equal(await page.getByRole("group", { name: "视图模式" }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: /^(网格视图|列表视图)$/ }).count(), 0);
+    assert.equal(await page.locator(".asset-grid.list-layout").count(), 0);
     await page.getByLabel("在资产中搜索").fill("不存在的合成关键词");
     assert.match(await page.locator(".collection-meta").innerText(), /当前结果\s*·\s*0/);
     await page.getByLabel("在资产中搜索").fill("");

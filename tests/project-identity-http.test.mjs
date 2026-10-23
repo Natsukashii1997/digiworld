@@ -444,3 +444,8 @@ test("项目关联 HTTP 拒绝过期、旧 revision 与未知 token，不推进�
   );
   assert.deepEqual((await app.call("/workspace")).body, before);
 });
+
+test('扫描诊断同事务保存；完整扫描清除旧警报；精确排除路径传到遍历器',async t=>{
+ let partial=true,seen;const app=await fixture(t,async(roots,options)=>{seen=options;return {items:[],locations:[],truncated:partial,diagnostics:{visited:2,knownRequested:1,knownChecked:1,gitReads:0,maxDirectories:2,maxDepth:6,maxUpdateReads:500,reasons:partial?[{code:'directory_budget',limit:2,used:2,samples:[app.root+'/later']}]:[]}};});
+ await app.repository.updateConnections(c=>({...c,projectExclusions:['path:'+app.root+'/derived']}));let result=await app.call('/scan/projects',{});assert.equal(result.status,200);assert.equal(result.body.connections.projectScanDiagnostics.local.reasons[0].code,'directory_budget');assert.deepEqual(seen.excludePaths,[app.root+'/derived']);partial=false;result=await app.call('/scan/projects',{});assert.equal(result.status,200);assert.equal(result.body.connections.truncated,false);assert.deepEqual(result.body.connections.projectScanDiagnostics.local.reasons,[]);
+});

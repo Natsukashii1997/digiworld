@@ -488,7 +488,8 @@
 .modal:has(.full-backup-restore){display:flex;flex-direction:column;overflow:hidden;}
 .modal:has(.full-backup-restore)>.dialog-top{flex-shrink:0;}
 .modal .full-backup-restore{display:flex;flex-direction:column;min-height:0;gap:16px;}
-.full-backup-restore-body{display:grid;gap:16px;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;}
+/* Keep content rows at their natural height; only the body should scroll. */
+.full-backup-restore-body{display:grid;grid-auto-rows:max-content;gap:16px;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;}
 .full-backup-restore-actions{flex-shrink:0;margin-top:0;padding-top:12px;border-top:1px solid var(--line);}
 
 /* 固定操作列与44px按钮，压缩桌面表行。 */

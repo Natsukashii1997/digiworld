@@ -8,10 +8,13 @@
 /* ---------- 令牌补全（Claude 165 设计评审 P0）----------
    styles.css 是受保护的根令牌；这里只补它没有的档位与硬件色，不覆盖已有值。
    其他样式层不写圆角 / 字号 / 颜色字面值，一律引用令牌（tests/design-tokens.test.mjs 守护）。
-   圆角：--r-xs 4 · --r-s 8 · --r 12 · --r-l 16 · --r-xl 20 · --r-pill；2–3px 只用于像素级小件。
+   圆角：--r-xs 4 · --r-badge 6 · --r-s 8 · --r 12 · --r-l 16 · --r-xl 20 · --r-pill；2–3px 只用于像素级小件。
    字号：--fs-micro 11（只给等宽大写小标）· label 11 · small 12 · meta 12.5 · caption 13 · body 14 · read 15（正文阅读）· title 16 · section 20 · display-s 28 · page-narrow 30（窄屏页标题）· display 34 · page 38。 */
 :root {
+  --design-highlight: #fff1f7;
+  --r-floating: 14px;
   --r-xs: 4px;
+  --r-badge: 6px;
   --r-xl: 20px;
   --r-pill: 999px;
   --fs-micro: 11px;

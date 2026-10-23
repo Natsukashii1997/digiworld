@@ -4,6 +4,7 @@ import { readState as readLegacy, seed } from "./store.js";
 let sessionPromise;
 let pageRootIdentity;
 let pageRootObserved = false;
+let pageRequestStarted = false;
 const ROOT_IDENTITY = /^[a-f0-9]{64}$/;
 
 function bindPageRoot(value) {
@@ -19,7 +20,13 @@ function bindPageRoot(value) {
   pageRootIdentity = identity;
   return { ...value, dataRootIdentity: identity };
 }
-export function session() {
+export function session({ retryUnbound = false } = {}) {
+  // An identity probe can recover before any API operation has used this page.
+  // Once a request starts, even an unknown result remains bound to its original root.
+  if (retryUnbound && pageRootObserved && pageRootIdentity === null && !pageRequestStarted) {
+    sessionPromise = null;
+    pageRootObserved = false;
+  }
   if (!sessionPromise)
     sessionPromise = fetch("/api/session", {
       headers: { "X-Workbench-Client": "1" },
@@ -42,16 +49,18 @@ export async function request(
   options = {},
 ) {
   const { token } = await session();
+  pageRequestStarted = true;
   let r;
   try {
     r = await fetch("/api" + path, {
       method,
+      ...(options.signal ? {signal:options.signal}:{}),
       keepalive: options.keepalive === true,
       headers: {
         "X-Workbench-Token": token,
-        ...(data === undefined ? {} : { "Content-Type": "application/json" }),
+        ...(data === undefined ? {} : { "Content-Type": options.binaryUpload ? "application/zip" : "application/json" }),
       },
-      ...(data === undefined ? {} : { body: stringify(data) }),
+      ...(data === undefined ? {} : { body: options.binaryUpload ? data : stringify(data) }),
     });
   } catch {
     throw new Error(
@@ -62,12 +71,20 @@ export async function request(
     sessionPromise = null;
     return request(path, data, method, false, options);
   }
+  if (r.ok && options.binaryResponse) return {
+    bytes: new Uint8Array(await r.arrayBuffer()),
+    filename: decodeURIComponent(r.headers.get('X-Workbench-Filename') || '完整备份.zip'),
+    fileCount: Number(r.headers.get('X-Workbench-Backup-Files')),
+  };
   const result = parse(await r.text());
   if (!r.ok)
     throw Object.assign(new Error(result.error || "本地服务处理失败"), {
       status: r.status,
       operationNotStarted: result.operationNotStarted === true,
       unknownResult: result.unknownResult === true,
+      revisionConflict: result.revisionConflict === true,
+      noteConflict: result.noteConflict === true,
+      currentNote: result.noteConflict === true ? result.currentNote : undefined,
       code: result.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED" || /^FEISHU_[A-Z_]+$/.test(result.code || "") ? result.code : undefined,
     });
   return result;

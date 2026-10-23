@@ -1,8 +1,8 @@
 // 焚决（路线 v3 切片 1.3；1.3b 迁入资产仓库）：用户自建的“卷”，每卷是有序的碎片列表。
 // 用户 2026-09-30 纠正：焚决是资产仓库的第五种类型，不单独占导航。卷以卡片出现在资产仓库，
 // 点开后在详情抽屉里编辑；回收区在“焚决”类型标签下方。
-// 条目可打标签、按标签筛选、一键复制（复制成功才计一次）；删除进回收区可恢复；条目不做版本。
-import React, { useState } from "react";
+// 条目填写名称与提示词全文，一键复制正文（复制成功才计一次）；旧标签数据保留，界面不再显示。
+import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -18,7 +18,7 @@ import {
   scrollsOf,
   orderScrolls,
   liveEntries,
-  parseTags,
+  entryName,
   shortText,
   renameScroll,
   deleteScroll,
@@ -37,31 +37,33 @@ import {
 } from "./scrolls.js";
 
 // 焚决详情抽屉：与资产详情同样式；卷被删除或不存在时由调用方关闭。
-export function ScrollDetail({ scroll: selected, state, save, notify, onClose }) {
+export function ScrollDetail({ scroll: selected, state, save, notify, onClose, entryJump }) {
   const all = scrollsOf(state);
   const [body, setBody] = useState(""),
-    [tagText, setTagText] = useState(""),
-    [filter, setFilter] = useState(null),
+    [entryTitle, setEntryTitle] = useState(""),
     [editing, setEditing] = useState(null),
     [renaming, setRenaming] = useState(false),
     [deleting, setDeleting] = useState(false),
     [deleteBlockers, setDeleteBlockers] = useState([]);
   const entries = liveEntries(selected);
-  const tags = [...new Set(entries.flatMap((e) => e.tags))];
-  const activeFilter = filter && tags.includes(filter) ? filter : null;
-  const shown = activeFilter
-    ? entries.filter((e) => e.tags.includes(activeFilter))
-    : entries;
+  const jumped=useRef(null),entryNodes=useRef(new Map());
+  useEffect(()=>{
+    if(!entryJump || jumped.current===entryJump.key)return;
+    jumped.current=entryJump.key;
+    const node=entryNodes.current.get(entryJump.id);
+    if(node){node.scrollIntoView({block:'center'});node.focus({preventScroll:true});}
+    else notify('这条焚决已删除或不可用，请重新搜索。','warning');
+  },[entryJump?.key]);
   const { uses } = scrollStats(selected);
   const persist = (scrolls) => save({ ...state, scrolls });
 
   async function add(e) {
     e.preventDefault();
-    if (!body.trim()) return;
-    const { scrolls } = addEntry(all, selected.id, body.trim(), parseTags(tagText));
+    if (!entryTitle.trim() || !body.trim()) return;
+    const { scrolls } = addEntry(all, selected.id, body, [], undefined, entryTitle);
     if (!(await persist(scrolls))) return;
     setBody("");
-    setTagText("");
+    setEntryTitle("");
     notify(`已加入「${selected.name}」`);
   }
   async function copyEntry(entry) {
@@ -151,46 +153,28 @@ export function ScrollDetail({ scroll: selected, state, save, notify, onClose })
         </div>}
 
         <form className="entry-composer" onSubmit={add}>
+          <label className="entry-field">
+            <span>名称</span>
+            <input value={entryTitle} maxLength={NAME_MAX} required
+              onChange={(e) => setEntryTitle(e.target.value)}
+              placeholder="给这条焚决起个名字" aria-label="新条目名称" />
+          </label>
+          <label className="entry-field">
+            <span>提示词全文</span>
           <textarea
             value={body}
             maxLength={TEXT_MAX}
+            required
             onChange={(e) => setBody(e.target.value)}
-            placeholder="一句心法、一段 prompt 碎片，或一条判断准则……"
-            aria-label="新条目正文"
-            rows={3}
+            placeholder="填写完整提示词，复制时会保留这里的全文"
+            aria-label="新条目提示词全文"
+            rows={4}
           />
+          </label>
           <div className="entry-composer-row">
-            <input
-              value={tagText}
-              onChange={(e) => setTagText(e.target.value)}
-              placeholder="标签，用空格或逗号分隔"
-              aria-label="新条目标签"
-            />
-            <Button disabled={!body.trim()}>加入此卷</Button>
+            <Button disabled={!entryTitle.trim() || !body.trim()}>加入此卷</Button>
           </div>
         </form>
-
-        {tags.length > 0 && (
-          <div className="tag-filter" role="group" aria-label="按标签筛选">
-            <button
-              className="tag-chip"
-              aria-pressed={!activeFilter}
-              onClick={() => setFilter(null)}
-            >
-              全部
-            </button>
-            {tags.map((t) => (
-              <button
-                key={t}
-                className="tag-chip"
-                aria-pressed={activeFilter === t}
-                onClick={() => setFilter(activeFilter === t ? null : t)}
-              >
-                #{t}
-              </button>
-            ))}
-          </div>
-        )}
 
         {!entries.length ? (
           <Empty title="这一卷还是空的">
@@ -198,9 +182,9 @@ export function ScrollDetail({ scroll: selected, state, save, notify, onClose })
           </Empty>
         ) : (
           <ol className="scroll-entries">
-            {shown.map((e) => {
+            {entries.map((e) => {
               const i = entries.indexOf(e);
-              const name = shortText(e.text);
+              const name = shortText(entryName(e));
               if (editing === e.id)
                 return (
                   <li className="scroll-entry editing" key={e.id}>
@@ -209,29 +193,33 @@ export function ScrollDetail({ scroll: selected, state, save, notify, onClose })
                       onSubmit={async (ev) => {
                         ev.preventDefault();
                         const data = new FormData(ev.currentTarget);
-                        const text = String(data.get("text")).trim();
-                        if (!text) return;
+                        const text = String(data.get("text"));
+                        const name = String(data.get("name")).trim();
+                        if (!name || !text.trim()) return;
                         if (
                           await persist(
-                            editEntry(all, selected.id, e.id, text, parseTags(String(data.get("tags")))),
+                            editEntry(all, selected.id, e.id, text, e.tags, name),
                           )
                         )
                           setEditing(null);
                       }}
                     >
+                      <label className="entry-field">
+                        <span>名称</span>
+                        <input name="name" defaultValue={entryName(e)} maxLength={NAME_MAX}
+                          required aria-label="编辑条目名称" autoFocus />
+                      </label>
+                      <label className="entry-field">
+                        <span>提示词全文</span>
                       <textarea
                         name="text"
                         defaultValue={e.text}
                         maxLength={TEXT_MAX}
-                        rows={3}
-                        aria-label="编辑条目正文"
-                        autoFocus
+                        rows={4}
+                        required
+                        aria-label="编辑条目提示词全文"
                       />
-                      <input
-                        name="tags"
-                        defaultValue={e.tags.join(" ")}
-                        aria-label="编辑条目标签"
-                      />
+                      </label>
                       <div className="entry-edit-actions">
                         <Button>保存条目</Button>
                         <button
@@ -246,21 +234,13 @@ export function ScrollDetail({ scroll: selected, state, save, notify, onClose })
                   </li>
                 );
               return (
-                <li className="scroll-entry" key={e.id}>
+                <li className="scroll-entry" key={e.id} tabIndex={-1} data-entry-id={e.id} ref={node=>{if(node)entryNodes.current.set(e.id,node);else entryNodes.current.delete(e.id);}}>
                   <span className="entry-index" aria-hidden="true">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <div className="entry-main">
+                    <h3 className="entry-name">{entryName(e)}</h3>
                     <p className="entry-text">{e.text}</p>
-                    {e.tags.length > 0 && (
-                      <div className="entry-tags">
-                        {e.tags.map((t) => (
-                          <span className="entry-tag" key={t}>
-                            #{t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                   <div className="entry-uses" title="复制成功的次数">
                     <b className="entry-uses-count" aria-hidden="true">
@@ -372,11 +352,11 @@ export function ScrollRecycle({ state, save }) {
             <div className="recycle-row" key={e.id}>
               <span>
                 <small>{s.name}</small>
-                {shortText(e.text)}
+                {shortText(entryName(e))}
               </span>
               <button
                 className="icon-button"
-                aria-label={`恢复条目：${shortText(e.text)}`}
+                aria-label={`恢复条目：${shortText(entryName(e))}`}
                 title="恢复"
                 onClick={() => persist(restoreEntry(all, s.id, e.id))}
               >

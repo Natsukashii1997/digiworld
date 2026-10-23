@@ -1,6 +1,6 @@
 /* ==========================================================================
    随手记（简报 05）：屏幕便签墙
-   主角是一张便签 = 一条念头。纸色取正文第一个字色（深色纸淡染 + 顶部胶带）；
+   主角是一张便签 = 一条念头。有字色沿用首个字色纸面；白字按便签ID稳定分配纸色（深色淡染 + 顶部胶带）；
    唯一亮起来的是正在编辑的那张（暖黄）。所见即所得：看不到任何 md1 标记。
    类名一律 sn- 前缀（.note-* 已被全站样式占用）。
    注：视觉稿截图在 reduced-motion 下拍摄，为展示倾斜这里没有写“减少动态效果时不倾斜”；
@@ -25,7 +25,7 @@
 .notes-v16 .sn-top .sn-pad { grid-column: span 2; }
 .notes-v16 .sn-list { display: none; }
 
-/* 便签：每种字色一套纸 */
+/* 便签：沿用原五色纸面 */
 .notes-v16 .sn { --paper: var(--text-hi); --a: 0.05;
   position: relative; display: grid; gap: var(--s-3);
   padding: var(--s-5);
@@ -36,8 +36,8 @@
   transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
 .notes-v16 .sn.tone-red { --paper: var(--red); --a: 0.06; }
-.notes-v16 .sn.tone-blue { --paper: color-mix(in srgb, var(--blue) 40%, var(--muted)); --a: 0.04; }
-.notes-v16 .sn.tone-green { --paper: color-mix(in srgb, var(--lcd) 40%, var(--muted)); --a: 0.04; }
+.notes-v16 .sn.tone-blue { --paper: var(--blue); --a: 0.06; }
+.notes-v16 .sn.tone-green { --paper: var(--lcd); --a: 0.05; }
 .notes-v16 .sn.tone-yellow { --paper: var(--yellow); --a: 0.06; }
 .notes-v16 .sn.tone-gray { --paper: var(--muted); --a: 0.04; }
 .notes-v16 .sn:hover, .notes-v16 .sn.is-hover {
@@ -171,6 +171,7 @@
 .notes-v16 .sn-pad-enter { display:grid;align-content:space-between;gap:var(--s-5);width:100%;min-height:100%;text-align:left;background:none;border:0;color:inherit;font:inherit; }
 .notes-v16 .sn-line { display: flex; align-items: flex-start; min-height: 1.65em; }
 .notes-v16 .sn-line [data-note-text] { white-space: pre-wrap; overflow-wrap: anywhere; min-width:0; }
+.notes-v16 .sn-editable .sn-line [data-note-text] { flex:1; min-width:1px; min-height:1.65em; }
 .notes-v16 .sn-prefix { flex: none; min-width: 28px; color:var(--muted); font-family:var(--mono); }
 .notes-v16 .sn-line-task { min-height: 44px; align-items: center; gap:8px; }
 .notes-v16 .sn-line-task .sn-prefix { width:44px; }
@@ -267,3 +268,13 @@
  .notes-v16 .sn-wall:has(.sn-cell.editing){grid-template-columns:repeat(2,minmax(0,1fr))}
  .notes-v16 .sn-new.editing > .sn-pad{width:100%}
 }
+
+/* 右上角复制悬置于原有留白，不参与卡片排版。 */
+.notes-v16 .sn-copy-wrap { position:absolute; top:4px; right:4px; z-index:2; display:inline-flex; }
+.notes-v16 .sn-copy { cursor:pointer; }
+.notes-v16 .sn-copy:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+.notes-v16 .sn-copy-status:not(:empty) { position:absolute; z-index:5; top:100%; right:0; width:max-content; max-width:min(230px,65vw); padding:6px 10px; border:1px solid var(--line-2); border-radius:var(--r-s); background:var(--panel); color:var(--text); font-size:var(--fs-caption); line-height:1.5; overflow-wrap:anywhere; pointer-events:none; }
+.notes-v16 .sn:has(.sn-refined) .sn-copy-wrap,.notes-v16.fn-panel .sn:has(.sn-chip) .sn-copy-wrap { top:-12px; }
+
+/* Pasted attachments only; existing card and toolbar geometry is unchanged. */
+.sn-image-atom{display:inline;white-space:normal}.sn-note-image{display:block;max-width:100%;height:auto;margin:6px 0;object-fit:contain}.sn-image-char{font-size:0;line-height:0}.sn-image-message{display:block;padding:10px 0;font-size:var(--fs-caption);color:inherit}.sn-image-message button{min-width:44px;min-height:44px;margin-left:6px}.sn-image-progress{font-size:var(--fs-caption);margin:4px 0}

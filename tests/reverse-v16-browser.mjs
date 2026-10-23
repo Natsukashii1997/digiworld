@@ -1,5 +1,7 @@
 // 派单173切片A：六状态、实际媒体、评分/快照、JSON/HTML、伙伴/复制。仅合成隔离库。
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { reverseV16Fixture, fixtureRecipe } from "./reverse-v16-fixture.mjs";
 import { axe, settle } from "./ui-v14-checks.mjs";
@@ -339,6 +341,97 @@ try {
       (r) => r.title === title,
     );
     assert.equal(saved.note, note, "旧参考能力不被新参照120/500上限截断");
+    await close(p);
+  }
+  // REA第一阶段：全部路径/素材均合成，不运行REA或访问目标网站。
+  for (const width of [1440, 390, 320]) {
+    const p = await open(width, { empty: true });
+    const targetPath = app.directory + "/Fixture.app";
+    await fs.mkdir(targetPath + "/Contents/Resources", { recursive: true });
+    await fs.writeFile(targetPath + "/Contents/Resources/app.asar", "synthetic-asar");
+    await button(p, "投入参照物").click();
+    const d = p.getByRole("dialog", { name: "投入参照物" });
+    await d.locator("select").first().selectOption("FN");
+    assert.equal(await d.getByRole("radio", { name: "截图/文字", exact: true }).isChecked(), true);
+    await d.getByRole("radio", { name: "本机软件（REA）", exact: true }).check();
+    await d.getByLabel("本机绝对路径", { exact: true }).fill(app.directory + "/missing.app");
+    await button(d, "检查路径").click();
+    await d.getByRole("status").filter({ hasText: "目标不存在" }).waitFor();
+    await d.getByLabel("本机绝对路径", { exact: true }).fill(targetPath);
+    await button(d, "检查路径").click();
+    await d.getByRole("status").filter({ hasText: "尚未运行REA" }).waitFor();
+    await d.getByLabel("想弄懂的功能", { exact: true }).fill("切换页签时保留未提交输入");
+    await d.getByLabel("标题", { exact: true }).fill("REA合成功能");
+    assert.equal(await d.locator("form").evaluate(e => e.checkValidity()), false, "未授权不能提交");
+    await d.getByLabel("我拥有或获准分析该软件", { exact: true }).check();
+    await d.getByLabel("本机绝对路径", { exact: true }).focus();
+    assert.notEqual(await d.getByLabel("本机绝对路径", { exact: true }).evaluate(e=>getComputedStyle(e).outlineStyle), "none");
+    // Native text fields intentionally scroll their contents; check their outer hit boxes and value instead.
+    assert.deepEqual(await d.evaluate(root => {
+      const bad=[];
+      if(document.documentElement.scrollWidth>innerWidth)bad.push("整页越界");
+      for(const e of root.querySelectorAll("input,select,textarea,button")) {
+        if(!e.checkVisibility())continue;
+        const box=(["radio","checkbox","file"].includes(e.type)?e.closest("label"):e).getBoundingClientRect();
+        if(box.left<0 || box.right>innerWidth || box.width<44 || box.height<44)bad.push(e.outerHTML.slice(0,80));
+      }
+      return bad;
+    }), [], "REA录入外部几何与44px"+width);
+    assert.equal(await d.getByLabel("本机绝对路径",{exact:true}).inputValue(),targetPath);
+    await axe(p, "REA录入" + width);
+    await fs.mkdir(new URL("../work/rea448", import.meta.url), { recursive: true });
+    if (width !== 320) await p.screenshot({ path: fileURLToPath(new URL(`../work/rea448/rea-input-${width}.png`, import.meta.url)), fullPage: true });
+    await button(d, "投入参照物").click();
+    await p.getByRole("heading", { name: "REA合成功能", level: 2 }).waitFor();
+    const picker=p.locator(".re-launch .pick"), radios=picker.getByRole("radio");
+    for (const i of [2,3,4]) { assert.equal(await radios.nth(i).isDisabled(),true); assert.match(await radios.nth(i).innerText(),/无法访问本机 MCP/); }
+    await radios.nth(0).focus();await p.keyboard.press("ArrowRight");assert.equal(await radios.nth(1).getAttribute("aria-checked"),"true");
+    await p.keyboard.press("ArrowRight");assert.equal(await radios.nth(0).getAttribute("aria-checked"),"true");
+    await p.locator(".re-launch .pack summary").click();
+    const prompt=await p.locator(".re-launch pre").innerText();assert.match(prompt,/record-and-continue/);assert.match(prompt,/detail.*summary/);assert.match(prompt,/没有 REA 工具就停下/);
+    await p.getByRole("button", {name:/把逆推任务交给/}).click();
+    assert.equal(await p.evaluate(()=>window.syntheticCopies.at(-1)),prompt);
+    await p.getByText("回收回复与产物", { exact: true }).click();
+    await button(p,"贴回复 · 解析配方").click();
+    const evidenceId="ev_"+"0123456789abcdef".repeat(4);
+    const recipe=fixtureRecipe("FN");recipe.blocks[0].evidence=[evidenceId];recipe.blocks[1].evidence=["ev_"+"abcdef0123456789".repeat(4)];
+    recipe.unknowns=[{id:"U-01",text:"未获得服务器实现证据，功能范围仅限当前界面"}];
+    await p.getByRole("dialog").getByLabel("伙伴完整回复").fill(JSON.stringify({recipe}));
+    await button(p.getByRole("dialog"),"解析并保存配方").click();
+    await p.getByRole("heading",{name:"未知项（1）"}).waitFor();
+    const evidence=p.getByRole("button",{name:"复制证据编号 "+evidenceId,exact:true});
+    assert.equal(await evidence.innerText(),"证据 01234567");await evidence.click();
+    assert.equal(await p.evaluate(()=>window.syntheticCopies.at(-1)),evidenceId);
+    await p.locator(".re-launch details[open] summary").click();
+    await geometry(p,"REA回贴"+width);await axe(p,"REA回贴"+width);
+    if(width!==320) await p.screenshot({path:fileURLToPath(new URL(`../work/rea448/rea-recipe-${width}.png`,import.meta.url)),fullPage:true});
+    await p.reload();await p.getByRole("heading",{name:"未知项（1）"}).waitFor();
+    assert.equal((await app.repository.read()).reverseRecords[0].material.target.path,targetPath);
+    if(width===1440){
+      await p.getByText("回收回复与产物", {exact:true}).click();
+      await button(p,"投入复刻产物").click();
+      await p.getByRole("dialog").getByLabel("实际正文或HTML代码块").fill("按配方实现页签保留草稿；逐项合成验收通过");
+      await button(p.getByRole("dialog"),"保存产物").click();
+      for(const name of ["交互细节","文案"])await p.getByRole("radio",{name:name+" 5 分",exact:true}).click();
+      for(const c of recipe.blocks.flatMap(b=>b.cases||[]))await p.getByLabel(c.id+" 验收结果",{exact:true}).selectOption("true");
+      await button(p,"确认：达标").click();await p.getByText("复刻已确认达标",{exact:true}).waitFor();
+      await button(p,"炼成 Skill").click();await p.getByText("Skill 已炼成，固定版本已存到资产仓库",{exact:true}).waitFor();
+      const saved=await app.repository.read(), record=saved.reverseRecords[0], asset=saved.assets.find(a=>a.id===record.forge.assetId);
+      assert.match(asset.versions[0].content,/取证方式：REA/);assert.match(asset.versions[0].content,/U-01/);
+    }
+    {
+      await button(p,"投入参照物").click();const web=p.getByRole("dialog");await web.locator("select").first().selectOption("FN");await web.getByRole("radio",{name:"本机软件（REA）",exact:true}).check();
+      await web.getByLabel("目标类型").selectOption("web");await web.getByLabel(/^网站网址/).fill("https://example.test/feature");
+      const help=web.locator(".rea-web-help");assert.match(await help.innerText(),/CDP 端口 9222/);assert.match(await help.innerText(),/独立资料目录/);
+      const debugCommand='open -na "Google Chrome" --args --remote-debugging-port=9222 --user-data-dir="$HOME/.rea-chrome"';
+      await button(web,"复制 Chrome 调试命令").click();assert.equal(await p.evaluate(()=>window.syntheticCopies.at(-1)),debugCommand);assert.equal(await web.count(),1,"复制不提交表单");
+      // 命令在三宽下保持完整可读。
+      assert.deepEqual(await help.evaluate(root=>[...root.querySelectorAll("*")].filter(e=>e.checkVisibility()).filter(e=>{const r=e.getBoundingClientRect();return r.left<0||r.right>innerWidth||e.scrollWidth>e.clientWidth+1}).map(e=>e.tagName)),[],"网站提示不能横向截断");
+      await axe(p,"REA网站录入"+width);
+
+      await web.getByLabel("想弄懂的功能",{exact:true}).fill("只看已打开的功能");await web.getByLabel("标题",{exact:true}).fill("REA网站");await web.getByLabel("我拥有或获准分析该软件",{exact:true}).check();await button(web,"投入参照物").click();
+      await p.getByRole("heading",{name:"REA网站",level:2}).waitFor();await p.locator(".re-launch .pack summary").click();const webTask=await p.locator(".re-launch pre").innerText();assert.match(webTask,/list_browser_targets/);assert.ok(webTask.includes(debugCommand));assert.ok(webTask.includes('"cdp_endpoint":"http://127.0.0.1:9222"'));
+    }
     await close(p);
   }
   assert.deepEqual(errors, []);

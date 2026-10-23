@@ -29,10 +29,16 @@ try {
     const b = await sample();
     await page.emulateMedia({ reducedMotion: initial === 'reduce' ? 'no-preference' : 'reduce' });
     await page.waitForTimeout(700);
-    const c = await sample();
+    let c = await sample();
     await page.waitForTimeout(550);
-    const d = await sample();
-    console.log(JSON.stringify({ initial, a, b, c, d }));
+    let d = await sample();
+    // Loose cards retain a deterministic phase delay of up to 3s after motion resumes.
+    // Observe actual movement within that bound instead of assuming it starts in 700ms.
+    let resumedAfterMs=1250;
+    if(initial==='reduce') {
+      for(let i=0;i<40&&c===d;i++) {c=d;await page.waitForTimeout(100);d=await sample();resumedAfterMs+=100;}
+    }
+    console.log(JSON.stringify({ initial, a, b, c, d, resumedAfterMs }));
     if (initial === 'no-preference') {
       assert.notEqual(a, b, 'Baseline card must actually float');
       assert.equal(c, d, 'Runtime reduce must stop actual JS floating');

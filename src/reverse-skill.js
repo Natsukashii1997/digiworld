@@ -46,6 +46,8 @@ export function generateRecipeSkill(record) {
       )
       .join("\n\n"),
     variables = [...new Set(description.match(/\{[^{}\n]{1,100}\}/g) || [])];
+  const target = record.material?.target;
+  const reaBoundary = target ? `取证方式：REA；目标种类：${target.kind === "electron" ? "Electron应用" : "网站"}。只覆盖本次功能及所列证据，不证明软件已完整还原。\n\n证据 ID 清单：\n${[...new Set(recipe.blocks.flatMap((b) => b.evidence || []))].map((id) => "- " + id).join("\n") || "- 未提供证据编号"}\n\n未知项清单：\n${(recipe.unknowns || []).map((v) => "- " + v.id + "：" + v.text).join("\n") || "- 未列出未知项；不代表已完整取证"}\n\n` : "";
   text(
     "SKILL.md",
     `---\nname: reverse-${
@@ -53,7 +55,7 @@ export function generateRecipeSkill(record) {
         .replace(/[^a-z0-9-]/gi, "")
         .toLowerCase()
         .slice(0, 55) || "recipe"
-    }\ndescription: "${recipe.type} 参照配方的复刻流程"\n---\n\n# ${title}\n\n## 用途\n\n按已回收并人工验收的配方复刻同类作品。先查看本包资源，再逐项执行和验收。\n\n## 使用步骤\n\n1. 打开 recipe.json 和配套文本，确认目标类型与变量。\n2. 替换变量，保留配方的结构、数值和边界。\n3. 执行复刻，回收实际产物。\n4. 按 acceptance.md 检查；没有目标环境回执时不宣称采用成功。\n\n## 变量\n\n${variables.length ? variables.join("、") : "配方未声明变量；修改输入时保留上述约束。"}\n\n## 风格或行为说明\n\n${description}\n\n## 证据边界\n\n本包绑定逆向记录 ${record.id}、人工复刻 ${proof.id}，总分 ${proof.total}%、当时达标线 ${proof.threshold}%。这是本机人工验收记录，不证明目标 Agent 已采用。图片随完整包交付；主库媒体清单不是独立图片备份。\n\n${mediaManifest.length ? "## 图片资源\n\n" + mediaManifest.map((m) => "- " + m.path).join("\n") : ""}`,
+    }\ndescription: "${recipe.type} 参照配方的复刻流程"\n---\n\n# ${title}\n\n## 用途\n\n按已回收并人工验收的配方复刻同类作品。先查看本包资源，再逐项执行和验收。\n\n## 使用步骤\n\n1. 打开 recipe.json 和配套文本，确认目标类型与变量。\n2. 替换变量，保留配方的结构、数值和边界。\n3. 执行复刻，回收实际产物。\n4. 按 acceptance.md 检查；没有目标环境回执时不宣称采用成功。\n\n## 变量\n\n${variables.length ? variables.join("、") : "配方未声明变量；修改输入时保留上述约束。"}\n\n## 风格或行为说明\n\n${description}\n\n## 证据边界\n\n本包绑定逆向记录 ${record.id}、人工复刻 ${proof.id}，总分 ${proof.total}%、当时达标线 ${proof.threshold}%。这是本机人工验收记录，不证明目标 Agent 已采用。图片随完整包交付；主库媒体清单不是独立图片备份。\n\n${reaBoundary}${mediaManifest.length ? "## 图片资源\n\n" + mediaManifest.map((m) => "- " + m.path).join("\n") : ""}`,
   );
   json("recipe.json", recipe);
   const palette = recipe.blocks.flatMap((b) => b.palette || []);

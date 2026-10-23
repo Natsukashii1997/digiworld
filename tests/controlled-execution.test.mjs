@@ -226,18 +226,38 @@ test('a plan not yet executing is cancelled without claiming that a process stop
   assert.equal(cancelled.run.steps[0].status, 'ready');
 });
 
-test('timeout remains probeable and stoppable by original ID until exit is confirmed', async t => {
+test('timeout remains probeable and stoppable by original ID until exit is confirmed', { timeout: 5000 }, async t => {
+  let releaseLaunch, announceLaunch, announceExecution, fireDeadline;
+  const launchReached = new Promise(resolve => { announceLaunch = resolve; });
+  const executionEntered = new Promise(resolve => { announceExecution = resolve; });
   const f = await fixture(t, {
-    scheduleDeadline: fire => setTimeout(fire, 10),
+    onGrant: count => count === 4 ? new Promise(resolve => {
+      releaseLaunch = resolve;
+      announceLaunch();
+    }) : undefined,
+    scheduleDeadline: (fire, milliseconds) => {
+      assert.equal(milliseconds, 60_000);
+      fireDeadline = fire;
+      return setTimeout(fire, milliseconds);
+    },
     executeRound: async (input, { processes }) => {
       processes.set(input.runId, { status: 'running' });
+      announceExecution();
       return new Promise(() => {});
     },
   });
   f.adapter.stop = async () => ({ requested: true });
   const { preview } = await f.createRun();
   await f.service.start({ runId: preview.runId });
-  await untilCalls(f, 1);
+  // start returns a durable starting state; async launch I/O has no 100ms guarantee.
+  await launchReached;
+  assert.equal((await f.service.status({ runId: preview.runId })).status, 'starting');
+  assert.equal(f.calls, 0);
+  assert.equal(fireDeadline, undefined, 'execution budget starts only when launch is ready');
+  releaseLaunch();
+  await executionEntered;
+  assert.equal(f.calls, 1);
+  fireDeadline();
   const timedOut = await until(f.service, preview.runId, 'unknown');
   assert.ok(timedOut.run.stopRequestedAt);
   assert.equal((await f.service.check({ runId: preview.runId })).processStatus, 'running');

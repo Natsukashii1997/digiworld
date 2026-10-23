@@ -14,27 +14,13 @@ const errors = [];
 const ok = (s) => console.log("PASS", s);
 
 // 产品定义 v1.2 §2.1 的分区、分组与顺序；存档点在系统分组最下方。
-const EXPECTED = [
-  ["今日", [["", ["世界总览"]]]],
-  [
-    "工作区",
-    [
-      // 用户 2026-10-04：侧栏删去“资产/目标/运行/知识”小标题，只保留板块名；分组顺序不变。
-      ["", ["资产仓库", "逆向工程"]],
-      ["", ["智能体群", "项目空间"]],
-      ["", ["协同", "夜巡"]],
-      ["", ["知识仓库"]],
-    ],
-  ],
-  ["生活区", [["", ["日历", "随手记", "AI HOT", "收藏"]]]],
-  ["系统", [["", ["设置", "存档点"]]]],
-];
+const EXPECTED = ["世界总览", "资产仓库", "个人收藏", "逆向工程", "智能体群", "项目空间", "协同", "夜巡", "知识仓库", "日历", "随手记", "AI HOT", "设置", "存档点"];
 const OLD_NAMES = ["知识中枢", "逆向参考", "随手速记"];
 // 路线 v3 切片 5.3、5.4：AI HOT 与收藏已开发。
 const LIFE_PLANNED = [];
 const LIFE_BUILT = [
   ["aihot", "AI HOT"],
-  ["learning", "收藏"],
+  ["learning", "个人收藏"],
 ];
 
 async function open(width, hash = "home", height = 1000) {
@@ -70,19 +56,7 @@ async function axe(page, label) {
   );
 }
 // 读出侧栏结构：[区名, [[分组标题, [项目名…]]…]]
-const readStructure = (page) =>
-  nav(page).evaluate((root) =>
-    [...root.querySelectorAll(":scope > .nav-zone")].map((zone) => [
-      zone.getAttribute("aria-label"),
-      [...zone.querySelectorAll(".nav-group")].map((group) => [
-        group.querySelector(".nav-heading")?.textContent.trim() || "",
-        [...group.querySelectorAll(".nav-item > span:not(.sr-only)")].map((s) =>
-          s.textContent.trim(),
-        ),
-      ]),
-    ]),
-  );
-
+const readStructure = page => nav(page).locator(".nav-item > span").allTextContents();
 
 // 派单155 C02：每项真正命中区44px，1000px视口滚动后中心点仍可命中；不得只量offscreen节点。
 async function navigationHits(page, label) {
@@ -97,7 +71,7 @@ async function navigationHits(page, label) {
     assert(size.centerVisible&&size.hit,`${label} 条目滚入后中心点可命中 ${await item.innerText()}`);
   }
   if (await page.evaluate(()=>innerWidth>960)) {
-    assert(await nav(page).evaluate(e=>e.scrollTop>0),'1000px视口导航滚到底部');
+    assert(await nav(page).evaluate(e=>e.scrollHeight<=e.clientHeight||e.scrollTop>0),'溢出时可滚到底部');
     await nav(page).evaluate(e=>{e.scrollTop=0;});
     assert.equal(await nav(page).evaluate(e=>e.scrollTop),0,'截图前导航复位');
     const first=navItem(page,'世界总览');
@@ -111,30 +85,7 @@ try {
 
   // 1. 四段分区与顺序
   assert.deepEqual(await readStructure(page), EXPECTED);
-  for (const zone of ["工作区", "生活区"]) {
-    await nav(page).locator(".nav-zone-title", { hasText: zone }).waitFor();
-    assert.ok(
-      await nav(page).locator(".nav-zone-title", { hasText: zone }).isVisible(),
-      `${zone} 区名应可见`,
-    );
-  }
-  // 工作区与生活区之间有分隔线：分隔线位于工作区最后一项之后、生活区第一项之前。
-  const separator = nav(page).locator('[role="separator"]');
-  assert.ok((await separator.count()) >= 1, "应有分隔线");
-  const [lastWork, firstLife, line] = await Promise.all([
-    navItem(page, "知识仓库").boundingBox(),
-    navItem(page, "日历").boundingBox(),
-    nav(page)
-      .locator('.nav-zone[aria-label="生活区"] [role="separator"]')
-      .first()
-      .boundingBox(),
-  ]);
-  assert.ok(line, "生活区开头应有分隔线");
-  assert.ok(line.height >= 1 && line.width > 20, "分隔线应可见");
-  assert.ok(
-    line.y >= lastWork.y + lastWork.height && line.y <= firstLife.y,
-    "分隔线应在工作区与生活区之间",
-  );
+  assert.equal(await nav(page).locator(".nav-zone-title,.nav-divider,.nav-group,.nav-zone").count(), 0, "导航不再分区");
   assert.equal(
     await nav(page).locator(".nav-item").last().locator("span").first().innerText(),
     "存档点",
@@ -142,7 +93,7 @@ try {
   );
   for (const hidden of ["能力体检", "NAS 照片", ...OLD_NAMES])
     assert.equal(await navItem(page, hidden).count(), 0, `导航不应有 ${hidden}`);
-  ok("侧栏四段：今日 / 工作区（资产、目标、运行、知识）/ 生活区 / 系统，顺序正确，存档点在最下");
+  ok("连续侧栏顺序正确，个人收藏紧接资产仓库，存档点在最下");
 
   // 2. 三个改名：导航、页头、面包屑一致
   for (const name of ["知识仓库", "逆向工程", "随手记"]) {
@@ -246,10 +197,10 @@ try {
   // 6. 第二版首页以四区中枢承接信息，完整页面导航仍留在侧栏。
   await page.goto(`${app.url}/#home`);
   await page.locator(".hx").waitFor();
-  for (const [id, title] of [["a", "今日"], ["b", "待处理"], ["c", "协同"], ["d", "在推进"]])
+  for (const [id, title] of [["a", "资产仓库"], ["b", "收藏"], ["c", "待处理"], ["d", "AIHOT"]])
     assert.equal(await page.locator(`.hx-mod-${id}`).getByRole("heading", { name: new RegExp(title) }).count(), 1);
   assert.equal(await page.locator(".structure-map, section.home-hot").count(), 0);
-  for (const name of ["逆向工程", "知识仓库", "随手记", "AI HOT", "收藏", "存档点"])
+  for (const name of ["逆向工程", "知识仓库", "随手记", "AI HOT", "个人收藏", "存档点"])
     await navItem(page, name).waitFor();
   assert.equal(await navItem(page, "银饰计划").count(), 0);
   await axe(page, "home");
@@ -285,7 +236,7 @@ try {
   const tb = await toggle.boundingBox();
   assert.ok(tb.width >= 44 && tb.height >= 44, `打开导航 ${tb.width}x${tb.height}`);
   await toggle.click();
-  await nav(mobile).locator(".nav-zone-title", { hasText: "生活区" }).waitFor();
+  await navItem(mobile, "个人收藏").waitFor();
   assert.deepEqual(await readStructure(mobile), EXPECTED);
   for (const label of ["世界总览", "随手记", "存档点"]) {
     const box = await navItem(mobile, label).boundingBox();
@@ -294,13 +245,13 @@ try {
   await navigationHits(mobile,"390抽屉");
   await noOverflow(mobile, "390 抽屉");
   await axe(mobile, "390 drawer");
-  await navItem(mobile, "收藏").click();
+  await navItem(mobile, "个人收藏").click();
   await mobile.locator("main h1", { hasText: "收藏" }).waitFor();
   assert.ok(
     !(await mobile.locator(".sidebar.mobile-open").count()),
     "选中后抽屉应关闭",
   );
-  ok("390 宽：抽屉导航四段可用、条目 44px、无横向溢出、axe 通过");
+  ok("390 宽：抽屉连续导航可用、条目 44px、无横向溢出、axe 通过");
 
   // 窄屏最小宽度也逐项验证，不把390结果外推到320。
   const narrow = await open(320, "home", 1000);

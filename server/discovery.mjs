@@ -1,3 +1,4 @@
+import { observationForRegistration } from "./directory-identity.mjs";
 import { scanProjectUpdate, updateDate } from "./project-update.mjs";
 import { stat, access, realpath } from "node:fs/promises";
 import { constants } from "node:fs";
@@ -207,7 +208,7 @@ export async function scanGitHub({ run = exec } = {}) {
       ).stdout,
     );
     const items = [];
-    let truncated = false;
+    let truncated = false, pages = 0, recordCount = 0;
     for (let page = 1; page <= 10; page++) {
       const records = JSON.parse(
         (
@@ -224,6 +225,7 @@ export async function scanGitHub({ run = exec } = {}) {
         ).stdout,
       );
       if (!Array.isArray(records)) throw new Error("invalid");
+      pages = page; recordCount += records.length;
       for (const r of records) {
         const key = githubKey(r.html_url);
         if (!key) continue;
@@ -247,6 +249,7 @@ export async function scanGitHub({ run = exec } = {}) {
       login: String(account.login || ""),
       items,
       truncated,
+      diagnostics: { pages, records: recordCount, maxPages: 10, pageSize: 100, reasons: truncated ? [{ code: "github_page_limit", limit: 10, used: pages, samples: [] }] : [] },
       at: new Date().toISOString(),
       message: "",
     };
@@ -306,7 +309,7 @@ export function mergeProjects(
     );
     const unconfirmedDirectory = local.localPaths.some((path) => {
       const old = pathOwner?.locations?.find((p) => p.path === path);
-      const observed = locations.find((p) => p.path === path);
+      const observed = observationForRegistration(locations.find((p) => p.path === path), old);
       return (
         old?.observedIdentity ||
         old?.status === "changed" ||
@@ -448,7 +451,7 @@ export function mergeProjects(
         previous
           .flatMap((item) => item.locations || [])
           .find((l) => l.path === path);
-      const observed = locations.find((l) => l.path === path);
+      const observed = observationForRegistration(locations.find((l) => l.path === path), old);
       const status =
         observed?.status || (currentPaths.has(path) ? "present" : "unknown");
       const changed =
@@ -465,6 +468,7 @@ export function mergeProjects(
         path,
         status: changed ? "changed" : status,
         ...(identity ? { identity } : {}),
+        ...((old?.identity ? old.identityVersion : observed?.identityVersion) === 2 ? { identityVersion: 2 } : {}),
         ...(observedIdentity ? { observedIdentity } : {}),
         ...(observed?.checkedAt || at
           ? { checkedAt: observed?.checkedAt || at }

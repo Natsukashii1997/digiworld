@@ -817,14 +817,6 @@
   outline: 2px solid var(--cyan);
   outline-offset: 3px;
 }
-@media (max-width: 1000px) and (min-width: 761px) {
-  .page-knowledge.v16 .kh-hub {
-    grid-template-columns: 200px minmax(20px, 1fr) 220px minmax(20px, 1fr) 170px;
-  }
-  .page-knowledge.v16 .kh-chip {
-    width: 216px;
-  }
-}
 @media (max-width: 1050px) {
   .page-knowledge.v16 .kh-col {
     min-height: 0 !important;
@@ -947,3 +939,14 @@
 .page-knowledge.v16 .kh-agent:not(.on) { opacity:.68; filter:saturate(.35); }
 .page-knowledge.v16 .kh-agent:not(.on):hover { opacity:1; }
 @media (max-width:760px) { .page-knowledge.v16 .kh-search-row { flex-wrap:wrap; justify-content:flex-end; } .page-knowledge.v16 .kh-search-row .kh-search { flex-basis:100%; } }
+
+/* 417：≤1050 竖排时“接入知识库”占满一行，加号与文字靠在一起。
+   （原 761–1000 横排规则写在竖排之后，把竖排覆盖回五列而连线已隐藏，导致伙伴卡压在芯片上，已删除。） */
+@media (max-width: 1050px) {
+  .page-knowledge.v16 .kh-srcs > .kh-add {
+    grid-column: 1 / -1;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto;
+    min-height: 56px;
+  }
+}

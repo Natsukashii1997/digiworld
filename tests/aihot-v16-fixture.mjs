@@ -14,7 +14,7 @@ export function aihot202Data(mode='full',long=false) {
  const stamp=mode==='failed'?'2026-10-05T06:00:00+08:00':'2026-10-05T09:30:00+08:00';
  const items=titles.map((title,i)=>({title:long?'长标题EnglishWithoutSpaces'.repeat(18):title,summary:long?'长摘要EnglishWithoutSpaces'.repeat(50):summaries[i],category:categories[i],url:'https://example.com/aihot/'+i,source:'合成来源',publishedAt:'2026-10-05T'+(i===0?'09:12':i===1?'08:40':'08:05')+':00+08:00'}));
  const hot=topics.map((title,i)=>({...items[i],title:long?items[i].title:title,summary:long?items[i].summary:desc[i]}));
- return {settings:{enabled:mode!=='disabled',acknowledged:mode!=='first',intervalHours:3},cache:{status:mode==='failed'?'failed':mode==='first'||mode==='empty'?'never':'ok',error:mode==='failed'?'合成拉取失败':'',lastAttemptAt:stamp,lastSuccessAt:mode==='first'||mode==='empty'?'':stamp,sections:{selected:{items:mode==='first'||mode==='empty'?[]:items,fetchedAt:stamp},hot:{items:mode==='first'||mode==='empty'?[]:hot,fetchedAt:stamp},daily:{items:[],date:''}}}};
+ return {settings:{enabled:mode!=='disabled',acknowledged:mode!=='first',intervalHours:3},cache:{status:mode==='failed'?'failed':mode==='first'||mode==='empty'?'never':'ok',error:mode==='failed'?'合成拉取失败':'',lastAttemptAt:stamp,lastSuccessAt:mode==='first'||mode==='empty'?'':stamp,sections:{selected:{window:'7d',items:mode==='first'||mode==='empty'?[]:items,fetchedAt:stamp},hot:{items:mode==='first'||mode==='empty'?[]:hot,fetchedAt:stamp},daily:{items:[],date:''}}}};
 }
 export async function aihot202Routes(page,data) {
  await page.route('**/api/aihot',r=>r.fulfill({json:data}));

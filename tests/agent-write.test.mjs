@@ -72,3 +72,164 @@ test('预览后同字节替换配置或程序：身份摘要漂移拒绝保存�
  const f=await fixture(t),view=await f.manager.snapshot({targetId:'target-codex'}),input={targetId:'target-codex',revision:view.revision,sourceSha256:view.sha256,sourceIdentity:view.sourceIdentity,operationId:'00000000-0000-4000-8000-000000000266'};
  await fs.rename(f.configPath,f.configPath+'.old');await fs.writeFile(f.configPath,f.configText,{mode:0o600});await assert.rejects(f.manager.snapshotSave(input),/身份已变化/);assert.equal((await f.manager.snapshotHistory({targetId:'target-codex'})).items.length,0);
 });
+
+// 533：迁移四类最小闭环，所有读写仅发生在上述合成 Home。
+async function migrationSource(f){
+ await fs.writeFile(join(f.homes.codex,'AGENTS.md'),'# 原指令\n先核对事实，再执行。\n',{mode:0o600});
+ await fs.mkdir(join(f.homes.codex,'memories'),{mode:0o700});
+ await fs.writeFile(join(f.homes.codex,'memories','MEMORY.md'),'# 参考记忆\n项目喜欢中文输出。\n',{mode:0o600});
+ await fs.appendFile(f.configPath,'\n[mcp_servers.example]\ncommand="npx"\nargs=["--auth","SYNTHETIC_ARGUMENT_SECRET"]\nurl="https://example.test/private-secret?token=SECRET"\n[mcp_servers.example.env]\nAPI_TOKEN="SYNTHETIC_ENV_SECRET"\n');
+ return f.manager.migrationBatchCapture({sourceTargetId:'target-codex'});
+}
+const migrateInput=(f,c,items=c.items.filter(i=>i.actionable).map(i=>({id:i.id,conflict:'skip'})))=>({sourceTargetId:'target-codex',targetId:'target-hermes',revision:c.revision,items});
+test('533 四类迁移逐项执行、记忆/连接独立参考、源保全、持久回读且重复不重放',async t=>{
+ const f=await fixture(t),c=await migrationSource(f);assert.deepEqual(new Set(c.items.map(i=>i.type)),new Set(['personality','memory','connection','capability']));
+ const source=await fs.readFile(f.configPath,'utf8'),p=await f.manager.migrationBatchPreview(migrateInput(f,c));
+ const shown=JSON.stringify(p);for(const secret of ['SYNTHETIC_ARGUMENT_SECRET','SYNTHETIC_ENV_SECRET','private-secret'])assert.equal(shown.includes(secret),false);
+ assert.equal(p.items.filter(i=>i.kind==='document').length,3);
+ const result=await f.manager.migrationBatchApply(confirm(p));assert.equal(result.status,'verified');assert.equal(result.items.length,4);
+ assert.match(await fs.readFile(join(f.homes.hermes,'SOUL.md'),'utf8'),/先核对事实/);
+ assert.match(await fs.readFile(join(f.homes.hermes,'WORKBENCH-MEMORY.md'),'utf8'),/喜欢中文/);
+ assert.match(await fs.readFile(join(f.homes.hermes,'WORKBENCH-CONNECTIONS.md'),'utf8'),/重新填写完整地址/);
+ await assert.rejects(fs.lstat(join(f.homes.hermes,'memories')),{code:'ENOENT'});
+ const before=await fs.stat(join(f.homes.hermes,'SOUL.md'));assert.equal((await f.manager.migrationBatchApply(confirm(p))).status,'verified');assert.equal((await fs.stat(join(f.homes.hermes,'SOUL.md'))).mtimeMs,before.mtimeMs);
+ assert.equal((await f.recreate().migrationBatchCheck({id:p.token})).status,'verified');assert.equal(await fs.readFile(f.configPath,'utf8'),source);
+ const row=result.items.find(i=>i.file==='SOUL.md'),undo=await f.manager.migrationBatchRollbackPreview({id:row.id,revision:await f.revision()});assert.equal((await f.manager.migrationBatchApply(confirm(undo))).status,'verified');assert.equal(await fs.readFile(join(f.homes.hermes,'SOUL.md'),'utf8'),'');
+});
+test('533 预览后源变化中止；开关撤回/TTL/目标漂移均不得写入',async t=>{
+ const f=await fixture(t),c=await migrationSource(f),items=c.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'}));
+ let p=await f.manager.migrationBatchPreview(migrateInput(f,c,items));await fs.appendFile(join(f.homes.codex,'AGENTS.md'),'已变化');let r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.status,'partial');await assert.rejects(fs.lstat(join(f.homes.hermes,'SOUL.md')),{code:'ENOENT'});
+ p=await f.manager.migrationBatchPreview(migrateInput(f,c,items));f.setting.enabled=false;await assert.rejects(f.manager.migrationBatchApply(confirm(p)),e=>e.operationNotStarted===true);f.setting.enabled=true;
+ p=await f.manager.migrationBatchPreview(migrateInput(f,c,items));f.advance(300001);await assert.rejects(f.manager.migrationBatchApply(confirm(p)),/过期/);
+ p=await f.manager.migrationBatchPreview(migrateInput(f,c,items));await fs.writeFile(join(f.homes.hermes,'SOUL.md'),'外部内容',{mode:0o600});r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.status,'partial');assert.equal(await fs.readFile(join(f.homes.hermes,'SOUL.md'),'utf8'),'外部内容');
+});
+test('533 托管区冲突可跳过/更新，原目标正文保留，外部变化拒绝撤回',async t=>{
+ const f=await fixture(t),c=await migrationSource(f),items=c.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'}));await fs.writeFile(join(f.homes.hermes,'SOUL.md'),'# 原身份\n保留此段\n',{mode:0o600});
+ let p=await f.manager.migrationBatchPreview(migrateInput(f,c,items)),r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.status,'verified');
+ p=await f.manager.migrationBatchPreview(migrateInput(f,c,items));assert.equal(p.items[0].kind,'skipped');
+ await fs.appendFile(join(f.homes.codex,'AGENTS.md'),'新规则');p=await f.manager.migrationBatchPreview(migrateInput(f,c,items.map(i=>({...i,conflict:'replace'}))));r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.status,'verified');const after=await fs.readFile(join(f.homes.hermes,'SOUL.md'),'utf8');assert.ok(after.startsWith('# 原身份\n保留此段\n'));assert.match(after,/新规则/);assert.equal(after.split('workbench-import:').length,3);
+ await fs.appendFile(join(f.homes.hermes,'SOUL.md'),'外部漂移');await assert.rejects(f.manager.migrationBatchRollbackPreview({id:r.items[0].id,revision:await f.revision()}),/外部改动/);
+});
+test('533 密钥文档不迁移，目标上限在预览拦截，Codex override优先',async t=>{
+ const f=await fixture(t);await migrationSource(f);await fs.writeFile(join(f.homes.codex,'AGENTS.override.md'),'# 有效覆盖指令\n',{mode:0o600});let c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'});assert.equal(c.items.some(i=>i.name==='AGENTS.md'),false);
+ await fs.writeFile(join(f.homes.codex,'AGENTS.override.md'),'password: SYNTHETIC_PRIVATE\n',{mode:0o600});c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'});assert.equal(c.items.find(i=>i.type==='personality').actionable,false);assert.equal(JSON.stringify(c).includes('SYNTHETIC_PRIVATE'),false);
+ await fs.writeFile(join(f.homes.codex,'AGENTS.override.md'),'# 新指令\n',{mode:0o600});await fs.writeFile(join(f.homes.hermes,'SOUL.md'),'中'.repeat(43660),{mode:0o600});c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'});await assert.rejects(f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'})))),/128 KiB/);
+});
+test('533 写后回执丢失必须partial，查询不能因内容相同冒充完整执行',async t=>{
+ let fail=false;const filesystem=new Proxy(fs,{get(o,k){if(k==='rename')return async(from,to)=>{if(fail&&to.includes('/agent-migrations/')&&to.endsWith('.receipt.json'))throw Error('SYNTHETIC_RECEIPT_FAILURE');return o[k](from,to);};return o[k];}});
+ const f=await fixture(t,{filesystem}),c=await migrationSource(f),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'}))));fail=true;const r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.status,'partial');assert.equal(r.items[0].status,'matches_after');assert.equal(r.items[0].completedAt,null);assert.equal((await f.manager.migrationBatchCheck({id:p.token})).status,'partial');
+});
+test('533 暂存期间源变化或撤权，最后写入门阻止目标创建',async t=>{
+ let mutate=async()=>{};const filesystem=new Proxy(fs,{get(o,k){if(k==='rename')return async(from,to)=>{const result=await o[k](from,to);if(to.includes('/agent-migrations/')&&!to.endsWith('.receipt.json'))await mutate();return result;};return o[k];}});
+ const f=await fixture(t,{filesystem}),c=await migrationSource(f),items=c.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'}));let p=await f.manager.migrationBatchPreview(migrateInput(f,c,items));let calls=0;mutate=async()=>{if(++calls===2)await fs.appendFile(join(f.homes.codex,'AGENTS.md'),'暂存期间漂移');};assert.equal((await f.manager.migrationBatchApply(confirm(p))).status,'partial');await assert.rejects(fs.lstat(join(f.homes.hermes,'SOUL.md')),{code:'ENOENT'});
+});
+test('533 Skill批次结果保留类别，可使用原Skill恢复链；未执行项可重新预览',async t=>{
+ const f=await fixture(t),c=await migrationSource(f),skill=c.items.find(i=>i.type==='capability'),p=await f.manager.migrationBatchPreview(migrateInput(f,c,[{id:skill.id,conflict:'skip'}]));const r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.items[0].kind,'skill');assert.equal(r.items[0].operationKind,'publish');const undo=await f.manager.rollbackPreview({id:r.items[0].id,revision:await f.revision()});assert.equal((await f.manager.apply(confirm(undo))).status,'matches_after');
+ const docs=c.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'})),p2=await f.manager.migrationBatchPreview(migrateInput(f,c,docs));await fs.appendFile(join(f.homes.codex,'AGENTS.md'),'变动');const stopped=await f.manager.migrationBatchApply(confirm(p2));assert.equal(stopped.items[0].status,'not_started');assert.equal(stopped.unresolved,false);
+});
+test('533 重启后丢失内存预览可明确重建，不进入虚假的未知写入',async t=>{
+ const f=await fixture(t),c=await migrationSource(f),p=await f.manager.migrationBatchPreview(migrateInput(f,c));await assert.rejects(f.recreate().migrationBatchApply(confirm(p)),e=>e.operationNotStarted===true);
+});
+test('533 无法读取override时不能退回普通AGENTS作为有效来源',async t=>{
+ const f=await fixture(t);await migrationSource(f);await fs.symlink(join(f.homes.codex,'AGENTS.md'),join(f.homes.codex,'AGENTS.override.md'));const c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'});assert.equal(c.items.some(i=>i.name==='AGENTS.md'),false);assert.equal(c.items.find(i=>i.name==='AGENTS.override.md').actionable,false);
+});
+
+test('533 指令预览绑定两端有效入口，后加非空override使计划失效',async t=>{
+ const f=await fixture(t),c=await migrationSource(f),choice=c.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'}));
+ let p=await f.manager.migrationBatchPreview(migrateInput(f,c,choice));await fs.writeFile(join(f.homes.codex,'AGENTS.override.md'),'新的有效入口',{mode:0o600});let r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.status,'partial');assert.equal(r.items[0].status,'not_started');await assert.rejects(fs.lstat(join(f.homes.hermes,'SOUL.md')),{code:'ENOENT'});
+ await fs.writeFile(join(f.homes.hermes,'SOUL.md'),'Hermes原始个性',{mode:0o600});await fs.writeFile(join(f.homes.codex,'AGENTS.override.md'),' ',{mode:0o600});const reverse=await f.manager.migrationBatchCapture({sourceTargetId:'target-hermes'}),input={sourceTargetId:'target-hermes',targetId:'target-codex',revision:reverse.revision,items:reverse.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'}))},before=await fs.readFile(join(f.homes.codex,'AGENTS.md'),'utf8');
+ p=await f.manager.migrationBatchPreview(input);await fs.writeFile(join(f.homes.codex,'AGENTS.override.md'),'目标优先入口变化',{mode:0o600});r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.status,'partial');assert.equal(r.items[0].status,'not_started');assert.equal(await fs.readFile(join(f.homes.codex,'AGENTS.md'),'utf8'),before);
+});
+test('533 记忆草稿不受目标无关的不可读override阻断',async t=>{
+ const f=await fixture(t);await migrationSource(f);await fs.mkdir(join(f.homes.hermes,'memories'),{mode:0o700});await fs.writeFile(join(f.homes.hermes,'memories','MEMORY.md'),'合成参考',{mode:0o600});await fs.symlink(join(f.homes.codex,'AGENTS.md'),join(f.homes.codex,'AGENTS.override.md'));const c=await f.manager.migrationBatchCapture({sourceTargetId:'target-hermes'}),p=await f.manager.migrationBatchPreview({sourceTargetId:'target-hermes',targetId:'target-codex',revision:c.revision,items:c.items.filter(i=>i.type==='memory').map(i=>({id:i.id,conflict:'skip'}))});assert.equal((await f.manager.migrationBatchApply(confirm(p))).status,'verified');
+});
+test('533 已完成旧批次被后续合法修改是已知漂移，不锁死新工作',async t=>{
+ const f=await fixture(t),c=await migrationSource(f),choice=c.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'})),p=await f.manager.migrationBatchPreview(migrateInput(f,c,choice));await f.manager.migrationBatchApply(confirm(p));await fs.appendFile(join(f.homes.codex,'AGENTS.md'),'新规则');const q=await f.manager.migrationBatchPreview(migrateInput(f,c,choice.map(i=>({...i,conflict:'replace'}))));assert.equal((await f.manager.migrationBatchApply(confirm(q))).status,'verified');const old=await f.manager.migrationBatchCheck({id:p.token});assert.equal(old.items[0].status,'changed');assert.equal(old.unresolved,false);await assert.rejects(f.manager.migrationBatchRollbackPreview({id:old.items[0].id,revision:await f.revision()}),/外部改动/);
+});
+test('533 响应中断但后台执行中保持running，完成后才解除锁定',async t=>{
+ let release,entered;const pause=new Promise(r=>release=r),started=new Promise(r=>entered=r);let delay=false;
+ const filesystem=new Proxy(fs,{get(o,k){if(k==='rename')return async(from,to)=>{const result=await o[k](from,to);if(delay&&to.includes('/agent-migrations/')&&!to.endsWith('.receipt.json')){delay=false;entered();await pause;}return result;};return o[k];}});
+ const f=await fixture(t,{filesystem}),c=await migrationSource(f),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='personality').map(i=>({id:i.id,conflict:'skip'}))));delay=true;const run=f.manager.migrationBatchApply(confirm(p));try{await started;const r=await f.manager.migrationBatchCheck({id:p.token});assert.equal(r.status,'running');assert.equal(r.unresolved,true);assert.equal((await f.manager.migrationBatchApply(confirm(p))).status,'running');}finally{release();}assert.equal((await run).status,'verified');assert.equal((await f.manager.migrationBatchCheck({id:p.token})).unresolved,false);
+});
+
+test('537 新目标缺skills仍可同批迁入两个完整包，预览不建目录',async t=>{
+ const f=await fixture(t);await fs.rm(join(f.homes.hermes,'skills'),{recursive:true});await fs.cp(f.from,join(f.homes.codex,'skills','second-example'),{recursive:true});
+ const c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'}),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'}))));
+ await assert.rejects(fs.lstat(join(f.homes.hermes,'skills')),{code:'ENOENT'});assert.ok(p.items.every(i=>i.changes.some(x=>x.action==='create_skill_root')));
+ const r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.status,'verified');assert.equal(r.items.length,2);assert.equal((await fs.stat(join(f.homes.hermes,'skills'))).mode&0o777,0o700);
+});
+test('537 缺失或坏配置不阻断独立Skill枚举及复制，配置状态保持未知',async t=>{
+ const f=await fixture(t);await fs.unlink(f.configPath);
+ for(const invalid of [null,'[[[INVALID']){if(invalid)await fs.writeFile(f.configPath,invalid,{mode:0o600});const c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'}),skill=c.items.find(i=>i.type==='capability');assert.ok(skill?.actionable);assert.equal(skill.enabled,null);assert.match(skill.configurationStatus,/missing|unreadable/);}
+ const c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'}),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'}))));assert.equal((await f.manager.migrationBatchApply(confirm(p))).status,'verified');
+});
+test('537 Skill撤回回执丢失在服务重建后由迁移历史可达，撤权仍能查',async t=>{
+ let fail=false;const filesystem=new Proxy(fs,{get(o,k){if(k==='rename')return async(from,to)=>{if(fail&&to.includes('/agent-write-operations/')&&to.endsWith('.receipt.json'))throw Error('SYNTHETIC_RECEIPT_FAILURE');return o[k](from,to);};return o[k];}});
+ const f=await fixture(t,{filesystem}),c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'}),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'})))),r=await f.manager.migrationBatchApply(confirm(p));
+ const undo=await f.manager.migrationBatchRollbackPreview({id:r.items[0].id,revision:await f.revision()});fail=true;const result=await f.manager.migrationBatchApply(confirm(undo));assert.equal(result.unresolved,true);assert.equal(result.items[0].operationKind,'rollback');f.setting.enabled=false;
+ const restarted=f.recreate(),history=await restarted.migrationBatchHistory({targetId:'target-hermes'});assert.equal(history.items.find(i=>i.id===undo.token)?.kind,'restore');assert.equal((await restarted.migrationBatchCheck({id:undo.token})).unresolved,true);
+});
+test('537 开始使用材料绑定Home与准确入口，手动记忆和原生验证不冒充完成',async t=>{
+ const f=await fixture(t),c=await migrationSource(f),p=await f.manager.migrationBatchPreview(migrateInput(f,c));await f.manager.migrationBatchApply(confirm(p));const a=await f.manager.migrationBatchAdoption({id:p.token});
+ assert.equal(a.target.homePath,f.homes.hermes);assert.equal(a.runtimeStatus,'unverified');assert.equal(a.materialStatus,'ready');assert.match(a.prompt,/手动读取/);assert.match(a.prompt,/原生/);assert.ok(a.prompt.includes(join(f.homes.hermes,'skills','local-example','SKILL.md')));assert.equal(a.items.find(i=>i.kind==='skill').skillName,'local-example');assert.ok(a.startCommand.includes('HERMES_HOME='));assert.equal(JSON.stringify(a).includes('SYNTHETIC_ENV_SECRET'),false);
+ await fs.appendFile(join(f.homes.hermes,'WORKBENCH-MEMORY.md'),'外部变动');const drift=await f.manager.migrationBatchAdoption({id:p.token});assert.equal(drift.materialStatus,'partial');assert.equal(drift.items.find(i=>i.file==='WORKBENCH-MEMORY.md').ready,false);assert.equal(drift.prompt.includes('WORKBENCH-MEMORY.md'),false);
+});
+test('537 已撤回的Skill不生成继续使用指令',async t=>{
+ const f=await fixture(t),c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'}),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'})))),r=await f.manager.migrationBatchApply(confirm(p));const undo=await f.manager.migrationBatchRollbackPreview({id:r.items[0].id,revision:await f.revision()});await f.manager.migrationBatchApply(confirm(undo));const a=await f.manager.migrationBatchAdoption({id:p.token});assert.equal(a.materialStatus,'unavailable');assert.equal(a.prompt,'');assert.equal(a.startCommand,null);
+});
+test('537 MCP公共参数保留位置，秘密及未知参数不变成可执行命令',async()=>{
+ const {publicConnections}=await import('../server/agent-migration.mjs');const rows=publicConnections('[mcp_servers.docs]\ncommand="npx"\nargs=["-y","@public/docs-mcp@1.0.0","--token","SYNTHETIC_NEVER_EXPORT"]\n[mcp_servers.remote]\nurl="https://example.com/mcp"\nenabled_tools=["read_docs"]\ndisabled_tools=["delete_doc"]\n','codex');
+ assert.equal(rows[0].arguments[0].value,'-y');assert.equal(rows[0].arguments[1].value,'@public/docs-mcp@1.0.0');assert.equal(rows[0].arguments[3].value,undefined);assert.equal(rows[0].readyToConfigure,false);assert.equal(rows[0].executableCommand,undefined);assert.equal(JSON.stringify(rows).includes('SYNTHETIC_NEVER_EXPORT'),false);assert.equal(rows[1].url,'https://example.com/mcp');assert.deepEqual(rows[1].toolRestrictions.disabled,['delete_doc']);
+});
+
+test('537 新根创建后撤权，停止包写入且保持可查询',async t=>{
+ let mutate=async()=>{};const filesystem=new Proxy(fs,{get(o,k){if(k==='mkdir')return async(path,...rest)=>{const result=await o[k](path,...rest);if(path.endsWith('/合成Hermes家目录/skills'))await mutate();return result;};return o[k];}});
+ const f=await fixture(t,{filesystem});await fs.rm(join(f.homes.hermes,'skills'),{recursive:true});const c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'}),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'}))));mutate=async()=>{f.setting.enabled=false;f.setting.generation++;};const r=await f.manager.migrationBatchApply(confirm(p));assert.equal(r.status,'partial');assert.deepEqual(await fs.readdir(join(f.homes.hermes,'skills')),[]);assert.equal((await f.recreate().migrationBatchCheck({id:p.token})).items[0].status,'matches_before');
+});
+test('537 采用检查不绕过目标明确停用，名称取自入口元数据',async t=>{
+ const f=await fixture(t);await fs.writeFile(join(f.hermesSkill,'SKILL.md'),'---\nname: genuine-skill-name\ndescription: 合成用途\n---\n内容\n');
+ await fs.appendFile(f.configPath,'\n[[skills.config]]\npath = '+JSON.stringify(join(f.homes.codex,'skills','hermes-example','SKILL.md'))+'\nenabled=false\n');
+ const c=await f.manager.migrationBatchCapture({sourceTargetId:'target-hermes'}),p=await f.manager.migrationBatchPreview({sourceTargetId:'target-hermes',targetId:'target-codex',revision:c.revision,items:c.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'}))});await f.manager.migrationBatchApply(confirm(p));const a=await f.manager.migrationBatchAdoption({id:p.token});assert.equal(a.items[0].configurationStatus,'disabled');assert.equal(a.items[0].skillName,'genuine-skill-name');assert.equal(a.items[0].ready,false);assert.equal(a.prompt,'');
+});
+test('537 采用记录不跟随目标重绑，也不生成未完成回执的材料',async t=>{
+ let fail=false;const filesystem=new Proxy(fs,{get(o,k){if(k==='rename')return async(from,to)=>{if(fail&&to.includes('/agent-migrations/')&&to.endsWith('.receipt.json'))throw Error('SYNTHETIC_NO_RECEIPT');return o[k](from,to);};return o[k];}});
+ const f=await fixture(t,{filesystem}),c=await migrationSource(f),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='memory').map(i=>({id:i.id,conflict:'skip'}))));fail=true;await f.manager.migrationBatchApply(confirm(p));const a=await f.manager.migrationBatchAdoption({id:p.token});assert.equal(a.materialStatus,'unavailable');assert.equal(a.prompt,'');
+ await f.repository.updateConnections(c=>({...c,agentTargets:c.agentTargets.map(x=>x.id==='target-hermes'?{...x,bindingId:'binding-replaced'}:x)}));await assert.rejects(f.manager.migrationBatchAdoption({id:p.token}),/身份已变化/);
+});
+test('537 MCP不把认证值和普通位置参数当作公开包名，保留工具限制冲突',async()=>{
+ const {publicConnections}=await import('../server/agent-migration.mjs');const rows=publicConnections('mcp_servers:\n  a:\n    command: npx\n    args: ["--token", "lowercasesecret"]\n  b:\n    url: https://user:password@example.com/mcp?token=secret\n    headers: {Authorization: "Bearer private"}\n    tools: {include: [read], exclude: [read]}\n','hermes');assert.equal(rows[0].arguments.every(x=>x.value===undefined),true);const text=JSON.stringify(rows);for(const secret of ['lowercasesecret','password','token=secret','Bearer private'])assert.equal(text.includes(secret),false);assert.equal(rows[1].toolRestrictions.sourcePrecedence,'include_wins');assert.equal(rows[1].readyToConfigure,false);
+});
+
+test('537 旧版独立Skill撤回记录也可从迁移历史统一查询，避免历史断链',async t=>{
+ const f=await fixture(t),c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'}),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'})))),r=await f.manager.migrationBatchApply(confirm(p));const undo=await f.manager.rollbackPreview({id:r.items[0].id,revision:await f.revision()});await f.manager.apply(confirm(undo));const after=f.recreate(),h=await after.migrationBatchHistory({targetId:'target-hermes'});assert.ok(h.items.find(i=>i.id===undo.token&&i.kind==='restore'&&i.legacy));assert.equal((await after.migrationBatchCheck({id:undo.token})).status,'verified');
+});
+
+
+test('537 Hermes全局停用不冒充已启用，平台限制和缺配置只提供只读核对材料',async t=>{
+ const f=await fixture(t),c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'}),p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'}))));await f.manager.migrationBatchApply(confirm(p));const config=join(f.homes.hermes,'config.yaml');
+ for(const text of ['skills:\n  disabled: [local-example]\n','skills:\n  disabled: "[\'local-example\']"\n']){await fs.writeFile(config,text);const a=await f.manager.migrationBatchAdoption({id:p.token});assert.equal(a.items[0].configurationStatus,'disabled');assert.equal(a.items[0].ready,false);assert.equal(a.prompt,'');}
+ await fs.writeFile(config,'skills:\n  platform_disabled:\n    telegram: [local-example]\n');let a=await f.manager.migrationBatchAdoption({id:p.token});assert.equal(a.items[0].configurationStatus,'unknown');assert.equal(a.items[0].ready,true);assert.match(a.prompt,/只读检查文件，不按技能执行/);
+ await fs.unlink(config);a=await f.manager.migrationBatchAdoption({id:p.token});assert.equal(a.items[0].configurationStatus,'unknown');assert.equal(a.materialStatus,'ready');assert.match(a.items[0].reason,/仅复制只读核对材料/);assert.equal(a.runtimeStatus,'unverified');
+});
+test('537 Codex固定摘要来源可选但不读取rollouts，缺元数据Skill不能作为就绪材料',async t=>{
+ const f=await fixture(t);await fs.mkdir(join(f.homes.codex,'memories'));await fs.writeFile(join(f.homes.codex,'memories','memory_summary.md'),'合成摘要');const c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'});assert.ok(c.items.some(i=>i.name==='memories/memory_summary.md'&&i.actionable));
+ const source=await f.manager.migrationBatchCapture({sourceTargetId:'target-hermes'}),p=await f.manager.migrationBatchPreview({sourceTargetId:'target-hermes',targetId:'target-codex',revision:source.revision,items:source.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'}))});await f.manager.migrationBatchApply(confirm(p));const a=await f.manager.migrationBatchAdoption({id:p.token});assert.equal(a.items[0].ready,false);assert.match(a.items[0].reason,/元数据/);
+});
+test('537 采用检查两次读之间漂移不会沿用首次文件就绪结论',async t=>{
+ const f=await fixture(t),c=await migrationSource(f),p=await f.manager.migrationBatchPreview(migrateInput(f,c));await f.manager.migrationBatchApply(confirm(p));let reads=0;const skill=join(f.homes.hermes,'skills','local-example');f.adapters.readAgentWriteSkill=async(roots,path)=>{const pkg=await readLocalSkill(roots,path);if(path===skill&&++reads===2)await fs.appendFile(join(skill,'SKILL.md'),'核对期间变化');return pkg;};
+ let docReads=0;const memory=join(f.homes.hermes,'WORKBENCH-MEMORY.md'),filesystem=new Proxy(fs,{get(o,k){if(k==='open')return async(path,...args)=>{const h=await o[k](path,...args);if(path!==memory)return h;return new Proxy(h,{get(obj,key){if(key==='close')return async()=>{await obj.close();if(++docReads===1)await fs.appendFile(memory,'核对期间变化');};const value=obj[key];return typeof value==='function'?value.bind(obj):value;}});};return o[k];}});
+ const a=await f.recreate({filesystem}).migrationBatchAdoption({id:p.token});assert.equal(a.items.find(i=>i.kind==='skill').ready,false);assert.equal(a.items.find(i=>i.file==='WORKBENCH-MEMORY.md').ready,false);assert.equal(a.prompt.includes('WORKBENCH-MEMORY.md'),false);assert.equal(a.prompt.includes('local-example'),false);
+});
+
+test('537 连接OAuth或额外原生设置不能标作已完整可配置',async()=>{const {publicConnections}=await import('../server/agent-migration.mjs');const rows=publicConnections('mcp_servers:\n  authenticated:\n    url: https://example.com/mcp\n    auth: oauth\n  custom:\n    command: npx\n    args: [public-package]\n    cwd: /private/SYNTHETIC_MACHINE_PATH\n','hermes');assert.equal(rows[0].readyToConfigure,false);assert.equal(rows[1].readyToConfigure,false);assert.equal(JSON.stringify(rows).includes('SYNTHETIC_MACHINE_PATH'),false);});
+
+// 539 real native discovery: the migrated package was beyond the first 300 installed entries.
+test('539 迁入包超过目录列表上限仍精确核验，接手不遍历无关技能',async t=>{
+ const f=await fixture(t),c=await f.manager.migrationBatchCapture({sourceTargetId:'target-codex'});
+ const p=await f.manager.migrationBatchPreview(migrateInput(f,c,c.items.filter(i=>i.type==='capability').map(i=>({id:i.id,conflict:'skip'}))));
+ await f.manager.migrationBatchApply(confirm(p));
+ for(let i=0;i<305;i++)await fs.mkdir(join(f.homes.hermes,'skills','a-unrelated-'+i));
+ const filesystem=new Proxy(fs,{get(o,k){if(k==='readdir')return async(path,...rest)=>{assert.notEqual(path,join(f.homes.hermes,'skills'),'adoption must inspect the migrated package directly');return o.readdir(path,...rest);};return o[k];}});
+ const a=await f.recreate({filesystem}).migrationBatchAdoption({id:p.token});
+ assert.equal(a.materialStatus,'ready');assert.equal(a.items[0].skillName,'local-example');assert.equal(a.items[0].ready,true);
+});

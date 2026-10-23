@@ -1,0 +1,136 @@
+<title>v17 主机与卡带</title>
+<style>
+/* 版式：单栏评审页；前后对照用切换键，不并排缩小；沿用工作台深墨蓝，单一深色主题 */
+:root{
+  color-scheme:dark;
+  --bg:#070b16; --panel:#0f1729; --line:rgba(140,178,255,.14); --line-2:rgba(140,178,255,.26);
+  --text:#e9eeff; --text-2:#b4bfda; --muted:#8b98b8; --faint:#5d6987;
+  --orange:#ff8a24; --cyan:#4de3ff; --lcd:#a6e36e;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:15px/1.7 var(--sans);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:48px 96px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-size:40px;line-height:1.15}
+h2{font-size:22px;margin:72px 0 6px}
+.eyebrow{font:600 11px/1 var(--mono);letter-spacing:.14em;color:var(--cyan)}
+.eyebrow b{color:var(--orange)}
+.lead{color:var(--text-2);max-width:64ch;margin:14px 0 0}
+.sub{color:var(--muted);font-size:14px;max-width:70ch;margin:0}
+.decided{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.decided span{font-size:13px;color:var(--text-2);border:1px solid var(--line-2);border-radius:999px;padding:5px 12px}
+.decided b{color:var(--orange);font-weight:600;margin-right:6px;font-family:var(--mono)}
+
+.compare{margin-top:20px;border:1px solid var(--line-2);border-radius:14px;overflow:hidden;background:#000}
+.compare header{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.compare header strong{font-size:14px;margin-right:auto}
+.seg{display:inline-flex;background:#0a1020;border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{font:600 13px/1 var(--sans);color:var(--text-2);background:none;border:0;border-radius:7px;padding:0 14px;height:38px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--orange);color:#1f0f00}
+.seg button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.compare img{display:block;width:100%;height:auto}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:16px}
+.notes div{background:var(--panel);padding:14px 16px;font-size:13.5px;color:var(--text-2);min-width:0}
+.notes b{display:block;color:var(--text);font-size:14px;margin-bottom:4px}
+
+.anat{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin-top:20px;border-top:1px solid var(--line)}
+.anat div{display:grid;grid-template-columns:44px 140px minmax(0,1fr);gap:14px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px;align-items:baseline}
+.anat i{font:700 12px/1 var(--mono);font-style:normal;color:#1f0f00;background:var(--orange);border-radius:5px;padding:5px 0;text-align:center}
+.anat strong{font-weight:600}
+.anat span{color:var(--text-2)}
+
+.strip{margin-top:20px;border:1px solid var(--line-2);border-radius:14px;overflow-x:auto;background:var(--bg)}
+.strip img{display:block;max-width:none;height:560px;width:auto}
+.tw{overflow-x:auto;margin-top:16px}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11px/1.4 var(--mono);letter-spacing:.12em;color:var(--muted)}
+td{color:var(--text-2)}
+td:first-child{color:var(--text);white-space:nowrap}
+.ask{display:grid;gap:12px;margin-top:20px;counter-reset:q}
+.ask div{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px 14px 54px;color:var(--text-2);font-size:14.5px}
+.ask div::before{counter-increment:q;content:counter(q);position:absolute;left:16px;top:14px;width:24px;height:24px;border-radius:6px;background:var(--cyan);color:#001a20;font:700 13px/24px var(--mono);text-align:center}
+.ask b{color:var(--text)}
+.meta{font:12px/1.6 var(--mono);color:var(--muted);margin-top:40px}
+@media (max-width:720px){
+  h1{font-size:30px}
+  .anat div{grid-template-columns:40px minmax(0,1fr)}
+  .anat span{grid-column:2}
+  .strip img{height:420px}
+}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow"><b>WB-20261010-349</b> · UI v17 · 系统层视觉稿</div>
+  <h1>主机与卡带</h1>
+  <p class="lead">按你的四个选择，在真实页面上做出了 v17 外壳，并用资产仓库（展示页）和设置（工具页）各做一个样板。数据都是测试用的合成数据。切换下方的“改版前 / 改版后”可以直接对比。</p>
+  <div class="decided">
+    <span><b>A</b>主机与卡带</span><span><b>页头</b>分两档</span><span><b>屏</b>顶部加大</span><span><b>屏</b>平时陪伴，有事才报信</span><span><b>导航</b>卡带架</span><span><b>顶栏</b>并入机身</span>
+  </div>
+
+  <h2>样板一 · 资产仓库（展示页）</h2>
+  <p class="sub">第一排卡片从 y=363 提到 y=176，首屏多出约 200px。热度为 0 的数字退后，只有真实用过的数字才是橙色。</p>
+  <div class="compare" data-compare>
+    <header><strong>1440 × 900</strong><span class="seg" role="group" aria-label="对比"><button type="button" aria-pressed="false" data-src="assets-1440-before.jpg">改版前</button><button type="button" aria-pressed="true" data-src="assets-1440.jpg">改版后</button></span></header>
+    <img src="assets-1440.jpg" alt="资产仓库 1440 视觉稿">
+  </div>
+
+  <h2>样板二 · 设置（工具页）</h2>
+  <p class="sub">标签条一行；左侧分类和右侧标题顶对齐；表格行高 78 → 68，操作列定宽右对齐，按钮同宽；“最近一次使用”不再折行。</p>
+  <div class="compare" data-compare>
+    <header><strong>1440 × 900</strong><span class="seg" role="group" aria-label="对比"><button type="button" aria-pressed="false" data-src="settings-1440-before.jpg">改版前</button><button type="button" aria-pressed="true" data-src="settings-1440.jpg">改版后</button></span></header>
+    <img src="settings-1440.jpg" alt="设置 1440 视觉稿">
+  </div>
+
+  <h2>机身拆解</h2>
+  <p class="sub">从上到下，每个部件都有自己的含义。</p>
+  <div class="anat">
+    <div><i>00</i><strong>品牌行</strong><span>纹章加“数码世界”，本身就是 00 号卡带，点它回世界总览。合并了原来重复的“世界总览”导航项。</span></div>
+    <div><i>屏</i><strong>伙伴屏</strong><span>比原来大约 1.6 倍。平时是四季场景加数码蛋；有待处理时切成反色液晶，“!2 待处理 2 件”闪烁，点屏幕打开待处理（资产仓库这张显示的就是报信状态，设置那张是平时状态）。</span></div>
+    <div><i>灯</i><strong>电源灯</strong><span>屏幕左框上的小绿点：绿色表示已保存，黄色闪烁表示保存中，红色表示保存失败。取代了原来底部那行“已保存到本机”。</span></div>
+    <div><i>键</i><strong>功能键</strong><span>搜索（⌘K）、待处理、记一笔，从原来的顶栏搬进机身。</span></div>
+    <div><i>架</i><strong>卡带架</strong><span>01–12，每页一条卡带脊，编号代替线描图标。当前页的卡带向右推进 8px、编号亮橙色，和右侧标签条下方的橙色“触点”对应。</span></div>
+    <div><i>13</i><strong>系统键</strong><span>设置、存档点做成机身底部的一对药丸键（类似掌机的 SELECT / START），这样 1440×900 下卡带架不用滚动。</span></div>
+  </div>
+
+  <h2>390 · 手机</h2>
+  <p class="sub">顶栏本身就是标签条（菜单、编号、标题、搜索、待处理）；机身从左侧滑出，结构和桌面一致。从左到右：资产仓库、资产仓库抽屉、设置、设置抽屉。</p>
+  <div class="strip"><img src="m390.jpg" alt="390 视觉稿：资产仓库、抽屉、设置、抽屉"></div>
+
+  <h2>全站令牌</h2>
+  <div class="tw"><table>
+    <thead><tr><th>类别</th><th>规定</th></tr></thead>
+    <tbody>
+      <tr><td>字阶 5 档</td><td>11 标签 / 14 正文 / 17 小标题 / 22 区块与标签条标题 / 40 展示页特大号；禁止 11px 以下</td></tr>
+      <tr><td>节奏 3 值</td><td>元素之间 12、区块内 24、区块之间 64</td></tr>
+      <tr><td>圆角 3 档</td><td>6 小件 / 12 卡片与面板 / 20 机身与大容器</td></tr>
+      <tr><td>材质 3 种</td><td>机身（只给外壳）、屏幕（数据对象本身）、面板（一页最多 1–2 块），其余直接放在底色上</td></tr>
+      <tr><td>颜色</td><td>橙色只表示主操作和“需要你”；青色只表示选中、焦点、链接；伙伴色只出现在伙伴身上；红黄绿只表示状态</td></tr>
+      <tr><td>英文</td><td>只用于编号与类型码、状态、真实数据；区块标题只写中文</td></tr>
+      <tr><td>状态组件</td><td>降级行（一句人话加重试，同一来源只提示一次）、空位（高度跟随内容，引导语只写一次）、零值退后、截断渐隐</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>需要你确认</h2>
+  <div class="ask">
+    <div><b>整体观感：</b>机身加卡带标签条这套骨架是否就是你要的方向？哪里不对直接说，我按你的意见改稿。</div>
+    <div><b>比例：</b>机身宽 256、标签条高 76，看截图是否合适。</div>
+    <div><b>系统键：</b>设置、存档点放到机身底部做成一对药丸键，是否接受。</div>
+  </div>
+  <p class="sub" style="margin-top:16px">确认后，我写系统层派单交给 Codex，顺序是：外壳 → 页头 → 令牌 → 状态组件 → 两个样板页，最后全量回归，并交回 1440 / 390 叠图。其余页面之后逐页走“简报 → 视觉稿 → 代码”。</p>
+  <p class="meta">完整简报：docs/design/ui-v17/SYSTEM-BRIEF.md · 视觉稿生成：docs/design/ui-v17/build/</p>
+</div>
+
+<script>
+document.querySelectorAll('[data-compare]').forEach(function (box) {
+  var img = box.querySelector('img');
+  box.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      box.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      img.src = b.dataset.src;
+    });
+  });
+});
+</script>

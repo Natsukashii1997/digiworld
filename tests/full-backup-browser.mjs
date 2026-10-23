@@ -18,7 +18,8 @@ await app.repository.write(seed(), { initialize: true });
 const directory = app.repository.directory;
 await mkdir(join(directory, "config-operations"), { mode: 0o700 });
 await writeFile(join(directory, "config-operations", "op-1.json"), '{"id":"op-1"}');
-await mkdir("test-results", { recursive: true });
+const out=process.env.GUIJI_TEST_RESULTS||"test-results";
+await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
 const errors = [];
 const ok = (s) => console.log("PASS", s);
@@ -50,7 +51,7 @@ try {
   await atLeast44(exportButton, "下载恢复包 ZIP");
   const [download] = await Promise.all([page.waitForEvent("download"), exportButton.click()]);
   // 文件名由 HTTP 单元测试核对（full-backup.test.mjs）；无头 Chromium 对共用 download() 助手报告的建议名不可靠。
-  const file = join("test-results", "full-backup.zip");
+  const file = join(out, "full-backup.zip");
   await download.saveAs(file);
   const entries = unzipSync(new Uint8Array(await readFile(file)));
   const manifest = JSON.parse(strFromU8(entries["manifest.json"]));
@@ -79,11 +80,11 @@ try {
   await dialog.locator("summary", { hasText: "冲突" }).click();
   await dialog.getByText("config-operations/op-1.json").waitFor();
   target = await dialog.locator("code.storage-path").innerText();
-  assert.match(target, /-恢复-\d{8}-\d{6}$/);
+  assert.match(target, /-恢复-[a-f0-9-]{36}$/);
   await atLeast44(button(dialog, "恢复到新目录"), "恢复到新目录");
   await atLeast44(dialog.locator("summary").first(), "路径列表展开");
   await axe(page, "full backup preview");
-  await page.screenshot({ path: "test-results/full-backup-preview-1440.png" });
+  await page.screenshot({ path: join(out,"full-backup-preview-1440.png") });
   ok("恢复前预览：新增 0、冲突 1、缺失 3（两份生成回执+新增op-2），可展开路径，显示新目录位置");
 
   await button(dialog, "恢复到新目录").click();

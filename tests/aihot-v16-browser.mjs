@@ -28,7 +28,8 @@ try{
   noSummary.cache.sections.selected.items[0].summary = '';
   noSummary.cache.sections.hot.items[0].summary = '';
   const {c,p} = await open(390, noSummary);
-  assert.match(await p.locator('.page-bounds').innerText(), new RegExp(`每 ${hours} 小时更新`));
+  assert.equal(await p.locator('.page-bounds').count(), 0);
+  assert.match(await p.locator('.ah-upd').innerText(), new RegExp(`每 ${hours} 小时`));
   const card = p.locator('.ah-card').first();
   assert.equal(await card.locator('p').count(), 0);
   assert.equal(await card.evaluate(e => getComputedStyle(e).gridTemplateRows.split(' ').length), 3, '无摘要只占三行');
@@ -40,7 +41,8 @@ try{
  await errorPage.route('**/api/aihot', route => route.fulfill({status:503,json:{error:'合成缓存不可读'}}));
  await errorPage.goto(app.url + '/#aihot');
  await errorPage.getByText('读取本机缓存失败：',{exact:false}).waitFor();
- assert.match(await errorPage.locator('.page-bounds').innerText(), /更新间隔未知/);
+ assert.equal(await errorPage.locator('.page-bounds').count(), 0);
+ assert.equal(await errorPage.locator('.ah-upd').count(), 0, '读取失败不伪造更新时间');
  await errorContext.close();
  console.log('PASS no-summary card + current 1/24 hour labels + unknown on failed read');
  const data=aihot202Data();data.cache.sections.selected.items.push({...data.cache.sections.selected.items[0],title:'11th'});data.cache.sections.hot.items.push({...data.cache.sections.hot.items[0],title:'11th hot'});data.cache.sections.selected.items[1].category='';data.cache.sections.selected.items[2].url='';data.cache.sections.hot.items[0].url='javascript:alert(1)';data.cache.sections.selected.items[3].category='future';data.cache.sections.selected.items[0].category='W'.repeat(80);

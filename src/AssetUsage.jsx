@@ -6,38 +6,77 @@ import { usageOf, usageTime } from "./asset-usage.js";
 import { Button, Badge } from "./components.jsx";
 import { Odometer } from "./Odometer.jsx";
 
+// Cards and details share a gate and recovery ID for each asset. Feedback text
+// remains in its originating component; only its ID is shared or persisted.
+const activitySessions = new Map();
+const activityChanged = "workbench-asset-activity-changed";
+function activitySession(key) {
+  if (!activitySessions.has(key)) {
+    let pending = null;
+    try { pending = JSON.parse(sessionStorage.getItem(key)) || null; } catch {}
+    activitySessions.set(key, { pending, owner: null });
+  }
+  return activitySessions.get(key);
+}
+
 export function useAssetActivity(asset, state, adoptState) {
   const key = `workbench-activity-${asset.id}`;
-  const [pending, setPending] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem(key)) || null;
-    } catch {
-      return null;
-    }
-  });
-  const [busy, setBusy] = useState(false),
+  const session = activitySession(key);
+  const owner = useRef(Symbol(key));
+  const [pending, setPending] = useState(() => session.pending);
+  const pendingRef = useRef(pending);
+  const [busy, setBusy] = useState(() => !!session.owner),
     [message, setMessage] = useState("");
   const [absentRevision, setAbsentRevision] = useState(null);
-  const locked = useRef(false);
   const latest = useRef(state);
   latest.current = state;
+  function announce() {
+    window.dispatchEvent(new CustomEvent(activityChanged, { detail: { key, source: owner.current } }));
+  }
+  function acquire() {
+    if (session.owner) return false;
+    session.owner = owner.current;
+    setBusy(true);
+    announce();
+    return true;
+  }
+  function release() {
+    if (session.owner !== owner.current) return;
+    session.owner = null;
+    setBusy(false);
+    announce();
+  }
+  useEffect(() => {
+    const sync = (event) => {
+      if (event && (event.detail.key !== key || event.detail.source === owner.current)) return;
+      setBusy(!!session.owner);
+      if (pendingRef.current?.id !== session.pending?.id) {
+        pendingRef.current = session.pending;
+        setPending(session.pending);
+        setAbsentRevision(null);
+        setMessage("");
+      }
+    };
+    window.addEventListener(activityChanged, sync);
+    sync();
+    return () => window.removeEventListener(activityChanged, sync);
+  }, [key]);
   function remember(value) {
+    pendingRef.current = value;
     setPending(value);
+    session.pending = value?.kind === "feedback" ? { id: value.id, assetId: value.assetId } : value;
     try {
       // Unconfirmed feedback text stays in component memory only.
       if (value)
         sessionStorage.setItem(
           key,
-          JSON.stringify(
-            value.kind === "feedback"
-              ? { id: value.id, assetId: value.assetId }
-              : value,
-          ),
+          JSON.stringify(session.pending),
         );
       else sessionStorage.removeItem(key);
     } catch {
       /* The visible pending state still prevents a blind retry. */
     }
+    announce();
   }
   const [confirmedFeedback, setConfirmedFeedback] = useState(null);
   function accept(result, { feedback = true } = {}) {
@@ -51,7 +90,7 @@ export function useAssetActivity(asset, state, adoptState) {
       result.record.kind === "feedback" ? "反馈已保存" : "使用记录已保存",
     );
   }
-  async function query(value = pending, { feedback = true } = {}) {
+  async function query(value = pendingRef.current, { feedback = true } = {}) {
     if (!value) return "unknown";
     setAbsentRevision(null);
     try {
@@ -87,7 +126,7 @@ export function useAssetActivity(asset, state, adoptState) {
       // A committed record remains authoritative after archiving or link expiry.
       if (found(result)) return "found";
       let reason = unavailableAsset(result);
-      if (!reason && value.action === "copy-skill") {
+      if (!reason && (value.action === "copy-skill" || (value.action === "copy-design" && value.deliveryId))) {
         const links = await request(
           `/deliveries?assetId=${encodeURIComponent(value.assetId)}`,
         );
@@ -134,14 +173,11 @@ export function useAssetActivity(asset, state, adoptState) {
     }
   }
   async function runQuery() {
-    if (locked.current) return;
-    locked.current = true;
-    setBusy(true);
+    if (!acquire()) return;
     try {
       await query();
     } finally {
-      locked.current = false;
-      setBusy(false);
+      release();
     }
   }
   useEffect(() => {
@@ -168,24 +204,20 @@ export function useAssetActivity(asset, state, adoptState) {
   }
   const copyOrigin = useRef(null);
   function beginCopy() {
-    if (locked.current || pending) return false;
+    if (session.pending || !acquire()) return false;
     // 在点击的同步阶段记下触发按钮：复制期间焦点变化不会让“数据飞入”的起点漂移
     copyOrigin.current = document.activeElement;
-    locked.current = true;
-    setBusy(true);
     return true;
   }
   function endCopy() {
     copyOrigin.current = null;
-    locked.current = false;
-    setBusy(false);
+    release();
   }
   async function record(values, fromCopy = false) {
-    if ((locked.current && !fromCopy) || pending) return false;
+    const heldByCopy = fromCopy && session.owner === owner.current;
+    if (session.pending || (!heldByCopy && !acquire())) return false;
     const origin =
       fromCopy && values.kind === "use" ? copyOrigin.current || document.activeElement : null;
-    locked.current = true;
-    setBusy(true);
     const payload = {
       id: crypto.randomUUID(),
       assetId: asset.id,
@@ -205,23 +237,19 @@ export function useAssetActivity(asset, state, adoptState) {
       // copyText already reports the successful copy; its automatic usage record shares that feedback.
       return await submit(payload, latest.current.revision, !fromCopy);
     } finally {
-      locked.current = false;
-      setBusy(false);
+      if (!heldByCopy) release();
     }
   }
   async function retry() {
-    if (locked.current || !pending?.kind || absentRevision === null) return;
-    locked.current = true;
-    setBusy(true);
+    if (!pendingRef.current?.kind || absentRevision === null || !acquire()) return;
     try {
-      await submit(pending, absentRevision);
+      await submit(pendingRef.current, absentRevision);
     } finally {
-      locked.current = false;
-      setBusy(false);
+      release();
     }
   }
   function dismissAbsent() {
-    if (absentRevision === null || busy) return;
+    if (absentRevision === null || session.owner) return;
     remember(null);
     setMessage("未保存此条记录");
     setAbsentRevision(null);

@@ -33,13 +33,13 @@ async function open(width, height = 1000, hash = "assets") {
   await page.locator(".page-heading").waitFor();
   return page;
 }
-const button = (scope, name) => scope.getByRole("button", { name, exact: true });
-async function atLeast44(locator, name) {
+const button = (scope, name) => scope.getByRole("button", { name, exact: true }).or(scope.getByRole("radio", { name, exact: true }));
+async function assertMinSize(locator, name, minimum = 44) {
   const box = await locator.boundingBox();
   assert.ok(box, `${name} 不可见`);
   assert.ok(
-    box.width >= 44 && box.height >= 44,
-    `${name} 点击区域 ${box.width}x${box.height}，应至少 44px`,
+    box.width >= minimum && box.height >= minimum,
+    `${name} 点击区域 ${box.width}x${box.height}，应至少 ${minimum}px`,
   );
 }
 async function axe(page, label) {
@@ -70,7 +70,7 @@ const typeTab = (page, name) =>
 const tabCount = async (page, name) =>
   Number(await typeTab(page, name).locator("span").innerText());
 const scrollCards = (page) => page.locator(".asset-grid .asset-card:has(.card-open.type-Scroll)");
-const scrollNames = (page) => scrollCards(page).locator("h3").allInnerTexts();
+const scrollNames = (page) => scrollCards(page).locator('.card-open.type-Scroll').evaluateAll(nodes => nodes.map(node => node.getAttribute('aria-label').slice('打开卷 '.length)));
 const drawer = (page) => page.getByRole("dialog", { name: "焚决详情" });
 const entryTexts = (page) =>
   drawer(page).locator(".scroll-entry .entry-text").allInnerTexts();
@@ -102,7 +102,7 @@ try {
     await types(page).locator("button").evaluateAll((els) =>
       els.map((el) => el.firstChild.textContent.trim()),
     ),
-    ["全部", "Skills", "Prompts", "工作流", "规则", "焚决"],
+    ["全部", "Prompts", "Skills", "工作流", "规则", "焚决"],
   );
   assert.equal(await tabCount(page, "焚决"), 0);
   ok("资产类型标签只保留常用类型与焚决，空库计数 0");
@@ -112,7 +112,7 @@ try {
   const dialog = createDialog(page);
   await dialog.waitFor();
   const picker = dialog.locator(".type-picker button");
-  assert.deepEqual(await picker.allInnerTexts(), ["Skill", "Prompt", "工作流", "规则", "MCP", "焚决"]);
+  assert.deepEqual(await picker.allInnerTexts(), ["Prompt", "Skill", "工作流", "规则", "MCP", "焚决"]);
   const tops = await picker.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
   assert.equal(new Set(tops).size, 1, `六个类型应在同一行：${tops}`);
   assert.ok(await dialog.locator(".type-picker button.active", { hasText: "焚决" }).count());
@@ -152,51 +152,56 @@ try {
     "全部应同时列出资产卡和焚决卡",
   );
   const card = scrollCards(page).filter({ hasText: "心法" });
-  assert.match(await card.locator(".cover-code").innerText(), /^FJ\.01$/);
-  assert.match(await card.locator(".card-type").innerText(), /焚决/);
-  assert.match(await card.locator(".card-body p").innerText(), /^0 条$/);
-  ok("焚决标签计数 2；“全部”同时显示资产卡与焚决卡（FJ 编号、N 条）");
+  assert.equal(await card.locator("h3").innerText(), "焚决 · 心法");
+  assert.equal(await card.locator(".scroll-preview-entry").count(), 0);
+  assert.match(await card.locator(".scroll-preview-empty").innerText(), /这一卷还是空的/);
+  ok("焚决标签计数 2；全部同时显示资产卡与精简焚决卡");
 
   // 焚决标签：默认“最近更新”，新卷在前。
   await typeTab(page, "焚决").click();
   assert.deepEqual(await scrollNames(page), ["prompt 碎片", "心法"]);
+  assert.equal(await page.getByRole("combobox", {name:"按标签筛选"}).count(), 0, "焚决类型页无标签筛选");
   assert.equal(await page.locator(".asset-grid .asset-card").count(), 2, "焚决标签只列焚决卡");
 
-  // 条目：新增三条（带标签），顺序即列表顺序。
+  // 条目：名称与提示词全文，顺序即列表顺序。
   await openScroll(page, "心法");
-  const body = drawer(page).getByLabel("新条目正文");
-  const tags = drawer(page).getByLabel("新条目标签");
-  const add = async (text, tagText) => {
+  assert.match(await drawer(page).locator(".cover-code").innerText(), /^FJ\.01$/);
+  const body = drawer(page).getByLabel("新条目提示词全文");
+  const title = drawer(page).getByLabel("新条目名称");
+  assert.equal(await drawer(page).getByLabel("新条目标签").count(), 0);
+  const add = async (text) => {
+    await title.fill(text);
     await body.fill(text);
-    await tags.fill(tagText);
     await button(drawer(page), "加入此卷").click();
     await drawer(page).locator(".scroll-entry", { hasText: text }).waitFor();
   };
-  await add("先定义问题，再给答案", "判断 核心");
-  await add("证据不足时保留假设", "判断，验证");
-  await add("小步可逆", "");
+  await add("先定义问题，再给答案");
+  await add("证据不足时保留假设");
+  await add("小步可逆");
   assert.deepEqual(await entryTexts(page), [
     "先定义问题，再给答案",
     "证据不足时保留假设",
     "小步可逆",
   ]);
   const first = drawer(page).locator(".scroll-entry").first();
-  assert.deepEqual(await first.locator(".entry-tag").allInnerTexts(), ["#判断", "#核心"]);
+  assert.equal(await first.locator(".entry-tag").count(), 0);
   let s = await scrollNamed("心法");
-  assert.deepEqual(s.entries.map((e) => e.tags), [["判断", "核心"], ["判断", "验证"], []]);
-  ok("在抽屉中新增三条，标签按空格或逗号拆分并醒目显示");
+  assert.deepEqual(s.entries.map((e) => e.tags), [[], [], []]);
+  assert.deepEqual(s.entries.map(e => e.name), ["先定义问题，再给答案", "证据不足时保留假设", "小步可逆"]);
+  ok("抽屉新增三条，独立名称/正文持久化，标签入口已移除");
 
   // 编辑。
   await button(drawer(page), "编辑条目：证据不足时保留假设").click();
-  await drawer(page).getByLabel("编辑条目正文").fill("证据不足时，保留假设和验证顺序");
-  await drawer(page).getByLabel("编辑条目标签").fill("判断 验证 顺序");
+  await drawer(page).getByLabel("编辑条目提示词全文").fill("证据不足时，保留假设和验证顺序");
+  await drawer(page).getByLabel("编辑条目名称").fill("证据校准");
   await button(drawer(page), "保存条目").click();
   await drawer(page).locator(".scroll-entry", { hasText: "证据不足时，保留假设和验证顺序" }).waitFor();
   s = await scrollNamed("心法");
   assert.equal(s.entries[1].text, "证据不足时，保留假设和验证顺序");
-  assert.deepEqual(s.entries[1].tags, ["判断", "验证", "顺序"]);
+  assert.deepEqual(s.entries[1].tags, []);
+  assert.equal(s.entries[1].name, "证据校准");
   assert.equal(s.entries.length, 3, "条目不做版本：编辑是原地修改");
-  ok("条目原地编辑正文与标签");
+  ok("条目原地编辑名称与正文");
 
   // 上下移动；第一条不能上移、最后一条不能下移。
   assert.equal(await button(drawer(page), "上移条目：先定义问题，再给答案").isDisabled(), true);
@@ -217,19 +222,10 @@ try {
   assert.deepEqual(await entryTexts(page), order);
   ok("条目上移、下移，刷新后顺序一致");
 
-  // 标签筛选。
-  const filter = drawer(page).getByRole("group", { name: "按标签筛选" });
-  await filter.getByRole("button", { name: "#核心", exact: true }).click();
-  assert.deepEqual(await entryTexts(page), ["先定义问题，再给答案"]);
-  assert.equal(
-    await filter.getByRole("button", { name: "#核心", exact: true }).getAttribute("aria-pressed"),
-    "true",
-  );
-  await filter.getByRole("button", { name: "#判断", exact: true }).click();
-  assert.deepEqual(await entryTexts(page), ["先定义问题，再给答案", "证据不足时，保留假设和验证顺序"]);
-  await filter.getByRole("button", { name: "全部", exact: true }).click();
+  assert.equal(await drawer(page).getByRole("group", {name:"按标签筛选"}).count(), 0);
+  assert.equal(await page.getByRole("combobox", {name:"按标签筛选"}).count(), 1, "刷新后的全部页保留普通资产标签筛选");
   assert.equal((await entryTexts(page)).length, 3);
-  ok("按标签筛选，“全部”恢复");
+  ok("焚决标签展示与筛选已移除");
 
   // 复制计次：复制成功才计一次；卡片封面次数 = 卷内条目复制次数之和。
   const copyFirst = button(drawer(page), "复制条目：先定义问题，再给答案");
@@ -257,12 +253,12 @@ try {
   );
   await page.reload();
   const xinCard = scrollCards(page).filter({ hasText: "心法" });
-  assert.match(await xinCard.innerText(), /使用 2 次/);
-  assert.equal((await xinCard.locator(".cover-uses").innerText()).replace(/\s/g, ""), "2");
-  assert.match(await xinCard.locator(".card-body p").innerText(), /^3 条$/);
-  // 卡片只显示最常用的 1–2 个标签：“判断”出现两次排第一。
-  assert.deepEqual(await xinCard.locator(".card-tags span").allInnerTexts(), ["判断", "核心"]);
-  ok("复制成功计次（2 次），剪贴板失败不计次；卡片封面次数为条目之和，显示条数与常用标签");
+  await xinCard.waitFor();
+  assert.equal(await xinCard.locator(".scroll-preview-entry").count(), 3);
+  const copiedRow = xinCard.locator('.scroll-preview-entry').filter({hasText:'先定义问题，再给答案'});
+  assert.equal(await copiedRow.locator('.scroll-preview-uses').innerText(), '已复制 2 次');
+  assert.equal(await copiedRow.locator('.scroll-preview-tags').count(), 0);
+  ok("复制成功计次2次，剪贴板失败不计次；卡面直接呈现3条名称/正文及各自次数");
 
   // 删除条目进回收区；回收区在“焚决”标签下方，恢复后回到原位置。
   await typeTab(page, "焚决").click();
@@ -296,7 +292,7 @@ try {
   await page.getByLabel("排序方式").selectOption("most");
   assert.deepEqual(await scrollNames(page), ["心法", "prompt 碎片"]);
   const pinButton = button(page, "置顶 prompt 碎片");
-  await atLeast44(pinButton, "卷置顶按钮");
+  await assertMinSize(pinButton, "卷置顶按钮", 32); // 用户389要求卡片三操作缩小。
   await pinButton.click();
   await button(page, "取消置顶 prompt 碎片").waitFor();
   assert.deepEqual(await scrollNames(page), ["prompt 碎片", "心法"]);
@@ -305,7 +301,7 @@ try {
   await typeTab(page, "全部").waitFor();
   assert.equal(
     await page.locator(".asset-grid .asset-card h3").first().innerText(),
-    "prompt 碎片",
+    "焚决 · prompt 碎片",
     "“全部”中置顶的卷排最前",
   );
   await typeTab(page, "焚决").click();
@@ -313,17 +309,17 @@ try {
   assert.equal(await button(page, "取消置顶 prompt 碎片").getAttribute("aria-pressed"), "true");
   ok("卷置顶排第一（优先于“最常用”排序），刷新后保持，“全部”中也排最前");
 
-  // 页内搜索：按卷名、条目正文、标签筛到焚决卡。
+  // 页内搜索：按卷名、条目正文、独立名称筛到焚决卡。
   await typeTab(page, "全部").click();
   const search = page.getByLabel("在资产中搜索");
   await search.fill("碎片");
   await until(async () => (await scrollNames(page)).join() === "prompt 碎片", "按卷名搜索");
   await search.fill("小步可逆");
   await until(async () => (await scrollNames(page)).join() === "心法", "按条目正文搜索");
-  await search.fill("核心");
-  await until(async () => (await scrollNames(page)).join() === "心法", "按标签搜索");
+  await search.fill("证据校准");
+  await until(async () => (await scrollNames(page)).join() === "心法", "按名称搜索");
   await search.fill("");
-  ok("页内搜索按卷名、条目正文、标签筛到焚决卡");
+  ok("页内搜索按卷名、条目正文、独立名称筛到焚决卡");
 
   // 改名、删除卷进回收区、恢复。
   await typeTab(page, "焚决").click();
@@ -345,12 +341,12 @@ try {
   assert.deepEqual(await entryTexts(page), order);
   ok("卷改名、删除进回收区并恢复，条目完整");
 
-  // 键盘：Tab 从正文到标签到“加入此卷”，回车提交。
-  await body.focus();
+  // 键盘：Tab 从名称到全文到“加入此卷”，回车提交。
+  await title.focus();
   await page.keyboard.type("键盘新增条目");
   await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "新条目标签");
-  await page.keyboard.type("键盘");
+  assert.equal(await page.evaluate(() => document.activeElement.getAttribute("aria-label")), "新条目提示词全文");
+  await page.keyboard.type("键盘新增条目");
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement.textContent.trim()), "加入此卷");
   await page.keyboard.press("Enter");
@@ -375,14 +371,14 @@ try {
     "重命名卷",
     "删除卷",
   ])
-    await atLeast44(button(drawer(page), name), name);
+    await assertMinSize(button(drawer(page), name), name);
   ok("焚决控件点击区域不小于 44px");
   await axe(page, "scroll-drawer-1440");
   await page.screenshot({ path: "test-results/scrolls-drawer-1440.png", fullPage: false });
   await closeDrawer(page);
   // 截图前关掉提示条，免得遮住卡片。
   if (await button(page, "关闭提示").count()) await button(page, "关闭提示").click();
-  await atLeast44(button(page, "打开卷 心法与准则"), "焚决卡");
+  await assertMinSize(button(page, "打开卷 心法与准则"), "焚决卡");
   await axe(page, "scrolls-tab-1440");
   await page.screenshot({ path: "test-results/scrolls-tab-1440.png", fullPage: false });
   await typeTab(page, "全部").click();
@@ -417,7 +413,7 @@ try {
     () => document.documentElement.scrollWidth - window.innerWidth,
   );
   assert.ok(overflow <= 0, `390 宽横向溢出 ${overflow}px`);
-  await atLeast44(button(drawer(narrow), "复制条目：小步可逆"), "390 复制按钮");
+  await assertMinSize(button(drawer(narrow), "复制条目：小步可逆"), "390 复制按钮");
   await axe(narrow, "scrolls-390");
   await narrow.screenshot({ path: "test-results/scrolls-390.png", fullPage: false });
   ok("390 宽：新建类型换行，抽屉无横向溢出，axe 无违规");

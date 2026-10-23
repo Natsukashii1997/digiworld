@@ -1,0 +1,131 @@
+.floating-notes-page,.floating-notes-page body,.floating-notes-page #root{height:100%;margin:0;min-width:0;background:transparent;overflow:hidden}
+.fn-panel{--fn-panel-w:100%;--fn-panel-h:100dvh;font-family:var(--sans);box-sizing:border-box;max-width:368px;margin:auto}
+.fn-panel {
+  position: relative; width: var(--fn-panel-w); height: var(--fn-panel-h); display: grid; grid-template-rows: auto 1fr auto;
+  border-radius: var(--r-floating); overflow: hidden; background: var(--m-panel);
+  border: 1px solid var(--line-2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 30px 60px -20px rgba(0,0,0,.85), 0 0 0 .5px rgba(0,0,0,.6);
+  text-align: left;
+}
+.desk .fn-panel { position: absolute; transform-origin: var(--ox, 100%) var(--oy, 0); transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease); }
+.desk .fn-panel.is-hidden { opacity: 0; transform: scale(.92); pointer-events: none; }
+.fn-hd { display: flex; align-items: center; gap: var(--s-2); height: 52px; padding: 0 var(--s-1) 0 var(--s-4); border-bottom: 1px solid var(--line); cursor: grab; }
+.fn-hd svg.px { width: 14px; height: 14px; color: var(--yellow); shape-rendering: crispEdges; }
+.fn-hd h3 { margin: 0; font-size: var(--fs-title); font-weight: 700; }
+.fn-hd .n { font: 500 var(--fs-small) var(--mono); color: var(--muted); letter-spacing: .04em; }
+.fn-hd .sp { flex: 1; }
+.fn-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: var(--r-s); background: none; color: var(--text-2); cursor: pointer; }
+.fn-icon:hover { color: var(--text); background: color-mix(in srgb, var(--line-3) 30%, transparent); }
+.fn-icon.on { color: var(--yellow); }
+.fn-icon svg.i { width: 17px; height: 17px; }
+.fn-scroll { overflow-y: auto; padding: var(--s-4) var(--s-4) var(--s-5); display: grid; gap: var(--s-4); align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
+.fn-pad { display: flex; align-items: center; gap: var(--s-2); width: 100%; min-height: 56px; padding: 0 var(--s-4); border: 1.5px dashed var(--line-3); border-radius: var(--r-s); background: color-mix(in srgb, var(--bg) 35%, transparent); color: var(--muted); font-size: var(--fs-read); cursor: text; }
+.fn-pad:hover { border-color: color-mix(in srgb, var(--yellow) 55%, transparent); color: var(--text-2); }
+.fn-pad kbd { margin-left: auto; font: 500 var(--fs-small) var(--mono); color: var(--muted); }
+.fn-ft { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-1) 0 var(--s-4); border-top: 1px solid var(--line); font-size: var(--fs-caption); color: var(--muted); }
+.fn-ft .lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--lcd); flex: none; }
+.fn-ft[data-s=saving] .lamp, .fn-ft[data-s=unknown] .lamp { background: none; border: 1.5px solid var(--yellow); border-top-color: transparent; animation: spin .9s linear infinite; }
+.fn-ft[data-s=draft] .lamp { background: var(--yellow); }
+.fn-ft[data-s=failed] .lamp, .fn-ft[data-s=conflict] .lamp { background: var(--red); }
+.fn-ft[data-s=failed] .msg, .fn-ft[data-s=conflict] .msg { color: var(--red-2); }
+.fn-ft[data-s=draft] .msg { color: var(--yellow); }
+.fn-ft .msg { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fn-ft .open { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 var(--s-3); border: 0; background: none; color: var(--text-2); font-size: var(--fs-caption); cursor: pointer; border-radius: var(--r-s); white-space: nowrap; }
+.fn-ft .open:hover { color: var(--cyan); }
+.fn-ft .open svg.i { width: 14px; height: 14px; }
+.fn-ft .retry { min-height: 32px; padding: 0 var(--s-3); border: 1px solid color-mix(in srgb, var(--red) 55%, transparent); border-radius: var(--r-s); background: none; color: var(--red-2); font-size: var(--fs-caption); cursor: pointer; }
+
+/* 便签（继承 notes-v16 的 .sn：深色纸淡染 + 顶部胶带；便签栏里不倾斜） */
+.fn-panel .sn { --paper: var(--text-hi); --a: .05; position: relative; display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-4) var(--s-3);
+  border: 1px solid color-mix(in srgb, var(--paper) 20%, transparent); border-radius: var(--r-s);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--paper) calc(var(--a) * 200%), transparent), color-mix(in srgb, var(--paper) calc(var(--a) * 100%), transparent) 60%), var(--panel);
+  box-shadow: 0 12px 24px -18px rgba(0,0,0,.9); }
+.fn-panel .sn.tone-red { --paper: var(--red); --a: .06; } .sn.tone-blue { --paper: var(--blue); --a: .06; }
+.fn-panel .sn.tone-green { --paper: var(--lcd); --a: .05; } .sn.tone-yellow { --paper: var(--yellow); --a: .06; }
+.fn-panel .sn-tape { position: absolute; top: -6px; left: 50%; width: 56px; height: 12px; transform: translateX(-50%) rotate(-2deg); border-radius: 2px; opacity: .85;
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--paper) 60%, transparent) 0 6px, color-mix(in srgb, var(--paper) 45%, transparent) 6px 8px); }
+.fn-panel .sn.tone-plain .sn-tape { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--text-2) 32%, transparent) 0 6px, color-mix(in srgb, var(--text-2) 22%, transparent) 6px 8px); }
+.fn-panel .sn header { display: flex; align-items: center; gap: var(--s-2); min-height: 20px; }
+.fn-panel .sn-time { font: 500 var(--fs-small) var(--mono); color: var(--muted); letter-spacing: .04em; }
+.fn-panel .sn-chip { margin-left: auto; padding: 1px 7px; border-radius: var(--r-xs); font-size: var(--fs-small); border: 1px dashed color-mix(in srgb, var(--yellow) 70%, transparent); color: var(--yellow); }
+.fn-panel .sn-body { display: grid; gap: 2px; font-size: var(--fs-body); line-height: 1.65; color: var(--text); overflow-wrap: anywhere; outline: none; }
+.fn-panel .sn-body p { margin: 0; }
+.fn-panel .sn-body > p:first-child { font-weight: 700; }
+.fn-panel .sn-body .ln { display: flex; gap: 8px; align-items: flex-start; }
+.fn-panel .sn-body .ln .pre { flex: none; min-width: 18px; font-family: var(--mono); color: var(--muted); }
+.fn-panel .sn-body .box { flex: none; width: 16px; height: 16px; margin-top: 4px; border: 1.5px solid var(--text-2); border-radius: var(--r-xs); display: grid; place-items: center; }
+.fn-panel .sn-body .box svg.i { width: 12px; height: 12px; stroke-width: 3.5; }
+.fn-panel .sn-body .done > span:last-child { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--text-2); }
+.ink-red { color: var(--red); } .ink-blue { color: var(--blue); } .ink-green { color: var(--lcd); } .ink-yellow { color: var(--yellow); } .ink-gray { color: var(--muted); }
+.fn-panel .sn.is-long .sn-body { max-height: 162px; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent); mask-image: linear-gradient(180deg, #000 62%, transparent); }
+.fn-panel .sn-more { justify-self: start; min-height: 28px; padding: 0; border: 0; background: none; color: var(--cyan); font-size: var(--fs-caption); cursor: pointer; }
+/* 编辑中：唯一亮起来的一张（暖黄，同 notes-v16 .sn-pad.editing） */
+.fn-panel .sn.is-edit { border-color: color-mix(in srgb, var(--yellow) 75%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--yellow) 18%, transparent), color-mix(in srgb, var(--yellow) 9%, transparent)), var(--panel-2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 10%, transparent), 0 18px 36px -22px color-mix(in srgb, var(--yellow) 45%, transparent); }
+.fn-panel .sn.is-edit .sn-tape { display: none; }
+.fn-panel .sn.is-edit .sn-body { min-height: 66px; }
+/* 编辑中整张便签已亮起作为焦点指示，正文区不再叠加青色焦点框 */
+.fn-panel .sn.is-edit .sn-body:focus-visible { box-shadow: none; }
+.fn-panel .sn-caret { display: inline-block; width: 2px; height: 1.2em; margin-left: 1px; vertical-align: -3px; background: var(--yellow); animation: blink 1.1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.fn-panel .sn-tools { display: flex; align-items: center; gap: 0; margin: var(--s-1) calc(var(--s-2) * -1) 0; padding-top: var(--s-1); border-top: 1px solid color-mix(in srgb, var(--yellow) 20%, transparent); }
+.fn-panel .sn-tools .fn-icon { width: 40px; height: 40px; }
+.fn-panel .sn-tools .fn-icon.on { color: var(--text); background: color-mix(in srgb, var(--yellow) 12%, transparent); }
+.fn-panel .sn-tools .sep { width: 1px; height: 20px; margin: 0 4px; background: color-mix(in srgb, var(--yellow) 25%, transparent); }
+.fn-panel .sn-tools .ink { display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 52px; color: var(--red); }
+.fn-panel .sn-tools .ink b { font: 800 var(--fs-title) var(--sans); box-shadow: inset 0 -3px 0 currentColor; }
+.fn-panel .sn-tools .ink svg.i { width: 12px; height: 12px; color: var(--muted); }
+.fn-panel .sn-state { margin-left: auto; padding-right: var(--s-2); font-size: var(--fs-small); color: var(--muted); white-space: nowrap; }
+.fn-panel .sn-state.saving, .fn-panel .sn-state.unknown { color: var(--yellow); }
+.fn-panel .sn-state.draft { color: var(--yellow); }
+/* 保存失败：红色描边，内容原样留在卡上 */
+.fn-panel .sn.is-failed { border-color: color-mix(in srgb, var(--red) 70%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 15%, transparent); }
+.fn-panel .sn-alert { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; padding: var(--s-2) var(--s-3); border-radius: var(--r-s); font-size: var(--fs-caption); line-height: 1.5; }
+.fn-panel .sn-alert.red { background: color-mix(in srgb, var(--red) 10%, transparent); color: var(--red-2); }
+.fn-panel .sn-alert.amber { background: color-mix(in srgb, var(--orange) 10%, transparent); color: var(--orange-2); border: 1px solid color-mix(in srgb, var(--orange) 35%, transparent); }
+.fn-panel .sn-alert .grow { flex: 1 1 100%; }
+.fn-panel .sn-alert .acts { display: flex; gap: var(--s-2); }
+.fn-panel .sn-btn { min-height: 32px; padding: 0 var(--s-3); border-radius: var(--r-s); border: 1px solid var(--line-3); background: none; color: var(--text); font-size: var(--fs-caption); cursor: pointer; }
+.fn-panel .sn-btn.pri { border: 0; background: var(--yellow); color: var(--orange-ink); font-weight: 700; }
+.fn-panel .sn-btn.red { border-color: color-mix(in srgb, var(--red) 55%, transparent); color: var(--red-2); }
+/* 冲突：别处的版本作为引文，放在自己的内容之上 */
+.fn-panel .sn.is-conflict { border-color: color-mix(in srgb, var(--orange) 65%, transparent); }
+.fn-panel .sn-other { display: grid; gap: 2px; padding: var(--s-2) var(--s-3); border-left: 2px solid color-mix(in srgb, var(--orange) 70%, transparent); background: color-mix(in srgb, var(--bg) 45%, transparent); border-radius: 0 var(--r-xs) var(--r-xs) 0; font-size: var(--fs-caption); color: var(--text-2); line-height: 1.6; }
+.fn-panel .sn-other b { font: 500 var(--fs-small) var(--mono); color: var(--orange-2); letter-spacing: .04em; font-weight: 500; }
+.fn-panel .sn-mine { font: 500 var(--fs-small) var(--mono); color: var(--yellow); letter-spacing: .04em; }
+.fn-empty { display: grid; justify-items: center; gap: var(--s-3); padding: var(--s-8) var(--s-4) 0; text-align: center; color: var(--muted); }
+.fn-empty svg.px { width: 40px; height: 40px; color: var(--faint); shape-rendering: crispEdges; }
+.fn-empty b { color: var(--text-2); font-size: var(--fs-read); }
+.fn-empty span { font-size: var(--fs-caption); line-height: 1.6; }
+
+
+.fn-panel .fn-hd .pixel{color:var(--yellow)}
+.fn-panel .fn-empty .pixel{color:var(--faint)}
+.fn-panel .sn,.fn-panel .sn:hover{transform:none}
+.fn-panel .sn-editor-host{gap:8px;min-width:0}
+.fn-panel .sn-editable{min-height:66px;padding:0;max-height:none;overflow:visible;font-size:var(--fs-body)}
+.fn-panel .sn-editable:focus-visible{outline:none;box-shadow:none}
+.fn-panel .sn-editor-compact .sn-tools{position:static;flex-wrap:nowrap;gap:0;bottom:auto;min-width:0;padding:4px 0 0;margin:4px -8px 0;background:none;backdrop-filter:none;border-radius:0;box-shadow:none}
+.fn-panel .sn-editor-compact .sn-tools>button{width:44px;min-width:44px;height:44px;min-height:44px;order:1;padding:0}
+.fn-panel .sn-editor-compact .sn-ink{display:none}
+.fn-panel .sn-editor-compact .sn-mobile-color{display:block;order:2;margin-left:4px;border-left:1px solid color-mix(in srgb,var(--yellow) 25%,transparent)}
+.fn-panel .sn-editor-compact .sn-ink-trigger{width:52px;height:44px;font-size:var(--fs-title)}
+.fn-panel .sn-editor-compact .sn-tools-end{order:3;margin-left:auto;gap:0}
+.fn-panel .sn-editor-compact .sn-colors{bottom:calc(100% + 4px);left:auto;right:0;flex-wrap:nowrap}
+.fn-panel .sn-tools .sn-state{font-size:var(--fs-micro);max-width:108px;white-space:normal;text-align:right;line-height:1.3}
+.fn-panel .sn-line{min-height:0;font-size:var(--fs-body);line-height:1.65}
+.fn-panel .sn-task-hit{min-height:44px}
+.fn-panel .sn-body.fn-truncated{max-height:162px;overflow:hidden;mask-image:linear-gradient(180deg,#000 62%,transparent)}
+.fn-panel .sn-more,.fn-panel .sn-btn,.fn-panel .retry{min-height:44px}
+.fn-panel .sn-other span{white-space:pre-wrap;overflow-wrap:anywhere;max-height:162px;overflow:auto}
+.fn-panel .fn-ft .open{text-decoration:none;padding:0 8px}
+.fn-panel :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.fn-panel .fn-scroll{min-height:0}
+.fn-standalone-collapsed{display:grid;place-items:center;height:100vh;background:var(--panel)}
+@media(prefers-reduced-motion:reduce){.fn-panel *{animation:none!important;transition:none!important}}
+
+.floating-notes-page body::before,.floating-notes-page body::after{display:none}
+
+.fn-panel .fn-conflict-actions .acts{display:flex;gap:var(--s-2)}
+.fn-panel .fn-pad kbd{padding:0;border:0;background:none;box-shadow:none}

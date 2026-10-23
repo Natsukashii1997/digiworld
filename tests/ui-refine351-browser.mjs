@@ -83,13 +83,13 @@ async function homeSpace(page, name) {
     spans.sort((a,b)=>a[0]-b[0]);
     let bottom = box.top, gap = 0;
     for (const [top,end] of spans) { gap=Math.max(gap,top-bottom); bottom=Math.max(bottom,end); }
-    gap=Math.max(gap,box.bottom-bottom);
-    return { id:card.className, height:card.getBoundingClientRect().height, maxBlank:gap };
+    const headGap=(spans[0]?.[0] ?? box.top)-card.querySelector("header").getBoundingClientRect().bottom;
+    return { id:card.className, height:card.getBoundingClientRect().height, maxBlank:gap, headGap };
   }));
   records.push({ name, width:page.viewportSize().width, cards });
   if (!capture && page.viewportSize().width === 1440) {
     assert.ok(Math.abs(cards[0].height-cards[2].height)<1 && Math.abs(cards[1].height-cards[3].height)<1, 'home paired card heights');
-    assert.ok(cards.every(c=>c.maxBlank<=120), name+' home blank >120px: '+JSON.stringify(cards));
+    assert.ok(cards.every(c=>c.maxBlank<=120 && c.headGap<=32), name+' home blank >120px: '+JSON.stringify(cards));
   }
 }
 async function fade(page, selector, name) {
@@ -238,7 +238,7 @@ try {
       if (!capture) {
         const normal = records.find(r => r.name === 'P2-projects-heights' && r.width === width).heights.filter(r => !r.empty);
         assert.ok(height <= Math.min(...normal.map(r => r.height)) / 2, 'empty slot <= half occupied height');
-        assert.equal(await p.locator('.pj-empty-hint').count(), 1, 'one empty guidance');
+        assert.equal(await p.locator('.pj-empty-hint').count(), await p.locator('.pj-vacant').count(), 'each empty slot has guidance');
       }
       await p.context().close();
     }

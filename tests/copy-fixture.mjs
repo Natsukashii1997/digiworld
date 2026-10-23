@@ -89,7 +89,7 @@ export async function copyFixture({ staticRoot } = {}) {
   const app = await startServer({
     directory: join(base, "database"),
     port: 0,
-    staticRoot: staticRoot || join(import.meta.dirname, "../dist"),
+    staticRoot: staticRoot || process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
     clock,
     discovery: {
       defaultRoots: () => [],

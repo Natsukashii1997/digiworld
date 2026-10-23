@@ -59,7 +59,7 @@ try {
   await page.getByLabel("在资产中搜索").fill("");
   ok("分类、置顶和搜索过滤");
   await page.getByRole("button", { name: "新建", exact: true }).click();
-  await page.getByRole("button", { name: "Prompt", exact: true }).click();
+  await page.getByRole("radio", { name: "Prompt", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("测试：我的提示词");
   await page.getByLabel("一句话说明").fill("验证创建、版本和持久化");
   await page.getByLabel("提示词全文").fill("这是第一版。");
@@ -110,6 +110,7 @@ try {
     "sample/assets/binary.bin": new Uint8Array([0, 1, 2, 255]),
   });
   await page.getByRole("button", { name: "新建", exact: true }).click();
+  await page.getByRole("radio", { name: "Skill", exact: true }).click();
   await page.getByLabel("名称", { exact: true }).fill("测试完整 Skill");
   await page.locator("input[type=file]").setInputFiles({
     name: "sample.zip",
@@ -137,6 +138,7 @@ try {
   await close();
   ok("ZIP 导入导出：中文路径与二进制文件完整往返");
   await page.getByRole("button", { name: "新建", exact: true }).click();
+  await page.getByRole("radio", { name: "Skill", exact: true }).click();
   const invalid = zipSync({ "README.md": strToU8("no skill") });
   await page.locator("input[type=file]").setInputFiles({
     name: "bad.zip",
@@ -168,18 +170,25 @@ try {
   ok("随手记创建、编辑、刷新持久化");
   await go("projects");
 
-  await page.getByRole("radio", { name: /^已关联\s*1$/ }).waitFor();
+  await page.getByRole("radio", { name: /^GIT\s*2$/ }).waitFor();
+  const sourceProjectsBefore = JSON.stringify((await app.repository.read()).connections.projects);
+  assert.equal(await page.getByRole("radiogroup", { name: "项目来源筛选" }).getByRole("radio").count(), 3);
   assert.equal(await page.locator(".project-discovery-row").count(), 3);
   assert.equal(app.calls.projects, 1);
-  await page.getByRole("radio", { name: /^已关联\s*1$/ }).click();
-  assert.equal(await page.locator(".project-discovery-row").count(), 1);
+  await page.getByRole("radio", { name: /^GIT\s*2$/ }).click();
+  assert.deepEqual(await page.locator(".pj-cs-code").allTextContents(), ["GIT", "GIT"]);
+  await page.getByRole("radio", { name: /^LOCAL\s*1$/ }).click();
+  assert.deepEqual(await page.locator(".pj-cs-code").allTextContents(), ["LOCAL"]);
+  assert.equal(await page.getByRole("button", { name: "项目：知识编译器", exact: true }).count(), 1);
   await page.getByRole("radio", { name: /^全部\s*3$/ }).click();
+  assert.equal(await page.locator(".project-discovery-row").count(), 3);
+  assert.equal(JSON.stringify((await app.repository.read()).connections.projects), sourceProjectsBefore);
   await page.screenshot({
     path: "test-results/03-projects.png",
     fullPage: true,
   });
   await page.reload();
-  await page.getByRole("radio", { name: /^已关联\s*1$/ }).waitFor();
+  await page.getByRole("radio", { name: /^GIT\s*2$/ }).waitFor();
   assert.equal(app.calls.projects, 1);
   await page.getByRole("button", { name: "项目空间设置", exact: true }).click();
   await page.getByLabel("本地项目目录（每行一个绝对路径）").waitFor();
@@ -188,7 +197,7 @@ try {
     /fixture/,
   );
   await close();
-  ok("项目首次自动扫描、同源关联、筛选、持久化；刷新不重复扫描");
+  ok("项目首次自动扫描、同源关联、LOCAL/GIT互斥计数与筛选、数据保持；刷新不重复扫描");
   await go("agents");
   await page.getByRole("button", {name:"这页怎么用",exact:true}).click();
   await page.getByRole("button", {name:"全部本机入口",exact:true}).click();
@@ -279,6 +288,7 @@ try {
   await app.repository.write({ ...beforeHideDemos, assets: beforeHideDemos.assets.map(asset => asset.demo ? { ...asset, archived: true } : asset) });
   await go("assets");
   await page.reload();
+  await page.locator('.asset-card').first().waitFor();
   assert.equal(await page.locator(".asset-card").count(), 2);
   ok("授权默认分类与真实模型入口；旧示例归档数据不进入仓库列表");
   const fresh = await browser.newContext({

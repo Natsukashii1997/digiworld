@@ -15,3 +15,6 @@ docs/agents/handoffs/evidence-*/
 *.pem
 *.key
 *.log
+
+# 本机发布、采用与临时验证目录（约19G，从未入库）
+work/

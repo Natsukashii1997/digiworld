@@ -7,6 +7,8 @@ import { session, request } from "./api.js";
 import { parse, stringify } from "./serialization.js";
 import { readState as readLegacy } from "./store.js";
 import { download } from "./Assets.jsx";
+import { createFullBackupRecovery } from "./full-backup-recovery.js";
+import { FULL_BACKUP_LIMITS, FULL_BACKUP_LIMIT_MESSAGE } from "./full-backup-contract.js";
 
 export function StoragePanel({ state, adoptState, notify, compact = false }) {
   const [directory, setDirectory] = useState(""),
@@ -232,12 +234,19 @@ function FullBackup({ busy: outerBusy, notify, onCreated, compact = false, facts
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [preview, setPreview] = useState(null),
-    [done, setDone] = useState(null);
+    [done, setDone] = useState(null),
+    [recoveryResult,setRecoveryResult] = useState(null),
+    [recoveryReady,setRecoveryReady] = useState(false);
+  const [recovery] = useState(()=>createFullBackupRecovery({call:request,identity:async()=>({dataRootIdentity:(await request("/full-backup/scope")).identity}),storage:{getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},locks:navigator.locks}));
+  const showResult = result => {setRecoveryResult(result);setDone(result?.status==='complete'?result:null);};
+  useEffect(()=>{let alive=true;recovery.resume().then(result=>{if(alive){showResult(result);setRecoveryReady(true);}}).catch(e=>{if(alive)setError(e.message);});return()=>{alive=false;};},[recovery]);
   const disabled = busy || outerBusy;
+  const unresolved = recoveryResult && !['complete','interrupted'].includes(recoveryResult.status);
   return (
     <div className={compact ? "st-row full-backup" : "setting-row full-backup"}>
       <div>
-        <strong>{compact?"最近完整备份 / 恢复":"完整备份（整个数据目录）"}</strong>
+        <strong>{compact?"最近完整备份 / 恢复":"完整备份（含数据与图片）"}</strong>
+        <p>REA 原始证据不随备份；摘要和日志会保留。原件请单独复制 data/reverse-evidence 目录。</p>
         {compact && <><p>上次完整备份生成并校验：{facts?.lastBackup.state === "ok" ? new Date(facts.lastBackup.at).toLocaleString("zh-CN") : facts?.lastBackup.state === "none" ? "尚无成功记录" : facts?.lastBackup.state === "pending" ? "生成记录待核对" : facts?.lastBackup.reason || (factsError ? "备份信息待核实" : facts ? "备份信息未知" : <Reading mini label="正在读取备份信息"/>)}</p>{!!facts?.lastBackup.pending&&<p role="status">另有 {facts.lastBackup.pending} 条未完成的生成记录；请核对后再决定是否重做。</p>}<p>服务端生成记录不证明下载文件已保存到你的磁盘。</p></> }
         <p className="full-backup-scope">含工作台数据与记录。历史快照保持原样；已撤销页面的记录不会导入当前主库。</p>
         {!compact && <p>
@@ -249,6 +258,10 @@ function FullBackup({ busy: outerBusy, notify, onCreated, compact = false, facts
             {error}
           </p>
         )}
+        {((!recoveryReady && !!error) || (recoveryResult && recoveryResult.status !== 'complete')) && <div className="full-backup-done" role="status">
+          <p>{!recoveryReady?'恢复连接尚未核实，请查询上次恢复结果后继续。':recoveryResult?.status==='interrupted'?'上次恢复未完成，当前数据目录未被覆盖。可以重新选择备份。':recoveryResult?.status==='processing'?'上次恢复仍在处理，请稍后查询原操作。':'恢复结果待核对，原操作编号已保留。连接恢复后请查询，避免重复恢复。'}</p>
+          <Button secondary disabled={disabled} onClick={async()=>{setBusy(true);try{showResult(await recovery.resume());setRecoveryReady(true);setError("");}catch(e){setError(e.message);}finally{setBusy(false);}}}>查询上次恢复结果</Button>
+        </div>}
         {done && (
           <div className="full-backup-done" role="status">
             <p>
@@ -271,10 +284,10 @@ function FullBackup({ busy: outerBusy, notify, onCreated, compact = false, facts
             setBusy(true);
             setError("");
             try {
-              const result = await request("/full-backup/create", {});
+              const result = await request("/full-backup/download", {}, "POST", true, {binaryResponse:true});
               download(result.filename, result.bytes, "application/zip");
               await onCreated?.();
-              notify(`恢复包已生成并校验 ${result.manifest.files.length} 个文件，已发起下载；请确认 ZIP 文件已保存`);
+              notify(`恢复包已生成并校验 ${result.fileCount} 个文件，已发起下载；请确认 ZIP 文件已保存`);
             } catch (e) {
               setError(e.message);
             } finally {
@@ -292,21 +305,21 @@ function FullBackup({ busy: outerBusy, notify, onCreated, compact = false, facts
             type="file"
             aria-label="选择完整备份文件"
             accept=".zip,application/zip"
-            disabled={disabled}
+            disabled={disabled || !recoveryReady || !!unresolved}
             onChange={async (e) => {
               const file = e.target.files[0];
               e.target.value = "";
               if (!file) return;
               setError("");
               setDone(null);
-              if (file.size > 75 * 1024 * 1024) {
-                setError("完整备份文件超过 75 MB，当前页面上传不了；请在本机直接处理该文件");
+              if (file.size > FULL_BACKUP_LIMITS.archiveBytes) {
+                setError(FULL_BACKUP_LIMIT_MESSAGE);
                 return;
               }
               setBusy(true);
               try {
-                const bytes = new Uint8Array(await file.arrayBuffer());
-                setPreview(await request("/full-backup/preview", { bytes }));
+                if(recoveryResult){await recovery.acknowledge(recoveryResult.operationId);showResult(null);}
+                setPreview(await request("/full-backup/upload", file, "POST", true, {binaryUpload:true}));
               } catch (err) {
                 setError(err.message);
               } finally {
@@ -372,11 +385,13 @@ function FullBackup({ busy: outerBusy, notify, onCreated, compact = false, facts
                   setBusy(true);
                   setError("");
                   try {
-                    const result = await request("/full-backup/restore", { token: preview.token });
-                    setDone(result);
+                    const result = await recovery.begin(preview);
+                    showResult(result);
                     setPreview(null);
-                    notify("已恢复到新目录并校验");
+                    if(result.status==='complete')notify("已恢复到新目录并校验");
                   } catch (e) {
+                    setPreview(null);
+                    setRecoveryReady(false);
                     setError(e.message);
                   } finally {
                     setBusy(false);

@@ -1,3 +1,4 @@
+import { hasSkillPackage } from "../src/design-asset.js";
 import { invalid, equivalent } from "./schema.mjs";
 
 const identifier = (s) =>
@@ -78,11 +79,12 @@ export function validateActivity(state) {
           Skill: "copy-skill",
           Rule: "copy-rule",
           MCP: "copy-mcp-config",
+          Design: "copy-design",
         }[asset.type]
       )
         invalid("使用动作类型");
       if (
-        asset.type === "Skill"
+        hasSkillPackage(asset, version)
           ? !identifier(r.deliveryId)
           : r.deliveryId !== undefined
       )

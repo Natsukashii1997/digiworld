@@ -42,7 +42,7 @@ function PathList({ title, paths }) {
   );
 }
 
-export function ProjectLocations({ project, state, adoptState, notify }) {
+export function ProjectLocations({ project, state, adoptState, notify, identityIssueRoot = '' }) {
   const [editor, setEditor] = useState(null),
     [candidateId, setCandidateId] = useState(""),
     [replacePath, setReplacePath] = useState("");
@@ -270,7 +270,7 @@ export function ProjectLocations({ project, state, adoptState, notify }) {
             >
               在 Finder 中显示
             </Button>
-            {(location.status === "changed" ||
+            {(identityIssueRoot === location.path || location.status === "changed" ||
               (location.observedIdentity &&
                 location.observedIdentity !== location.identity)) && (
               <Button
