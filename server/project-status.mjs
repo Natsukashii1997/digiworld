@@ -89,6 +89,53 @@ export function parseCurrentStatus(text) {
   };
 }
 
+// 没有协作状态表时的退路（阶段 2 E 批）：按“新内容写在最上面”的约定，取第一个二级标题与它下面的第一段文字，
+// 作为“最近进展”给人看、带进口令。不据此推断写入者、阶段或停滞；表格与代码块不当正文。
+const OUTLINE_TITLE_LIMIT = 120;
+const OUTLINE_SUMMARY_LIMIT = 300;
+const FENCE = /^\s*(```|~~~)/;
+const unlink = (value) => value.replace(/\[([^\]]*)\]\([^)\s]*\)/g, "$1");
+const cut = (value, limit) => (value.length > limit ? value.slice(0, limit) + "…" : value);
+export function parseCurrentOutline(text) {
+  const lines = String(text).split(/\r?\n/);
+  let fence = false,
+    at = -1;
+  for (let i = 0; i < lines.length && at < 0; i++) {
+    if (FENCE.test(lines[i])) fence = !fence;
+    else if (!fence && /^##\s+\S/.test(lines[i])) at = i;
+  }
+  if (at < 0) return null;
+  const title = plain(unlink(lines[at].replace(/^##\s+/, "").replace(/\s+#+\s*$/, "")));
+  if (!title) return null;
+  const block = [];
+  fence = false;
+  for (const line of lines.slice(at + 1)) {
+    if (FENCE.test(line)) {
+      if (block.length) break;
+      fence = !fence;
+      continue;
+    }
+    if (fence) continue;
+    if (/^#{1,6}\s/.test(line)) break;
+    if (!line.trim() || /^\s*\|/.test(line)) {
+      if (block.length) break;
+      continue;
+    }
+    block.push(line.replace(/^\s*(?:[-*+]|\d+\.)\s+/, "").replace(/^\s*>\s?/, ""));
+  }
+  return {
+    title: cut(title, OUTLINE_TITLE_LIMIT),
+    summary: cut(plain(unlink(block.join(" "))), OUTLINE_SUMMARY_LIMIT),
+  };
+}
+
+// 状态表解析不出时（unparsed）再看有没有二级标题；有就记为 outline，可继续但只带“最近进展”。
+export function withOutline(parsed, text) {
+  if (parsed.state !== "unparsed") return parsed;
+  const outline = parseCurrentOutline(text);
+  return outline ? { ...parsed, state: "outline", outline } : parsed;
+}
+
 // 只在截断读取时允许末尾出现被截断的多字节字符；其余任何非 UTF-8 字节都拒绝。
 export function decodeCurrentHead(buffer, truncated) {
   const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false });
@@ -526,7 +573,7 @@ export function createProjectStatus(
     const current =
       file.state === "read"
         ? {
-            ...parseCurrentStatus(file.text),
+            ...withOutline(parseCurrentStatus(file.text), file.text),
             path,
             modifiedAt: file.modifiedAt,
             truncated: file.truncated,

@@ -32,13 +32,14 @@ import { GithubBlock, useGithubPanel } from "./ProjectGithub.jsx";
 import { STAGES, linkText } from "./collab.js";
 import { usePromptCopy, staleNote } from "./Collab.jsx";
 import { RelayLaunch } from "./RelayLaunch.jsx";
-import { SlotDesk, LoadoutDialog, deskRows } from "./ProjectDesk.jsx";
+import { SlotDesk, LoadoutDialog, ManualNext, deskRows } from "./ProjectDesk.jsx";
 import { relayDesk, relayDeskSection } from "./relay-desk.js";
 import {
   sortSaveItems,
   groupProjectRacks,
   groupPortfolioSections,
   readableCurrent,
+  continuableCurrent,
   projectRelayPrompt,
 } from "./projects-v16.js";
 import "./projects-v16.css";
@@ -139,6 +140,7 @@ function SaveCard({
   const pending = desk.inbox.filter((i) => !i.relayed && !i.missing).length,
     gear = desk.loadout.filter((i) => !i.missing).length;
   const readable = readableCurrent(item),
+    outline = item.current?.state === "outline" ? item.current.outline : null,
     f = item.current?.fields,
     holder = readable ? castOf(f?.writer) : null,
     stalled = readable && item.activity?.state === "stalled",
@@ -204,6 +206,14 @@ function SaveCard({
           <span className="en">NEXT · 下一步</span>
           {readable ? (
             <p>{f?.next ? linkText(f.next) : "缺少此项"}</p>
+          ) : outline && !readFailed ? (
+            <ManualNext
+              projectId={item.projectId}
+              projectName={item.name}
+              next={desk.next}
+              adoptState={adoptState}
+              notify={notify}
+            />
           ) : (
             <p className="pj-unread">
               <AlertCircle size={18} />
@@ -212,13 +222,22 @@ function SaveCard({
           )}
         </div>
       </div>
+      {outline && !readFailed && (
+        <div className="pj-recent">
+          <span className="en">RECENT · 最近进展</span>
+          <p>{outline.title}</p>
+          {outline.summary && <small>{outline.summary}</small>}
+        </div>
+      )}
       <ol
         className="pj-stages"
         aria-label={`接力阶段：${readable ? item.stage?.label || "未知" : "未知"}`}
         title={
           readable
             ? item.stage?.basis || "当前记录不足以推断"
-            : "CURRENT不可读，阶段未知"
+            : outline
+              ? "没有协作状态表，阶段不推断"
+              : "CURRENT不可读，阶段未知"
         }
       >
         {STAGES.map((s, i) => (
@@ -300,7 +319,7 @@ function SaveCard({
         <Button
           className="pj-go"
           secondary={index > 0}
-          disabled={!item.root || !readable || readFailed}
+          disabled={!item.root || !(readable || outline) || readFailed}
           onClick={onContinue}
           aria-expanded={launch}
         >
@@ -336,14 +355,16 @@ function ProjectLaunch({ item, liveItem, state, collection, adoptState, notify, 
     copier = usePromptCopy({ adoptState, notify }),
     deskOf = (s) => relayDesk({ ...s, collabLog: relayLog.current }, item.projectId, { collectionNotes: collection.notes }),
     desk = deskOf(state),
-    deskText = relayDeskSection(desk),
+    // 口令里随项目桌变化的部分：收件装备段与手填下一步。
+    deskKeyOf = (d) => JSON.stringify([relayDeskSection(d), d.next?.text || ""]),
+    deskKey = deskKeyOf(desk),
     prepared = projectRelayPrompt(item, agent, desk),
     snapshot = { stateId: item.current?.fields?.stateId };
   const stale =
     (item.sourceKey!==sourceKey?"项目来源已变化，请重新继续并预览。":"") ||
     staleNote(snapshot, liveItem?.current?.fields?.stateId) ||
     (projectLaunchSignature(item)!==projectLaunchSignature(liveItem)?"项目内容或目录已变化，请收起后重新继续并预览。":"") ||
-    (!readableCurrent(liveItem)
+    (!continuableCurrent(liveItem)
       ? "项目 CURRENT 已不可读，请收起后重新读取。"
       : "") ||
     (desk.inbox.some((i) => i.ref.kind === "collection") && collection.state !== "ok"
@@ -351,13 +372,13 @@ function ProjectLaunch({ item, liveItem, state, collection, adoptState, notify, 
         ? "收藏没有读到，收件里的收藏带不进口令；请刷新页面后再继续。"
         : "收藏还在读取，读完才能复制。"
       : "");
-  // 预览后收件或装备变了：要求重新预览。
-  const previewedDesk = useRef(deskText);
+  // 预览后收件、装备或手填下一步变了：要求重新预览。
+  const previewedDesk = useRef(deskKey);
   useEffect(() => {
-    if (previewedDesk.current === deskText) return;
-    previewedDesk.current = deskText;
+    if (previewedDesk.current === deskKey) return;
+    previewedDesk.current = deskKey;
     setSeen(false);
-  }, [deskText]);
+  }, [deskKey]);
   useEffect(() => {
     live.current = true;
     const key = (e) => {
@@ -388,16 +409,16 @@ function ProjectLaunch({ item, liveItem, state, collection, adoptState, notify, 
       const fresh=await refreshProjectStatus();
       if(!live.current)return;
       const latest=fresh?.items.find(p=>p.projectId===item.projectId);
-      if(!latest||!readableCurrent(latest)){setError('当前状态读取未确认，请重读后再复制。');return;}
+      if(!latest||!continuableCurrent(latest)){setError('当前状态读取未确认，请重读后再复制。');return;}
       if(fresh.sourceKey!==item.sourceKey||projectLaunchSignature(item)!==projectLaunchSignature(latest)){setError('项目内容或目录已变化，请收起后重新继续并预览。');return;}
       // 复制前重读工作台，核对收件与装备仍是预览时的样子。
       let workspace;
       try { workspace = await request("/workspace"); }
       catch (e) { if (live.current) setError(`收件与装备核对未完成：${e.message}。口令没有复制。`); return; }
       if (!live.current) return;
-      if (relayDeskSection(deskOf(workspace)) !== deskText) {
+      if (deskKeyOf(deskOf(workspace)) !== deskKey) {
         adoptState(workspace);
-        setError("收件或装备已变化，请重新预览口令。");
+        setError("收件、装备或下一步已变化，请重新预览口令。");
         return;
       }
       const ok = await copier.copy({
@@ -836,7 +857,7 @@ export function ProjectsV16({
                           const fresh=await refreshProjectStatus();
                           if(!pageLive.current)return;
                           const current=fresh?.items.find(p=>p.projectId===item.projectId);
-                          if(!current||!readableCurrent(current)){notify('当前状态读取未确认，请重读后再继续。','warning');return;}
+                          if(!current||!continuableCurrent(current)){notify('当前状态读取未确认，请重读后再继续。','warning');return;}
                           setLaunch({...current,name:item.name,sourceKey:fresh.sourceKey,launchSerial:crypto.randomUUID()});
                         }finally{continueLock.current=false;}
                       }}

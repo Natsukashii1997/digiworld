@@ -69,10 +69,14 @@ function statusOf(item) {
     next: f.next ? line(f.next) : "",
     handoffText: f.handoff?.text ? line(f.handoff.text) : "",
     handoffHref: f.handoff?.href ? line(f.handoff.href) : "",
+    // 没有协作状态表、只有二级标题时的“最近进展”（服务端 parseCurrentOutline）；不推断写入者与阶段。
+    outline: current?.state === "outline" && current.outline?.title
+      ? { title: line(current.outline.title), summary: line(current.outline.summary) }
+      : null,
     reason:
       current?.state === "absent"
         ? `项目里没有 ${line(current.path) || "CURRENT.md"}`
-        : current?.state === "unparsed"
+        : current?.state === "unparsed" || current?.state === "outline"
           ? `${line(current.path) || "CURRENT.md"} 没有协作状态表`
           : !readable
             ? "CURRENT.md 无法读取"
@@ -138,10 +142,12 @@ export function dispatchPrompt(item, agentId) {
   ].join("\n");
 }
 
-export function startPrompt(item, agentId) {
+// next：没有协作状态表时用户在工作台手填的下一步（项目桌 projectDesk.next），只在“最近进展”模式下使用。
+export function startPrompt(item, agentId, { next = "" } = {}) {
   const agent = agentId === "openclaw" ? "OpenClaw" : agentOf(agentId);
   const root = projectRoot(item?.root);
   const s = statusOf(item);
+  const manual = line(next);
   return [
     `【协同 · 一键开工】开工：${agent}`,
     `项目：${line(item?.name)}`,
@@ -149,12 +155,22 @@ export function startPrompt(item, agentId) {
     "",
     "先读（按顺序）：",
     "1. AGENTS.md（项目入口与规则；没有就跳过）",
-    `2. ${s.path}（唯一当前状态；记下 state_id 与当前写入者）`,
+    s.outline
+      ? `2. ${s.path}（当前状态；没有协作状态表，先读最上面一节）`
+      : `2. ${s.path}（唯一当前状态；记下 state_id 与当前写入者）`,
     "",
     ...(s.stateId ? [`输入状态：state_id ${s.stateId}`] : []),
-    `唯一下一步：${s.next || `未知（${s.reason || "状态表缺少此项"}；先向用户确认）`}`,
+    ...(s.outline
+      ? [
+          `最近进展（${s.path} 最上面一节）：${s.outline.title}`,
+          ...(s.outline.summary ? [s.outline.summary] : []),
+          manual ? `下一步（用户在工作台手填）：${manual}` : "下一步：未填写（读完最近进展后先向用户确认）",
+        ]
+      : [`唯一下一步：${s.next || `未知（${s.reason || "状态表缺少此项"}；先向用户确认）`}`]),
     "",
-    "开工规则：当前写入者不是“无”时只做只读检查；为“无”时先在 CURRENT.md 登记认领并回读，再改其他文件。不读取凭据、私人会话或工作台主库内容；提交、推送等外部动作须用户当轮授权。",
+    s.outline
+      ? "开工规则：按项目自己的 AGENTS.md 约定认领与交接。不读取凭据、私人会话或工作台主库内容；提交、推送等外部动作须用户当轮授权。"
+      : "开工规则：当前写入者不是“无”时只做只读检查；为“无”时先在 CURRENT.md 登记认领并回读，再改其他文件。不读取凭据、私人会话或工作台主库内容；提交、推送等外部动作须用户当轮授权。",
   ].join("\n");
 }
 

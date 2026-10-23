@@ -70,7 +70,7 @@ export function ActiveToggle({ project, state, adoptState, notify, launch=false,
 }
 
 export function CurrentBlock(props) {
-  return <><ReadReveal pending={!props.current||props.current.state==="loading"} ready={!!props.current&&!["loading","error","unparsed","partial"].includes(props.current.state)}/><CurrentBody {...props}/></>;
+  return <><ReadReveal pending={!props.current||props.current.state==="loading"} ready={!!props.current&&!["loading","error","unparsed","partial","outline"].includes(props.current.state)}/><CurrentBody {...props}/></>;
 }
 function CurrentBody({ current, omitSummary = false }) {
   if (!current || current.state === "loading") return <p role="status"><Reading mini label="CURRENT 读取中"/></p>;
@@ -98,6 +98,19 @@ function CurrentBody({ current, omitSummary = false }) {
           {current.path} 开头没有“字段 | 值”形式的协作状态表
           {current.truncated ? "（只读取了文件开头 64 KiB）" : ""}
           。可以按规则模板的状态表格式整理后再看。
+        </small>
+      </div>
+    );
+  if (current.state === "outline")
+    return (
+      <div className="status-empty">
+        <strong>没有协作状态表 · 最近进展</strong>
+        <small>
+          {current.outline.title}
+          {current.outline.summary ? `：${current.outline.summary}` : ""}
+        </small>
+        <small>
+          按 {current.path} 最上面一节读取，不推断写入者与阶段；下一步可在存档卡上手填。
         </small>
       </div>
     );

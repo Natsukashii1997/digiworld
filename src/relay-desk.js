@@ -52,7 +52,8 @@ export function relayDesk(state, projectId, { collectionNotes = [] } = {}) {
       ? { asset, version: asset.versions[index], number: index + 1, newer: index < asset.versions.length - 1 }
       : { missing: true }) };
   });
-  return { inbox, loadout };
+  // next：没有协作表格的项目由用户手填的下一步（口令的“下一步”行用它，不进收件装备段）。
+  return { inbox, loadout, next: entry?.next || null };
 }
 
 // 口令里追加的两段；收件与装备都为空时返回空串，口令与改造前一致。

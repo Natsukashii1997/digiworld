@@ -2,6 +2,8 @@ import { startPrompt } from './collab.js';
 import { filterRelayText } from './relay-prompt.js';
 import { relayDeskSection } from './relay-desk.js';
 export const readableCurrent = item => ['ok','partial'].includes(item?.current?.state);
+// 可以「继续」：有协作状态表，或没有表但读到了“最近进展”（outline；不推断写入者、阶段、停滞）。
+export const continuableCurrent = item => readableCurrent(item) || item?.current?.state === 'outline';
 export function sortSaveItems(items) {
  return [...items].sort((a,b)=>{
   const stalled=x=>readableCurrent(x)&&x.activity?.state==='stalled';
@@ -37,6 +39,6 @@ export function groupPortfolioSections(projects,catalog=[]) {
 export function projectRelayPrompt(item,agent,desk) {
  const f=item.current?.fields||{},h=f.handoff;
  const canonical=agent==="claude"?"claude-code":agent;
- const raw=startPrompt(item,canonical)+(h?`\n3. 最新交接：${h.href||h.text}${h.href&&h.text?'（'+h.text+'）':''}`:'\n3. 最新交接：未记录，接手后核对。')+(desk?relayDeskSection(desk):'');
+ const raw=startPrompt(item,canonical,{next:desk?.next?.text})+(h?`\n3. 最新交接：${h.href||h.text}${h.href&&h.text?'（'+h.text+'）':''}`:'\n3. 最新交接：未记录，接手后核对。')+(desk?relayDeskSection(desk):'');
  const result=filterRelayText(raw);return {prompt:result.text,redactions:result.count};
 }

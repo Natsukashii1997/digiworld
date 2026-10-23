@@ -324,3 +324,15 @@
 .projects-v16 .pj-loadout-name small { color:var(--muted); font-size:var(--fs-small); }
 .projects-v16 .pj-loadout-act { display:flex; flex-wrap:wrap; gap:var(--s-2); }
 .projects-v16 .pj-loadout-act .button { min-height:44px; }
+
+/* 阶段 2 E 批：没有协作状态表的项目——最近进展与手填下一步（只用令牌）。 */
+.projects-v16 .pj-recent { display:grid; gap:var(--s-1); min-width:0; padding:var(--s-3) var(--s-4); border-radius:var(--r); box-shadow:inset 0 0 0 1px var(--line); }
+.projects-v16 .pj-recent .en { color:var(--lcd); font-size:var(--fs-micro); font-weight:600; letter-spacing:.2em; }
+.projects-v16 .pj-recent p { display:-webkit-box; margin:0; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; font-size:var(--fs-body); font-weight:700; line-height:1.5; color:var(--text); overflow-wrap:anywhere; }
+.projects-v16 .pj-recent small { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:var(--fs-small); line-height:1.5; color:var(--muted); overflow-wrap:anywhere; }
+.projects-v16 .pj-next .pj-next-empty { font-size:var(--fs-body); font-weight:600; color:var(--muted); }
+.projects-v16 .pj-next-edit { justify-self:start; padding:0; color:var(--cyan); }
+.projects-v16 .pj-next-form { display:grid; gap:var(--s-2); min-width:0; }
+.projects-v16 .pj-next-form label { font-size:var(--fs-small); }
+.projects-v16 .pj-next-act { display:flex; flex-wrap:wrap; gap:var(--s-2); }
+.projects-v16 .pj-next-act .button { min-height:44px; }

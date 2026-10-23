@@ -12,6 +12,7 @@ import {
   parseCurrentStatus,
   readCurrentFile,
   resolveProjectRoot,
+  withOutline,
 } from "./project-status.mjs";
 import {
   COLLAB_AGENT_IDS,
@@ -255,7 +256,7 @@ export function createCollabBoard(repository, { clock = Date.now } = {}) {
     const { canonical, path } = resolved;
     const file = await readStateHeadings(canonical, path);
     if (file.state === "read") {
-      const parsed = parseCurrentStatus(file.text);
+      const parsed = withOutline(parseCurrentStatus(file.text), file.text);
       item.current = {
         ...parsed,
         path,

@@ -29,7 +29,7 @@ export function deskRows(state, projectId, collectionNotes = []) {
     const index = asset ? asset.versions.findIndex((v) => v.id === item.versionId) : -1;
     return { ...item, missing: index < 0, title: index >= 0 ? asset.versions[index].title : "资产已删除", number: index + 1, newer: index >= 0 && index < asset.versions.length - 1 };
   });
-  return { inbox, loadout };
+  return { inbox, loadout, next: entry?.next || null };
 }
 
 // 项目桌写入：先查询是否已是目标状态，没有才发送，再回读核对。
@@ -92,6 +92,58 @@ export function SlotDesk({ rows, projectId, projectName, adoptState, notify, onL
         </div>
       </section>
     </div>
+  );
+}
+
+// 没有协作状态表的项目：下一步由用户手填（阶段 2 E 批）。base 是开始编辑时看到的文字，别处改过则不覆盖。
+export function ManualNext({ projectId, projectName, next, adoptState, notify }) {
+  const [editing, setEditing] = useState(false), [text, setText] = useState(""), [busy, setBusy] = useState(false), [status, setStatus] = useState("");
+  const base = useRef(""), lock = useRef(false);
+  function start() {
+    base.current = next?.text || "";
+    setText(base.current);
+    setStatus("");
+    setEditing(true);
+  }
+  async function save() {
+    if (lock.current) return;
+    const value = text.trim();
+    lock.current = true; setBusy(true); setStatus("");
+    try {
+      const result = await settleAttempt("retry", {
+        send: () => request("/project-desk/next", { projectId, text: value, base: base.current }),
+        check: async () => {
+          const state = await request("/workspace");
+          const now = (state.projectDesk || []).find((e) => e.projectId === projectId)?.next?.text || "";
+          return { state: now === value ? "done" : now === base.current ? "absent" : "conflict", value: state };
+        },
+      });
+      if (result.value) adoptState(result.value);
+      if (result.outcome === "done") {
+        setEditing(false);
+        notify(value ? `已记下「${projectName}」的下一步` : `已清空「${projectName}」的下一步`);
+      } else setStatus(result.outcome === "conflict" ? "下一步已在别处修改，卡片上是最新内容；确认后再改。" : NOT_DONE[result.outcome]);
+    } finally { lock.current = false; setBusy(false); }
+  }
+  if (!editing)
+    return (
+      <>
+        <p className={next ? "" : "pj-next-empty"}>{next?.text || "还没写下一步"}</p>
+        <button type="button" className="text-btn pj-next-edit" onClick={start}>{next ? "改下一步" : "写下一步"}</button>
+      </>
+    );
+  return (
+    <form className="pj-next-form" onSubmit={(e) => { e.preventDefault(); save(); }}>
+      <label>
+        下一步（手填）
+        <input value={text} maxLength={500} autoFocus onChange={(e) => setText(e.target.value)} placeholder="例如：先把书架筛选做完" />
+      </label>
+      <span className="pj-next-act">
+        <Button type="submit" disabled={busy}>保存</Button>
+        <Button type="button" secondary disabled={busy} onClick={() => setEditing(false)}>取消</Button>
+      </span>
+      {status && <p className="hatch-status" role="status">{status}</p>}
+    </form>
   );
 }
 
