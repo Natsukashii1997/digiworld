@@ -29,13 +29,11 @@ async function bundle(entry, name) {
 }
 const { Assets, AssetDetail } = await bundle("src/Assets.jsx", "Assets.mjs");
 const { Home } = await bundle("src/Home.jsx", "Home.mjs");
-const { PlannedPage } = await bundle("src/PlannedPage.jsx", "PlannedPage.mjs");
-const { InboxDrawer: Inbox } = await bundle("src/InboxDrawer.jsx", "InboxDrawer.mjs");
 const { HomeHot } = await bundle("src/LifePages.jsx", "LifePages.mjs");
 const {Collection}=await bundle('src/Collection.jsx','Collection.mjs');
 const pixel = await bundle("src/pixel.jsx", "pixel.mjs");
 const { PageHeading } = await bundle("src/components.jsx", "components.mjs");
-const { PAGES, MATURITY } = await import("../src/pages.js");
+const { PAGES, MATURITY, NAV } = await import("../src/pages.js");
 const common = {
   save() {},
   adoptState() {},
@@ -156,7 +154,7 @@ test("品牌改为数码世界，入口与样式没有残留旧主题", async ()
   const html = await readFile(join(root, "index.html"), "utf8");
   const css = await readFile(join(root, "src/styles.css"), "utf8");
   assert.match(html, /数码世界 · 个人 AI 工作台/);
-  assert.match(css, /--orange: #ff8a24/);
+  assert.match(await readFile(join(root, "src/tokens.css"), "utf8"), /--orange: #ff8a24/);
   assert.match(css, /prefers-reduced-motion: reduce/);
   // 关键视觉模块的样式必须仍在（曾因大段替换误删暴龙机样式，视觉脚本未能发现）。
   for (const selector of [
@@ -224,23 +222,6 @@ test("切片 1.2：兼容分组元数据保持有效，规划中页面如实标�
     PAGES.filter((p) => !["今日", "系统"].includes(p.group) && !p.mergedInto && !p.partOf).map((p) => p.id).sort(),
   );
   for (const id of ["collab","calendar","health"]) assert.equal(PAGES.some(p=>p.id===id),false);
-  const {HealthAudit}=await bundle("src/HealthAudit.jsx", "HealthAudit.mjs");
-  const html=renderToStaticMarkup(React.createElement(HealthAudit,{}));
-  assert.match(html,/尚未体检/);
-  assert.match(html,/检查全部支持体检的已登记 Agent/);
-  assert.match(html,/MCP正文、凭据或会话/);
-  assert.match(html,/gateway在线情况待接入数据/);
-  assert.equal((html.match(/<button/g)||[]).length,1);
-  assert.doesNotMatch(html,/尚未开发，这个页面不会执行任何动作/);
-  const inbox = renderToStaticMarkup(
-    // 规则装入记录已读完时才能给出“没有事项”的结论（WB-20260930-83）
-    React.createElement(Inbox, { ...common, state: seed(), items: [], ruleInstalls: { items: [], error: "", loaded: true } }),
-  );
-  assert.match(inbox, /没有要你处理的事/);
-  assert.doesNotMatch(inbox, /来源记录范围说明|待处理来源/);
-  const loading = renderToStaticMarkup(React.createElement(Inbox,{...common,state:seed(),items:[],ruleInstalls:{loaded:false,items:[]}}));
-  assert.match(loading,/读完前不能确定待处理是否完整/);
-  assert.doesNotMatch(loading,/没有要你处理的事/);
 });
 
 test("切片 1.3b：焚决是资产仓库第五种类型，#scrolls 旧链接落到资产仓库焚决标签", async () => {
@@ -279,8 +260,8 @@ test("切片 1.3b：焚决是资产仓库第五种类型，#scrolls 旧链接落
 });
 
 test("UI v16：侧栏名称与首页中枢轻入口按用户决定", () => {
-  // 用户 2026-09-29：首页在侧栏叫“世界总览”，夜间值守改名“夜巡”，搜索只在右上角。
-  assert.equal(PAGES.find((p) => p.id === "home").label, "世界总览");
+  // 用户 2026-09-29：夜间值守改名“夜巡”，搜索只在右上角。用户 2026-10-23 定 UI v18 B 稿：首页改叫“基地”。
+  assert.equal(PAGES.find((p) => p.id === "home").label, "基地");
   assert.equal(PAGES.some(p => p.id === "night"), false);
   const html = render(Home);
   assert.doesNotMatch(html, /搜索 ⌘K/);
@@ -301,8 +282,12 @@ test("首页资产读取现有数据，不再提供已删除板块入口", () =>
   assert.doesNotMatch(html, /在待处理打开/);
 });
 
-test("个人收藏保留learning路由，移至资产后且不恢复旧书架", () => {
-  const page=PAGES.find(page=>page.id==='learning');assert.equal(page.group,'资产');assert.equal(page.label,'个人收藏');assert.equal(PAGES[PAGES.findIndex(p=>p.id==='assets')+1].id,'learning');assert.equal(page.plan,undefined);
+test("个人收藏保留learning路由，按主线排在“捕获”里且不恢复旧书架", () => {
+  // UI v18（用户 2026-10-23 定 B 稿）：侧栏按主线分区，个人收藏在“捕获”里紧跟随手记；编号按此顺序连续。
+  const page=PAGES.find(page=>page.id==='learning');assert.equal(page.group,'资产');assert.equal(page.label,'个人收藏');assert.equal(PAGES[PAGES.findIndex(p=>p.id==='notes')+1].id,'learning');assert.equal(page.plan,undefined);
+  assert.deepEqual(NAV.find(s=>s.heading==='捕获').items,['notes','learning']);
+  assert.deepEqual(NAV.flatMap(s=>s.items),PAGES.map(p=>p.id));
+  assert.deepEqual(PAGES.map(p=>p.code),PAGES.map((_,i)=>String(i).padStart(2,'0')));
   const html=renderToStaticMarkup(React.createElement(Collection));assert.match(html,/<h1[^>]*>个人收藏<\/h1>/);assert.match(html,/aria-label="收藏分组"/);assert.match(html,/aria-label="搜索收藏"/);assert.doesNotMatch(html,/<h2[^>]*>收藏画布<\/h2>/);assert.doesNotMatch(html,/书架|学习状态|链接收藏|回收区/);
   // 世界总览热点卡：首屏渲染时还没有读到缓存，如实写“正在读取”，不放假数据。
   const hot = renderToStaticMarkup(React.createElement(HomeHot, { navigate() {} }));

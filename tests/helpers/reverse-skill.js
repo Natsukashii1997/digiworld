@@ -1,10 +1,11 @@
+// 前端已不再引用；几个现役测试仍用它生成配方 Skill 夹具，2026-10-23 从 src 移到这里。
 import {
   currentVerification,
   validateRecipe,
   BLOCK_LABELS,
-} from "./reverse-recipe.js";
-import { filterRelayText } from "./relay-prompt.js";
-import { planSkillVersion } from "./skill-version.js";
+} from "../../src/reverse-recipe.js";
+import { filterRelayText } from "../../src/relay-prompt.js";
+import { planSkillVersion } from "../../src/skill-version.js";
 const clean = (v) =>
   typeof v === "string"
     ? filterRelayText(v).text

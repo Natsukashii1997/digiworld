@@ -5,7 +5,8 @@ import {join} from 'node:path';
 import {fixture} from './fixture.mjs';
 const out=process.env.GUIJI_TEST_RESULTS || 'test-results/seven-sections';await mkdir(out,{recursive:true});
 const app=await fixture(), browser=await chromium.launch(), errors=[], checks=[];
-const kept=[['home','世界总览'],['assets','资产仓库'],['learning','个人收藏'],['references','逆向工程'],['projects','项目空间'],['notes','随手记'],['settings','设置']];
+// UI v18（用户 2026-10-23 定 B 稿）：按主线排序，首页改叫“基地”。
+const kept=[['home','基地'],['notes','随手记'],['learning','个人收藏'],['assets','资产仓库'],['projects','项目空间'],['references','逆向工程'],['settings','设置']];
 try{
  for(const width of [1440,390,320]){
   const context=await browser.newContext({viewport:{width,height:1000},reducedMotion:'reduce'}),p=await context.newPage();p.setDefaultTimeout(10000);

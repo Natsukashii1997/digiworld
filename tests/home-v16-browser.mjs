@@ -14,7 +14,8 @@ const out=resolve(process.env.GUIJI_TEST_RESULTS || 'test-results/home-overview'
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch();
 const checks=[],errors=[];
-const expectedNav=['世界总览','资产仓库','个人收藏','逆向工程','项目空间','随手记','设置'];
+// UI v18（用户 2026-10-23 定 B 稿）：按主线排序，首页改叫“基地”。
+const expectedNav=['基地','随手记','个人收藏','资产仓库','项目空间','逆向工程','设置'];
 const sharedState=seed();
 sharedState.assets.forEach((a,i)=>a.versions.forEach(v=>v.at=`2026-10-16T0${i}:00:00.000Z`));
 sharedState.assets[0].archived=true;

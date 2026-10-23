@@ -53,19 +53,47 @@ export function TypeIcon({ type, size = 24, className = "" }) {
     type === "Skill" ? Layers : type === "Prompt" ? Quote : type === "Scroll" ? Flame : type === "MCP" ? Plug : Workflow;
   return <Icon size={size} className={className || undefined} />;
 }
+// 按钮：默认主操作，secondary 为次级；variant="icon" / "text" 是图标按钮与文字按钮，命中区都不小于 44px。
 export function Button({
   children,
   secondary = false,
+  variant,
   className = "",
   ...props
 }) {
+  const kind = variant === "icon" ? "icon-button" : variant === "text" ? "text-button" : secondary ? "button secondary" : "button";
   return (
     <button
-      className={`${secondary ? "button secondary" : "button"} ${className}`}
+      className={`${kind} ${className}`}
       {...props}
     >
       {children}
     </button>
+  );
+}
+
+// UI v18 基础件：面板、液晶屏、像素徽记、状态徽记（样式在 base.css，只用 tokens.css 的令牌）。
+export function Panel({ as: Tag = "section", className = "", children, ...props }) {
+  return <Tag className={`panel ${className}`} {...props}>{children}</Tag>;
+}
+// 液晶屏与伙伴屏同一种介质；伙伴屏本身不经过这里，原样保留。
+export function LcdScreen({ className = "", children }) {
+  return <span className={`lcd-glass ${className}`} aria-hidden="true">{children}</span>;
+}
+export function PixelBadge({ sprite, size = 30, className = "" }) {
+  return (
+    <span className={`pixel-badge ${className}`} style={{ "--badge": `${size + 12}px` }}>
+      <Pixel sprite={sprite} size={size} />
+    </span>
+  );
+}
+// tone：ok 绿 / info 青 / warn 黄 / idle 灰虚线；不给 tone 为中性。
+export function StatusBadge({ tone = "", className = "", children }) {
+  return (
+    <span className={`status-badge ${tone} ${className}`}>
+      <i aria-hidden="true" />
+      {children}
+    </span>
   );
 }
 
@@ -105,14 +133,10 @@ export function ScrollFade({ children, className = "" }) {
 export function Badge({ children, tone = "" }) {
   return <span className={`badge ${tone}`}>{children}</span>;
 }
+const MATURITY_TONE = { ready: "ok", partial: "info", draft: "warn", planned: "idle" };
 export function Maturity({ level }) {
   if (!level) return null;
-  return (
-    <span className={`maturity ${level}`}>
-      <i aria-hidden="true" />
-      {MATURITY[level]}
-    </span>
-  );
+  return <StatusBadge tone={MATURITY_TONE[level]} className={`maturity ${level}`}>{MATURITY[level]}</StatusBadge>;
 }
 // 流程步骤：只按真实状态标记“已完成 / 下一步”，其余为待进行。
 export function Steps({ items, current, label = "流程" }) {
@@ -141,21 +165,21 @@ export function Scanning({ label }) { return <Reading label={label}/>; }
 // 空状态：一颗在等待的数码蛋，或该区域的图标。
 export function Empty({ icon: Icon, sprite = "egg", title, children, action }) {
   return (
-    <div className="empty">
-      <div className="empty-screen" aria-hidden="true">
+    <Panel as="div" className="empty">
+      <LcdScreen className="empty-screen">
         {Icon ? (
           <Icon size={24} strokeWidth={1.6} />
         ) : (
           <Pixel sprite={sprite} size={40} />
         )}
-      </div>
+      </LcdScreen>
       <small className="empty-code" aria-hidden="true">
         NO DATA
       </small>
       <h3>{title}</h3>
       {children && <p>{children}</p>}
       {action}
-    </div>
+    </Panel>
   );
 }
 // 页头：编号、英文眉题、标题、一句话定位、成熟度，全部来自 pages.js。

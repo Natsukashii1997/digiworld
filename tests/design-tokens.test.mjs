@@ -5,14 +5,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const src = join(import.meta.dirname, "../src");
-// styles.css 是根令牌（资产卡墙受保护），partner-lcd.css 是伙伴屏像素调色板。
-const EXEMPT = new Set(["styles.css", "partner-lcd.css"]);
+// tokens.css 是唯一的令牌定义处，styles.css 受保护（资产卡墙），partner-lcd.css 是伙伴屏像素调色板。
+const EXEMPT = new Set(["tokens.css", "styles.css", "partner-lcd.css"]);
 const files = readdirSync(src).filter((f) => f.endsWith(".css") && !EXEMPT.has(f));
-// 公共层开头的令牌补全块本身就是定义处。
-const body = (f) => {
-  const s = readFileSync(join(src, f), "utf8");
-  return f === "ui-v14.css" ? s.replace(/:root\s*\{[^}]*\}/, "") : s;
-};
+const body = (f) => readFileSync(join(src, f), "utf8");
 
 test("样式层圆角只用令牌（2–3px 像素级小件与多值异形除外）", () => {
   const bad = files.flatMap((f) =>
@@ -39,10 +35,11 @@ test("样式层颜色只用令牌（中性 #fff / #000 除外）", () => {
   assert.deepEqual(bad, []);
 });
 
-test("令牌补全块只补新名字，不覆盖受保护根令牌", () => {
-  const root = readFileSync(join(src, "styles.css"), "utf8").match(/:root\s*\{[^}]*\}/)[0];
-  const extra = readFileSync(join(src, "ui-v14.css"), "utf8").match(/:root\s*\{[^}]*\}/)[0];
-  const names = (s) => new Set([...s.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]));
-  const clash = [...names(extra)].filter((n) => names(root).has(n));
-  assert.deepEqual(clash, []);
+test("令牌只在 tokens.css 定义，每个名字只定义一次", () => {
+  const roots = (s) => [...s.matchAll(/:root\s*\{[^}]*\}/g)].map((m) => m[0]).join("\n");
+  const names = (s) => [...roots(s).matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]);
+  const defined = names(readFileSync(join(src, "tokens.css"), "utf8"));
+  assert.deepEqual(defined.filter((n, i) => defined.indexOf(n) !== i), []);
+  const elsewhere = [...files, "styles.css"].flatMap((f) => names(body(f)).map((n) => `${f}: ${n}`));
+  assert.deepEqual(elsewhere, []);
 });

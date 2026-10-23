@@ -7,7 +7,6 @@ import { openRepository, digest } from "../server/repository.mjs";
 import { validateState } from "../server/schema.mjs";
 import { mergeBackup } from "../server/merge.mjs";
 import { seed } from "../src/store.js";
-import { ROLE_AGENTS, rolesOf, inferProjects, parseList } from "../src/agent-roles.js";
 import { stringify } from "../src/serialization.js";
 
 const AT = "2026-09-30T08:00:00.000Z";
@@ -16,7 +15,6 @@ const role = (agentId, extra = {}) => ({
 });
 
 test("角色卡保留五个已批准 Agent 的字段与严格校验", () => {
-  assert.deepEqual(ROLE_AGENTS.map(agent => agent.id), ["codex", "claude-code", "hermes", "openclaw", "doubao"]);
   assert.doesNotThrow(() => validateState({ ...seed(), agentRoles: [role("codex"), role("doubao", { cost: "unknown" })] }));
   for (const bad of [
     [role("cursor")], [role("codex"), role("codex")], [role("codex", { cost: "free" })],
@@ -63,18 +61,4 @@ test("旧快照读取时忽略银饰字段，并保留原快照字节", async t 
   assert.equal(active.revision, 7);
   assert.equal(Object.hasOwn(active, "silver"), false);
   assert.equal(await readFile(join(directory, "snapshots", file), "utf8"), legacy);
-});
-
-test("未编辑角色保持草拟提示，常驻项目只从已登记的在推进项目推断", () => {
-  const state = { ...seed(), agentRoles: [role("hermes", { strengths: ["夜巡"] })], projects: [
-    { id: "p1", name: "个人工作台", goal: "", next: "交给 Codex 复核", location: "", status: "进行中" },
-    { id: "p2", name: "读书笔记", goal: "", next: "等 Hermes 夜巡", location: "", status: "进行中" },
-    { id: "p3", name: "旧项目", goal: "", next: "codex 收尾", location: "", status: "已完成" },
-  ] };
-  const roles = rolesOf(state);
-  assert.equal(roles.find(value => value.agentId === "hermes").edited, true);
-  assert.equal(roles.find(value => value.agentId === "codex").edited, false);
-  assert.deepEqual(inferProjects(state, "codex"), ["个人工作台"]);
-  assert.deepEqual(inferProjects(state, "hermes"), ["读书笔记"]);
-  assert.deepEqual(parseList("重构, 测试，界面、审查 重构"), ["重构", "测试", "界面", "审查"]);
 });

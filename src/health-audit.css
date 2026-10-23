@@ -1,8 +1,0 @@
-.agent-audit { margin:var(--s-5) 0; padding:var(--s-4); border:1px solid var(--line); border-radius:var(--r); min-width:0; }
-.agent-audit p,.agent-audit small { color:var(--muted); overflow-wrap:anywhere; }
-.agent-audit ul { list-style:none; padding:0; display:grid; gap:var(--s-3); }
-.agent-audit li { display:grid; gap:var(--s-2); overflow-wrap:anywhere; }
-.agent-audit button { min-width:44px; min-height:44px; }
-
-/* 装饰倒影从地面原点向容器内翻转，避免形成隐藏溢出；真实素材不变形。 */
-.agent-roles .role-refl { transform-origin: 50% 0; }

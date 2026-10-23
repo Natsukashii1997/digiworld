@@ -7,30 +7,6 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
-.page-references.v16 .title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-}
-.page-references.v16 .page-help {
-  display: inline-grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  position: relative;
-  margin: -8px;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: none;
-  color: var(--muted);
-  font: 700 var(--fs-caption) var(--mono);
-  cursor: help;
-}
-.page-references.v16 .page-help:hover {
-  color: var(--text);
-  border-color: var(--cyan);
-}
 .page-references.v16 .icon-btn {
   display: inline-grid;
   place-items: center;
@@ -1191,28 +1167,6 @@
   min-width: 44px;
 }
 
-/* 问号28px视觉圈保持44px操作命中区。 */
-.page-references.v16 .page-help {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-.page-references.v16 .page-help::before {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border: 1px solid var(--line-2);
-  border-radius: 50%;
-  pointer-events: none;
-}
 .page-references.v16 .judge-hint[hidden] {
   display: none;
 }

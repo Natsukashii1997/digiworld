@@ -1,31 +1,32 @@
 // 用户确认的七板块注册表；导航、页头和搜索共用此顺序。
+// UI v18（用户 2026-10-23 定 B 稿）：顺序即主线「捕获 → 炼化与出战」，编号按此顺序连续排，不再跳号。
 export const MATURITY = {ready: "可用", partial: "部分可用", draft: "草稿", planned: "规划中"};
 export const PAGES = [
   {
     "id": "home",
     "group": "今日",
     "code": "00",
-    "label": "世界总览",
-    "title": "世界总览",
+    "label": "基地",
+    "title": "基地",
     "eyebrow": "TODAY · BASE",
     "maturity": "ready",
     "lead": "资产、收藏与随手记录，常用内容从这里进入。"
   },
   {
-    "id": "assets",
-    "group": "资产",
+    "id": "notes",
+    "group": "生活",
     "code": "01",
-    "label": "资产仓库",
-    "title": "资产仓库",
-    "eyebrow": "ASSET LIBRARY",
+    "label": "随手记",
+    "title": "随手记",
+    "eyebrow": "QUICK NOTES",
     "maturity": "ready",
-    "lead": "Skill、Prompt、工作流、规则模板与焚决在这里收录与迭代，复制后交给任意 Agent，规则还能装进项目。",
-    "stage": "收集 · 迭代 · 交付"
+    "lead": "先把念头记下来；值得反复用的，炼入焚决。",
+    "stage": "捕捉"
   },
   {
     "id": "learning",
     "group": "资产",
-    "code": "11",
+    "code": "02",
     "label": "个人收藏",
     "title": "个人收藏",
     "eyebrow": "COLLECTION",
@@ -34,15 +35,15 @@ export const PAGES = [
     "stage": "收录 · 整理"
   },
   {
-    "id": "references",
+    "id": "assets",
     "group": "资产",
-    "code": "02",
-    "label": "逆向工程",
-    "title": "逆向工程",
-    "eyebrow": "REVERSE ENGINEERING",
+    "code": "03",
+    "label": "资产仓库",
+    "title": "资产仓库",
+    "eyebrow": "ASSET LIBRARY",
     "maturity": "ready",
-    "lead": "投入一件好东西，拿到能直接交给 AI 复刻的任务包。",
-    "stage": "投入 · 取证 · 复刻任务包"
+    "lead": "Skill、Prompt、工作流、规则模板与焚决在这里收录与迭代，复制后交给任意 Agent，规则还能装进项目。",
+    "stage": "收集 · 迭代 · 交付"
   },
   {
     "id": "projects",
@@ -56,20 +57,20 @@ export const PAGES = [
     "stage": "识别 · 对齐 · 交接"
   },
   {
-    "id": "notes",
-    "group": "生活",
-    "code": "09",
-    "label": "随手记",
-    "title": "随手记",
-    "eyebrow": "QUICK NOTES",
+    "id": "references",
+    "group": "资产",
+    "code": "05",
+    "label": "逆向工程",
+    "title": "逆向工程",
+    "eyebrow": "REVERSE ENGINEERING",
     "maturity": "ready",
-    "lead": "先把念头记下来；值得反复用的，炼入焚决。",
-    "stage": "捕捉"
+    "lead": "投入一件好东西，拿到能直接交给 AI 复刻的任务包。",
+    "stage": "投入 · 取证 · 复刻任务包"
   },
   {
     "id": "settings",
     "group": "系统",
-    "code": "13",
+    "code": "06",
     "label": "设置",
     "title": "设置",
     "eyebrow": "SETTINGS",
@@ -79,6 +80,13 @@ export const PAGES = [
   }
 ];
 export const page = id => PAGES.find(p => p.id === id);
+// 侧栏分区：基地 / 捕获 / 炼化与出战，设置沉底。逆向工程到阶段 3 并入资产仓库「新建 ▾」前暂留在这里，直达地址一直保留。
+export const NAV = [
+  {items: ["home"]},
+  {heading: "捕获", items: ["notes", "learning"]},
+  {heading: "炼化与出战", items: ["assets", "projects", "references"]},
+  {items: ["settings"], end: true},
+];
 export const GROUPS = ["今日", "资产", "目标", "生活", "系统"];
 export const ZONES = [
  {id:"today",label:"今日",groups:["今日"]},
@@ -86,7 +94,7 @@ export const ZONES = [
  {id:"life",label:"生活区",en:"LIFE",groups:["生活"]},
  {id:"system",label:"系统",en:"SYSTEM",groups:["系统"]},
 ];
-// 焚决仍属于资产仓库；撤下的独立页面与未知地址一律回世界总览。
+// 焚决仍属于资产仓库；撤下的独立页面与未知地址一律回基地。
 export function resolveRoute(id) {
  if (id === "scrolls") return {route:"assets",anchor:null,filter:"Scroll"};
  return {route:page(id)?.id || "home",anchor:null};

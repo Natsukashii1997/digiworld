@@ -3,99 +3,6 @@
    深墨蓝底 + 数码网格；伙伴用真实数码暴龙机的灰绿液晶，资产用深色数据屏。
    主操作橙（勇气）、焦点青、状态液晶绿。动效克制，尊重“减少动态效果”。
    ========================================================================== */
-:root {
-  color-scheme: dark;
-  --sans:
-    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
-    "Microsoft YaHei", sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-
-  --bg: #070b16;
-  --bg-2: #0a1020;
-  --panel: #0f1729;
-  --panel-2: #131d33;
-  --panel-3: #1a2641;
-  --field: #0a1120;
-  --line: rgba(140, 178, 255, 0.11);
-  --line-2: rgba(140, 178, 255, 0.19);
-  --line-3: rgba(140, 178, 255, 0.32);
-  --text: #e9eeff;
-  --text-2: #b4bfda;
-  --muted: #8b98b8;
-
-  --orange: #ff8a24;
-  --orange-2: #ffb35c;
-  --orange-ink: #1f0f00;
-  --cyan: #4de3ff;
-  --lcd: #a6e36e;
-  --violet: #a891ff;
-  --pink: #ff8fb8;
-  --yellow: #ffd166;
-  --red: #ff6b6b;
-
-  --lcd-screen: #aebc93;
-  --lcd-screen-2: #97a77c;
-  --lcd-ink: #1c2616;
-
-  --px-ink: #0b0e18;
-  --px-egg: #f6f2e4;
-  --px-egg-spot: #ff8a24;
-  --px-glyph-fill: color-mix(in srgb, currentColor 22%, transparent);
-  --px-shadow: rgba(28, 38, 22, 0.3);
-
-  --r-s: 8px;
-  --content-max: 1760px;
-  --r: 12px;
-  --r-l: 16px;
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --glow-orange: 0 8px 26px -8px rgba(255, 138, 36, 0.75);
-  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--cyan),
-    0 0 18px rgba(77, 227, 255, 0.35);
-
-  /* UI v14e 令牌（docs/design/ui-v14）：间距只用 4 的倍数，字号六档，节奏四档；材质三种。 */
-  --faint: #5d6987;
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 24px;
-  --s-6: 32px;
-  --s-7: 48px;
-  --s-8: 64px;
-  --fs-label: 11px;
-  --fs-meta: 12.5px;
-  --fs-body: 14px;
-  --fs-title: 16px;
-  --fs-section: 20px;
-  --fs-page: 38px;
-  --t-instant: 80ms;
-  --t-fast: 160ms;
-  --t-mid: 240ms;
-  --t-slow: 420ms;
-  --spring: var(--ease-back);
-  --m-panel: linear-gradient(180deg, #152039 0%, #0f1729 40%, #0c1325 100%);
-  --m-panel-edge: inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 0 0 1px rgba(140, 178, 255, 0.07), 0 18px 40px -26px rgba(0, 0, 0, 0.95);
-  --m-screen: radial-gradient(120% 90% at 50% 0%, rgba(77, 227, 255, 0.08), transparent 60%), #08101f;
-  --m-screen-edge: inset 0 0 0 1px rgba(140, 178, 255, 0.09), inset 0 14px 34px rgba(0, 0, 0, 0.5);
-
-  /* 兼容旧模块样式的变量名 */
-  --canvas: var(--field);
-  --surface: var(--panel);
-  --ink: var(--text);
-  --accent: var(--orange);
-  --accent-soft: rgba(255, 138, 36, 0.12);
-  --shadow: 0 12px 34px -20px rgba(0, 0, 0, 0.85);
-  --radius: var(--r);
-
-  font-family: var(--sans);
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  -webkit-font-smoothing: antialiased;
-}
-
 /* ---------- 基础 ---------- */
 *,
 *::before,
@@ -631,43 +538,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background: rgba(255, 107, 107, 0.1);
   border-color: rgba(255, 107, 107, 0.3);
 }
-.maturity {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 1px 8px 1px 7px;
-  border-radius: 999px;
-  font: 500 11px/1.7 var(--sans);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  border: 1px solid var(--line-2);
-  color: var(--text-2);
-}
-.maturity i {
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
-  background: currentColor;
-}
-.maturity.ready {
-  color: var(--lcd);
-  border-color: rgba(166, 227, 110, 0.3);
-}
-.maturity.ready i {
-  box-shadow: 0 0 6px var(--lcd);
-}
-.maturity.partial {
-  color: var(--cyan);
-  border-color: rgba(77, 227, 255, 0.3);
-}
-.maturity.draft {
-  color: var(--yellow);
-  border-color: rgba(255, 209, 102, 0.3);
-}
-.maturity.planned {
-  color: var(--muted);
-  border-style: dashed;
-}
 .count {
   display: inline-grid;
   place-items: center;
@@ -938,22 +808,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   text-align: left;
   border-radius: var(--r);
 }
-.brand-crest {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex: none;
-  border-radius: 11px;
-  background:
-    linear-gradient(rgba(77, 227, 255, 0.06) 1px, transparent 1px) 0 0 / 6px 6px,
-    linear-gradient(90deg, rgba(77, 227, 255, 0.06) 1px, transparent 1px) 0 0 / 6px 6px,
-    #0b1324;
-  box-shadow:
-    inset 0 0 0 1px rgba(77, 227, 255, 0.25),
-    0 0 18px -6px rgba(77, 227, 255, 0.6);
-}
 .brand-crest .pixel {
   filter: drop-shadow(0 0 5px rgba(255, 138, 36, 0.6));
   transition: transform 0.6s var(--ease-back);
@@ -1061,6 +915,21 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .nav-group {
   display: grid;
   gap: 1px;
+}
+/* UI v18 侧栏：按主线分区（基地 / 捕获 / 炼化与出战），设置沉到导航底部；伙伴屏规则不动。 */
+.sidebar .nav-group {
+  flex-shrink: 0;
+  gap: var(--s-1);
+}
+.sidebar .nav-end {
+  margin-top: auto;
+  padding-top: var(--s-3);
+}
+.sidebar .nav-group .nav-heading {
+  padding: 14px 12px 4px;
+  font: 600 var(--f-12) var(--mono);
+  letter-spacing: 0.16em;
+  color: var(--faint);
 }
 .nav-heading {
   padding: 14px 10px 6px;
@@ -1614,13 +1483,6 @@ details.scan-notice {
   padding: 52px 20px 48px;
   margin: 8px 0;
   text-align: center;
-  border-radius: var(--r-l);
-  border: 1px solid var(--line);
-  background:
-    radial-gradient(320px 160px at 50% 30%, rgba(166, 227, 110, 0.06), transparent 70%),
-    linear-gradient(rgba(140, 178, 255, 0.03) 1px, transparent 1px) 0 0 / 24px 24px,
-    linear-gradient(90deg, rgba(140, 178, 255, 0.03) 1px, transparent 1px) 0 0 / 24px 24px,
-    rgba(255, 255, 255, 0.012);
 }
 .empty::before,
 .empty::after {
@@ -1651,26 +1513,9 @@ details.scan-notice {
   opacity: 0.8;
 }
 .empty-screen {
-  position: relative;
-  display: grid;
-  place-items: center;
   width: 78px;
   height: 66px;
   margin-bottom: 8px;
-  border-radius: 12px;
-  overflow: hidden;
-  color: var(--lcd-ink);
-  background: radial-gradient(circle at 50% 40%, var(--lcd-screen), var(--lcd-screen-2));
-  box-shadow:
-    0 0 0 4px #1b2540,
-    0 0 0 5px var(--line-2),
-    inset 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-.empty-screen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 3px);
 }
 .empty-screen .pixel {
   animation: bob 2.4s steps(2) infinite;
@@ -1882,36 +1727,6 @@ details.scan-notice {
 }
 
 /* ---------- 资产库 ---------- */
-.page-assets .title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-}
-.page-assets .page-help {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  margin: -8px;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font: 700 var(--fs-caption) var(--mono);
-  cursor: pointer;
-}
-.page-assets .page-help::before {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border: 1px solid var(--line-3);
-  border-radius: var(--r-pill);
-}
-.page-assets .page-help:hover { color: var(--text); }
-.page-assets .page-help:hover::before { border-color: var(--cyan); }
 .asset-toolbar {
   display: flex;
   align-items: center;
@@ -4711,8 +4526,9 @@ details.scan-notice {
   margin-bottom: 8px;
 }
 .rows-panel .empty {
-  border: 0;
   margin: 0;
+  background: none;
+  box-shadow: none;
 }
 .record-row {
   display: flex;
@@ -5548,6 +5364,9 @@ input[type="file"]::file-selector-button {
   .nav-heading {
     padding: 10px 10px 4px;
   }
+  .sidebar .nav-group .nav-heading {
+    padding: 10px 12px 4px;
+  }
 }
 @media (min-width: 961px) and (max-height: 940px) {
   /* 伙伴屏压矮但保留，数码蛋始终可见。 */
@@ -5556,6 +5375,9 @@ input[type="file"]::file-selector-button {
   }
   .nav-heading {
     padding: 8px 10px 2px;
+  }
+  .sidebar .nav-group .nav-heading {
+    padding: 8px 12px 2px;
   }
 }
 /* D-UI1：顶栏空间不足时保护标题——标题不缩不换行，由搜索框让出宽度。 */

@@ -11,7 +11,7 @@ const mode=process.env.AUDIT_A_CASE||'home';
 try{
  if(mode==='home'){
   await page.goto(app.url+'/#home');await page.getByRole('textbox',{name:'记一笔'}).fill('首页未提交草稿，保留中文');
-  await page.getByRole('button',{name:/^资产仓库 \d/}).click();await page.getByRole('button',{name:'世界总览',exact:true}).click();
+  await page.getByRole('button',{name:/^资产仓库 \d/}).click();await page.getByRole('button',{name:'基地',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('[aria-label="记一笔"]')?.value==='首页未提交草稿，保留中文');
   await page.reload();await page.waitForFunction(()=>document.querySelector('[aria-label="记一笔"]')?.value==='首页未提交草稿，保留中文');
   await page.close();page=await context.newPage();await page.goto(app.url+'/#home');
@@ -22,7 +22,7 @@ try{
   await page.goto(app.url+'/#notes');await page.getByRole('button',{name:'记一条新念头',exact:true}).click();
   await page.getByRole('textbox',{name:'便签标题'}).fill('三类型草稿标题');
   await page.getByRole('textbox',{name:'随手记内容',exact:true}).fill('未提交的正文');
-  await page.getByRole('button',{name:'世界总览',exact:true}).click();await page.getByRole('button',{name:/^随手记 \d/}).click();
+  await page.getByRole('button',{name:'基地',exact:true}).click();await page.getByRole('button',{name:/^随手记 \d/}).click();
   await page.getByRole('textbox',{name:'便签标题'}).waitFor();assert.equal(await page.getByRole('textbox',{name:'便签标题'}).inputValue(),'三类型草稿标题');
   await page.reload();await page.getByRole('textbox',{name:'便签标题'}).waitFor();assert.match(await page.getByRole('textbox',{name:'随手记内容',exact:true}).innerText(),/未提交的正文/);
   assert.equal((await app.repository.read()).notes.length,3);

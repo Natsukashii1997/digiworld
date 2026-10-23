@@ -1,6 +1,6 @@
 // 六种批准状态，全由合成材料构造；实际PNG来自批准稿SVG/占位帧，所有媒体只写自己的临时库。
 import fs from "node:fs/promises";
-import { generateRecipeSkill } from "../src/reverse-skill.js";
+import { generateRecipeSkill } from "./helpers/reverse-skill.js";
 import { fixture } from "./fixture.mjs";
 import { seed, makeAsset, current } from "../src/store.js";
 import { createReverseMedia } from "../server/reverse-media.mjs";

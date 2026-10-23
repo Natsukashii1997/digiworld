@@ -64,7 +64,7 @@ try {
       await shot(p, 'recovered-' + width);
       await p.reload(); await button(p, '检查更新').waitFor();
       assert.equal(await p.getByRole('dialog', { name: 'REA 更新预演' }).count(), 0);
-      await navigate(p, '世界总览'); await navigate(p, '逆向工程');
+      await navigate(p, '基地'); await navigate(p, '逆向工程');
       await button(p, '检查更新').waitFor();
       assert.equal(await p.getByRole('dialog', { name: 'REA 更新预演' }).count(), 0);
       assert.equal(await fs.readFile(app.file, 'utf8'), app.original);

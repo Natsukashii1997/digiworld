@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp,rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { generateRecipeSkill } from '../src/reverse-skill.js';
+import { generateRecipeSkill } from './helpers/reverse-skill.js';
 import { seed, makeAsset } from '../src/store.js';
 import { createSpecimen,prepareReplica,confirmReplica } from '../src/reverse-recipe.js';
 import { fixtureRecipe } from './reverse-v16-fixture.mjs';

@@ -29,7 +29,7 @@ import { current } from "./store.js";
 import { searchWorkspace, terms, GROUP_LIMIT } from "./search.js";
 import { initializeWorkspace, writeState, request } from "./api.js";
 import { ProjectsV16 as Projects } from "./ProjectsV16.jsx";
-import { Dialog, TypeIcon, Maturity, typeLabel } from "./components.jsx";
+import { Button, Dialog, TypeIcon, Maturity, PixelBadge, typeLabel } from "./components.jsx";
 import { Assets, AssetEditor, AssetDetail } from "./Assets.jsx";
 import { Home, ICONS as PAGE_ICONS } from "./Home.jsx";
 import { PartnerScreen } from "./PartnerScreen.jsx";
@@ -46,7 +46,7 @@ import { ScrollDetail } from "./Scrolls.jsx";
 import { Collection } from "./Collection.jsx";
 import { NotesV16 } from "./NotesV16.jsx";
 import { scrollsOf, createScroll } from "./scrolls.js";
-import { PAGES, resolveRoute } from "./pages.js";
+import { PAGES, NAV, page as pageOf, resolveRoute } from "./pages.js";
 import {
   Pixel,
   PixelText,
@@ -356,11 +356,9 @@ export default function App() {
         <button
           className="brand"
           onClick={() => navigate("home")}
-          aria-label="数码世界 · 世界总览"
+          aria-label="数码世界 · 基地"
         >
-          <span className="brand-crest">
-            <Pixel sprite="crest" size={30} />
-          </span>
+          <PixelBadge sprite="crest" size={30} className="brand-crest" />
           <span className="brand-text">
             <PixelText text="数码世界" size={24} weight={600} threshold={110} scale={1} />
             <span className="brand-en" aria-hidden="true">
@@ -375,7 +373,11 @@ export default function App() {
           </span>
         </button>
         <nav aria-label="主导航" className="nav">
-          {PAGES.filter(p => !p.navHidden).map(({ id, label, maturity }) => {
+          {NAV.map(({ heading, items, end }) => (
+            <div key={items[0]} className={`nav-group${end ? " nav-end" : ""}`} role={heading ? "group" : undefined} aria-label={heading}>
+              {heading && <div className="nav-heading" aria-hidden="true">{heading}</div>}
+              {items.map((id) => {
+                    const { label, maturity } = pageOf(id);
                     const Icon = ICONS[id];
                     const count =
                       id === "assets"
@@ -406,7 +408,9 @@ export default function App() {
                         ) : null}
                       </button>
                     );
-          })}
+              })}
+            </div>
+          ))}
         </nav>
         <button
           className="partner"
@@ -433,13 +437,14 @@ export default function App() {
       <div className="workspace">
         <header className="topbar">
           <div className="crumbs">
-            <button
-              className="icon-button mobile-menu"
+            <Button
+              variant="icon"
+              className="mobile-menu"
               aria-label="打开导航"
               onClick={() => setMenu(!menu)}
             >
               <Menu size={19} />
-            </button>
+            </Button>
             <span className="crumb-root">数码世界</span>
             <span className="crumb-sep">/</span>
             <span className="crumb-code">{currentPage?.code}</span>
@@ -456,14 +461,14 @@ export default function App() {
               <span>搜索工作台</span>
               <kbd aria-hidden="true">⌘K</kbd>
             </button>
-            <button
-              className="icon-button"
+            <Button
+              variant="icon"
               aria-label="快速记录"
               title="快速记录"
               onClick={() => navigate("notes")}
             >
               <PenLine size={16} />
-            </button>
+            </Button>
           </div>
         </header>
         {saveError && (

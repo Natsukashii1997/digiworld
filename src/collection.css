@@ -2,9 +2,6 @@
 .collection-module { min-width: 0; }
 .collection-module .page-heading { align-items: flex-end; }
 .collection-module .page-heading-action { align-self: flex-end; }
-.collection-module .title-row { display: flex; align-items: center; gap: var(--s-2); }
-.collection-module .page-help { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line-3); border-radius: var(--r-pill); color: var(--muted); background: transparent; font: 600 var(--fs-small)/1 var(--mono); cursor: pointer; }
-.collection-module .page-help:hover { color: var(--text); border-color: var(--cyan); }
 .collection-module .collection-key, .collection-module .collection-error button {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
   min-height: 44px; min-width: 44px; padding: 0 var(--s-3); flex-shrink: 0;
@@ -214,9 +211,6 @@
   .collection-module .collection-reader-category { padding-inline: 2px; }
 }
 
-.collection-module .page-help{position:relative;margin:-8px;border:0}
-.collection-module .page-help::before{content:"";position:absolute;inset:8px;border:1px solid var(--line-3);border-radius:var(--r-pill)}
-.collection-module .page-help:hover::before{border-color:var(--cyan)}
 
 /* GET analysis uses the same continuous reader and existing palette. */
 .collection-module .collection-get-analysis { min-width: 0; overflow-wrap: anywhere; line-height: 1.9; color: var(--text); }

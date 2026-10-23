@@ -1,0 +1,169 @@
+/* ==========================================================================
+   数码世界 · 令牌（UI v18 阶段 1 起唯一的令牌定义处）
+   原 styles.css 根令牌与 ui-v14.css 令牌补全块原样迁入，取值不变。
+   末尾“v18 正式档”是视觉语言 2.0 的档位：字阶 6 级、圆角 3 级、阴影 2 级；
+   新组件只用正式档，旧档等阶段 3 逐页迁走后删除。
+   其他样式层不写圆角 / 字号 / 颜色字面值（tests/design-tokens.test.mjs 守护）。
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+  --sans:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --bg: #070b16;
+  --bg-2: #0a1020;
+  --panel: #0f1729;
+  --panel-2: #131d33;
+  --panel-3: #1a2641;
+  --field: #0a1120;
+  --line: rgba(140, 178, 255, 0.11);
+  --line-2: rgba(140, 178, 255, 0.19);
+  --line-3: rgba(140, 178, 255, 0.32);
+  --text: #e9eeff;
+  --text-2: #b4bfda;
+  --muted: #8b98b8;
+
+  --orange: #ff8a24;
+  --orange-2: #ffb35c;
+  --orange-ink: #1f0f00;
+  --cyan: #4de3ff;
+  --lcd: #a6e36e;
+  --violet: #a891ff;
+  --pink: #ff8fb8;
+  --yellow: #ffd166;
+  --red: #ff6b6b;
+
+  --lcd-screen: #aebc93;
+  --lcd-screen-2: #97a77c;
+  --lcd-ink: #1c2616;
+
+  --px-ink: #0b0e18;
+  --px-egg: #f6f2e4;
+  --px-egg-spot: #ff8a24;
+  --px-glyph-fill: color-mix(in srgb, currentColor 22%, transparent);
+  --px-shadow: rgba(28, 38, 22, 0.3);
+
+  --r-s: 8px;
+  --content-max: 1760px;
+  --r: 12px;
+  --r-l: 16px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --glow-orange: 0 8px 26px -8px rgba(255, 138, 36, 0.75);
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--cyan),
+    0 0 18px rgba(77, 227, 255, 0.35);
+
+  /* UI v14e 令牌（docs/design/ui-v14）：间距只用 4 的倍数，字号六档，节奏四档；材质三种。 */
+  --faint: #5d6987;
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --fs-label: 11px;
+  --fs-meta: 12.5px;
+  --fs-body: 14px;
+  --fs-title: 16px;
+  --fs-section: 20px;
+  --fs-page: 38px;
+  --t-instant: 80ms;
+  --t-fast: 160ms;
+  --t-mid: 240ms;
+  --t-slow: 420ms;
+  --spring: var(--ease-back);
+  --m-panel: linear-gradient(180deg, #152039 0%, #0f1729 40%, #0c1325 100%);
+  --m-panel-edge: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(140, 178, 255, 0.07), 0 18px 40px -26px rgba(0, 0, 0, 0.95);
+  --m-screen: radial-gradient(120% 90% at 50% 0%, rgba(77, 227, 255, 0.08), transparent 60%), #08101f;
+  --m-screen-edge: inset 0 0 0 1px rgba(140, 178, 255, 0.09), inset 0 14px 34px rgba(0, 0, 0, 0.5);
+
+  /* 兼容旧模块样式的变量名 */
+  --canvas: var(--field);
+  --surface: var(--panel);
+  --ink: var(--text);
+  --accent: var(--orange);
+  --accent-soft: rgba(255, 138, 36, 0.12);
+  --shadow: 0 12px 34px -20px rgba(0, 0, 0, 0.85);
+  --radius: var(--r);
+
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+
+  /* ---------- 原 ui-v14.css 令牌补全（Claude 165 设计评审 P0）：补充档位与硬件色 ----------
+     圆角：--r-xs 4 · --r-badge 6 · --r-s 8 · --r 12 · --r-l 16 · --r-xl 20 · --r-pill；2–3px 只用于像素级小件。
+     字号：--fs-micro 11（只给等宽大写小标）· label 11 · small 12 · meta 12.5 · caption 13 · body 14 · read 15（正文阅读）· title 16 · section 20 · display-s 28 · page-narrow 30（窄屏页标题）· display 34 · page 38。 */
+  --design-highlight: #fff1f7;
+  --r-floating: 14px;
+  --r-xs: 4px;
+  --r-badge: 6px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+  --fs-micro: 11px;
+  --fs-small: 12px;
+  --fs-caption: 13px;
+  --fs-read: 15px;
+  --fs-display-s: 28px;
+  --fs-display: 34px;
+  --fs-page-narrow: 30px;
+  /* 补充色：在已有色相上的浅一档与蓝色 */
+  --cyan-2: #9beeff;
+  --violet-2: #c8b6ff;
+  --red-2: #ff9a9a;
+  --blue: #6fb0ff;
+  --orange-deep: #b8560a;
+  --text-hi: #c9d7ff;
+  --chip-light: #f3f6ff;
+  --collection-paper-ink: #17191d;
+  --collection-title-ink: #25282d;
+  --collection-category-ink: #344c66;
+  --collection-category-fill: #edf3f8;
+  --collection-key-shadow: 0 3px 0 var(--bg), inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
+  --collection-key-pressed-shadow: 0 0 0 var(--bg), inset 0 1px 0 color-mix(in srgb, #fff 6%, transparent);
+  --collection-key-primary-shadow: 0 3px 0 color-mix(in srgb, var(--orange) 45%, var(--bg)), var(--glow-orange);
+  --collection-field-shadow: inset 0 2px 0 color-mix(in srgb, #000 35%, transparent);
+  --collection-paper-shadow: 0 14px 26px -12px color-mix(in srgb, #000 85%, transparent), 0 0 0 1px color-mix(in srgb, #fff 6%, transparent);
+  --collection-paper-hover-shadow: 0 18px 32px -10px color-mix(in srgb, #000 90%, transparent), 0 0 0 1px var(--cyan);
+  --collection-paper-arrival-shadow: 0 0 20px color-mix(in srgb, var(--cyan) 40%, transparent), var(--collection-paper-shadow);
+  --collection-dialog-shadow: 0 30px 60px -20px #000;
+  --collection-pixel-glow: 0 0 6px var(--cyan);
+  --primary-fill: linear-gradient(180deg, var(--orange-2), var(--orange));
+  /* 硬件材质：暴龙机外壳、按键、连线 */
+  --hw-bezel: #1b2540;
+  --hw-bezel-hi: #24345c;
+  --hw-deep: #0b172a;
+  --hw-pit: #050913;
+  --hw-wire: #152b40;
+  --hw-dim: #58748b;
+  --hw-key: #4a5a7d;
+  --hw-key-2: #1a2337;
+  --hw-key-blue: #286ebe;
+  --hw-key-blue-2: #3c8cdc;
+  --hw-key-blue-3: #143c78;
+  /* 液晶与数码蛋的像素色 */
+  --mint: #d9fbe9;
+  --mint-2: #8fe3c4;
+  --lcd-hi: #d6e8b4;
+  --lcd-mid: #6f7d58;
+  --lcd-shade: #3d4a2c;
+  --lcd-shade-2: #2e3a24;
+
+  /* ---------- v18 正式档（docs/design/ui-v18/README.md） ----------
+     字阶 12 / 13 / 14 / 16 / 20 / 28，页标题沿用 --fs-page；圆角 6 / 10 / 全圆；阴影只有“无”与浮层。 */
+  --f-12: 12px;
+  --f-13: 13px;
+  --f-14: 14px;
+  --f-16: 16px;
+  --f-20: 20px;
+  --f-28: 28px;
+  --r-1: 6px;
+  --r-2: 10px;
+  --shadow-float: 0 18px 40px -18px rgba(0, 0, 0, 0.85);
+}

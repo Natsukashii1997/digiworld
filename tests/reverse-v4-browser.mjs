@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 import { fixture } from './fixture.mjs';
 import { reverseV16Fixture } from './reverse-v16-fixture.mjs';
 import { prepareReplica,confirmReplica } from '../src/reverse-recipe.js';
-import { generateRecipeSkill } from '../src/reverse-skill.js';
+import { generateRecipeSkill } from './helpers/reverse-skill.js';
 import { seed,makeAsset } from '../src/store.js';
 import { axe,settle } from './ui-v14-checks.mjs';
 const out=process.env.REVERSE_V4_SCREENSHOTS || 'work/reverse467/stage2-ui';

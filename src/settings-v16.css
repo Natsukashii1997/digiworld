@@ -372,37 +372,6 @@
 .settings-v16 .st-content > section {
   animation: settings-enter var(--t-fast) ease-out;
 }
-.settings-v16 .title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-}
-.settings-v16 .page-help {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  padding: 0;
-  margin: -8px;
-  border: 0;
-  color: var(--muted);
-  background: transparent;
-  font: 700 var(--fs-caption) var(--mono);
-  cursor: pointer;
-}
-.settings-v16 .page-help::before {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  border: 1px solid var(--line-3);
-  border-radius: var(--r-pill);
-}
-.settings-v16 .page-help:hover {
-  color: var(--text);
-}
-.settings-v16 .page-help:hover::before { border-color: var(--cyan); }
 .settings-v16 .st-dot::before {
   flex: none;
 }

@@ -44,7 +44,7 @@ test("REA检查HTTP只读且保留鉴权，真实临时app/asar/目录/缺失/�
 });
 
 import { validateRecipe, parseRecipeReply, buildRecipeTask, recipeAgents, prepareReplica, confirmReplica, currentVerification } from "../src/reverse-recipe.js";
-import { generateRecipeSkill } from "../src/reverse-skill.js";
+import { generateRecipeSkill } from "./helpers/reverse-skill.js";
 import { fixtureRecipe } from "./reverse-v16-fixture.mjs";
 import { checkReverseTarget } from "../server/reverse-target.mjs";
 const ev="ev_"+"0123456789abcdef".repeat(4);

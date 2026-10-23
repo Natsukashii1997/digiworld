@@ -13,7 +13,7 @@ import {
   replicaContext,
   SCORE_FIELDS,
 } from "../src/reverse-recipe.js";
-import { generateRecipeSkill } from "../src/reverse-skill.js";
+import { generateRecipeSkill } from "./helpers/reverse-skill.js";
 import {
   planSkillVersion,
   materializeSkillVersion,
