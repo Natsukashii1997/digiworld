@@ -15,12 +15,14 @@ const day = (value) => {
 const firstLine = (text = "") => text.split("\n").map((l) => l.replace(/^[-*]\s+|^\d+\.\s+|^\[[ x]\]\s+/, "").trim()).find(Boolean) || "";
 
 // 卡片上展示用：全部收件（含已交代）与装备，带标题、来源、是否已交代、是否有新版。
+// collectionNotes 为 null 表示收藏还没读到：收藏条目标 unknown，不当成已删除。
 export function deskRows(state, projectId, collectionNotes = []) {
   const entry = (state.projectDesk || []).find((e) => e.projectId === projectId);
   const inbox = (entry?.inbox || []).map((item) => {
-    const note = item.kind === "note" ? state.notes.find((n) => n.id === item.id) : collectionNotes.find((n) => n.id === item.id);
+    const unknown = item.kind === "collection" && !collectionNotes;
+    const note = item.kind === "note" ? state.notes.find((n) => n.id === item.id) : collectionNotes?.find((n) => n.id === item.id);
     const title = note ? (item.kind === "note" ? note.title?.trim() || firstLine(note.text) : note.title?.trim()) || "未命名" : "";
-    return { ...item, title, source: item.kind === "note" ? "随手记" : "收藏", missing: !note, relayed: !!relayOf(state.collabLog, projectId, item) };
+    return { ...item, title, source: item.kind === "note" ? "随手记" : "收藏", missing: !note && !unknown, unknown, relayed: !!relayOf(state.collabLog, projectId, item) };
   }).sort((a, b) => Number(a.relayed) - Number(b.relayed));
   const loadout = (entry?.loadout || []).map((item) => {
     const asset = state.assets.find((a) => a.id === item.assetId && !a.archived);
@@ -43,6 +45,7 @@ export async function deskWrite(path, body, reached, adoptState) {
   if (result.outcome === "done") adoptState(result.value);
   return result.outcome;
 }
+const label = (item) => (item.missing ? "原条目已删除" : item.unknown ? "收藏未读到" : item.title);
 const NOT_DONE = { absent: "没有查到这次修改，可以再点一次；会先核对，不会重复写。", conflict: "已在别处变化，请刷新后核对。", unconfirmed: "结果暂时无法核实，请稍后再看。", unknown: "结果暂时无法核实，请稍后再看。" };
 
 export function SlotDesk({ rows, projectId, projectName, adoptState, notify, onLoadout }) {
@@ -66,9 +69,9 @@ export function SlotDesk({ rows, projectId, projectName, adoptState, notify, onL
           <ul>
             {shown.map((item) => (
               <li key={`${item.kind}:${item.id}`} className={item.relayed ? "relayed" : ""}>
-                <span className="pj-desk-title">{item.missing ? "原条目已删除" : item.title}</span>
+                <span className="pj-desk-title">{label(item)}</span>
                 <small>{item.source} · {day(item.at)}{item.relayed ? " · 已交代" : ""}</small>
-                <button type="button" className="icon-btn" disabled={busy} aria-label={`移出收件：${item.missing ? "原条目已删除" : item.title}`} onClick={() => withdraw(item)}>
+                <button type="button" className="icon-btn" disabled={busy} aria-label={`移出收件：${label(item)}`} onClick={() => withdraw(item)}>
                   <X size={14} />
                 </button>
               </li>

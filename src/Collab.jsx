@@ -29,7 +29,8 @@ export function usePromptCopy({ adoptState, notify, onRecorded, successMessage =
     onRecorded?.(result.record);
     return result.record;
   }
-  async function copy({ text, kind, projectId, agent, stateId, stage }) {
+  // inbox / loadout：「继续」口令带上的收件与装备引用；有这条留痕，对应收件即“已交代”。复制失败不写。
+  async function copy({ text, kind, projectId, agent, stateId, stage, inbox, loadout }) {
     setBusy(true);
     setError("");
     try {
@@ -47,6 +48,8 @@ export function usePromptCopy({ adoptState, notify, onRecorded, successMessage =
         agent,
         ...(stateId && STATE_ID.test(stateId) ? { stateId } : {}),
         ...(stage ? { stage } : {}),
+        ...(inbox?.length ? { inbox } : {}),
+        ...(loadout?.length ? { loadout } : {}),
         promptSha256: await sha256Hex(text),
       };
       try {

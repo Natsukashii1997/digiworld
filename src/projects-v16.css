@@ -290,3 +290,37 @@
 }
 
 .projects-v16 .pj-cs-code { white-space:nowrap; }
+
+/* 阶段 2：存档槽的收件与装备（只用令牌）。 */
+.projects-v16 .pj-desk { display:grid; gap:var(--s-3); min-width:0; padding:var(--s-3) var(--s-4); border-radius:var(--r); background:var(--hw-pit); box-shadow:inset 0 0 0 1px var(--line); }
+.projects-v16 .pj-desk section { display:grid; gap:var(--s-1); min-width:0; }
+.projects-v16 .pj-desk section + section { margin-top:0; }
+.projects-v16 .pj-desk .en { color:var(--cyan); font-size:var(--fs-micro); font-weight:600; letter-spacing:.2em; }
+.projects-v16 .pj-desk ul { display:grid; margin:0; padding:0; list-style:none; }
+.projects-v16 .pj-desk li { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:var(--s-2); min-height:44px; padding:var(--s-1) 0; border-bottom:1px solid var(--line); }
+.projects-v16 .pj-desk li:last-child { border-bottom:0; }
+.projects-v16 .pj-desk-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--fs-body); color:var(--text); }
+.projects-v16 .pj-desk li small { grid-column:1; grid-row:2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--fs-small); color:var(--muted); }
+.projects-v16 .pj-desk li .icon-btn { grid-column:2; grid-row:1 / span 2; }
+.projects-v16 .pj-desk li.relayed .pj-desk-title { color:var(--muted); }
+.projects-v16 .pj-desk li.relayed small { color:var(--lcd); }
+.projects-v16 .pj-desk li .icon-btn { border-color:transparent; }
+.projects-v16 .pj-desk li .icon-btn:hover { color:var(--red-2); border-color:var(--line-2); }
+.projects-v16 .pj-desk .icon-btn:disabled { opacity:.5; cursor:default; }
+.projects-v16 .pj-desk-empty, .projects-v16 .pj-desk-more { margin:0; font-size:var(--fs-small); color:var(--muted); }
+.projects-v16 .pj-desk-gear { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-2); min-width:0; }
+.projects-v16 .pj-desk-gear .text-btn { margin-left:auto; }
+.projects-v16 .pj-gear { display:inline-flex; align-items:center; gap:var(--s-1); max-width:100%; min-width:0; padding:2px var(--s-2); border:1px solid var(--line-2); border-radius:var(--r-badge); font-size:var(--fs-small); color:var(--text-2); overflow-wrap:anywhere; }
+.projects-v16 .pj-gear b { font:600 var(--fs-micro) var(--mono); color:var(--cyan); }
+.projects-v16 .pj-gear i { font-style:normal; font-size:var(--fs-micro); color:var(--yellow); }
+.projects-v16 .pj-gear.missing { border-style:dashed; color:var(--muted); }
+.projects-v16 .pj-go-note { margin-right:auto; font-size:var(--fs-small); color:var(--muted); }
+.projects-v16 .pj-loadout { display:grid; gap:var(--s-3); min-width:0; }
+.projects-v16 .pj-loadout .body-copy { margin:0; }
+.projects-v16 .pj-loadout ul { display:grid; gap:var(--s-2); margin:0; padding:0; list-style:none; }
+.projects-v16 .pj-loadout li { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-2); min-width:0; padding:var(--s-2) var(--s-3); border:1px solid var(--line); border-radius:var(--r-s); background:var(--field); }
+.projects-v16 .pj-loadout-name { display:grid; gap:2px; flex:1 1 180px; min-width:0; }
+.projects-v16 .pj-loadout-name b { overflow-wrap:anywhere; color:var(--text); font-size:var(--fs-body); }
+.projects-v16 .pj-loadout-name small { color:var(--muted); font-size:var(--fs-small); }
+.projects-v16 .pj-loadout-act { display:flex; flex-wrap:wrap; gap:var(--s-2); }
+.projects-v16 .pj-loadout-act .button { min-height:44px; }

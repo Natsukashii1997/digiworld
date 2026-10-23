@@ -32,6 +32,8 @@ import { GithubBlock, useGithubPanel } from "./ProjectGithub.jsx";
 import { STAGES, linkText } from "./collab.js";
 import { usePromptCopy, staleNote } from "./Collab.jsx";
 import { RelayLaunch } from "./RelayLaunch.jsx";
+import { SlotDesk, LoadoutDialog, deskRows } from "./ProjectDesk.jsx";
+import { relayDesk, relayDeskSection } from "./relay-desk.js";
 import {
   sortSaveItems,
   groupProjectRacks,
@@ -129,7 +131,13 @@ function SaveCard({
   savepointDays,
   savepointWarnDays,
   readFailed,
+  desk,
+  onLoadout,
+  adoptState,
+  notify,
 }) {
+  const pending = desk.inbox.filter((i) => !i.relayed && !i.missing).length,
+    gear = desk.loadout.filter((i) => !i.missing).length;
   const readable = readableCurrent(item),
     f = item.current?.fields,
     holder = readable ? castOf(f?.writer) : null,
@@ -280,6 +288,14 @@ function SaveCard({
           未存档 {Math.floor(savepointDays)} 天
         </span>
       )}
+      <SlotDesk
+        rows={desk}
+        projectId={item.projectId}
+        projectName={item.name}
+        adoptState={adoptState}
+        notify={notify}
+        onLoadout={onLoadout}
+      />
       <div className="pj-save-act">
         <Button
           className="pj-go"
@@ -291,6 +307,11 @@ function SaveCard({
           <Play size={16} />
           继续
         </Button>
+        {(pending > 0 || gear > 0) && (
+          <small className="pj-go-note">
+            带收件 {pending} · 装备 {gear}
+          </small>
+        )}
         <button type="button" className="text-btn" onClick={onDetails}>
           详情
           <ChevronRight size={16} />
@@ -299,7 +320,7 @@ function SaveCard({
     </article>
   );
 }
-function ProjectLaunch({ item, liveItem, adoptState, notify, onClose, refreshProjectStatus, statusReading, sourceKey }) {
+function ProjectLaunch({ item, liveItem, state, collection, adoptState, notify, onClose, refreshProjectStatus, statusReading, sourceKey }) {
   const [agent, setAgent] = useState(
       castOf(item.current?.fields?.writer)?.id || "codex",
     ),
@@ -310,8 +331,13 @@ function ProjectLaunch({ item, liveItem, adoptState, notify, onClose, refreshPro
     [opening, setOpening] = useState(false), [checking,setChecking]=useState(false);
   const lock = useRef(false),
     live = useRef(true),
+    // 收件是否已交代按打开发车条时的留痕算：本次复制写下的留痕不会把收件从这次口令里拿掉。
+    relayLog = useRef(state.collabLog),
     copier = usePromptCopy({ adoptState, notify }),
-    prepared = projectRelayPrompt(item, agent),
+    deskOf = (s) => relayDesk({ ...s, collabLog: relayLog.current }, item.projectId, { collectionNotes: collection.notes }),
+    desk = deskOf(state),
+    deskText = relayDeskSection(desk),
+    prepared = projectRelayPrompt(item, agent, desk),
     snapshot = { stateId: item.current?.fields?.stateId };
   const stale =
     (item.sourceKey!==sourceKey?"项目来源已变化，请重新继续并预览。":"") ||
@@ -319,7 +345,19 @@ function ProjectLaunch({ item, liveItem, adoptState, notify, onClose, refreshPro
     (projectLaunchSignature(item)!==projectLaunchSignature(liveItem)?"项目内容或目录已变化，请收起后重新继续并预览。":"") ||
     (!readableCurrent(liveItem)
       ? "项目 CURRENT 已不可读，请收起后重新读取。"
+      : "") ||
+    (desk.inbox.some((i) => i.ref.kind === "collection") && collection.state !== "ok"
+      ? collection.state === "error"
+        ? "收藏没有读到，收件里的收藏带不进口令；请刷新页面后再继续。"
+        : "收藏还在读取，读完才能复制。"
       : "");
+  // 预览后收件或装备变了：要求重新预览。
+  const previewedDesk = useRef(deskText);
+  useEffect(() => {
+    if (previewedDesk.current === deskText) return;
+    previewedDesk.current = deskText;
+    setSeen(false);
+  }, [deskText]);
   useEffect(() => {
     live.current = true;
     const key = (e) => {
@@ -352,12 +390,24 @@ function ProjectLaunch({ item, liveItem, adoptState, notify, onClose, refreshPro
       const latest=fresh?.items.find(p=>p.projectId===item.projectId);
       if(!latest||!readableCurrent(latest)){setError('当前状态读取未确认，请重读后再复制。');return;}
       if(fresh.sourceKey!==item.sourceKey||projectLaunchSignature(item)!==projectLaunchSignature(latest)){setError('项目内容或目录已变化，请收起后重新继续并预览。');return;}
+      // 复制前重读工作台，核对收件与装备仍是预览时的样子。
+      let workspace;
+      try { workspace = await request("/workspace"); }
+      catch (e) { if (live.current) setError(`收件与装备核对未完成：${e.message}。口令没有复制。`); return; }
+      if (!live.current) return;
+      if (relayDeskSection(deskOf(workspace)) !== deskText) {
+        adoptState(workspace);
+        setError("收件或装备已变化，请重新预览口令。");
+        return;
+      }
       const ok = await copier.copy({
         text: prepared.prompt,
         kind: "start",
         projectId: item.projectId,
         agent: agent === "claude" ? "claude-code" : agent,
         stateId: snapshot.stateId,
+        inbox: desk.inbox.filter((i) => !i.missing).map((i) => i.ref),
+        loadout: desk.loadout.filter((i) => !i.missing).map((i) => i.ref),
       });
       if (!ok || !live.current) return;
       setReceipt("TRANSFER OK · 口令已复制");
@@ -492,7 +542,17 @@ export function ProjectsV16({
     [help, setHelp] = useState(false),
     [launch, setLaunch] = useState(null),
     [daily, setDaily] = useState({ items: [], error: "" }),
-    [flight, setFlight] = useState(null);
+    [flight, setFlight] = useState(null),
+    [collection, setCollection] = useState({ notes: [], state: "loading" }),
+    [loadoutFor, setLoadoutFor] = useState(null);
+  // 收件里的收藏标题与正文来自收藏库；没读到时不把收藏当成已删除，也不让口令漏带。
+  useEffect(() => {
+    let active = true;
+    request("/collection/notes")
+      .then((result) => { if (active) setCollection({ notes: Array.isArray(result?.notes) ? result.notes : [], state: Array.isArray(result?.notes) ? "ok" : "error" }); })
+      .catch(() => { if (active) setCollection({ notes: [], state: "error" }); });
+    return () => { active = false; };
+  }, []);
   const [columns, setColumns] = useState(() =>
     window.innerWidth > 1180 ? 3 : window.innerWidth > 760 ? 2 : 1,
   );
@@ -764,6 +824,10 @@ export function ProjectsV16({
                       savepointWarnDays={savepointThresholds(c).warn}
                       readFailed={!!projectStatus.error||!projectStatus.loaded}
                       launch={launch?.projectId === item.projectId}
+                      desk={deskRows(state, item.projectId, collection.state === "ok" ? collection.notes : null)}
+                      onLoadout={() => setLoadoutFor({ id: item.projectId, name: item.name })}
+                      adoptState={adoptState}
+                      notify={notify}
                       onDetails={() => setSelectedId(item.projectId)}
                       onContinue={async(e) => {
                         if(continueLock.current||!projectStatus.loaded)return;
@@ -815,6 +879,8 @@ export function ProjectsV16({
                       key={launch.projectId + launch.launchSerial}
                       item={launch}
                       liveItem={liveLaunch}
+                      state={state}
+                      collection={collection}
                       refreshProjectStatus={refreshProjectStatus}
                       statusReading={!projectStatus.loaded}
                       sourceKey={projectStatus.sourceKey}
@@ -1145,6 +1211,16 @@ export function ProjectsV16({
             </section>}
           </div>
         </Dialog>
+      )}
+      {loadoutFor && (
+        <LoadoutDialog
+          state={state}
+          projectId={loadoutFor.id}
+          projectName={loadoutFor.name}
+          adoptState={adoptState}
+          notify={notify}
+          onClose={() => setLoadoutFor(null)}
+        />
       )}
       {settings && <Dialog title="项目空间设置" drawer onClose={closeSettings}><ProjectSettings state={state} adoptState={adoptState} notify={notify} onBusyChange={v=>{settingsBusy.current=v;}}/></Dialog>}
       {help && (
