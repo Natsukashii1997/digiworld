@@ -1,5 +1,6 @@
 import { startPrompt } from './collab.js';
 import { filterRelayText } from './relay-prompt.js';
+import { relayDeskSection } from './relay-desk.js';
 export const readableCurrent = item => ['ok','partial'].includes(item?.current?.state);
 export function sortSaveItems(items) {
  return [...items].sort((a,b)=>{
@@ -32,9 +33,10 @@ export function groupPortfolioSections(projects,catalog=[]) {
   }).sort((a,b)=>a.name.localeCompare(b.name,'zh')),
  })).filter(section=>section.items.length);
 }
-export function projectRelayPrompt(item,agent) {
+// desk：阶段 2 的收件与装备（relay-desk.js 的 relayDesk 结果）；没有时口令与原来一致。
+export function projectRelayPrompt(item,agent,desk) {
  const f=item.current?.fields||{},h=f.handoff;
  const canonical=agent==="claude"?"claude-code":agent;
- const raw=startPrompt(item,canonical)+(h?`\n3. 最新交接：${h.href||h.text}${h.href&&h.text?'（'+h.text+'）':''}`:'\n3. 最新交接：未记录，接手后核对。');
+ const raw=startPrompt(item,canonical)+(h?`\n3. 最新交接：${h.href||h.text}${h.href&&h.text?'（'+h.text+'）':''}`:'\n3. 最新交接：未记录，接手后核对。')+(desk?relayDeskSection(desk):'');
  const result=filterRelayText(raw);return {prompt:result.text,redactions:result.count};
 }
