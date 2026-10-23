@@ -9,6 +9,7 @@ import { PartnerScreen } from "./PartnerScreen.jsx";
 import { LcdText } from "./v14.jsx";
 import { NOTE_MAX } from "./rich-note.js";
 import { now, uid } from "./store.js";
+import { settleAttempt } from "./write-attempt.js";
 import { AssetsScreen, CollectionScreen } from "./HomeOverviewContent.jsx";
 import "./home-v16.css";
 
@@ -131,7 +132,7 @@ export function HomeV16({
   const hydrated=useRef(false),liveNote=useRef(true),composingNote=useRef(false),noteLock=useRef(false),activeAttempt=useRef(null);
   useEffect(()=>{liveNote.current=true;return()=>{liveNote.current=false;};},[]);
   useEffect(()=>registerPageGuard(()=>composingNote.current?'中文输入尚未完成，请先确认输入。':''),[]);
-  useLayoutEffect(()=>{if(!recovery.ready||hydrated.current)return;hydrated.current=true;const value=recovery.value;if(value){setNoteText(value.text);setNoteAttempt(value.attempt||null);if(value.attempt){activeAttempt.current=value.attempt;noteLock.current=true;setNoteBusy(true);checkNote(value.attempt,false).finally(()=>{noteLock.current=false;if(liveNote.current)setNoteBusy(false);});}}},[recovery.ready]);
+  useLayoutEffect(()=>{if(!recovery.ready||hydrated.current)return;hydrated.current=true;const value=recovery.value;if(value){setNoteText(value.text);setNoteAttempt(value.attempt||null);if(value.attempt){activeAttempt.current=value.attempt;noteLock.current=true;setNoteBusy(true);settleNote('recover',value.attempt).finally(()=>{noteLock.current=false;if(liveNote.current)setNoteBusy(false);});}}},[recovery.ready]);
   const stateRef = useRef(state);
   stateRef.current = state;
   const poke = () => stageScreen.current?.poke();
@@ -142,25 +143,25 @@ export function HomeV16({
     setNoteText(""); setNoteAttempt(null); setNoteStatus("");
     notify?.("已保存本地随手记");
   };
-  async function checkNote(attempt, replay) {
-    try {
-      const actual = await request("/workspace");
-      const found = actual.notes?.find(note => note.id === attempt.id);
-      if (found) {
-        if (found.text === attempt.text) { finishNote(actual,attempt); return; }
-        setNoteStatus("同一记录已变化，先到随手记核对；输入仍保留。");
-        return;
-      }
-      adoptState?.(actual);
-      if (!replay) { setNoteStatus("没有查到这条记录，输入已保留；可核对并重试。"); return; }
-      const ok = await save({ ...actual, notes: [attempt, ...(actual.notes || [])] }, { base: actual });
-      const recheck = await request("/workspace");
-      const after = recheck.notes?.find(note => note.id === attempt.id);
-      if (after?.text === attempt.text) finishNote(recheck,attempt);
-      else setNoteStatus("保存仍未确认，输入已保留；请核对后再试。");
-    } catch (error) {
-      setNoteStatus("保存结果暂时无法核实，输入已保留；请稍后核对并重试。");
-    }
+  // 公共写入能力：回读这条尝试，查到同编号的别的内容即冲突。
+  async function readNote(attempt) {
+    const actual = await request("/workspace");
+    const found = actual.notes?.find(note => note.id === attempt.id);
+    if (!found) adoptState?.(actual);
+    return { state: !found ? "absent" : found.text === attempt.text ? "done" : "conflict", value: actual };
+  }
+  async function settleNote(mode, attempt) {
+    const result = await settleAttempt(mode, {
+      send: actual => { const base = actual || stateRef.current; return save({ ...base, notes: [attempt, ...(base.notes || [])] }, { base }); },
+      check: () => readNote(attempt),
+    });
+    if (result.outcome === "done") { finishNote(result.value, attempt); return; }
+    setNoteStatus({
+      conflict: "同一记录已变化，先到随手记核对；输入仍保留。",
+      absent: "没有查到这条记录，输入已保留；可核对并重试。",
+      unconfirmed: result.replayed ? "保存仍未确认，输入已保留；请核对后再试。" : "保存结果暂时无法核实，输入已保留；请核对并重试。",
+      unknown: "保存结果暂时无法核实，输入已保留；请稍后核对并重试。",
+    }[result.outcome]);
   }
   async function submitNote(event) {
     event?.preventDefault?.();
@@ -174,20 +175,8 @@ export function HomeV16({
     setNoteAttempt(attempt);
     setNoteBusy(true);
     setNoteStatus("");
-    try {
-      if (noteAttempt) await checkNote(attempt, true);
-      else {
-        const base = stateRef.current;
-        const ok = await save({ ...base, notes: [attempt, ...(base.notes || [])] }, { base });
-        if (ok) {
-          const actual = await request("/workspace");
-          if (actual.notes?.some(note => note.id === attempt.id && note.text === attempt.text)) finishNote(actual,attempt);
-          else setNoteStatus("保存结果暂时无法核实，输入已保留；请核对并重试。");
-        } else await checkNote(attempt, false);
-      }
-    } catch {
-      setNoteStatus("保存结果暂时无法核实，输入已保留；请稍后核对并重试。");
-    } finally { noteLock.current=false;if(liveNote.current)setNoteBusy(false); }
+    try { await settleNote(noteAttempt ? "retry" : "first", attempt); }
+    finally { noteLock.current=false;if(liveNote.current)setNoteBusy(false); }
   }
   const greeting = homeGreeting(displayDate);
   return <div className="hx" ref={panelRef}>
