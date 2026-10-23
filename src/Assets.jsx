@@ -810,12 +810,14 @@ export function AssetEditor({
   onSave,
   onCreateScroll,
   notify,
+  draft,
 }) {
+  // draft：从随手记或收藏孵成资产时的预填（标题、正文与 hatchedFrom 来源）；只用于新建。
   const old = asset && current(asset);
   const [type, setType] = useState(asset?.type || initialType || "Prompt"),
-    [title, setTitle] = useState(old?.title || ""),
+    [title, setTitle] = useState(old?.title || draft?.title || ""),
     [description, setDescription] = useState(old?.description || ""),
-    [content, setContent] = useState(old?.content || ""),
+    [content, setContent] = useState(old?.content || draft?.content || ""),
     [tags, setTags] = useState(old?.tags.join("，") || ""),
     [files, setFiles] = useState(old?.files || []),
     [designKind, setDesignKind] = useState(old?.design?.kind || "skill"),
@@ -899,7 +901,7 @@ export function AssetEditor({
         ...(type === "Workflow" ? { workflowTemplate: parsedTemplate } : {}),
       };
       const success = await onSave(
-        asset ? revise(asset, values) : makeAsset(values),
+        asset ? revise(asset, values) : makeAsset(draft?.hatchedFrom ? { ...values, hatchedFrom: draft.hatchedFrom } : values),
       );
       if (!success) {
         setError("本次未保存。请查看保存提示，表单内容仍在。");
@@ -915,19 +917,21 @@ export function AssetEditor({
   const next = asset ? asset.versions.length + 1 : 1;
   return (
     <Dialog
-      title={asset ? "编辑资产 · 保存为新版本" : "新建资产"}
+      title={asset ? "编辑资产 · 保存为新版本" : draft ? "孵成资产" : "新建资产"}
       onClose={onClose}
     >
       <form onSubmit={submit} className="asset-form">
-        {(asset || scroll) && <div className="form-intro">
+        {(asset || scroll || draft) && <div className="form-intro">
           <p>
             {asset
               ? `保存后成为 v${next}.0，v${next - 1}.0 及更早版本完整保留在历史中。`
-              : "焚决是一卷有序的碎片：心法、prompt 碎片、判断准则。先起个卷名，建好后直接在卷里添加条目。"}
+              : scroll
+                ? "焚决是一卷有序的碎片：心法、prompt 碎片、判断准则。先起个卷名，建好后直接在卷里添加条目。"
+                : `从${draft.hatchedFrom.kind === "note" ? "随手记" : "个人收藏"}孵化：正文已带入，可以改；保存后原条目显示“已孵成资产”，原条目不变。`}
           </p>
         </div>}
         <div className="type-picker" role="radiogroup" aria-label="资产类型">
-          {["Prompt", "Skill", "Workflow", "Rule", "MCP", "Scroll", "Design"].map((t, index, types) => (
+          {["Prompt", "Skill", "Workflow", "Rule", "MCP", "Scroll", "Design"].filter((t) => !draft || !["MCP", "Scroll"].includes(t)).map((t, index, types) => (
             <button
               type="button"
               role="radio"

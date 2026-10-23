@@ -140,3 +140,7 @@
 .page-heading .page-help:hover::before {
   border-color: var(--cyan);
 }
+
+/* 阶段 2：捕获项（随手记、收藏）后面的绿色待孵化数，按 v18 B 稿。 */
+.nav-count.egg { color: var(--lcd); background: color-mix(in srgb, var(--lcd) 10%, transparent); }
+.nav-item.active .nav-count.egg { color: var(--lcd); background: color-mix(in srgb, var(--lcd) 16%, transparent); }

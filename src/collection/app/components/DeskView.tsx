@@ -2,13 +2,15 @@ import GetAnalysis from './GetAnalysis';
 import { Reading, ReadReveal } from '../../../ScanMotion.jsx';
 import { flyData } from '../../../data-flight.js';
 import { copyText } from '../../../data-flight.js';
+import { CollectionHatch } from '../../../collection-hatch.js';
+import { RouteBadges } from '../../../HatchPanel.jsx';
 /* Hallmark · component: search + setup dialog · genre: modern-minimal
  * states: default · hover · focus · active · disabled · loading · error · success
  * pre-emit critique: P5 H5 E4 S5 R5 V4
  */
 'use client';
 
-import { memo, useCallback, useState, useEffect, useRef, useMemo, type DragEvent, type MouseEvent } from 'react';
+import { memo, useCallback, useContext, useState, useEffect, useRef, useMemo, type DragEvent, type MouseEvent } from 'react';
 import { motion, AnimatePresence, styleOf } from '../../motion';
 import { useDialogFocus } from '../../useDialogFocus';
 import { PageHeading, ScrollFade } from '../../../components.jsx';
@@ -23,6 +25,7 @@ import {
   Check,
   BookMarked,
   Trash2,
+  Egg,
   Search,
   Puzzle,
   Bot,
@@ -368,6 +371,7 @@ function ExpandedCard({
   undoError?: string;
 }) {
   const dialogRef = useDialogFocus(onClose);
+  const hatch = useContext(CollectionHatch);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [failedImageUrls, setFailedImageUrls] = useState<Set<string>>(() => new Set());
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -432,8 +436,10 @@ function ExpandedCard({
                 {isDeleting ? <Reading mini label="处理收藏操作"/> : <Trash2 size={14}/>}{isDeleting ? '删除中' : '确认删除'}
               </button>
             </div> : <button type="button" className="collection-key collection-danger" onClick={() => setConfirmingDelete(true)}><Trash2 size={14}/>删除</button>}
+            {hatch && <button type="button" className="collection-key" onClick={() => hatch.open(note, onClose)}><Egg size={14}/>孵化</button>}
             <button type="button" className="collection-key collection-icon" onClick={onClose} aria-label="关闭"><X size={16}/></button>
           </div>
+          {hatch && <RouteBadges routes={hatch.routes(note.id)} scrolls={hatch.scrolls}/>}
           <h2 className="collection-reader-title">{note.title}</h2>
           <div className="collection-reader-meta"><span>@{note.author.name}</span><span>{formatDate(note.savedAt)}</span>
             <span><Heart size={13}/> {formatNumber(note.likes)}</span><span><BookMarked size={13}/> {formatNumber(note.collects)}</span>

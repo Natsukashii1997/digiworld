@@ -288,7 +288,7 @@ test("个人收藏保留learning路由，按主线排在“捕获”里且不恢
   assert.deepEqual(NAV.find(s=>s.heading==='捕获').items,['notes','learning']);
   assert.deepEqual(NAV.flatMap(s=>s.items),PAGES.map(p=>p.id));
   assert.deepEqual(PAGES.map(p=>p.code),PAGES.map((_,i)=>String(i).padStart(2,'0')));
-  const html=renderToStaticMarkup(React.createElement(Collection));assert.match(html,/<h1[^>]*>个人收藏<\/h1>/);assert.match(html,/aria-label="收藏分组"/);assert.match(html,/aria-label="搜索收藏"/);assert.doesNotMatch(html,/<h2[^>]*>收藏画布<\/h2>/);assert.doesNotMatch(html,/书架|学习状态|链接收藏|回收区/);
+  const html=render(Collection);assert.match(html,/<h1[^>]*>个人收藏<\/h1>/);assert.match(html,/aria-label="收藏分组"/);assert.match(html,/aria-label="搜索收藏"/);assert.doesNotMatch(html,/<h2[^>]*>收藏画布<\/h2>/);assert.doesNotMatch(html,/书架|学习状态|链接收藏|回收区/);
   // 世界总览热点卡：首屏渲染时还没有读到缓存，如实写“正在读取”，不放假数据。
   const hot = renderToStaticMarkup(React.createElement(HomeHot, { navigate() {} }));
   assert.match(hot, /今日热点/);

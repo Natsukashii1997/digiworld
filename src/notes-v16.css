@@ -95,6 +95,8 @@
 }
 .notes-v16 .sn-ico:hover { color: var(--text); background: color-mix(in srgb, var(--line-3) 8%, transparent); }
 .notes-v16 .sn-ico.fire:hover { color: var(--orange-2); }
+.notes-v16 .sn-ico.hatch:hover { color: var(--lcd); }
+.notes-v16 .sn > .route-badges { margin: 0 0 8px; }
 .notes-v16 .sn-ico.delete:hover,.notes-v16 .sn-ico.delete:focus-visible { color: var(--red-2); background: color-mix(in srgb, var(--red) 10%, transparent); }
 .notes-v16 .sn-delete-confirm { background: var(--red); border-color: var(--red); color: var(--bg); }
 .notes-v16 .sn-delete-confirm:hover { background: var(--red-2); border-color: var(--red-2); color: var(--bg); }

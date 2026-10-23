@@ -45,6 +45,7 @@ import {useSearchSources} from './useSearchSources.js';
 import { ScrollDetail } from "./Scrolls.jsx";
 import { Collection } from "./Collection.jsx";
 import { NotesV16 } from "./NotesV16.jsx";
+import { captureRouteIndex } from "./capture-routes.js";
 import { scrollsOf, createScroll } from "./scrolls.js";
 import { PAGES, NAV, page as pageOf, resolveRoute } from "./pages.js";
 import {
@@ -90,6 +91,18 @@ export default function App() {
   });
   const { route, anchor } = target;
   const [saveError, setSaveError] = useState("");
+  // 阶段 2：收藏在独立存储，外壳只取条目 ID 与归档表，用来算侧栏待孵化数；进出页面时重读。
+  const [collectionMeta, setCollectionMeta] = useState({ ids: [], archived: {} });
+  const adoptCollectionNotes = useCallback((result) => {
+    if (Array.isArray(result?.notes)) setCollectionMeta({ ids: result.notes.map((n) => n.id), archived: result.archived || {} });
+  }, []);
+  useEffect(() => {
+    if (!state) return;
+    let live = true;
+    request("/collection/notes").then((result) => { if (live) adoptCollectionNotes(result); }).catch(() => {});
+    return () => { live = false; };
+  }, [route, !!state]);
+  const hatchAsset = (capture) => setCreate({ type: "Prompt", draft: { title: capture.title, content: capture.text, hatchedFrom: { kind: capture.kind, id: capture.id } } });
   const partnerScreen = useRef();
   // UI v14e 全站手感：主区的涟漪、微光、倾斜与阶梯浮现。
   const mainRef = useRef();
@@ -304,6 +317,7 @@ export default function App() {
     if(kind==='asset')setSelected(id);
     return true;
   }
+  const routeIndex = state && captureRouteIndex(state, { collectionArchived: collectionMeta.archived });
   const common = {state, save, notify, adoptState, ruleInstalls, refreshRuleInstalls,
     projectStatus:{...projectStatus,loaded:projectStatus.loaded&&projectStatus.sourceKey===activeKey}, refreshProjectStatus};
   const asset = state?.assets.find((a) => a.id === selected);
@@ -379,12 +393,13 @@ export default function App() {
               {items.map((id) => {
                     const { label, maturity } = pageOf(id);
                     const Icon = ICONS[id];
+                    // 捕获项（随手记、收藏）显示待孵化数（绿色）；其余显示条数。
+                    const pending = id === "notes" ? state.notes.filter((n) => routeIndex.pending("note", n.id)).length
+                      : id === "learning" ? collectionMeta.ids.filter((cid) => routeIndex.pending("collection", cid)).length : null;
                     const count =
                       id === "assets"
                         ? state.assets.filter((a) => !a.archived).length + scrollsOf(state).filter((s) => !s.deletedAt).length
-                        : id === "notes" && state.notes.length
-                          ? state.notes.length
-                          : null;
+                        : pending || null;
                     return (
                       <button
                         key={id}
@@ -398,7 +413,7 @@ export default function App() {
                         <Icon size={17} strokeWidth={1.7} />
                         <span>{label}</span>
                         {count !== null ? (
-                          <small className="nav-count">
+                          <small className={`nav-count${pending ? " egg" : ""}`} aria-label={pending ? `${count} 条待孵化` : undefined}>
                             <Odometer value={count} />
                           </small>
                         ) : ["draft", "planned"].includes(maturity) ? (
@@ -503,10 +518,10 @@ export default function App() {
             />
           )}
           {route === "projects" && <Projects {...common} navigate={navigate} projectJump={target.projectId ? {id:target.projectId,key:target.agentJumpKey} : null} />}
-          {route === "notes" && <NotesV16 {...common} navigate={navigate} noteJump={target.noteId ? {id:target.noteId,key:target.agentJumpKey} : null} />}
+          {route === "notes" && <NotesV16 {...common} navigate={navigate} onHatchAsset={hatchAsset} noteJump={target.noteId ? {id:target.noteId,key:target.agentJumpKey} : null} />}
           {route === "references" && <References {...common} reverseJump={target.reverseId ? {id:target.reverseId,key:target.agentJumpKey} : null} referenceJump={target.referenceId ? {id:target.referenceId,key:target.agentJumpKey} : null} onSelect={a=>{navigate("assets");setSelected(a.id);}} />}
           {route === "settings" && <Settings {...common} navigate={navigate} onSelect={setSelected} />}
-          {route === "learning" && <Collection noteJump={target.collectionNoteId ? {id:target.collectionNoteId,key:target.agentJumpKey} : null} />}
+          {route === "learning" && <Collection {...common} navigate={navigate} onHatchAsset={hatchAsset} collectionArchived={collectionMeta.archived} onCollectionNotes={adoptCollectionNotes} noteJump={target.collectionNoteId ? {id:target.collectionNoteId,key:target.agentJumpKey} : null} />}
         </main>
       </div>
       {asset && !editing && (
@@ -533,7 +548,8 @@ export default function App() {
         <AssetEditor
           asset={editing}
           assets={state.assets}
-          type={create}
+          type={create?.type ?? create}
+          draft={create?.draft}
           notify={notify}
           onCreateScroll={createScrollNamed}
           onClose={() => {
@@ -549,7 +565,7 @@ export default function App() {
                 : [a, ...state.assets],
             });
             if (!success) return false;
-            notify(editing ? "已保存为新版本" : "资产已收入资产仓库");
+            notify(editing ? "已保存为新版本" : create?.draft ? "已孵成资产，原条目已标记" : "资产已收入资产仓库");
             const stageFrom = before && stageOf(before, state.assetActivity),
               stageTo = before && stageOf(a, state.assetActivity);
             // UI v13.2：普通保存新版本只在详情里轻量翻页；全屏演出只留给新收录和阶段真正升级

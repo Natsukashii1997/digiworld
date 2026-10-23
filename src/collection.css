@@ -81,6 +81,9 @@
 .collection-module .collection-card-category { display: inline-block; box-sizing: border-box; flex-shrink: 0; font-family: var(--sans); font-size: var(--fs-small); font-weight: 500; line-height: 18px; height: 18px; margin-bottom: 4px; padding: 0 4px; border-radius: 3px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--collection-category-ink); background: var(--collection-category-fill); }
 .collection-module .collection-selected-mark { position: absolute; top: 13px; left: 13px; z-index: 3; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: var(--r-pill); background: var(--cyan); color: var(--bg); }
 .collection-module .collection-selected-count { position: absolute; top: -9px; right: -9px; z-index: 4; display: flex; align-items: center; justify-content: center; min-width: 25px; height: 25px; padding: 0 7px; border-radius: var(--r-pill); font-size: var(--fs-small); font-weight: 700; background: var(--cyan); color: var(--bg); border: 2px solid #fff; }
+/* 阶段 2：孵化面板与炼入框从收藏详情卡里打开，叠在详情卡之上。 */
+.collection-module > .overlay { z-index: 1300; }
+.collection-module .collection-reader-bar + .route-badges { margin-top: 12px; }
 .collection-module .collection-overlay { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: var(--s-5); background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(12px); }
 .collection-module .collection-reader, .collection-module .collection-setup { background: var(--panel); color: var(--text); border: 1px solid var(--line-3); border-radius: var(--r); box-shadow: var(--collection-dialog-shadow); }
 .collection-module .collection-reader { display: flex; width: 100%; max-width: 1080px; height: min(86vh, 820px); min-height: 0; overflow: hidden; }

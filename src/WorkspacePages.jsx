@@ -178,53 +178,8 @@ export function Relay({ state, adoptState, notify, onClose }) {
 }
 
 // 随手记（路线 v3 切片 1.4）：受限 Markdown 富文本，只存本应用；唯一去向是“炼入焚决”。
-export function RefineDialog({ draft, scrolls, onClose, onConfirm, navigate, busy=false }) {
-  const live = orderScrolls(scrolls);
-  const [scrollId, setScrollId] = useState(live[0]?.id || "");
-  return (
-    <Dialog title="炼入焚决" onClose={onClose}>
-      <form
-        className="asset-form refine-form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (scrollId && !busy) onConfirm(scrollId);
-        }}
-      >
-        <p className="body-copy">
-          {draft.partial ? "把选中的文字" : "把整条随手记"}
-          作为新条目加入所选卷的末尾，原随手记标记为“已炼”。
-        </p>
-        <blockquote className="refine-preview">{draft.text}</blockquote>
-        {live.length ? (
-          <>
-            <label>
-              目标卷
-              <select disabled={busy} value={scrollId} onChange={(e) => setScrollId(e.target.value)}>
-                {live.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button type="submit" disabled={busy}>
-              <Flame size={16} />
-              炼入
-            </Button>
-          </>
-        ) : (
-          <>
-            <p className="body-copy">还没有卷。先到资产仓库的“焚决”标签建一卷，再回来炼入。</p>
-            {/* 焚决已迁入资产仓库（切片 1.3b）：#scrolls 旧路由落到资产仓库并选中“焚决”标签。 */}
-            <Button type="button" secondary disabled={busy} onClick={() => navigate("scrolls")}>
-              去焚决建卷
-            </Button>
-          </>
-        )}
-      </form>
-    </Dialog>
-  );
-}
+// 炼入对话框已移到 RefineDialog.jsx（阶段 2：收藏页也要用，避免把整套工作区页面带进收藏）。
+export { RefineDialog } from "./RefineDialog.jsx";
 export function Night(props) {
   return <NightV16 {...props} />;
 }
