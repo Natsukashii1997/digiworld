@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目空间 · 三版对比</title>
+<!-- 模板：由 build/make.py 生成各页的"三版对比"。三版都是能操作的 1440 页面（iframe 按窗口缩放）。 -->
+<style>
+body { margin: 0; background: #070b16; color: #e9eeff; font: 14px/1.5 -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif; }
+header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 20px; background: #0a1020; border-bottom: 1px solid rgba(140, 178, 255, 0.15); }
+header h1 { margin: 0 8px 0 0; font-size: 15px; }
+.tabs { display: flex; gap: 6px; }
+.tabs button { height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(140, 178, 255, 0.2); background: transparent; color: #b4bfda; font: 600 13px inherit; cursor: pointer; }
+.tabs button.on { background: #ff8a24; color: #1f0f00; border-color: transparent; }
+.note { margin-left: auto; color: #8b98b8; font-size: 12px; }
+.views { display: grid; gap: 16px; padding: 16px 20px; }
+.views.all { grid-template-columns: repeat(3, 1fr); }
+.views.one { grid-template-columns: 1fr; }
+.view { display: none; min-width: 0; }
+.views.all .view, .views.one .view.on { display: block; }
+.view h2 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: #b4bfda; }
+.view h2 b { margin-right: 8px; color: #e9eeff; }
+.frame { position: relative; overflow: hidden; border-radius: 10px; background: #070b16; box-shadow: 0 0 0 1px rgba(140, 178, 255, 0.15); }
+.frame iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: #070b16; }
+</style>
+</head>
+<body>
+<header>
+  <h1>项目空间 · 三版对比</h1>
+  <div class="tabs"><button data-v="all" class="on">并排</button><button data-v="1">一 · 读档画面</button><button data-v="2">二 · 存档条</button><button data-v="3">三 · 卡带槽 + 读档屏</button></div>
+  <span class="note">二、三能操作：继续（选谁带走、口令预览、只复制 / 带走，数据落进伙伴屏）、开新档（库里的项目飞进空槽）、重新检查、重新扫描、来源筛选、搜索、折叠组展开、收件、详情。</span>
+</header>
+<div class="views all"><section class="view" data-v="1"><h2><b>一 · 读档画面</b>现版原样：三格存档卡（持笔数码兽 + 下一步 + 阶段 + 30 天活动）+ 卡槽架（装进 v16 外壳；静态快照）</h2><div class="frame"><iframe src="项目空间-1-读档画面.html" title="一 · 读档画面"></iframe></div></section><section class="view" data-v="2"><h2><b>二 · 存档条</b>同一张读档画面把排版做对：每盘一条横向存档条，下一步整行、继续在首屏；空槽缩成细槽；发车条从被点的那条下面滑出</h2><div class="frame"><iframe src="项目空间-2-存档条.html" title="二 · 存档条"></iframe></div></section><section class="view" data-v="3"><h2><b>三 · 卡带槽 + 读档屏</b>更像一台机器：顶上插卡带，选哪盘就启动哪盘；读档屏里是下一步、持笔者与队伍、阶段、活动、体检，出发区常驻</h2><div class="frame"><iframe src="项目空间-3-卡带槽.html" title="三 · 卡带槽 + 读档屏"></iframe></div></section></div>
+<script>
+const views = document.querySelector(".views");
+function fit() {
+  for (const f of document.querySelectorAll(".frame")) {
+    const s = Math.min(1, f.clientWidth / 1440);
+    f.style.height = Math.round(900 * s) + "px";
+    f.querySelector("iframe").style.transform = `scale(${s})`;
+  }
+}
+document.querySelector(".tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  const v = b.dataset.v;
+  views.className = "views " + (v === "all" ? "all" : "one");
+  document.querySelectorAll(".view").forEach((x) => x.classList.toggle("on", x.dataset.v === v));
+  requestAnimationFrame(fit);
+});
+addEventListener("resize", fit);
+addEventListener("load", fit);
+fit();
+</script>
+</body>
+</html>

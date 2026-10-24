@@ -1,0 +1,101 @@
+{
+ "papers": [
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 500; opacity: 1; transform: translateX(184px) translateY(128px) rotate(2.39835deg);",
+   "title": "6种高审美dashboard交互拿来就用",
+   "inner": "--arrival-delay: 0ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 501; opacity: 1; transform: translateX(374px) translateY(131px) rotate(6.17414deg);",
+   "title": "新野兽派&新粗野主义|6种超抓眼UI交互",
+   "inner": "--arrival-delay: 40ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 502; opacity: 1; transform: translateX(564px) translateY(134px) rotate(-6.05007deg);",
+   "title": "前端网页设计风格参考",
+   "inner": "--arrival-delay: 80ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 503; opacity: 1; transform: translateX(755px) translateY(137px) rotate(-2.27428deg);",
+   "title": "新拟物风5种高级交互拿来就用！附提示词",
+   "inner": "--arrival-delay: 120ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 504; opacity: 1; transform: translateX(945px) translateY(120px) rotate(1.50151deg);",
+   "title": "6种“杂志风”dashboard交互，附提示词！",
+   "inner": "--arrival-delay: 160ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 505; opacity: 1; transform: translateX(587px) translateY(369px) rotate(5.2773deg);",
+   "title": "6种Y2K铬金属Dashboard交互，提示词直接抄",
+   "inner": "--arrival-delay: 200ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 39; opacity: 1; transform: translateX(905px) translateY(723px) rotate(0.847994deg);",
+   "title": "7 天，我们筛选出了 10 个最热门的 JEV 项目",
+   "inner": "--arrival-delay: 200ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 33; opacity: 1; transform: translateX(915px) translateY(730px) rotate(-12.6391deg);",
+   "title": "6种像素风高级交互｜附提示词直接抄！",
+   "inner": "--arrival-delay: 200ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 46; opacity: 1; transform: translateX(914px) translateY(721px) rotate(1.87375deg);",
+   "title": "让Claude睡后干活，Loop Engineering实践",
+   "inner": "--arrival-delay: 200ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 23; opacity: 1; transform: translateX(562px) translateY(722px) rotate(-2.50113deg);",
+   "title": "第一人称视角学调酒-玛格丽特Margarita",
+   "inner": "--arrival-delay: 200ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 40; opacity: 1; transform: translateX(908px) translateY(720px) rotate(-11.6134deg);",
+   "title": "Top 10 Skills 推荐｜高星开源🌟",
+   "inner": "--arrival-delay: 200ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 34; opacity: 1; transform: translateX(929px) translateY(721px) rotate(2.8995deg);",
+   "title": "我用的最多最顺手的vibe coding技能",
+   "inner": "--arrival-delay: 200ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  },
+  {
+   "style": "position: absolute; width: 156px; left: -78px; top: -106px; cursor: grab; pointer-events: auto; transform-origin: center center; z-index: 47; opacity: 1; transform: translateX(912px) translateY(739px) rotate(-10.5876deg);",
+   "title": "卡帕西同款会生长的知识库搭建思路",
+   "inner": "--arrival-delay: 200ms;",
+   "cls": "desk-native-drag collection-card-arrival"
+  }
+ ],
+ "groups": [
+  "银饰0",
+  "调酒1",
+  "AI学习6",
+  "做菜0",
+  "设计参考0"
+ ],
+ "chips": [
+  "全部 13",
+  "银饰0",
+  "调酒1",
+  "AI学习6",
+  "做菜0",
+  "设计参考0",
+  "分组"
+ ],
+ "desk": null,
+ "canvas": "position: relative; width: 100%; min-height: 1317.58px; z-index: 1; user-select: none;",
+ "pageH": 1729
+}

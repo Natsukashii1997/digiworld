@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>随手记 · 三版对比</title>
+<!-- 模板：由 build/make.py 生成各页的"三版对比"。三版都是能操作的 1440 页面（iframe 按窗口缩放）。 -->
+<style>
+body { margin: 0; background: #070b16; color: #e9eeff; font: 14px/1.5 -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif; }
+header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 20px; background: #0a1020; border-bottom: 1px solid rgba(140, 178, 255, 0.15); }
+header h1 { margin: 0 8px 0 0; font-size: 15px; }
+.tabs { display: flex; gap: 6px; }
+.tabs button { height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(140, 178, 255, 0.2); background: transparent; color: #b4bfda; font: 600 13px inherit; cursor: pointer; }
+.tabs button.on { background: #ff8a24; color: #1f0f00; border-color: transparent; }
+.note { margin-left: auto; color: #8b98b8; font-size: 12px; }
+.views { display: grid; gap: 16px; padding: 16px 20px; }
+.views.all { grid-template-columns: repeat(3, 1fr); }
+.views.one { grid-template-columns: 1fr; }
+.view { display: none; min-width: 0; }
+.views.all .view, .views.one .view.on { display: block; }
+.view h2 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: #b4bfda; }
+.view h2 b { margin-right: 8px; color: #e9eeff; }
+.frame { position: relative; overflow: hidden; border-radius: 10px; background: #070b16; box-shadow: 0 0 0 1px rgba(140, 178, 255, 0.15); }
+.frame iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: #070b16; }
+</style>
+</head>
+<body>
+<header>
+  <h1>随手记 · 三版对比</h1>
+  <div class="tabs"><button data-v="all" class="on">并排</button><button data-v="1">一 · 便签墙</button><button data-v="2">二 · 收件箱</button><button data-v="3">三 · 便签架</button></div>
+  <span class="note">每版都是能操作的 1440 页面：试试记一笔 / 贴一张（⌘↵）、投递、归档、展开、复制。</span>
+</header>
+<div class="views all"><section class="view" data-v="1"><h2><b>一 · 便签墙</b>胶带便签瀑布流，10 个筛选片（v16 原样，只换成真实便签）</h2><div class="frame"><iframe src="随手记-1-便签墙.html" title="一 · 便签墙"></iframe></div></section><section class="view" data-v="2"><h2><b>二 · 收件箱</b>左边一行一条，右边整页读全文，四个去向在读页顶上；实体机器材质</h2><div class="frame"><iframe src="随手记-2-收件箱.html" title="二 · 收件箱"></iframe></div></section><section class="view" data-v="3"><h2><b>三 · 便签架</b>便签还是便签，但摆正、等宽、胶带只表示状态；四个计数是液晶</h2><div class="frame"><iframe src="随手记-3-便签架.html" title="三 · 便签架"></iframe></div></section></div>
+<script>
+const views = document.querySelector(".views");
+function fit() {
+  for (const f of document.querySelectorAll(".frame")) {
+    const s = Math.min(1, f.clientWidth / 1440);
+    f.style.height = Math.round(900 * s) + "px";
+    f.querySelector("iframe").style.transform = `scale(${s})`;
+  }
+}
+document.querySelector(".tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  const v = b.dataset.v;
+  views.className = "views " + (v === "all" ? "all" : "one");
+  document.querySelectorAll(".view").forEach((x) => x.classList.toggle("on", x.dataset.v === v));
+  requestAnimationFrame(fit);
+});
+addEventListener("resize", fit);
+addEventListener("load", fit);
+fit();
+</script>
+</body>
+</html>

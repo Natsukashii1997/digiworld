@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>随手记 · 三 · 便签架</title>
+<!-- 模板：由 build/make.py 填入侧栏（含伙伴屏）、真实便签后生成 ../随手记-3-便签架.html -->
+<link rel="stylesheet" href="../ui-v18/common.css"><link rel="stylesheet" href="../../../src/partner-lcd.css"><link rel="stylesheet" href="../../../src/scan-motion.css"><link rel="stylesheet" href="v19.css">
+</head>
+<body class="v19 n3">
+<!--ASIDE-->
+<main>
+<div class="top"><span class="crumb">数码世界 / <b>随手记</b></span><span class="search">搜索工作台<kbd>⌘K</kbd></span></div>
+<div class="shelf-head">
+  <div class="title"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><h1>随手记</h1><span class="en">QUICK NOTES</span></div>
+  <div class="seg big" role="radiogroup" aria-label="筛选">
+    <button class="on" data-filter="all"><span class="lcd" data-lcd data-roll="<!--N-ALL-->" data-count="all"></span><small>全部</small></button>
+    <button data-filter="egg"><span class="lcd" data-lcd data-roll="<!--N-EGG-->" data-notes-count></span><small>待孵化</small></button>
+    <button data-filter="delivered"><span class="lcd" data-lcd data-roll="<!--N-DELIVERED-->" data-count="delivered"></span><small>已投递</small></button>
+    <button data-filter="archived"><span class="lcd" data-lcd data-text="00" data-count="archived"></span><small>已归档</small></button>
+  </div>
+</div>
+<div class="grid" data-note-list data-keep="99">
+  <template><article class="card" data-state="egg"><i class="tab" aria-hidden="true"></i><header><time>刚刚</time><span class="chip">待孵化</span></header><div class="body"></div><footer class="acts"><button class="act" data-go="deliver">投递</button><button class="act" data-go="hatch">孵成资产</button><button class="act" data-go="refine">焚决</button><button class="act" data-go="archive">归档</button><button class="act" data-copy>复制</button></footer></article></template>
+  <form class="card compose" data-compose><textarea placeholder="贴一张：一个念头、一个问题……" aria-label="记一笔" rows="4"></textarea><div class="foot"><kbd>⌘↵ 贴上</kbd><button type="submit">贴上</button></div></form>
+  <!--CARDS-->
+</div>
+</main>
+<script src="../ui-v18/page.js"></script>
+<script src="v19.js" defer></script>
+</body>
+</html>

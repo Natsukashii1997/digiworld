@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目空间 · 三 · 优化 1 · 一栏读</title>
+<!-- 模板：由 build/make.py 填入侧栏（含伙伴屏）、真实项目数据后生成 ../项目空间-3-1-一栏读.html。卡带与读档屏由 v19.js 按数据画出。 -->
+<link rel="stylesheet" href="../ui-v18/common.css"><link rel="stylesheet" href="../../../src/partner-lcd.css"><link rel="stylesheet" href="../../../src/scan-motion.css"><link rel="stylesheet" href="v19.css">
+</head>
+<body class="v19 pj p3 q read">
+<!--ASIDE-->
+<main data-projects="bay" data-variant="read">
+<div class="top"><span class="crumb">数码世界 / <b>项目空间</b></span><span class="search">搜索工作台<kbd>⌘K</kbd></span></div>
+<div class="bar">
+  <h1>项目空间<span class="en">PROJECTS</span></h1>
+  <div class="counts">
+    <span class="cnt"><span class="lcd" data-lcd data-roll="<!--N-SAVES-->" data-pj-count="saves"></span><small>在推进</small></span>
+    <span class="cnt"><span class="lcd" data-lcd data-roll="<!--N-ALL-->"></span><small>项目</small></span>
+    <span class="cnt"><span class="lcd" data-lcd data-roll="<!--N-INBOX-->"></span><small>收件待交代</small></span>
+  </div>
+  <span class="grow"></span>
+  <span class="readat" data-pj-readat>上次读取 <!--READ--></span>
+  <button class="ibtn" data-pj-refresh title="刷新：重新读取在推进的存档" aria-label="刷新"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg></button><button class="ibtn" data-pj-settings title="项目空间设置" aria-label="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></button>
+</div>
+<section class="saves" aria-label="在推进项目">
+  <div class="slots" data-pj-slots role="tablist" aria-label="存档槽"></div>
+  <div class="screen" data-pj-screen role="tabpanel" aria-live="polite"></div>
+</section>
+<!--LIBRARY-->
+<aside class="pj-drawer" data-pj-drawer hidden aria-label="项目详情"></aside>
+</main>
+<script type="application/json" id="projects-data"><!--JSON--></script>
+<script src="../ui-v18/page.js"></script>
+<script src="v19.js" defer></script>
+</body>
+</html>

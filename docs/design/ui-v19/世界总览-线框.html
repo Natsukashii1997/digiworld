@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>世界总览 · 三个方向线框</title>
+<!-- UI v19 · 世界总览三个方向的黑白结构草图：只看结构和主次，不代表配色、字体与质感。
+     三版都保留数码世界：深色数码空间、液晶读数、像素图标、数码兽、数码蛋、存档槽、出战。线框里用点纹表示液晶、斜纹表示像素图。 -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#ececec;color:#111;font:14px/1.45 -apple-system,"PingFang SC","Helvetica Neue",sans-serif;padding:40px}
+h1{font-size:26px}
+.intro{color:#555;margin:6px 0 0;max-width:1300px}
+h2.dir{font-size:22px;margin:56px 0 4px}
+.lead{color:#444;max-width:1500px;margin-bottom:16px}
+.pair{display:flex;gap:40px;align-items:flex-start}
+.f{background:#fff;border:1.5px solid #111;position:relative;overflow:hidden;flex:none}
+.f.d{width:1440px;height:900px;display:grid;grid-template-columns:220px 1fr}
+.f.m{width:390px}
+.side{border-right:1.5px solid #111;padding:20px 14px;display:flex;flex-direction:column;gap:4px;background:#fafafa}
+.logo{font-weight:800;font-size:16px;margin:0 6px 18px}
+.nav{padding:9px 10px;border-radius:6px;color:#444}
+.nav.on{background:#111;color:#fff}
+.navg{font-size:11px;color:#999;margin:12px 10px 2px;letter-spacing:.12em}
+.partner{margin-top:auto;border:1.5px dashed #888;border-radius:8px;height:112px;display:grid;place-items:center;color:#777;font-size:12px;text-align:center}
+.main{display:flex;flex-direction:column;min-width:0}
+.top{height:56px;border-bottom:1.5px solid #111;display:flex;align-items:center;justify-content:space-between;padding:0 28px;flex:none}
+.search{border:1.5px solid #111;border-radius:6px;width:300px;height:34px;display:flex;align-items:center;padding:0 10px;color:#888;justify-content:space-between}
+.body{padding:24px 32px;display:flex;flex-direction:column;gap:16px;min-height:0}
+.box{border:1.5px solid #111;border-radius:8px;background:#fff;min-width:0}
+.hd{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #ddd}
+.hd b{font-size:15px}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#666;letter-spacing:.04em}
+.btn{background:#111;color:#fff;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.btn.o{background:#fff;color:#111;border:1.5px solid #111}
+.btn.big{padding:11px 18px;font-size:15px}
+.chip{border:1px solid #999;border-radius:4px;padding:1px 7px;font-size:12px;color:#444;white-space:nowrap}
+.row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #eee;min-width:0}
+.row:last-child{border-bottom:0}
+.ico{width:28px;height:28px;border:1.5px solid #111;border-radius:5px;flex:none;display:grid;place-items:center;font-size:12px}
+.px{background:repeating-linear-gradient(45deg,#fff 0 3px,#ccc 3px 4px)}
+.ava{width:40px;height:40px;border:1.5px solid #111;border-radius:6px;flex:none}
+.t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{color:#777;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grow{flex:1;min-width:0}
+.num{font-size:40px;font-weight:800;line-height:1;font-family:ui-monospace,Menlo,monospace}
+.dash{border-style:dashed!important;color:#888}
+.input{border:1.5px solid #111;border-radius:999px;height:44px;display:flex;align-items:center;padding:0 8px 0 16px;gap:10px;color:#888;background:#fff}
+.input .k{margin-left:auto}
+.hover{background:#f1f1f1}
+.acts{display:flex;gap:6px}
+.inv{background:#111;color:#fff}
+.inv .sub,.inv .mono{color:#bbb}
+/* 液晶：点纹 */
+.lcd{background:radial-gradient(#999 .9px,transparent 1px) 0 0/4px 4px,#f4f4f4;border:1.5px solid #111;border-radius:4px;padding:6px 10px;font-family:ui-monospace,Menlo,monospace;font-weight:800;letter-spacing:.06em;line-height:1}
+.lcd.big{font-size:32px}
+.lcd.mid{font-size:22px}
+.lbl{font-size:12px;color:#666;letter-spacing:.08em}
+/* 机身：外壳边框 */
+.bezel{border:3px solid #111;border-radius:14px;padding:12px;background:#f7f7f7;display:flex;flex-direction:column;gap:12px}
+.strip{display:flex;align-items:center;gap:22px;padding:10px 14px;border:1.5px solid #111;border-radius:8px;background:#fff}
+.counter{display:flex;flex-direction:column;align-items:center;gap:4px}
+.anno{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:16px;width:1870px}
+.anno div{background:#fff;border:1px solid #bbb;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6}
+.anno b{display:block;margin-bottom:4px}
+.mtop{height:56px;border-bottom:1.5px solid #111;display:flex;align-items:center;gap:12px;padding:0 16px}
+.mbody{padding:16px;display:flex;flex-direction:column;gap:14px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid #111;border-radius:8px;overflow:hidden}
+.seg span{padding:9px 0;text-align:center;font-weight:600;border-right:1px solid #111}
+.seg span:last-child{border-right:0}
+.dock{position:sticky;bottom:0;border-top:1.5px solid #111;background:#fff;padding:10px 12px}
+.card{border:1.5px solid #111;border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0;background:#fff}
+.card .foot{display:flex;gap:6px;align-items:center;margin-top:auto}
+.hscroll{display:flex;gap:10px;overflow:hidden}
+.hscroll .card{flex:none;width:300px}
+</style>
+</head>
+<body>
+<h1>世界总览 · 三个方向（黑白线框）</h1>
+<p class="intro">只看结构和主次，不代表配色、字体与质感。三版都是数码世界：深色数码空间、液晶读数（点纹）、像素图（斜纹）、数码兽持笔者、数码蛋、存档槽、出战。三版共用同一批真实内容——出战中的项目、待孵化（随手记 + 收藏里还没去向的）、常用出战的资产、记一笔；左下角伙伴屏原样保留。不同的是<b>页面的组织原理</b>和<b>世界观承担什么信息</b>。</p>
+
+<!-- ============ 方向一 ============ -->
+<h2 class="dir">方向一 · 主屏（暴龙机即页面）</h2>
+<p class="lead">不再把暴龙机摆在页中央，而是让<b>整个内容区成为暴龙机的主屏</b>：外壳一圈机身边框，顶上一条液晶读数（时间、待孵化、出战中、本周出战），屏里是出战中、待孵化、装备栏。液晶只显示数字，像素图只标类型与持笔者。暴龙机的签名留下了，而且它第一次承载真实信息。</p>
+<div class="pair">
+  <section class="f d" data-shot="方向一-1440">
+    <aside class="side">
+      <div class="logo">数码世界</div>
+      <div class="nav on">世界总览</div>
+      <div class="navg">捕获</div><div class="nav">随手记　13</div><div class="nav">个人收藏　13</div>
+      <div class="navg">炼化与出战</div><div class="nav">资产仓库　8</div><div class="nav">项目空间　2</div>
+      <div class="nav" style="margin-top:12px">设置</div>
+      <div class="partner">伙伴屏<br>（原样不动）</div>
+    </aside>
+    <div class="main">
+      <div class="top"><span class="mono">数码世界 / 世界总览</span><span class="search">搜索工作台 <span class="mono">⌘K</span></span></div>
+      <div class="body" style="padding:20px 28px">
+        <div class="bezel" style="flex:1">
+          <div class="strip">
+            <span class="lcd big">23:45</span>
+            <div><div class="mono">FRI 23 OCT · WK43</div><div>晚上好，被选召的孩子</div></div>
+            <div class="counter"><span class="lcd mid">13</span><span class="lbl">待孵化</span></div>
+            <div class="counter"><span class="lcd mid">2/3</span><span class="lbl">出战中</span></div>
+            <div class="counter"><span class="lcd mid">05</span><span class="lbl">本周出战</span></div>
+            <div class="input" style="margin-left:auto;width:440px">&gt; 记一笔：一个念头、一个问题……<span class="mono k">⌘↵</span><span class="btn">记下</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 420px;gap:12px;flex:1;min-height:0">
+            <div class="box">
+              <div class="hd"><b>出战中</b><span class="mono">项目空间 →</span></div>
+              <div class="row" style="height:84px"><span class="mono">SLOT 01</span><span class="ava px" title="持笔者：机械暴龙兽"></span><div class="grow"><div class="t" style="font-size:15px">牛马之家</div><div class="sub">机械暴龙兽持笔 · 最近进展 10/23：物料交付改读 NAS · 已发布 40c9528</div></div><div style="width:200px"><div class="lbl">下一步</div><div class="t">未填 · 点击填写</div></div><span class="chip">收件 7</span><span class="chip">装备 2</span><span class="btn">▶ 继续</span></div>
+              <div class="row" style="height:84px"><span class="mono">SLOT 02</span><span class="ava px"></span><div class="grow"><div class="t" style="font-size:15px">数码世界 | 个人 AI 工作台</div><div class="sub">机械暴龙兽持笔 · 最近进展 10/23：阶段 2 已发布 644</div></div><div style="width:200px"><div class="lbl">下一步</div><div class="t">世界总览重设计</div></div><span class="chip">收件 0</span><span class="chip">装备 2</span><span class="btn">▶ 继续</span></div>
+              <div class="row dash" style="height:56px;margin:8px 16px;border:1.5px dashed #999;border-radius:6px">＋ SLOT 03 · 空着，去项目空间放一个</div>
+              <div class="hd" style="border-top:1px solid #ddd;border-bottom:0"><b>装备栏 · 常用出战</b><span class="mono">按出战次数 · 点一下复制</span></div>
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:4px 16px 14px">
+                <div class="row box" style="padding:8px 10px"><span class="ico px"></span><div class="grow"><div class="t">会话交接 Handoff</div><div class="sub">成熟期 ■■■□□</div></div><span class="mono">×6 ⧉</span></div>
+                <div class="row box" style="padding:8px 10px"><span class="ico px"></span><div class="grow"><div class="t">UI 诊断优化</div><div class="sub">成长期 ■■□□□</div></div><span class="mono">×3 ⧉</span></div>
+                <div class="row box" style="padding:8px 10px"><span class="ico px"></span><div class="grow"><div class="t">答前校准</div><div class="sub">成熟期 ■■■□□</div></div><span class="mono">×2 ⧉</span></div>
+                <div class="row box" style="padding:8px 10px"><span class="ico px"></span><div class="grow"><div class="t">省 Token 守则</div><div class="sub">成长期 ■■□□□</div></div><span class="mono">×1 ⧉</span></div>
+              </div>
+            </div>
+            <div class="box">
+              <div class="hd"><b>待孵化</b><span class="mono">随手记 13 · 收藏 13 →</span></div>
+              <div class="row hover" style="flex-wrap:wrap"><span class="ico px"></span><div class="grow"><div class="t">明确当前项目进度的 prompt</div><div class="sub">随手记 · 10/23 11:25</div></div><div class="acts" style="width:100%;padding-left:40px"><span class="btn o">投递</span><span class="btn o">孵成资产</span><span class="btn o">焚决</span><span class="btn o">归档</span></div></div>
+              <div class="row"><span class="ico px"></span><div class="grow"><div class="t">Github 排行榜内部版本</div><div class="sub">随手记 · 10/22 11:00</div></div></div>
+              <div class="row"><span class="ico px"></span><div class="grow"><div class="t">周报模板不用了</div><div class="sub">随手记 · 10/21 11:00</div></div></div>
+              <div class="row"><span class="ico px"></span><div class="grow"><div class="t">6 种高审美 dashboard 交互</div><div class="sub">收藏 · 设计美学 · 10/20</div></div></div>
+              <div class="row"><span class="ico px"></span><div class="grow"><div class="t">新野兽派 & 新粗野主义</div><div class="sub">收藏 · 设计美学 · 10/20</div></div></div>
+              <div class="row"><span class="ico px"></span><div class="grow"><div class="t">前端网页设计风格参考</div><div class="sub">收藏 · 编程开发 · 10/20</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="f m" data-shot="方向一-390">
+    <div class="mtop"><span>☰</span><b>世界总览</b><span class="mono" style="margin-left:auto">⌕</span></div>
+    <div class="mbody">
+      <div class="bezel" style="gap:10px">
+        <div class="strip" style="gap:12px"><span class="lcd mid">23:45</span><div><div class="mono">FRI 23 OCT</div><div style="font-size:13px">晚上好</div></div></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div class="counter"><span class="lcd mid">13</span><span class="lbl">待孵化</span></div>
+          <div class="counter"><span class="lcd mid">2/3</span><span class="lbl">出战中</span></div>
+          <div class="counter"><span class="lcd mid">05</span><span class="lbl">本周出战</span></div>
+        </div>
+      </div>
+      <div class="input">&gt; 记一笔……<span class="btn k">记下</span></div>
+      <div class="box">
+        <div class="hd"><b>出战中</b><span class="mono">全部 →</span></div>
+        <div class="row" style="flex-wrap:wrap"><span class="ava px"></span><div class="grow"><div class="t">牛马之家</div><div class="sub">下一步：未填 · 点击填写</div></div><div style="display:flex;gap:6px;width:100%;align-items:center"><span class="chip">收件 7</span><span class="chip">装备 2</span><span class="btn" style="margin-left:auto">▶ 继续</span></div></div>
+        <div class="row" style="flex-wrap:wrap"><span class="ava px"></span><div class="grow"><div class="t">数码世界</div><div class="sub">下一步：世界总览重设计</div></div><div style="display:flex;gap:6px;width:100%;align-items:center"><span class="chip">收件 0</span><span class="chip">装备 2</span><span class="btn" style="margin-left:auto">▶ 继续</span></div></div>
+      </div>
+      <div class="box">
+        <div class="hd"><b>待孵化</b><span class="mono">全部 →</span></div>
+        <div class="row"><span class="ico px"></span><div class="grow"><div class="t">明确当前项目进度的 prompt</div><div class="sub">随手记 · 10/23</div></div><span class="mono">⋯</span></div>
+        <div class="row"><span class="ico px"></span><div class="grow"><div class="t">Github 排行榜内部版本</div><div class="sub">随手记 · 10/22</div></div><span class="mono">⋯</span></div>
+        <div class="row"><span class="ico px"></span><div class="grow"><div class="t">6 种高审美 dashboard 交互</div><div class="sub">收藏 · 10/20</div></div><span class="mono">⋯</span></div>
+      </div>
+      <div class="box">
+        <div class="hd"><b>装备栏</b><span class="mono">点一下复制</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px">
+          <div class="box" style="padding:10px"><div class="t">会话交接</div><div class="mono">×6 ⧉</div></div>
+          <div class="box" style="padding:10px"><div class="t">UI 诊断优化</div><div class="mono">×3 ⧉</div></div>
+          <div class="box" style="padding:10px"><div class="t">答前校准</div><div class="mono">×2 ⧉</div></div>
+          <div class="box" style="padding:10px"><div class="t">省 Token 守则</div><div class="mono">×1 ⧉</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="anno">
+  <div><b>主角</b>出战中的两个存档槽（名字、持笔者、下一步、收件、继续）。顶上三个液晶数是“今天的仪表”。</div>
+  <div><b>读法</b>先看仪表，再看屏里：左大块是要继续的事，右窄栏是要处理的蛋，底下一排是常用装备。一屏看全，不滚动。</div>
+  <div><b>世界观承担的信息</b>外壳 = 这就是暴龙机；液晶 = 真实计数；持笔者像素头像 = 谁在推进；装备栏 = 出战次数最多的资产。</div>
+  <div><b>质感怎么实在</b>外壳与面板不透明、硬边；只有液晶本身亮（它本来就是发光体）；其余不发光、不渐变；文字对比拉高。参考：Linear / Raycast 深色的密度，初代暴龙机 LCD 的克制。</div>
+  <div><b>代价</b>最像“仪器”，场景感最弱；“本周出战”要能从已有的复制 / 继续记录里数出来，数不出来就去掉这格。</div>
+</div>
+
+<!-- ============ 方向二 ============ -->
+<h2 class="dir">方向二 · 编队（项目是出战的队伍）</h2>
+<p class="lead">把“出战”这个词当真：在推进的项目就是你的出战编队，每个存档槽是一张<b>队员状态卡</b>，卡上是持笔的数码兽、下一步、带着的收件和装备；下面是<b>蛋巢</b>（待孵化）和<b>道具栏</b>（常用出战）。页面上没有暴龙机（伙伴屏仍在侧栏），世界观全部由“数码兽 / 蛋 / 道具”这些有真实对应的形象承担。</p>
+<div class="pair">
+  <section class="f d" data-shot="方向二-1440">
+    <aside class="side">
+      <div class="logo">数码世界</div>
+      <div class="nav on">世界总览</div>
+      <div class="navg">捕获</div><div class="nav">随手记　13</div><div class="nav">个人收藏　13</div>
+      <div class="navg">炼化与出战</div><div class="nav">资产仓库　8</div><div class="nav">项目空间　2</div>
+      <div class="nav" style="margin-top:12px">设置</div>
+      <div class="partner">伙伴屏<br>（原样不动）</div>
+    </aside>
+    <div class="main">
+      <div class="top"><span class="mono">数码世界 / 世界总览</span><span class="search">搜索工作台 <span class="mono">⌘K</span></span></div>
+      <div class="body">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+          <div><div style="font-size:28px;font-weight:800">晚上好，被选召的孩子</div><div class="mono">FRI 23 OCT · WK43 · 2 队出战中 · 13 颗蛋待孵化</div></div>
+          <div class="input" style="width:520px">&gt; 记一笔：一个念头、一个问题……<span class="mono k">⌘↵</span><span class="btn">记下</span></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lbl">出战编队 · 2/3</span><span class="mono">项目空间 →</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+          <div class="card" style="min-height:236px">
+            <div style="display:flex;gap:12px;align-items:center"><span class="ava px" style="width:72px;height:72px"></span><div class="grow"><div class="mono">SLOT 01 · 机械暴龙兽持笔</div><div class="t" style="font-size:18px">牛马之家</div><div class="sub">最近进展 10/23 · 已发布 40c9528</div></div></div>
+            <div><span class="lbl">下一步</span><div class="t">未填 · 点击填写</div></div>
+            <div class="sub">带着：收件 7 条 · 装备 2 件</div>
+            <div class="foot"><span class="chip">会话交接</span><span class="chip">答前校准</span><span class="btn" style="margin-left:auto">▶ 继续</span></div>
+          </div>
+          <div class="card" style="min-height:236px">
+            <div style="display:flex;gap:12px;align-items:center"><span class="ava px" style="width:72px;height:72px"></span><div class="grow"><div class="mono">SLOT 02 · 机械暴龙兽持笔</div><div class="t" style="font-size:18px">数码世界</div><div class="sub">最近进展 10/23 · 阶段 2 已发布 644</div></div></div>
+            <div><span class="lbl">下一步</span><div class="t">世界总览重设计</div></div>
+            <div class="sub">带着：收件 0 条 · 装备 2 件</div>
+            <div class="foot"><span class="chip">会话交接</span><span class="chip">UI 诊断</span><span class="btn" style="margin-left:auto">▶ 继续</span></div>
+          </div>
+          <div class="card dash" style="min-height:236px;border:1.5px dashed #999;justify-content:center;align-items:center;text-align:center"><div class="mono">SLOT 03</div><div>空着 · 去项目空间放一个</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0">
+          <div class="box">
+            <div class="hd"><b>蛋巢 · 待孵化 13</b><span class="mono">随手记 13 · 收藏 13 →</span></div>
+            <div class="row hover"><span class="ico px"></span><div class="grow"><div class="t">明确当前项目进度的 prompt</div><div class="sub">随手记 · 10/23</div></div><div class="acts"><span class="btn o">投递</span><span class="btn o">孵成</span><span class="btn o">焚决</span><span class="btn o">归档</span></div></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">Github 排行榜内部版本</div><div class="sub">随手记 · 10/22</div></div></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">周报模板不用了</div><div class="sub">随手记 · 10/21</div></div></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">6 种高审美 dashboard 交互</div><div class="sub">收藏 · 10/20</div></div></div>
+          </div>
+          <div class="box">
+            <div class="hd"><b>道具栏 · 常用出战</b><span class="mono">按出战次数 · 点一下复制</span></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">会话交接 Handoff</div><div class="sub">Prompt · 成熟期 ■■■□□</div></div><span class="mono">×6 ⧉</span></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">UI 诊断优化</div><div class="sub">Prompt · 成长期 ■■□□□</div></div><span class="mono">×3 ⧉</span></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">答前校准</div><div class="sub">Prompt · 成熟期 ■■■□□</div></div><span class="mono">×2 ⧉</span></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">省 Token 守则</div><div class="sub">规则 · 成长期 ■■□□□</div></div><span class="mono">×1 ⧉</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="f m" data-shot="方向二-390">
+    <div class="mtop"><span>☰</span><b>世界总览</b><span class="mono" style="margin-left:auto">⌕</span></div>
+    <div class="mbody">
+      <div><div style="font-size:22px;font-weight:800">晚上好</div><div class="mono">2 队出战中 · 13 颗蛋待孵化</div></div>
+      <div class="lbl">出战编队 · 横滑</div>
+      <div class="hscroll">
+        <div class="card">
+          <div style="display:flex;gap:10px;align-items:center"><span class="ava px" style="width:56px;height:56px"></span><div class="grow"><div class="mono">SLOT 01</div><div class="t" style="font-size:16px">牛马之家</div></div></div>
+          <div><span class="lbl">下一步</span><div class="t">未填 · 点击填写</div></div>
+          <div class="sub">收件 7 · 装备 2</div>
+          <div class="foot"><span class="btn" style="width:100%;text-align:center">▶ 继续</span></div>
+        </div>
+        <div class="card"><div style="display:flex;gap:10px;align-items:center"><span class="ava px" style="width:56px;height:56px"></span><div class="grow"><div class="mono">SLOT 02</div><div class="t">数码世界</div></div></div></div>
+      </div>
+      <div class="box">
+        <div class="hd"><b>蛋巢 · 13</b><span class="mono">全部 →</span></div>
+        <div class="row"><span class="ico px"></span><div class="grow"><div class="t">明确当前项目进度的 prompt</div><div class="sub">随手记 · 10/23</div></div><span class="mono">⋯</span></div>
+        <div class="row"><span class="ico px"></span><div class="grow"><div class="t">Github 排行榜内部版本</div><div class="sub">随手记 · 10/22</div></div><span class="mono">⋯</span></div>
+        <div class="row"><span class="ico px"></span><div class="grow"><div class="t">6 种高审美 dashboard 交互</div><div class="sub">收藏 · 10/20</div></div><span class="mono">⋯</span></div>
+      </div>
+      <div class="box">
+        <div class="hd"><b>道具栏</b><span class="mono">点一下复制</span></div>
+        <div class="row"><span class="ico px"></span><div class="grow t">会话交接 Handoff</div><span class="mono">×6 ⧉</span></div>
+        <div class="row"><span class="ico px"></span><div class="grow t">UI 诊断优化</div><span class="mono">×3 ⧉</span></div>
+        <div class="row"><span class="ico px"></span><div class="grow t">答前校准</div><span class="mono">×2 ⧉</span></div>
+      </div>
+    </div>
+    <div class="dock"><div class="input" style="height:40px">&gt; 记一笔……<span class="btn k">记下</span></div></div>
+  </section>
+</div>
+<div class="anno">
+  <div><b>主角</b>三张队员卡：谁（持笔数码兽）在推进什么、下一步是什么、带着多少收件和装备。</div>
+  <div><b>读法</b>先看编队（横向三张），再往下看蛋巢和道具栏。空槽老实画成空卡，不装饰。</div>
+  <div><b>世界观承担的信息</b>数码兽 = 持笔者（真实数据：CURRENT 写入者）；蛋 = 没处理的捕获；道具 = 资产和它的出战次数；阶段格 = 进化阶段。</div>
+  <div><b>质感怎么实在</b>卡片是不透明的硬边“状态卡”，像素图放在平的深色底上，没有光晕；数字只在卡里以液晶字出现。参考：怪物养成游戏的编队 / 状态画面里做得好的那一类（信息密、每格有含义）。</div>
+  <div><b>代价</b>最“游戏”，气质最强也最容易过头；只有 1 个项目时首屏会显得空（已用空卡处理）；首页没有暴龙机。</div>
+</div>
+
+<!-- ============ 方向三 ============ -->
+<h2 class="dir">方向三 · 主线（捕获 → 炼化 → 出战）</h2>
+<p class="lead">把全站主线直接画成页面结构：三站从左到右，站与站之间的箭头就是投递、孵成、装备这三个真实动作；东西从左边进来，往右走到项目里。暴龙机缩成顶部一条液晶状态条（时间 + 本周三站各走了多少）。哪一站堆积了，一眼能看出来。</p>
+<div class="pair">
+  <section class="f d" data-shot="方向三-1440">
+    <aside class="side">
+      <div class="logo">数码世界</div>
+      <div class="nav on">世界总览</div>
+      <div class="navg">捕获</div><div class="nav">随手记　13</div><div class="nav">个人收藏　13</div>
+      <div class="navg">炼化与出战</div><div class="nav">资产仓库　8</div><div class="nav">项目空间　2</div>
+      <div class="nav" style="margin-top:12px">设置</div>
+      <div class="partner">伙伴屏<br>（原样不动）</div>
+    </aside>
+    <div class="main">
+      <div class="top"><span class="mono">数码世界 / 世界总览</span><span class="search">搜索工作台 <span class="mono">⌘K</span></span></div>
+      <div class="body">
+        <div class="strip" style="border-width:3px;border-radius:12px">
+          <span class="lcd big">23:45</span>
+          <div><div class="mono">FRI 23 OCT · WK43</div><div>晚上好，13 颗蛋待孵化</div></div>
+          <div class="counter"><span class="lcd mid">03</span><span class="lbl">本周投递</span></div>
+          <div class="counter"><span class="lcd mid">01</span><span class="lbl">本周孵成</span></div>
+          <div class="counter"><span class="lcd mid">05</span><span class="lbl">本周出战</span></div>
+          <div class="input" style="margin-left:auto;width:400px">&gt; 记一笔……<span class="btn k">记下</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:0 13%"><span class="mono">投递到项目</span><span style="flex:1;border-top:1.5px dashed #111"></span><span>→</span></div>
+        <div style="display:grid;grid-template-columns:1fr 40px 1fr 40px 1fr;align-items:stretch;flex:1;min-height:0">
+          <div class="box">
+            <div class="hd"><b>① 捕获 · 待孵化 13</b><span class="mono">全部 →</span></div>
+            <div class="row hover" style="flex-wrap:wrap"><span class="ico px"></span><div class="grow"><div class="t">明确当前项目进度的 prompt</div><div class="sub">随手记 · 10/23</div></div><div class="acts" style="width:100%;padding-left:40px"><span class="btn o">投递</span><span class="btn o">孵成</span><span class="btn o">焚决</span><span class="btn o">归档</span></div></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">Github 排行榜内部版本</div><div class="sub">随手记 · 10/22</div></div></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">周报模板不用了</div><div class="sub">随手记 · 10/21</div></div></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">6 种高审美 dashboard 交互</div><div class="sub">收藏 · 10/20</div></div></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">新野兽派 & 新粗野主义</div><div class="sub">收藏 · 10/20</div></div></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">前端网页设计风格参考</div><div class="sub">收藏 · 10/20</div></div></div>
+          </div>
+          <div style="display:grid;place-items:center;text-align:center" class="mono">孵成<br>→</div>
+          <div class="box">
+            <div class="hd"><b>② 炼化 · 资产 8</b><span class="mono">按出战次数</span></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">会话交接 Handoff</div><div class="sub">成熟期 ■■■□□</div></div><span class="mono">×6 ⧉</span></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">UI 诊断优化</div><div class="sub">成长期 ■■□□□</div></div><span class="mono">×3 ⧉</span></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">答前校准</div><div class="sub">成熟期 ■■■□□</div></div><span class="mono">×2 ⧉</span></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">省 Token 守则</div><div class="sub">成长期 ■■□□□</div></div><span class="mono">×1 ⧉</span></div>
+            <div class="row"><span class="ico px"></span><div class="grow"><div class="t">焚决 · 心法</div><div class="sub">2 条</div></div><span class="mono">⧉</span></div>
+          </div>
+          <div style="display:grid;place-items:center;text-align:center" class="mono">装备<br>→</div>
+          <div class="box">
+            <div class="hd"><b>③ 出战 · 在推进 2/3</b><span class="mono">项目空间 →</span></div>
+            <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+              <div class="card"><div style="display:flex;gap:10px;align-items:center"><span class="ava px"></span><div class="grow"><div class="mono">SLOT 01 · 机械暴龙兽</div><div class="t">牛马之家</div></div></div><div class="sub">下一步：未填 · 点击填写</div><div class="foot"><span class="chip">收件 7</span><span class="chip">装备 2</span><span class="btn" style="margin-left:auto">▶ 继续</span></div></div>
+              <div class="card"><div style="display:flex;gap:10px;align-items:center"><span class="ava px"></span><div class="grow"><div class="mono">SLOT 02 · 机械暴龙兽</div><div class="t">数码世界</div></div></div><div class="sub">下一步：世界总览重设计</div><div class="foot"><span class="chip">收件 0</span><span class="chip">装备 2</span><span class="btn" style="margin-left:auto">▶ 继续</span></div></div>
+              <div class="card dash" style="border:1.5px dashed #999">＋ SLOT 03 · 空着</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="f m" data-shot="方向三-390">
+    <div class="mtop"><span>☰</span><b>世界总览</b><span class="mono" style="margin-left:auto">⌕</span></div>
+    <div class="mbody">
+      <div class="strip" style="border-width:3px;border-radius:12px;gap:12px"><span class="lcd mid">23:45</span><div><div class="mono">FRI 23 OCT</div><div style="font-size:13px">13 颗蛋待孵化</div></div></div>
+      <div class="input">&gt; 记一笔……<span class="btn k">记下</span></div>
+      <div class="seg"><span>捕获 13</span><span>炼化 8</span><span class="inv">出战 2</span></div>
+      <div class="card"><div style="display:flex;gap:10px;align-items:center"><span class="ava px"></span><div class="grow"><div class="mono">SLOT 01</div><div class="t">牛马之家</div></div></div><div class="sub">下一步：未填 · 点击填写</div><div class="foot"><span class="chip">收件 7</span><span class="chip">装备 2</span><span class="btn" style="margin-left:auto">▶ 继续</span></div></div>
+      <div class="card"><div style="display:flex;gap:10px;align-items:center"><span class="ava px"></span><div class="grow"><div class="mono">SLOT 02</div><div class="t">数码世界</div></div></div><div class="sub">下一步：世界总览重设计</div><div class="foot"><span class="chip">收件 0</span><span class="chip">装备 2</span><span class="btn" style="margin-left:auto">▶ 继续</span></div></div>
+      <div class="card dash" style="border:1.5px dashed #999">＋ SLOT 03 · 空着</div>
+      <div class="sub" style="text-align:center">三站改成切换，不画箭头；默认停在“出战”</div>
+    </div>
+  </section>
+</div>
+<div class="anno">
+  <div><b>主角</b>主线本身：哪一站堆积了。三站等宽，没有哪一站被压成配角。</div>
+  <div><b>读法</b>从左到右，和动作方向一致：投递、孵成、装备都是往右推一步；投递或继续时，一个数据点沿箭头走一次。</div>
+  <div><b>世界观承担的信息</b>液晶条 = 暴龙机缩成的仪表；三站 = 捕获 / 炼化 / 出战；像素图 = 类型、阶段、持笔者。</div>
+  <div><b>质感怎么实在</b>和方向一同一套“实体机器”材质：不透明面板、硬边、液晶才发光；箭头是真的动作通道，不是装饰走线。</div>
+  <div><b>代价</b>“先做哪件”不如方向一、二直接；资产站在首页重复了资产仓库；手机上要改成切换。</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目空间 · 剧场的三版再优化</title>
+<!-- 模板：由 build/make.py 生成各页的"三版对比"。三版都是能操作的 1440 页面（iframe 按窗口缩放）。 -->
+<style>
+body { margin: 0; background: #070b16; color: #e9eeff; font: 14px/1.5 -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif; }
+header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 20px; background: #0a1020; border-bottom: 1px solid rgba(140, 178, 255, 0.15); }
+header h1 { margin: 0 8px 0 0; font-size: 15px; }
+.tabs { display: flex; gap: 6px; }
+.tabs button { height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(140, 178, 255, 0.2); background: transparent; color: #b4bfda; font: 600 13px inherit; cursor: pointer; }
+.tabs button.on { background: #ff8a24; color: #1f0f00; border-color: transparent; }
+.note { margin-left: auto; color: #8b98b8; font-size: 12px; }
+.views { display: grid; gap: 16px; padding: 16px 20px; }
+.views.all { grid-template-columns: repeat(3, 1fr); }
+.views.one { grid-template-columns: 1fr; }
+.view { display: none; min-width: 0; }
+.views.all .view, .views.one .view.on { display: block; }
+.view h2 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: #b4bfda; }
+.view h2 b { margin-right: 8px; color: #e9eeff; }
+.frame { position: relative; overflow: hidden; border-radius: 10px; background: #070b16; box-shadow: 0 0 0 1px rgba(140, 178, 255, 0.15); }
+.frame iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: #070b16; }
+</style>
+</head>
+<body>
+<header>
+  <h1>项目空间 · 剧场的三版再优化</h1>
+  <div class="tabs"><button data-v="all" class="on">并排</button><button data-v="1">剧场 · 上一稿</button><button data-v="2">4-1 · 交接条</button><button data-v="3">4-2 · 口令即对白</button><button data-v="4">4-3 · 出发队列</button></div>
+  <span class="note">三版共用：继续 / 看口令 / 只复制 / 换伙伴并成一个动作（选伙伴 + 复制口令交给 X，旁边'复制后打开 X'默认勾上）；活动改成整宽 30 天双轨（Git / CURRENT 各一行，格上写次数）；立绘与对话框等高对齐。</span>
+</header>
+<div class="views all"><section class="view" data-v="1"><h2><b>剧场 · 上一稿</b>优化 3 · 剧场（再优化前，留作对照）</h2><div class="frame"><iframe src="项目空间-3-3-剧场.html" title="剧场 · 上一稿"></iframe></div></section><section class="view" data-v="2"><h2><b>4-1 · 交接条</b>剧场原样：对话框写下一步；下面一条交接条（伙伴头像 + 复制口令交给 X + 口令全文折叠）；30 天双轨活动整宽</h2><div class="frame"><iframe src="项目空间-4-1-交接条.html" title="4-1 · 交接条"></iframe></div></section><section class="view" data-v="3"><h2><b>4-2 · 口令即对白</b>数码兽把口令说出来：对话框就是完整口令（下一步一行加粗放大）；右栏竖排四个伙伴 + 一个复制按钮</h2><div class="frame"><iframe src="项目空间-4-2-口令对白.html" title="4-2 · 口令即对白"></iframe></div></section><section class="view" data-v="4"><h2><b>4-3 · 出发队列</b>四只数码兽站成一排，点谁谁往前一步（持笔者挂牌）；上方下一步，右边一个复制按钮</h2><div class="frame"><iframe src="项目空间-4-3-出发队列.html" title="4-3 · 出发队列"></iframe></div></section></div>
+<script>
+const views = document.querySelector(".views");
+function fit() {
+  for (const f of document.querySelectorAll(".frame")) {
+    const s = Math.min(1, f.clientWidth / 1440);
+    f.style.height = Math.round(900 * s) + "px";
+    f.querySelector("iframe").style.transform = `scale(${s})`;
+  }
+}
+document.querySelector(".tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  const v = b.dataset.v;
+  views.className = "views " + (v === "all" ? "all" : "one");
+  document.querySelectorAll(".view").forEach((x) => x.classList.toggle("on", x.dataset.v === v));
+  requestAnimationFrame(fit);
+});
+addEventListener("resize", fit);
+addEventListener("load", fit);
+fit();
+</script>
+</body>
+</html>

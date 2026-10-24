@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>资产仓库 · 二 · 装备清单</title>
+<!-- 模板：由 build/make.py 填入侧栏（含伙伴屏）、真实资产后生成 ../资产仓库-2-装备清单.html -->
+<link rel="stylesheet" href="../ui-v18/common.css"><link rel="stylesheet" href="../../../src/partner-lcd.css"><link rel="stylesheet" href="../../../src/scan-motion.css"><link rel="stylesheet" href="v19.css">
+</head>
+<body class="v19 a2">
+<!--ASIDE-->
+<main data-assets>
+<div class="top"><span class="crumb">数码世界 / <b>资产仓库</b></span><span class="search">搜索工作台<kbd>⌘K</kbd></span></div>
+<div class="bar">
+  <h1>资产仓库<span class="en">ASSET LIBRARY</span></h1>
+  <div class="counts">
+    <span class="cnt"><span class="lcd" data-lcd data-roll="<!--N-ALL-->" data-acount="all"></span><small>份</small></span>
+    <span class="cnt"><span class="lcd" data-lcd data-roll="<!--N-USES-->" data-acount="uses"></span><small>出战</small></span>
+    <span class="cnt"><span class="lcd" data-lcd data-roll="<!--N-MATURE-->" data-acount="mature"></span><small>成熟</small></span>
+  </div>
+  <label class="find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input data-find placeholder="搜索标题、说明、正文、标签、卷名" aria-label="在资产中搜索"><b data-find-count hidden></b></label>
+  <div class="keys"><button class="act" data-tags>全部标签 ▾</button><button class="act" data-sort>最近更新 ▾</button><button class="act go" data-new>+ 新建</button></div>
+</div>
+<div class="wrap">
+  <nav class="rail" aria-label="类型">
+    <button class="g on" data-type-filter="all">全部<span class="lcd" data-lcd data-roll="<!--N-ALL-->" data-tcount="all"></span></button>
+    <!--TYPES-->
+  </nav>
+  <section class="list" aria-label="资产清单">
+    <!--ROWS-->
+  </section>
+</div>
+<aside class="drawer" data-drawer hidden aria-label="资产详情">
+  <header class="reader-head"><span class="chip type" data-r-type></span><span class="chip" data-r-code></span><span class="chip" data-r-ver></span><span class="grow"></span>
+    <div class="acts"><button class="act" data-pin>置顶</button><button class="act" data-edit>编辑</button><button class="act" data-delete>删除</button><button class="act" data-close aria-label="关闭">×</button></div>
+  </header>
+  <div class="reader"><h2 data-r-title></h2><p class="desc" data-r-desc></p><div class="tags" data-r-tags></div>
+    <div class="facts" data-r-facts></div>
+    <pre data-r-body></pre></div>
+  <footer class="drawer-foot"><span class="uses"><span class="lcd" data-lcd data-text="00" data-r-uses></span><small>出战</small></span><span class="stage" data-r-stage></span><span class="grow"></span><button class="act go" data-copy-asset>复制全文</button></footer>
+</aside>
+</main>
+<script type="application/json" id="assets-data"><!--JSON--></script>
+<script src="../ui-v18/page.js"></script>
+<script src="v19.js" defer></script>
+</body>
+</html>

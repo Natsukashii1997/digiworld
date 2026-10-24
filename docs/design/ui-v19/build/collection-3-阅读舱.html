@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>个人收藏 · 三 · 阅读舱</title>
+<!-- 模板：由 build/make.py 填入侧栏（含伙伴屏）、真实收藏后生成 ../个人收藏-3-阅读舱.html -->
+<link rel="stylesheet" href="../ui-v18/common.css"><link rel="stylesheet" href="../../../src/partner-lcd.css"><link rel="stylesheet" href="../../../src/scan-motion.css"><link rel="stylesheet" href="v19.css">
+</head>
+<body class="v19 k3">
+<!--ASIDE-->
+<main data-collection>
+<div class="top"><span class="crumb">数码世界 / <b>个人收藏</b></span><span class="search">搜索工作台<kbd>⌘K</kbd></span></div>
+<div class="bar">
+  <h1>个人收藏<span class="en">COLLECTION</span></h1>
+  <div class="counts">
+    <span class="cnt"><span class="lcd" data-lcd data-roll="<!--N-ALL-->" data-ccount="all"></span><small>全部</small></span>
+    <span class="cnt"><span class="lcd" data-lcd data-roll="<!--N-LOOSE-->" data-ccount="loose"></span><small>散放</small></span>
+    <span class="cnt"><span class="lcd" data-lcd data-roll="<!--N-VIDEO-->" data-ccount="video"></span><small>视频</small></span>
+  </div>
+  <label class="find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input data-find placeholder="搜索 <!--N-ALL--> 条收藏：标题、分类、标签、作者" aria-label="搜索收藏"><b data-find-count hidden></b></label>
+  <div class="keys"><button class="act" data-sheet="agent">Agent</button><button class="act" data-select-toggle>本地删除</button><button class="act go" data-sheet="ext">插件</button></div>
+</div>
+<div class="panes">
+  <section class="list" aria-label="收藏清单">
+    <div class="seg" role="radiogroup" aria-label="类型"><button class="on" data-type-filter="all">全部</button><button data-type-filter="video">视频</button><button data-type-filter="normal">图文</button><span class="grow"></span><button class="add" data-add-group>+ 分组</button></div>
+    <div class="rows"><!--ROWS--></div>
+  </section>
+  <section class="pane" data-pane aria-label="阅读">
+  <header class="reader-head"><span class="chip cat" data-r-cat></span><span class="chip state" data-r-state hidden></span><span class="grow"></span>
+    <div class="acts"><button class="act go" data-hatch>孵化 ▾</button><button class="act" data-regroup>移入 ▾</button><a class="act" data-r-link href="#" target="_blank" rel="noopener">查看原帖</a><button class="act" data-copy-link>复制链接</button><button class="act" data-delete>删除</button></div>
+  </header>
+  <div class="media"><img data-r-img alt=""><span class="mark" data-r-mark hidden></span><span class="pager" data-r-pager hidden></span></div>
+  <div class="reader"><h2 data-r-title></h2><div class="meta" data-r-meta></div>
+    <div class="seg tabs" role="radiogroup" aria-label="阅读内容"><button class="on" data-tab="content">内容</button><button data-tab="transcript">文稿</button><button data-tab="analysis">Get 解析</button></div>
+    <article data-r-body></article><div class="tags" data-r-tags></div></div>
+  <footer data-r-foot></footer>
+  </section>
+</div>
+<div class="sheet" hidden>
+  <div data-kind="agent"><header><div><span class="en">MCP · READ ONLY</span><h2>让 Agent 读你的收藏</h2></div><button class="act" data-sheet-close aria-label="关闭">×</button></header>
+    <div class="body"><p>只读：Agent 能搜收藏、读原文，不能改。接入配置复制后粘到 Agent 的 MCP 设置里。</p><div class="row-keys"><button class="act go">复制接入配置</button><span class="chip">搜收藏</span><span class="chip">读原文</span></div></div></div>
+  <div data-kind="ext" hidden><header><div><span class="en">EXTENSION</span><h2>浏览器插件</h2></div><button class="act" data-sheet-close aria-label="关闭">×</button></header>
+    <div class="body"><div class="step"><b>1</b><span>在 Chrome 扩展页开启开发者模式，加载插件文件夹。</span></div><div class="step"><b>2</b><span>生成一次性配对码，粘贴到插件里并保存。</span></div><div class="step"><b>3</b><span>在小红书或抖音点「收藏」，就会出现在这里。</span></div><div class="row-keys"><button class="act go">生成配对码</button></div></div></div>
+</div>
+</main>
+<script type="application/json" id="collection-data"><!--JSON--></script>
+<script src="../ui-v18/page.js"></script>
+<script src="v19.js" defer></script>
+</body>
+</html>
