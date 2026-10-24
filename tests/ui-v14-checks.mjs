@@ -24,7 +24,7 @@ export async function geometry(p, route, label) {
           s = getComputedStyle(e);
         if (!r.width && !r.height) continue;
         const name = e.tagName + "." + [...e.classList].join(".");
-        if (!e.closest(".page-agents.v16 .cast") && !e.parentElement?.closest(".settings-v16 .st-nav,.sp-v16 .sp-dirs[tabindex='0'][role='region']") && (r.left < -0.5 || r.right > innerWidth + 0.5))
+        if (!e.closest(".page-agents.v16 .cast") && !e.parentElement?.closest(".projects-v16 .pj-slots,.projects-v16 .pj-lscroll") && !e.parentElement?.closest(".settings-v16 .st-nav,.sp-v16 .sp-dirs[tabindex='0'][role='region']") && (r.left < -0.5 || r.right > innerWidth + 0.5))
           bad.push(name + " 边界 " + r.left + ".." + r.right);
         if (
           ["hidden", "clip"].includes(s.overflowX) &&

@@ -31,7 +31,7 @@ async function axe(page, label) {
 }
 async function layout(page, label) {
   // 新增30天读屏说明采用既有sr-only约定，单独严格核验其1px隐藏语义；真实可见内容不允许裁切。
-  for(const el of await page.locator('.pj-heat .sr-only').all()) {
+  for(const el of await page.locator('.pj-lanes .sr-only').all()) {
     const v=await el.evaluate(e=>({width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height,clip:getComputedStyle(e).clip,hidden:e.getAttribute('aria-hidden'),text:e.textContent}));
     assert.equal(v.width,1,label);assert.equal(v.height,1,label);assert.equal(v.clip,'rect(0px, 0px, 0px, 0px)');assert.notEqual(v.hidden,'true');assert.ok(/Git .*CURRENT/.test(v.text)||v.text==='阶段和每日活动未知，不代表没有活动');
   }
@@ -41,7 +41,7 @@ async function layout(page, label) {
     for (const el of document.querySelectorAll(".project-space *, [role=dialog] *")) {
       if (!el.getClientRects().length) continue;
       const css = getComputedStyle(el), r = el.getBoundingClientRect();
-      if (css.visibility === "hidden" || css.position === "fixed" || el.closest("[aria-hidden='true'], .pj-heat .sr-only")) continue;
+      if (css.visibility === "hidden" || css.position === "fixed" || el.closest("[aria-hidden='true'], .pj-lanes .sr-only") || el.parentElement?.closest(".pj-slots, .pj-lscroll")) continue;
       if (r.width && (r.left < -1 || r.right > innerWidth + 1)) result.push(`${el.tagName}.${el.className}: 越界 ${r.left}/${r.right}`);
       if (["hidden", "clip"].includes(css.overflowX) && css.textOverflow !== "ellipsis" && el.scrollWidth > el.clientWidth + 1)
         result.push(`${el.tagName}.${el.className}: 裁切 ${el.scrollWidth}/${el.clientWidth}`);
@@ -49,7 +49,7 @@ async function layout(page, label) {
     return result;
   });
   assert.deepEqual(bad, [], label);
-  for (const el of await page.locator(".pj-save button:visible, .pj-save summary:visible").all()) {
+  for (const el of await page.locator(".pj-screen button:visible, .pj-slots button:visible, .pj-screen label.pj-openapp:visible").all()) {
     const box = await el.boundingBox();
     assert.ok(box.width >= 44 && box.height >= 44, `${label} ${await el.innerText()} ${box.width}x${box.height}`);
   }
@@ -57,8 +57,8 @@ async function layout(page, label) {
 
 try {
   const page = await open(1440);
-  await page.getByText("在推进 · 0", { exact: true }).waitFor();
-  assert.equal(await page.locator(".pj-save:not(.pj-vacant)").count(), 0);
+  await page.getByRole("img", { name: "在推进 0", exact: true }).waitFor();
+  assert.equal(await page.locator(".pj-screen").count(), 0);
   const currentPath = join(app.paths.collab, "CURRENT.md");
   const original = await readFile(currentPath, "utf8");
   const longState = "P-" + "LONG-STATE-".repeat(12);
@@ -66,28 +66,30 @@ try {
   await writeFile(currentPath, original.replace(/\| state_id \|[^\n]+/, `| state_id | ${longState} |`).replace("| 当前写入者 | 无 |", "| 当前写入者 | Codex（复核中） |").replace(/\| 唯一下一步 \|[^\n]+/, `| 唯一下一步 | ${longNext} |`));
   for (const name of ["协同项目", "无协议项目", "泄露项目"]) await app.mark(name);
   await page.reload();
+  const pick = name => page.getByRole("tab", { name: new RegExp(name) }).click();
+  await pick("协同项目");
   const active = card(page);
   await button(active,"详情").click(); const firstDetail=page.getByRole("dialog",{name:"协同项目",exact:true});await firstDetail.getByText(longState,{exact:true}).waitFor();await page.keyboard.press("Escape");
   await active.getByText(longNext, { exact: true }).waitFor();
   assert.equal(await active.getByLabel("接力阶段：复核",{exact:true}).getAttribute("title"),"当前写入者");
-  assert.equal(await active.locator(".pj-stages [aria-current=\"step\"]").count(), 1);
-  assert.equal(await active.locator(".pj-stages [aria-current=\"step\"]").innerText(), "复核");
+  assert.equal(await active.locator(".seg5 i.on").count(), 3);
+  await active.locator(".pj-stats").getByText("复核 3/5", { exact: true }).waitFor();
   await button(page,"项目空间怎么用").click();await page.getByRole("dialog",{name:"项目空间 · 这页怎么用",exact:true}).getByText("当前 HEAD 可达提交；CURRENT 只计最后一次修改，不能还原过去修改次数。",{exact:true}).waitFor();await page.keyboard.press("Escape");
-  assert.equal(await active.locator('.pj-heat i[title$="：未知"]').count(),30);
-  assert.equal(await active.locator('.pj-heat i[style]').count(),0);
-  assert.equal((await active.locator('.pj-heat .sr-only').innerText()).match(/Git 未知，CURRENT 未知/g).length,30);
-  const unread=card(page,"无协议项目"); await unread.getByText("读不到 CURRENT",{exact:false}).waitFor(); assert.equal(await button(unread,"继续").isDisabled(),true);assert.doesNotMatch(await unread.getAttribute("class"),/stalled/);
+  assert.equal(await active.locator('.c30 i').count(),60);
+  assert.equal(await active.locator('.c30 i[style]').count(),0);
+  assert.equal((await active.locator('.pj-lanes .sr-only').innerText()).match(/Git (\d+|未知)，CURRENT (\d+|未知)/g).length,30);
+  await pick("无协议项目");const unread=card(page,"无协议项目"); await unread.getByText("读不到 CURRENT",{exact:false}).first().waitFor(); assert.equal(await unread.locator(".pj-give").count(),0);assert.doesNotMatch(await unread.getAttribute("class"),/stalled/);await pick("协同项目");await active.waitFor();
   assert.equal(await page.locator(".pj-zzz").count(), 0);
   console.log("PASS 空态、长字段、缺协议、停滞及缺数据表达");
 
   const summary=button(active,"详情");await summary.focus();await page.keyboard.press("Enter");
   const detail=page.getByRole("dialog",{name:"协同项目",exact:true});await detail.getByText("Claude 实现 21",{exact:true}).waitFor();await page.keyboard.press("Escape");assert.equal(await summary.evaluate(e=>document.activeElement===e),true);
   await summary.focus();await page.keyboard.press("Space");await detail.waitFor();await page.keyboard.press("Escape");await detail.waitFor({state:"detached"});
-  const start=button(active,"继续");await start.click();const launch=page.locator(".pj-launch");const picker=launch.getByRole("radiogroup",{name:"开工 Agent",exact:true});const claude=picker.getByRole("radio",{name:"Claude Code",exact:true});
-  await claude.focus();await page.keyboard.press("Enter");assert.equal(await claude.getAttribute("aria-checked"),"true");assert.equal(await picker.locator('[aria-checked="true"]').count(),1);
-  await button(launch,"预览口令").click();assert.match(await launch.getByLabel("口令预览").innerText(),/开工：Claude Code/);
-  assert.equal(await page.locator(".pj-launch").count(),1);assert.equal(await page.locator("body > .overlay").count(),0,"发车为唯一内联条");await axe(page,"1440 发车条");await page.keyboard.press("Escape");assert.equal(await start.evaluate(e=>document.activeElement===e),true);
-  console.log("PASS 键盘详情开关、头像选人、原口令流程与关闭后焦点归还");
+  const launch=active;const picker=launch.getByRole("radiogroup",{name:"交给谁",exact:true});const claude=picker.getByRole("radio",{name:"Claude Code",exact:true});
+  await launch.locator(".pj-give:not([disabled])").waitFor();await claude.focus();await page.keyboard.press("Enter");assert.equal(await claude.getAttribute("aria-checked"),"true");assert.equal(await picker.locator('[aria-checked="true"]').count(),1);
+  await launch.getByRole("button",{name:/口令全文/}).click();assert.match(await launch.getByLabel("口令全文").innerText(),/开工：Claude Code/);
+  assert.equal(await page.locator(".pj-handoff").count(),1);assert.equal(await page.locator("body > .overlay").count(),0,"交接条为唯一内联条");await axe(page,"1440 交接条");
+  console.log("PASS 键盘详情开关、头像选人、口令全文框内展开");
 
   for (const width of [1440, 1024, 430, 393, 390, 375, 320]) {
     await page.setViewportSize({ width, height: 1000 });await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
@@ -104,11 +106,11 @@ try {
   // 读不到、部分字段和未知 Git 状态使用临时项目文件及合成 API 返回；不触及实际项目。
   await page.setViewportSize({ width: 320, height: 1000 });
   await writeFile(currentPath, "# 合成缺项\n\n| 字段 | 当前值 |\n|---|---|\n| state_id | P-PARTIAL |\n");
-  await button(page.getByRole("region",{name:"在推进项目"}), "刷新").click();
-  await page.waitForFunction(()=>document.querySelector(".pj-stages")?.getAttribute("aria-label")==="接力阶段：未知"); assert.equal(await active.getByLabel("接力阶段：未知").getAttribute("title"),"当前记录不足以推断");
-  assert.equal(await active.locator(".pj-stages [aria-current=\"step\"]").count(), 0);
-  await active.locator(".pj-next").getByText("缺少此项", { exact: true }).waitFor();
-  await active.locator(".pj-holder-name").getByText("缺少此项", { exact: true }).waitFor();
+  await button(page, "刷新").click();
+  await page.waitForFunction(()=>document.querySelector('.pj-stats [aria-label^="接力阶段"]')?.getAttribute("aria-label")==="接力阶段：未知"); assert.equal(await active.getByLabel("接力阶段：未知").getAttribute("title"),"当前记录不足以推断");
+  assert.equal(await active.locator(".seg5 i.on").count(), 0);
+  await active.locator(".nx").getByText("缺少此项", { exact: true }).waitFor();
+  await active.locator(".pj-plate").getByText("缺少此项", { exact: true }).waitFor();
   await summary.click();
   await detail.getByText("P-PARTIAL",{exact:true}).waitFor();await detail.getByText(/状态表缺少/).waitFor();
   await layout(page, "320 缺项");
@@ -121,15 +123,16 @@ try {
     await route.fulfill({ response, json: body });
   });
   const activeId = await app.projectId("协同项目");
-  await button(page.getByRole("region",{name:"在推进项目"}), "刷新").click();
-  await active.getByText("读不到 CURRENT", { exact: false }).waitFor();await active.getByText("合成读取失败，不读取主机内容",{exact:true}).waitFor();
-  assert.equal(await start.isDisabled(), true);
+  await button(page, "刷新").click();
+  await active.getByText("读不到 CURRENT", { exact: false }).first().waitFor();await active.getByText("合成读取失败，不读取主机内容",{exact:true}).waitFor();
+  assert.equal(await active.locator(".pj-give").count(), 0);
   await layout(page, "320 读取失败");
   await page.unroute("**/api/project-status/inspect");
   await writeFile(currentPath, original);
   console.log("PASS 部分字段与读取失败保持真实提示，错误项目禁止生成口令");
 
   const motion = await open(1440, "no-preference");
+  await motion.getByRole("tab", { name: /协同项目/ }).click();
   await card(motion).waitFor();
   const motionStart = button(card(motion), "详情");
   await motionStart.scrollIntoViewIfNeeded();
@@ -137,7 +140,7 @@ try {
   await card(motion).evaluate(el => { el.style.transform = "translateY(14px)"; });
   await motionStart.evaluate(el => el.click());
   await motion.getByRole("dialog", { name: "协同项目" }).waitFor();
-  assert.equal(await motion.locator(".drawer-overlay").evaluate(e=>e.closest(".pj-save,[style*=translateY]")),null);
+  assert.equal(await motion.locator(".drawer-overlay").evaluate(e=>e.closest(".pj-screen,[style*=translateY]")),null);
   const overlay = await motion.locator(".drawer-overlay").boundingBox();
   assert.deepEqual({ x: overlay.x, y: overlay.y, width: overlay.width, height: overlay.height }, { x: 0, y: 0, width: 1440, height: 1000 });
   await motion.keyboard.press("Escape");

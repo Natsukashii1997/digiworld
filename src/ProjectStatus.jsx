@@ -148,13 +148,13 @@ function CurrentBody({ current, omitSummary = false }) {
   );
 }
 
-const CHECK_LABELS = [
+export const CHECK_LABELS = [
   ["remote", "远程备份"],
   ["dirty", "未提交改动"],
   ["sensitive", "敏感文件"],
   ["visibility", "远程可见性"],
 ];
-function checkText(key, check) {
+export function checkText(key, check) {
   if (!check || check.state === "unknown")
     return ["muted", check?.message ? `未知 · ${check.message}` : "未知"];
   if (check.state === "n/a") return ["muted", "不适用"];

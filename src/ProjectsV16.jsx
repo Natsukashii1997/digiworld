@@ -6,32 +6,26 @@ import { savepointThresholds } from "./settings-v16.js";
 import { projectSavepointAge as savepointAge } from "./pending.js";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  ArrowRight,
   ArrowUpRight,
-  ChevronRight,
   RefreshCw,
   Settings2,
   Search,
-  Save,
-  Play,
-  X,
   AlertCircle,
   Github,
 } from "lucide-react";
-import { Button, Dialog, PageHeading, Badge, SourceReadError } from "./components.jsx";
+import { Button, Dialog, Badge, SourceReadError } from "./components.jsx";
 import { request, scan } from "./api.js";
 import { Pixel } from "./pixel.jsx";
-import { AgentSprite, useReducedMotion } from "./v14.jsx";
+import { AgentSprite, LcdText, useReducedMotion } from "./v14.jsx";
 import { castOf, characterOf, AGENT_CAST } from "./characters.js";
-import { ActiveToggle, CurrentBlock, SafetyBlock } from "./ProjectStatus.jsx";
+import { ActiveToggle, CurrentBlock, SafetyBlock, CHECK_LABELS, checkText } from "./ProjectStatus.jsx";
 import { ProjectLocations } from "./ProjectLocations.jsx";
 import { ProjectCatalogEditor } from "./ProjectCatalog.jsx";
 import { ProjectContext } from "./ProjectContext.jsx";
 import { ProjectRules } from "./RuleInstall.jsx";
 import { GithubBlock, useGithubPanel } from "./ProjectGithub.jsx";
 import { STAGES, linkText } from "./collab.js";
-import { usePromptCopy, staleNote } from "./Collab.jsx";
-import { RelayLaunch } from "./RelayLaunch.jsx";
+import { usePromptCopy } from "./Collab.jsx";
 import { SlotDesk, LoadoutDialog, ManualNext, deskRows } from "./ProjectDesk.jsx";
 import { relayDesk, relayDeskSection } from "./relay-desk.js";
 import {
@@ -117,240 +111,217 @@ function recent(p) {
     : "未知";
 }
 const projectSource = (project) => project.githubUrl ? "github" : "local";
+// 库里只显示短路径：家目录写成 ~；完整路径在悬停提示里。
+const shortPath = (value) => String(value || "").replace(/^\/Users\/[^/]+/, "~");
 const unavailable = (item) =>
   item.current?.state === "absent"
     ? "文件不存在"
     : item.current?.state === "unparsed"
       ? "格式不对"
       : item.current?.message || "尚未取得读取结果";
-function SaveCard({
-  item,
-  index,
-  launch,
-  onContinue,
-  onDetails,
-  savepointDays,
-  savepointWarnDays,
-  readFailed,
-  desk,
-  onLoadout,
-  adoptState,
-  notify,
-}) {
-  const pending = desk.inbox.filter((i) => !i.relayed && !i.missing).length,
-    gear = desk.loadout.filter((i) => !i.missing).length;
-  const readable = readableCurrent(item),
-    outline = item.current?.state === "outline" ? item.current.outline : null,
-    f = item.current?.fields,
-    holder = readable ? castOf(f?.writer) : null,
-    stalled = readable && item.activity?.state === "stalled",
-    stage = readable ? item.stage?.id : "unknown";
-  const points = readable ? item.daily?.days || [] : [];
+const pad2 = (n) => String(n).padStart(2, "0");
+const hhmm = (value) =>
+  value ? new Date(value).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false }) : "";
+const monthDay = (key) => { const [, m, d] = String(key || "").split("-"); return m ? `${+m}/${+d}` : ""; };
+const level = (n) => (n == null ? "unk" : n === 0 ? "l0" : n < 3 ? "l1" : n < 16 ? "l2" : "l3");
+const canonicalAgent = (agent) => (agent === "claude" ? "claude-code" : agent);
+// 按帧动效：每一帧都是 steps 硬切，不写 CSS transition；减少动态效果时直接到位。
+const STEP = { easing: "steps(1, end)" };
+function frames(el, list, duration) {
+  try { return el?.animate?.(list.map((f, i) => ({ offset: i / Math.max(1, list.length - 1), ...f, ...STEP })), { duration }); } catch { return null; }
+}
+// 下一步按字打出来；新文字或换卡带时重打一次。
+function useTyped(text, key, reduced) {
+  const [shown, setShown] = useState(reduced ? text : "");
+  useEffect(() => {
+    if (reduced || !text) { setShown(text); return; }
+    let i = 0, timer;
+    const chars = [...text], step = Math.max(2, Math.ceil(chars.length / 40));
+    setShown("");
+    const tick = () => { i = Math.min(chars.length, i + step); setShown(chars.slice(0, i).join("")); if (i < chars.length) timer = setTimeout(tick, 24); };
+    timer = setTimeout(tick, 200);
+    return () => clearTimeout(timer);
+  }, [text, key, reduced]);
+  return reduced ? text : shown;
+}
+function healthOf(item, readFailed) {
+  const checks = item.safety?.checks || {};
+  if (readFailed) return { dots: [], text: "体检未知", tone: "" };
+  if (!checks.git) return { dots: [], text: "体检待核实", tone: "" };
+  if (checks.git.state === "none") return { dots: ["bad"], text: "不是 Git 仓库", tone: "bad" };
+  if (checks.git.state === "unknown") return { dots: [], text: "体检未知", tone: "" };
+  const tones = CHECK_LABELS.map(([key]) => checkText(key, checks[key])[0]);
+  const bad = tones.filter((t) => t === "danger").length, ok = tones.filter((t) => t === "success").length;
+  return {
+    dots: tones.map((t) => (t === "success" ? "ok" : t === "danger" ? "bad" : t === "warning" ? "warn" : "")),
+    text: bad ? `${bad} 项要处理` : `${ok} 项正常`,
+    tone: bad ? "bad" : "",
+  };
+}
+function cartStatus(item, readFailed, reading) {
+  const readable = readableCurrent(item);
+  if (!readFailed && (reading || item.current?.state === "loading")) return ["", "读取中"];
+  if (readable) {
+    const i = STAGES.findIndex((s) => s.id === item.stage?.id);
+    return ["ok", i >= 0 ? `${STAGES[i].label} · ${i + 1}/5` : "阶段未知"];
+  }
+  if (item.current?.state === "outline" && !readFailed) return ["ok", "最近进展"];
+  return ["bad", readFailed ? "状态待核实" : "读不到 CURRENT"];
+}
+// 卡带：SLOT + 头像 + 名字 + 一盏灯；点哪盘，下面的读档屏就读哪盘。
+function SlotCart({ item, index, on, readFailed, reading, onSelect, onKeyDown }) {
+  const holder = readableCurrent(item) ? castOf(item.current?.fields?.writer) : null,
+    [tone, text] = cartStatus(item, readFailed, reading),
+    stalled = readableCurrent(item) && item.activity?.state === "stalled";
   return (
-    <article
-      className={`pj-save${stalled ? " stalled" : ""}${launch ? " is-launching" : ""}${readFailed ? " read-failed" : ""}`}
-      aria-label={`项目状态卡：${item.name}`}
+    <button
+      type="button"
+      role="tab"
+      id={`pj-cart-${item.projectId}`}
+      aria-selected={on}
+      aria-controls="pj-screen"
+      tabIndex={on ? 0 : -1}
+      aria-label={`SLOT ${pad2(index + 1)} · ${item.name} · ${text}`}
+      className={`pj-cart${on ? " on" : ""}${tone === "bad" ? " s-unread" : ""}${stalled ? " stalled" : ""}`}
+      style={holder ? { "--hue": holder.hue } : undefined}
       data-project-id={item.projectId}
+      onClick={onSelect}
+      onKeyDown={onKeyDown}
     >
-      <header className="pj-save-head">
-        <span className="pj-slot">
-          <Floppy />
-          <span className="en">SLOT {String(index + 1).padStart(2, "0")}</span>
-        </span>
-        {item.safety?.issues?.length > 0 && (
-          <span
-            className="pj-alert"
-            aria-label={`${item.safety.issues.length} 项安全问题`}
-          >
-            {item.safety.issues.length}
-          </span>
+      <span className={`pj-holder${holder ? "" : " ghost"}`}>
+        {holder ? <AgentSprite agent={holder.id} mode="head" /> : <b>?</b>}
+      </span>
+      <span className="nm"><span className="en">SLOT {pad2(index + 1)}</span><b>{item.name}</b></span>
+      <span className={`pj-lamp ${tone}`}><i />{text}</span>
+    </button>
+  );
+}
+// 30 天双轨：Git / CURRENT 各一行，格上直接写次数；读不到时两行斜纹。
+function ActivityLanes({ item, readable }) {
+  const days = readable ? (item.daily?.days || []).slice(-30) : [],
+    stalled = readable && item.activity?.state === "stalled",
+    lane = (key, name, cls) => (
+      <div className={`pj-lane ${cls}`}>
+        <span className="ln">{name}</span>
+        <div className="c30">
+          {Array.from({ length: 30 }, (_, i) => {
+            const d = days[i - (30 - days.length)], n = d ? d[key] : null, dow = d ? new Date(d.date + "T00:00:00").getDay() : 1;
+            return (
+              <i key={i} className={`${level(n)}${dow % 6 === 0 ? " we" : ""}${i === 29 ? " today" : ""}`} title={d ? `${monthDay(d.date)} · ${name} ${n ?? "未知"}` : "未知"}>
+                {n ? <b>{n}</b> : null}
+              </i>
+            );
+          })}
+        </div>
+      </div>
+    );
+  const known = days.length > 0,
+    gitDays = days.filter((d) => d.git).length,
+    gitTotal = days.reduce((t, d) => t + (d.git || 0), 0),
+    curDays = days.filter((d) => d.current).length;
+  return (
+    <div className={`pj-lanes${known ? "" : " unknown"}`} aria-label="近30天活动">
+      <div className="lh">
+        <span className="lab">近 30 天</span>
+        {known ? (
+          <>
+            <span className="lh-t"><i className="sw g" />Git {gitDays} 天 · {gitTotal} 次提交</span>
+            <span className="lh-t"><i className="sw c" />CURRENT {curDays} 天</span>
+          </>
+        ) : (
+          <span className="lh-t">活动未知 · 不代表没有活动</span>
         )}
-        {stalled && (
-          <span
-            className="pj-zzz"
-            aria-label={`停滞 ${item.activity.idleDays} 天`}
-          >
-            <i>z</i>
-            <i>z</i>
-            <i>Z</i>
-          </span>
-        )}
-      </header>
-      <div className="pj-save-title">
-        <h3>{item.name}</h3>
-        <span className="pj-path" title={item.root}>
-          {item.root || "本地位置未知"}
+        <span className="grow" />
+        <span className="lh-t">
+          {stalled ? `停滞 ${item.activity.idleDays} 天` : <>最近一次 <b>{readable ? date(item.activity?.latestAt) : "未知"}</b></>}
         </span>
       </div>
-      <div className="pj-save-main">
-        <div
-          className={`pj-holder${holder ? "" : " none"}`}
-          data-agent={holder?.id || "none"}
-          style={{ "--hue": holder?.hue || "77,227,255" }}
-        >
-          <AgentSprite
-            agent={holder?.id || "hermes"}
-            mode="body"
-            className={`sprite${holder ? "" : " ghost"}`}
-          />
-          <span className="pj-holder-name">
-            {holder
-              ? characterOf(holder.id)?.name
-              : readable && f?.writer === "无"
-                ? "无人持笔"
-                : f?.writer || (readable ? "缺少此项" : "持笔者未知")}
-            {holder && <span className="en">{holder.name.toUpperCase()}</span>}
-          </span>
-        </div>
-        <div className="pj-next">
-          <span className="en">NEXT · 下一步</span>
-          {readable ? (
-            <p>{f?.next ? linkText(f.next) : "缺少此项"}</p>
-          ) : outline && !readFailed ? (
-            <ManualNext
-              projectId={item.projectId}
-              projectName={item.name}
-              next={desk.next}
-              adoptState={adoptState}
-              notify={notify}
-            />
-          ) : (
-            <p className="pj-unread">
-              <AlertCircle size={18} />
-              读不到 CURRENT<small>{readFailed ? "当前状态待核实" : unavailable(item)}</small>
-            </p>
-          )}
+      <div className="pj-lscroll" data-pj-lscroll tabIndex={0} role="region" aria-label="近 30 天每日 Git 与 CURRENT 次数">
+        {lane("git", "Git", "git")}
+        {lane("current", "CURRENT", "cur")}
+        <div className="pj-ticks" aria-hidden="true">
+          <span />
+          <div>
+            {Array.from({ length: 30 }, (_, i) => {
+              const d = days[i - (30 - days.length)];
+              return <span key={i}>{i === 29 ? "今天" : d && new Date(d.date + "T00:00:00").getDay() === 1 ? monthDay(d.date) : ""}</span>;
+            })}
+          </div>
         </div>
       </div>
-      {outline && !readFailed && (
-        <div className="pj-recent">
-          <span className="en">RECENT · 最近进展</span>
-          <p>{outline.title}</p>
-          {outline.summary && <small>{outline.summary}</small>}
-        </div>
-      )}
-      <ol
-        className="pj-stages"
-        aria-label={`接力阶段：${readable ? item.stage?.label || "未知" : "未知"}`}
-        title={
-          readable
-            ? item.stage?.basis || "当前记录不足以推断"
-            : outline
-              ? "没有协作状态表，阶段不推断"
-              : "CURRENT不可读，阶段未知"
-        }
-      >
-        {STAGES.map((s, i) => (
-          <li
-            key={s.id}
-            className={
-              s.id === stage
-                ? "on"
-                : STAGES.findIndex((t) => t.id === stage) > i
-                  ? "done"
-                  : ""
-            }
-            aria-current={s.id === stage ? "step" : undefined}
-          >
-            {s.label}
-          </li>
-        ))}
-      </ol>
-      <div className="pj-heat" aria-label="近30天活动">
-        {Array.from({ length: 30 }, (_, i) => {
-          const p = points[i],
-            total = p?.total;
-          return (
-            <i
-              key={i}
-              className={
-                total == null
-                  ? "l-1"
-                  : total > 0
-                    ? "l" + Math.min(4, total)
-                    : ""
-              }
-              title={`${p?.date || i + 1}：${total == null ? "未知" : total}`}
-              aria-hidden="true"
-            />
-          );
-        })}
-        <span className="en">
-          {stalled
-            ? `停滞 ${item.activity.idleDays} 天`
-            : readable
-              ? date(item.activity?.latestAt)
-              : "未知"}
-        </span>
-        <span className="sr-only">
-          {points.length
-            ? points
-                .map(
-                  (p) =>
-                    `${p.date}：Git ${p.git ?? "未知"}，CURRENT ${p.current ?? "未知"}`,
-                )
-                .join("；")
-            : "阶段和每日活动未知，不代表没有活动"}
-        </span>
-      </div>
+      <span className="sr-only">
+        {known
+          ? days.map((p) => `${p.date}：Git ${p.git ?? "未知"}，CURRENT ${p.current ?? "未知"}`).join("；")
+          : "阶段和每日活动未知，不代表没有活动"}
+      </span>
       {readable && item.daily?.state !== "ok" && (
         <small className="pj-unknown">
           {item.daily?.note || "每日活动未知"}
           {item.daily?.reason && ` · ${item.daily.reason}`}
         </small>
       )}
-      {savepointDays > savepointWarnDays && (
-        <span
-          className="pj-savepoint-hint"
-          title="基于最近一次读取或项目扫描"
-        >
-          未存档 {Math.floor(savepointDays)} 天
-        </span>
-      )}
-      <SlotDesk
-        rows={desk}
-        projectId={item.projectId}
-        projectName={item.name}
-        adoptState={adoptState}
-        notify={notify}
-        onLoadout={onLoadout}
-      />
-      <div className="pj-save-act">
-        <Button
-          className="pj-go"
-          secondary={index > 0}
-          disabled={!item.root || !(readable || outline) || readFailed}
-          onClick={onContinue}
-          aria-expanded={launch}
-        >
-          <Play size={16} />
-          继续
-        </Button>
-        {(pending > 0 || gear > 0) && (
-          <small className="pj-go-note">
-            带收件 {pending} · 装备 {gear}
-          </small>
-        )}
-        <button type="button" className="text-btn" onClick={onDetails}>
-          详情
-          <ChevronRight size={16} />
-        </button>
-      </div>
-    </article>
+    </div>
   );
 }
-function ProjectLaunch({ item, liveItem, state, collection, adoptState, notify, onClose, refreshProjectStatus, statusReading, sourceKey }) {
-  const [agent, setAgent] = useState(
-      castOf(item.current?.fields?.writer)?.id || "codex",
-    ),
-    [open, setOpen] = useState(false),
-    [seen, setSeen] = useState(false),
+// 一列短读数：阶段 / 体检 / 队伍 / 存档（超过阈值才出现）。
+function ReadStats({ item, readable, outline, readFailed, desk, savepointDays, savepointWarnDays, onDetails, onTeam }) {
+  const i = readable ? STAGES.findIndex((s) => s.id === item.stage?.id) : -1,
+    health = healthOf(item, readFailed),
+    pending = desk.inbox.filter((n) => !n.relayed && !n.missing).length,
+    gear = desk.loadout.filter((n) => !n.missing).length;
+  return (
+    <div className="pj-stats">
+      <div
+        className="st"
+        aria-label={`接力阶段：${i >= 0 ? STAGES[i].label : "未知"}`}
+        title={readable ? item.stage?.basis || "当前记录不足以推断" : outline ? "没有协作状态表，阶段不推断" : "CURRENT不可读，阶段未知"}
+      >
+        <span className="lab">阶段</span>
+        <span className={`seg5${i < 0 ? " unk" : ""}`} aria-hidden="true">
+          {STAGES.map((s, k) => <i key={s.id} className={i >= 0 && k <= i ? "on" : ""} />)}
+        </span>
+        <b>{i >= 0 ? `${STAGES[i].label} ${i + 1}/5` : "未知"}</b>
+      </div>
+      <button type="button" className="st" onClick={onDetails} aria-label={`体检：${health.text}，打开详情`}>
+        <span className="lab">体检</span>
+        <span className="dots" aria-hidden="true">{health.dots.map((d, k) => <i key={k} className={d} />)}</span>
+        <b className={health.tone}>{health.text}</b>
+      </button>
+      <button type="button" className="st" onClick={onTeam} aria-label={`队伍：收件 ${pending} · 装备 ${gear}，打开`}>
+        <span className="lab">队伍</span>
+        <span className="team" aria-hidden="true">
+          <Pixel sprite="egg" size={14} className={`egg${pending ? " lit" : ""}`} />
+          <LcdText text={pad2(pending)} px={2} label={null} />
+          <span className="gear" />
+          <LcdText text={pad2(gear)} px={2} label={null} />
+        </span>
+        <b>收件 {pending} · 装备 {gear}</b>
+      </button>
+      {savepointDays > savepointWarnDays && (
+        <div className="st" title="基于最近一次读取或项目扫描">
+          <span className="lab">存档</span>
+          <span />
+          <b className="warn">未存档 {Math.floor(savepointDays)} 天</b>
+        </div>
+      )}
+    </div>
+  );
+}
+// 交接条与对话框：一段口令 → 选交给谁 → 复制，一个动作完成（用户 2026-10-24）。
+// 复制前照旧重读项目状态与工作台核对；不一致不复制，页面换成最新内容后再点一次。
+function ProjectLaunch({ item, state, collection, agent, onAgent, openApp, onOpenApp, adoptState, notify, refreshProjectStatus, statusReading, readFailed, sourceKey, speaker, children }) {
+  const reduced = useReducedMotion();
+  const [open, setOpen] = useState(false),
     [error, setError] = useState(""),
     [receipt, setReceipt] = useState(""),
-    [opening, setOpening] = useState(false), [checking,setChecking]=useState(false);
+    [done, setDone] = useState(false),
+    [opening, setOpening] = useState(false),
+    [checking, setChecking] = useState(false);
   const lock = useRef(false),
     live = useRef(true),
-    // 收件是否已交代按打开发车条时的留痕算：本次复制写下的留痕不会把收件从这次口令里拿掉。
+    pre = useRef(null),
+    doneTimer = useRef(null),
+    // 收件是否已交代按选中这盘卡带时的留痕算：本次复制写下的留痕不会把收件从这次口令里拿掉。
     relayLog = useRef(state.collabLog),
     copier = usePromptCopy({ adoptState, notify }),
     deskOf = (s) => relayDesk({ ...s, collabLog: relayLog.current }, item.projectId, { collectionNotes: collection.notes }),
@@ -359,187 +330,299 @@ function ProjectLaunch({ item, liveItem, state, collection, adoptState, notify, 
     deskKeyOf = (d) => JSON.stringify([relayDeskSection(d), d.next?.text || ""]),
     deskKey = deskKeyOf(desk),
     prepared = projectRelayPrompt(item, agent, desk),
-    snapshot = { stateId: item.current?.fields?.stateId };
-  const stale =
-    (item.sourceKey!==sourceKey?"项目来源已变化，请重新继续并预览。":"") ||
-    staleNote(snapshot, liveItem?.current?.fields?.stateId) ||
-    (projectLaunchSignature(item)!==projectLaunchSignature(liveItem)?"项目内容或目录已变化，请收起后重新继续并预览。":"") ||
-    (!continuableCurrent(liveItem)
-      ? "项目 CURRENT 已不可读，请收起后重新读取。"
-      : "") ||
-    (desk.inbox.some((i) => i.ref.kind === "collection") && collection.state !== "ok"
+    name = castOf(agent)?.name;
+  const blocked = readFailed
+    ? "项目状态暂时读不到，下面是上次内容；重新读到后才能交出。"
+    : desk.inbox.some((i) => i.ref.kind === "collection") && collection.state !== "ok"
       ? collection.state === "error"
-        ? "收藏没有读到，收件里的收藏带不进口令；请刷新页面后再继续。"
+        ? "收藏没有读到，收件里的收藏带不进口令；请刷新页面后再交出。"
         : "收藏还在读取，读完才能复制。"
-      : "");
-  // 预览后收件、装备或手填下一步变了：要求重新预览。
-  const previewedDesk = useRef(deskKey);
-  useEffect(() => {
-    if (previewedDesk.current === deskKey) return;
-    previewedDesk.current = deskKey;
-    setSeen(false);
-  }, [deskKey]);
+      : "";
   useEffect(() => {
     live.current = true;
-    const key = (e) => {
-      if (e.key === "Escape" && !lock.current) {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", key);
-    return () => {
-      live.current = false;
-      window.removeEventListener("keydown", key);
-    };
+    return () => { live.current = false; clearTimeout(doneTimer.current); };
   }, []);
+  useLayoutEffect(() => {
+    if (open && !reduced) frames(pre.current, [0, 1, 2, 3].map((k) => ({ clipPath: `inset(0 0 ${100 - k * 33}% 0)` })), 160);
+  }, [open]);
   const busy = copier.busy || opening || checking || statusReading;
-  async function copy(openApp) {
-    if (lock.current || busy || stale || copier.pending) return;
-    if (!seen) {
-      setOpen(true);
-      setSeen(true);
-      notify("请先预览口令，再复制或带过去");
-      return;
-    }
-    lock.current = true;setChecking(true);
+  async function copy() {
+    if (lock.current || busy || blocked || copier.pending) return;
+    const shown = item, shownKey = deskKey, shownDesk = desk, text = prepared.prompt, at = sourceKey, take = openApp, target = agent;
+    lock.current = true;
+    setChecking(true);
     setError("");
     setReceipt("");
     try {
-      const fresh=await refreshProjectStatus();
-      if(!live.current)return;
-      const latest=fresh?.items.find(p=>p.projectId===item.projectId);
-      if(!latest||!continuableCurrent(latest)){setError('当前状态读取未确认，请重读后再复制。');return;}
-      if(fresh.sourceKey!==item.sourceKey||projectLaunchSignature(item)!==projectLaunchSignature(latest)){setError('项目内容或目录已变化，请收起后重新继续并预览。');return;}
-      // 复制前重读工作台，核对收件与装备仍是预览时的样子。
+      const fresh = await refreshProjectStatus();
+      if (!live.current) return;
+      const latest = fresh?.items.find((p) => p.projectId === shown.projectId);
+      if (!latest || !continuableCurrent(latest)) { setError("当前状态读取未确认，口令没有复制；请重新检查后再交出。"); return; }
+      if (fresh.sourceKey !== at || projectLaunchSignature(shown) !== projectLaunchSignature(latest)) {
+        setError("项目内容或目录已变化，口令没有复制；已换成最新内容，看过后再点一次交出。");
+        return;
+      }
+      // 复制前重读工作台，核对收件与装备仍是屏上的样子。
       let workspace;
       try { workspace = await request("/workspace"); }
       catch (e) { if (live.current) setError(`收件与装备核对未完成：${e.message}。口令没有复制。`); return; }
       if (!live.current) return;
-      if (deskKeyOf(deskOf(workspace)) !== deskKey) {
+      if (deskKeyOf(deskOf(workspace)) !== shownKey) {
         adoptState(workspace);
-        setError("收件、装备或下一步已变化，请重新预览口令。");
+        setError("收件、装备或下一步已变化，口令没有复制；已换成最新内容，看过后再点一次交出。");
         return;
       }
       const ok = await copier.copy({
-        text: prepared.prompt,
+        text,
         kind: "start",
-        projectId: item.projectId,
-        agent: agent === "claude" ? "claude-code" : agent,
-        stateId: snapshot.stateId,
-        inbox: desk.inbox.filter((i) => !i.missing).map((i) => i.ref),
-        loadout: desk.loadout.filter((i) => !i.missing).map((i) => i.ref),
+        projectId: shown.projectId,
+        agent: canonicalAgent(target),
+        stateId: shown.current?.fields?.stateId,
+        inbox: shownDesk.inbox.filter((i) => !i.missing).map((i) => i.ref),
+        loadout: shownDesk.loadout.filter((i) => !i.missing).map((i) => i.ref),
       });
       if (!ok || !live.current) return;
-      setReceipt("TRANSFER OK · 口令已复制");
-      if (openApp) {
+      const targetName = castOf(target)?.name;
+      setReceipt(`TRANSFER OK · 口令已复制，交给 ${targetName}`);
+      setDone(true);
+      clearTimeout(doneTimer.current);
+      doneTimer.current = setTimeout(() => { if (live.current) setDone(false); }, 1600);
+      if (take) {
         setOpening(true);
         try {
-          const r = await request("/relay-sessions/open", {
-            agentId: agent === "claude" ? "claude-code" : agent,
-          });
+          const r = await request("/relay-sessions/open", { agentId: canonicalAgent(target) });
           if (live.current) {
-            setReceipt(
-              r.opened ? "TRANSFER OK · 已打开应用，请粘贴发送" : r.reason,
-            );
+            setReceipt(r.opened ? `TRANSFER OK · 口令已复制，已打开 ${targetName}，粘贴发送就完成` : `TRANSFER OK · 口令已复制；${r.reason}`);
             notify(r.opened ? "已打开应用，请粘贴发送" : r.reason);
           }
         } catch (e) {
-          if (live.current)
-            setError("口令已复制；打开应用未确认：" + e.message);
+          if (live.current) setError("口令已复制；打开应用未确认：" + e.message);
         }
       }
     } finally {
       lock.current = false;
-      if (live.current) {setOpening(false);setChecking(false);}
+      if (live.current) { setOpening(false); setChecking(false); }
     }
   }
+  function pick(id) {
+    onAgent(id);
+    setReceipt("");
+    setError("");
+    copier.reset();
+  }
   return (
-    <>
-      <RelayLaunch
-        mode="projects"
-        open={open}
-        busy={busy}
-        blocked={!!stale || !!copier.pending}
-        prepared={prepared}
-        picked={agent}
-        targetName={castOf(agent)?.name}
-        character={characterOf(agent)?.name}
-        copy={copy}
-        onPreview={() => {
-          setOpen(!open);
-          setSeen(true);
-        }}
-        extra={
+    <div className="pj-dialog-col">
+      <div className="pj-box">
+        <div className="bh">
+          {speaker}
+          <span className="grow" />
           <button
             type="button"
-            className="icon-btn pj-close"
-            aria-label="收起发车条"
-            disabled={busy}
-            onClick={onClose}
+            className="pj-pv"
+            aria-expanded={open}
+            aria-controls={`pj-prompt-${item.projectId}`}
+            onClick={() => setOpen(!open)}
           >
-            <X size={17} />
+            <span>口令全文</span>
+            <LcdText text={String(prepared.prompt.length)} px={2} label={null} />
+            <small>字</small>
+            <i aria-hidden="true">▾</i>
           </button>
-        }
-      >
-        <span className="en">CONTINUE</span>
-        <div className="pj-picks" role="radiogroup" aria-label="开工 Agent">
-          {AGENT_CAST.map((a) => (
+        </div>
+        {children}
+        {open && (
+          <pre ref={pre} className="prompt" id={`pj-prompt-${item.projectId}`} aria-label="口令全文" tabIndex={0}>
+            {prepared.prompt}
+          </pre>
+        )}
+        {prepared.redactions > 0 && <p className="relay-redactions">已隐去 {prepared.redactions} 段疑似凭据</p>}
+        {(error || copier.error || blocked) && (
+          <p className="inline-error" role="alert">{error || copier.error || blocked}</p>
+        )}
+        {copier.pending && (
+          <Button secondary disabled={busy} onClick={copier.retry}>补记留痕</Button>
+        )}
+        {receipt && <p role="status" className="relay-receipt pj-receipt">{receipt}</p>}
+      </div>
+      <div className="pj-handoff">
+        <span className="lab">交给谁</span>
+        <div className="pj-picker" role="radiogroup" aria-label="交给谁">
+          {AGENT_CAST.map((a, k) => (
             <button
               type="button"
-              className={`pj-pick${agent === a.id ? " on" : ""}`}
+              className={`pj-pk${agent === a.id ? " on" : ""}`}
               key={a.id}
               style={{ "--hue": a.hue }}
               role="radio"
               aria-checked={agent === a.id}
               aria-label={a.name}
+              tabIndex={agent === a.id ? 0 : -1}
               disabled={busy || !!copier.pending}
-              onClick={() => {
-                setAgent(a.id);
-                setSeen(false);
-                setReceipt("");
-                copier.reset();
+              onClick={(e) => {
+                pick(a.id);
+                if (!reduced) frames(e.currentTarget.firstElementChild, [{ transform: "translateY(-6px)" }, { transform: "translateY(-2px)" }, { transform: "translateY(0)" }], 160);
               }}
               onKeyDown={(e) => {
-                if (
-                  ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(
-                    e.key,
-                  )
-                ) {
-                  e.preventDefault();
-                  const n =
-                    (AGENT_CAST.indexOf(a) +
-                      (["ArrowRight", "ArrowDown"].includes(e.key) ? 1 : 3)) %
-                    4;
-                  setAgent(AGENT_CAST[n].id);
-                  setSeen(false);
-                  setReceipt("");
-                  copier.reset();
-                  e.currentTarget.parentElement.children[n].focus();
-                }
+                if (!["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(e.key)) return;
+                e.preventDefault();
+                const n = (k + (["ArrowRight", "ArrowDown"].includes(e.key) ? 1 : AGENT_CAST.length - 1)) % AGENT_CAST.length;
+                pick(AGENT_CAST[n].id);
+                e.currentTarget.parentElement.children[n].focus();
               }}
             >
-              <AgentSprite agent={a.id} mode="head" />
+              <span><AgentSprite agent={a.id} mode="head" /></span>
             </button>
           ))}
         </div>
-      </RelayLaunch>
-      {(error || copier.error || stale) && (
-        <p className="inline-error" role="alert">
-          {error || copier.error || stale}
-        </p>
-      )}
-      {copier.pending && (
-        <Button secondary disabled={busy} onClick={copier.retry}>
-          补记留痕
+        <span className="pk-name">{characterOf(agent)?.name}</span>
+        <span className="grow" />
+        <label className="pj-openapp">
+          <input type="checkbox" checked={openApp} disabled={busy} onChange={(e) => onOpenApp(e.target.checked)} />
+          复制后打开 {name}
+        </label>
+        <Button className={`pj-give${done ? " done" : ""}`} disabled={busy || !!blocked || !!copier.pending} onClick={copy}>
+          复制口令，交给 <b>{name}</b>
         </Button>
-      )}
-      {receipt && (
-        <p role="status" className="relay-receipt">
-          {receipt}
-        </p>
-      )}
-    </>
+      </div>
+    </div>
+  );
+}
+// 读档屏：选中的卡带在这里启动——立绘 + 对话框里的下一步 + 交接条，底部 30 天双轨与读数列。
+function ReadScreen(props) {
+  const { item, index, serial, readFailed, statusReading, desk, state, adoptState, notify, onDetails, onTeam, onRecheck } = props;
+  const reduced = useReducedMotion(),
+    body = useRef(null),
+    line = useRef(null),
+    readable = readableCurrent(item),
+    outline = item.current?.state === "outline" ? item.current.outline : null,
+    continuable = continuableCurrent(item),
+    loading = item.current?.state === "loading" && !readFailed,
+    f = item.current?.fields,
+    holder = readable ? castOf(f?.writer) : null,
+    stalled = readable && item.activity?.state === "stalled",
+    next = readable ? (f?.next ? linkText(f.next) : "缺少此项") : "",
+    typed = useTyped(typeof next === "string" ? next : "", serial, reduced);
+  // 读档：扫描线从上往下，按帧切 6 格。
+  useLayoutEffect(() => {
+    if (reduced) return;
+    frames(body.current, [0, 1, 2, 3, 4, 5, 6].map((k) => ({ clipPath: `inset(0 0 ${Math.round(100 - (k * 100) / 6)}% 0)` })), 330);
+    frames(line.current, [0, 1, 2, 3, 4, 5, 6].map((k) => ({ top: `${Math.round((k * 100) / 6)}%`, opacity: k === 6 ? 0 : 1 })), 330);
+  }, [serial]);
+  useEffect(() => {
+    document.querySelectorAll("[data-pj-lscroll]").forEach((x) => { x.scrollLeft = x.scrollWidth; });
+  }, [serial]);
+  const holderLabel = holder
+    ? characterOf(holder.id)?.name
+    : readable && f?.writer === "无"
+      ? "无人持笔"
+      : f?.writer || (readable ? "缺少此项" : "持笔者未知");
+  return (
+    <div id="pj-screen" role="tabpanel" aria-labelledby={`pj-cart-${item.projectId}`}>
+    <article className={`pj-screen${stalled ? " stalled" : ""}`} aria-label={`项目状态卡：${item.name}`} data-project-id={item.projectId}>
+      <i className="pj-scanline" ref={line} aria-hidden="true" />
+      <header className="sc-head">
+        <span className="en">LOAD · SLOT {pad2(index + 1)}</span>
+        <h3>{item.name}</h3>
+        <PathLabel value={item.root || "本地位置未知"} />
+        {stalled && (
+          <span className="pj-zzz" aria-label={`停滞 ${item.activity.idleDays} 天`}><i>z</i><i>z</i><i>Z</i></span>
+        )}
+        <span className="grow" />
+        <button type="button" className="text-btn pj-detail-btn" onClick={onDetails}>详情</button>
+      </header>
+      <div className={`sc-body${continuable ? "" : " s-unread"}`} ref={body}>
+        <div className="pj-actor-col">
+          <div className="pj-portrait" style={holder ? { "--hue": holder.hue } : undefined} data-agent={holder?.id || "none"}>
+            {holder ? <AgentSprite agent={holder.id} mode="body" fit={156} className="sprite" /> : <span className="ghost"><b>?</b></span>}
+          </div>
+          <div className="pj-plate">
+            <b className={`hn${holder ? "" : " dim"}`}>{holderLabel}</b>
+            <small className="en">{holder ? holder.name.toUpperCase() : "UNKNOWN"}</small>
+          </div>
+        </div>
+        {continuable ? (
+          <ProjectLaunch
+            key={item.projectId + serial}
+            {...props}
+            speaker={
+              <span className="speaker">
+                {readable ? `${holder ? characterOf(holder.id)?.name + " · " : ""}NEXT · 下一步` : "RECENT · 最近进展"}
+              </span>
+            }
+          >
+            {readable ? (
+              <p className={`nx${!reduced && typed.length < (typeof next === "string" ? next.length : 0) ? " typing" : ""}`}>
+                {typeof next === "string" ? typed : next}
+              </p>
+            ) : (
+              <div className="pj-outline">
+                <p className="nx">{outline.title}</p>
+                {outline.summary && <small>{outline.summary}</small>}
+                <ManualNext projectId={item.projectId} projectName={item.name} next={desk.next} adoptState={adoptState} notify={notify} />
+              </div>
+            )}
+          </ProjectLaunch>
+        ) : (
+          <div className="pj-dialog-col">
+            <div className="pj-box">
+              {loading ? (
+                <Reading label="正在读取 CURRENT" />
+              ) : (
+                <>
+                  <span className="speaker bad">CURRENT · 读不到</span>
+                  <p className="nx alertline">
+                    <AlertCircle size={18} aria-hidden="true" />
+                    <b>读不到 CURRENT</b>
+                    <small>{readFailed ? "当前状态待核实" : unavailable(item)}</small>
+                    阶段、下一步、活动都未知，不代表没有活动。
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="pj-handoff">
+              <span className="lab">交给谁</span>
+              <span className="muted">读不到 CURRENT，修好后才能交出口令</span>
+              <span className="grow" />
+              <button type="button" className="text-btn" onClick={onDetails}>看体检</button>
+              <Button
+                secondary
+                disabled={statusReading}
+                onClick={(e) => {
+                  // 重新检查：30 天格子按三格一组扫一遍（纯装饰，不等动画）。
+                  if (!reduced)
+                    e.currentTarget.closest(".pj-screen")?.querySelectorAll(".c30 i").forEach((cell, k) => {
+                      try { cell.animate([{ background: "var(--cyan)", ...STEP }, { background: "var(--cyan)" }], { duration: 120, delay: Math.floor(k % 30 / 3) * 24 }); } catch {}
+                    });
+                  onRecheck();
+                }}
+              >
+                重新检查
+              </Button>
+            </div>
+            {desk.inbox.length > 0 && (
+              <div className="pj-waiting">
+                <SlotDesk rows={desk} projectId={item.projectId} projectName={item.name} adoptState={adoptState} notify={notify} onLoadout={props.onLoadout} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="sc-foot">
+        <ActivityLanes item={item} readable={readable && !readFailed} />
+        <ReadStats
+          item={item}
+          readable={readable && !readFailed}
+          outline={outline}
+          readFailed={readFailed}
+          desk={desk}
+          savepointDays={props.savepointDays}
+          savepointWarnDays={props.savepointWarnDays}
+          onDetails={onDetails}
+          onTeam={onTeam}
+        />
+      </div>
+    </article>
+    </div>
   );
 }
 export function ProjectsV16({
@@ -561,7 +644,12 @@ export function ProjectsV16({
     [selectedId, setSelectedId] = useState(null),
     [settings, setSettings] = useState(false),
     [help, setHelp] = useState(false),
-    [launch, setLaunch] = useState(null),
+    [currentId, setCurrentId] = useState(null),
+    [serial, setSerial] = useState(0),
+    [picked, setPicked] = useState({}),
+    [openApp, setOpenApp] = useState(true),
+    [teamFor, setTeamFor] = useState(null),
+    [fold, setFold] = useState(null),
     [daily, setDaily] = useState({ items: [], error: "" }),
     [flight, setFlight] = useState(null),
     [collection, setCollection] = useState({ notes: [], state: "loading" }),
@@ -574,17 +662,11 @@ export function ProjectsV16({
       .catch(() => { if (active) setCollection({ notes: [], state: "error" }); });
     return () => { active = false; };
   }, []);
-  const [columns, setColumns] = useState(() =>
-    window.innerWidth > 1180 ? 3 : window.innerWidth > 760 ? 2 : 1,
-  );
-  const continueLock=useRef(false),pageLive=useRef(true);
-  useEffect(()=>{pageLive.current=true;return()=>{pageLive.current=false;};},[]);
   const settingsBusy = useRef(false);
   const dailyGeneration = useRef(0);
   const started = useRef(false),
     scanLock = useRef(false),
     lib = useRef(null),
-    trigger = useRef(null),
     flightTimer = useRef(null),
     flightOrigin = useRef(null),
     reduced = useReducedMotion();
@@ -642,22 +724,13 @@ export function ProjectsV16({
     return () => { dailyGeneration.current++; };
   }, [loadDaily, state.revision, projectStatus.at]);
   useEffect(() => {
-    const resize = () =>
-      setColumns(
-        window.innerWidth > 1180 ? 3 : window.innerWidth > 760 ? 2 : 1,
-      );
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, []);
-  useEffect(() => {
     if (reduced) {
       clearTimeout(flightTimer.current);
       setFlight(null);
     }
     return () => clearTimeout(flightTimer.current);
   }, [reduced]);
-  const launchOrder=useRef(null);
-  const sortedItems = sortSaveItems(
+  const items = sortSaveItems(
     active.map((p) => {
       const item = projectStatus.items.find((i) => i.projectId === p.id) || {
         projectId: p.id,
@@ -678,14 +751,38 @@ export function ProjectsV16({
       };
     }),
   );
-  // Keep the active preview mounted while a background read changes card priority.
-  if(!launch||!launchOrder.current)launchOrder.current=sortedItems.map(item=>item.projectId);
-  const items=launch?[...sortedItems].sort((a,b)=>launchOrder.current.indexOf(a.projectId)-launchOrder.current.indexOf(b.projectId)):sortedItems;
   const slots = new Map(items.map((p, i) => [p.projectId, i + 1])),
-    liveLaunch = launch && items.find((i) => i.projectId === launch.projectId);
-  function closeLaunch() {
-    setLaunch(null);
-    trigger.current?.focus();
+    shownIndex = Math.max(0, items.findIndex((i) => i.projectId === currentId)),
+    shown = items[shownIndex],
+    readFailed = !!projectStatus.error,
+    deskOf = (projectId) => deskRows(state, projectId, collection.state === "ok" ? collection.notes : null),
+    inboxWaiting = items.reduce((t, i) => t + deskOf(i.projectId).inbox.filter((n) => !n.relayed && !n.missing).length, 0);
+  // 默认选中第一盘并记住它：后台重读改变排序时，读档屏不跟着跳到别的项目。
+  useEffect(() => {
+    if (projectStatus.loaded && shown && shown.projectId !== currentId) setCurrentId(shown.projectId);
+  }, [projectStatus.loaded, shown?.projectId, currentId]);
+  // 手机上卡带横滑：排序变化或换盘后，让选中的卡带回到可见处（不靠吸附跟随）。
+  const slotsRef = useRef(null), order = items.map((i) => i.projectId).join(",");
+  useLayoutEffect(() => {
+    const strip = slotsRef.current, on = strip?.querySelector(".pj-cart.on");
+    if (!strip || !on || strip.scrollWidth <= strip.clientWidth) return;
+    const left = on.offsetLeft - strip.offsetLeft - parseFloat(getComputedStyle(strip).paddingLeft || "0");
+    if (left < strip.scrollLeft || left + on.offsetWidth > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = Math.max(0, left);
+    else if (shownIndex === 0) strip.scrollLeft = 0;
+  }, [order, shown?.projectId]);
+  // 选卡带 = 读档：换到哪盘就重读一次状态，读档屏重新启动。
+  function select(id) {
+    if (id === shown?.projectId) return;
+    setCurrentId(id);
+    setSerial((n) => n + 1);
+    refreshProjectStatus();
+  }
+  function cartKey(e, k) {
+    if (!["ArrowRight", "ArrowLeft"].includes(e.key) || !items.length) return;
+    e.preventDefault();
+    const n = (k + (e.key === "ArrowRight" ? 1 : items.length - 1)) % items.length;
+    select(items[n].projectId);
+    e.currentTarget.parentElement.children[n]?.focus();
   }
   const library = curated
     ? all.filter((p) => catalog.get(p.id)?.view === "main")
@@ -712,6 +809,12 @@ export function ProjectsV16({
   const hidden = curated
     ? all.filter((p) => catalog.get(p.id)?.view === "hidden").filter(matches)
     : [];
+  const folds = [
+    ["知识与工具资产", assets, "可持续使用的知识库、Skill 与工具，不占项目主卡"],
+    ["任务与阶段成果", tasks, "有边界的工作和交付，保留入口与未完成状态"],
+    ["待归类与待判定", candidates, "扫描发现或尚未确认用途"],
+    ["隐藏来源", hidden, "文件容器与历史副本，可在详情重新分类"],
+  ].filter(([, list]) => curated && list.length > 0);
   const displayOnly = (project) => project.manual && !project.localPaths.some((path) =>
     (c.roots || []).some((root) => path === root || path.startsWith(`${root}/`)));
   const mainProject = (project) => !curated || catalog.get(project.id)?.view === "main";
@@ -722,7 +825,7 @@ export function ProjectsV16({
     const row = event.currentTarget.closest(".pj-cs"),
       dest =
         document.querySelector(".pj-vacant") ||
-        document.querySelector(".pj-saves");
+        document.querySelector(".pj-slots");
     flightOrigin.current = {
       from: row.getBoundingClientRect(),
       to: dest.getBoundingClientRect(),
@@ -737,86 +840,74 @@ export function ProjectsV16({
   return (
     <div className="projects-v16 project-space">
       <ReadReveal pending={busy} ready={!error}/>
-      <PageHeading
-        page="projects"
-        help={
-          <button
-            className="page-help"
-            aria-label="项目空间怎么用"
-            onClick={() => setHelp(true)}
-          >
-            ?
-          </button>
-        }
-        action={
-          <div className="pj-head-act">
-            <button
-              type="button"
-              className="icon-btn"
-              aria-label="项目空间设置"
-              onClick={editSettings}
-            >
-              <Settings2 size={18} />
-            </button>
-            <button
-              type="button"
-              className="icon-btn"
-              aria-label="重新扫描"
-              disabled={busy}
-              onClick={() => run()}
-            >
-              {busy ? <Reading mini label="扫描项目"/> : <RefreshCw size={18}/> }
-            </button>
-          </div>
-        }
-      />
-      {error && (
-        <p className="inline-error" role="alert">
-          {error}
-        </p>
-      )}
-      {c.github?.message && (
-        <p className="scan-notice" role="status">
-          {c.github.message}
-        </p>
-      )}
-      {!!c.errors?.length && (
-        <details className="scan-notice">
-          <summary>{c.errors.length} 条扫描提示</summary>
-          {c.errors.map((e, i) => (
-            <p key={i}>{e}</p>
-          ))}
-        </details>
-      )}
-      {c.truncated && (
-        <p className="scan-notice warning" role="status">
-          <strong>结果不完整：</strong>
-          {projectScanNotice(c)}
-        </p>
-      )}
-      <section className={`pj-saves-sec${active.length ? "" : " pj-no-active"}`} aria-label="在推进项目">
-        <div className="v14-sh">
-          <span className="en">SAVE DATA</span>
-          <h2>在推进 · {active.length}</h2>
-          <button
-            type="button"
-            className="text-btn"
-            title={projectStatus.checkedAt?`上次读取：${new Date(projectStatus.checkedAt).toLocaleString()}`:undefined}
-            disabled={!projectStatus.loaded || !github.loaded}
-            onClick={() => {
-              refreshProjectStatus();
-              loadGithub(true);
-            }}
-          >
-            <RefreshCw size={14} />
-            刷新
-          </button>
+      <header className="pj-bar">
+        <h1>项目空间<span className="en">PROJECTS</span></h1>
+        <button className="page-help" aria-label="项目空间怎么用" onClick={() => setHelp(true)}>?</button>
+        <div className="pj-counts">
+          <span className="cnt"><LcdText text={pad2(active.length)} px={3} label={`在推进 ${active.length}`} /><small>在推进</small></span>
+          <span className="cnt"><LcdText text={pad2(library.length)} px={3} label={`项目 ${library.length}`} /><small>项目</small></span>
+          <span className="cnt"><LcdText text={pad2(inboxWaiting)} px={3} label={`收件待交代 ${inboxWaiting}`} /><small>收件待交代</small></span>
         </div>
+        <span className="grow" />
+        {projectStatus.checkedAt && <span className="pj-readat">上次读取 {hhmm(projectStatus.checkedAt)}</span>}
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label="刷新"
+          title={projectStatus.checkedAt ? `刷新：重新读取在推进的存档与 GitHub（上次读取：${new Date(projectStatus.checkedAt).toLocaleString()}）` : "刷新：重新读取在推进的存档与 GitHub"}
+          disabled={!projectStatus.loaded || !github.loaded}
+          onClick={() => {
+            refreshProjectStatus();
+            loadGithub(true);
+          }}
+        >
+          {!projectStatus.loaded ? <Reading mini label="读取状态" /> : <RefreshCw size={18} />}
+        </button>
+        <button type="button" className="icon-btn" aria-label="项目空间设置" onClick={editSettings}>
+          <Settings2 size={18} />
+        </button>
+      </header>
+      <section className={`pj-saves-sec${active.length ? "" : " pj-no-active"}`} aria-label="在推进项目">
         {active.length > 7 && (
           <p className="scan-notice warning">
             已有 {active.length} 个在推进项目，建议收窄；通常同时推进1–3个。
           </p>
         )}
+        <div className="pj-slots" ref={slotsRef} data-read-stale={!!projectStatus.error}>
+          {items.length > 0 && (
+            <div className="pj-tabs" role="tablist" aria-label="存档槽">
+              {items.map((item, i) => (
+                <SlotCart
+                  key={item.projectId}
+                  item={item}
+                  index={i}
+                  on={item.projectId === shown?.projectId}
+                  readFailed={readFailed}
+                  reading={!projectStatus.loaded}
+                  onSelect={() => select(item.projectId)}
+                  onKeyDown={(e) => cartKey(e, i)}
+                />
+              ))}
+            </div>
+          )}
+          {items.length < 3 && (
+            <button
+              type="button"
+              className="pj-cart pj-vacant"
+              aria-label={`空存档 ${items.length + 1}，前往项目列表`}
+              onClick={() => {
+                lib.current.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+                lib.current.focus();
+              }}
+            >
+              <span className="plus" aria-hidden="true">+</span>
+              <span className="nm">
+                <span className="en">SLOT {pad2(items.length + 1)} · 空槽</span>
+                <small>{library.length ? "从库里挑一盘开新档" : "先登记项目"}</small>
+              </span>
+            </button>
+          )}
+        </div>
         <SourceReadError title="项目状态与体检" error={projectStatus.error}
           retained={items.some(item => projectStatus.items.some(snapshot => snapshot.projectId === item.projectId))} onRetry={refreshProjectStatus} />
         {daily.error && (
@@ -828,92 +919,32 @@ export function ProjectsV16({
         {github.error && (
           <SourceReadError title="GitHub 面板" error={github.error} onRetry={() => loadGithub(true)} />
         )}
-        <div className={`pj-saves${launch ? " launching" : ""}`} data-read-stale={!!projectStatus.error}>
-          {Array.from(
-            { length: Math.ceil(Math.max(3, items.length) / columns) },
-            (_, row) => (
-              <React.Fragment key={row}>
-                {Array.from({ length: columns }, (_, col) => {
-                  const i = row * columns + col,
-                    item = items[i];
-                  return item ? (
-                    <SaveCard
-                      key={item.projectId}
-                      item={item}
-                      index={i}
-                      savepointDays={item.savepointDays}
-                      savepointWarnDays={savepointThresholds(c).warn}
-                      readFailed={!!projectStatus.error||!projectStatus.loaded}
-                      launch={launch?.projectId === item.projectId}
-                      desk={deskRows(state, item.projectId, collection.state === "ok" ? collection.notes : null)}
-                      onLoadout={() => setLoadoutFor({ id: item.projectId, name: item.name })}
-                      adoptState={adoptState}
-                      notify={notify}
-                      onDetails={() => setSelectedId(item.projectId)}
-                      onContinue={async(e) => {
-                        if(continueLock.current||!projectStatus.loaded)return;
-                        trigger.current=e.currentTarget;continueLock.current=true;
-                        try{
-                          const fresh=await refreshProjectStatus();
-                          if(!pageLive.current)return;
-                          const current=fresh?.items.find(p=>p.projectId===item.projectId);
-                          if(!current||!continuableCurrent(current)){notify('当前状态读取未确认，请重读后再继续。','warning');return;}
-                          setLaunch({...current,name:item.name,sourceKey:fresh.sourceKey,launchSerial:crypto.randomUUID()});
-                        }finally{continueLock.current=false;}
-                      }}
-                    />
-                  ) : i < Math.max(3, items.length) ? (
-                    <button
-                      type="button"
-                      className="pj-save pj-vacant"
-                      aria-label={`空存档 ${i + 1}，前往项目列表`}
-                      key={i}
-                      onClick={() => {
-                        lib.current.scrollIntoView({
-                          behavior: reduced ? "auto" : "smooth",
-                          block: "start",
-                        });
-                        lib.current.focus();
-                      }}
-                    >
-                      <span className="pj-slot">
-                        <Floppy />
-                        <span className="en">
-                          SLOT {String(i + 1).padStart(2, "0")}
-                        </span>
-                      </span>
-                      <span className="pj-empty-hint">
-                        空存档
-                        <small>
-                          {library.length ? "从下面挑一盘开新档" : "先登记项目"}
-                        </small>
-                      </span>
-                    </button>
-                  ) : null;
-                })}
-                {launch &&
-                  items.findIndex((i) => i.projectId === launch.projectId) >=
-                    row * columns &&
-                  items.findIndex((i) => i.projectId === launch.projectId) <
-                    row * columns + columns && (
-                    <ProjectLaunch
-                      key={launch.projectId + launch.launchSerial}
-                      item={launch}
-                      liveItem={liveLaunch}
-                      state={state}
-                      collection={collection}
-                      refreshProjectStatus={refreshProjectStatus}
-                      statusReading={!projectStatus.loaded}
-                      sourceKey={projectStatus.sourceKey}
-                      adoptState={adoptState}
-                      notify={notify}
-                      onClose={closeLaunch}
-                    />
-                  )}
-              </React.Fragment>
-            ),
-          )}
-        </div>
+        {shown && (
+          <ReadScreen
+            item={shown}
+            index={shownIndex}
+            serial={serial}
+            readFailed={readFailed}
+            statusReading={!projectStatus.loaded}
+            desk={deskOf(shown.projectId)}
+            state={state}
+            collection={collection}
+            agent={picked[shown.projectId] || castOf(shown.current?.fields?.writer)?.id || "codex"}
+            onAgent={(id) => setPicked((m) => ({ ...m, [shown.projectId]: id }))}
+            openApp={openApp}
+            onOpenApp={setOpenApp}
+            refreshProjectStatus={refreshProjectStatus}
+            sourceKey={projectStatus.sourceKey}
+            savepointDays={shown.savepointDays}
+            savepointWarnDays={savepointThresholds(c).warn}
+            adoptState={adoptState}
+            notify={notify}
+            onDetails={() => setSelectedId(shown.projectId)}
+            onTeam={() => setTeamFor({ id: shown.projectId, name: shown.name })}
+            onLoadout={() => setLoadoutFor({ id: shown.projectId, name: shown.name })}
+            onRecheck={() => { refreshProjectStatus(); loadDaily(); }}
+          />
+        )}
       </section>
       <section
         className="pj-library"
@@ -921,18 +952,41 @@ export function ProjectsV16({
         tabIndex={-1}
         aria-label="全部项目"
       >
-        <div className="v14-sh">
+        <div className="v14-sh pj-lib-head">
           <span className="en">LIBRARY</span>
-          <h2>全部项目 · {library.length}</h2>
+          <h2>全部项目</h2>
+          <LcdText text={pad2(library.length)} px={2} label={`${library.length} 个项目`} />
+          <span className="grow" />
+          <span className={`pj-scan${c.truncated ? " warn" : ""}`} title={c.truncated ? projectScanNotice(c) : undefined}>
+            <i className="led" aria-hidden="true" />
+            <span>{c.truncated ? "结果不完整 · " : ""}{c.projectScannedAt ? `${date(c.projectScannedAt)} 扫描` : "还没扫描"}</span>
+            {c.truncated && <span className="sr-only">{projectScanNotice(c)}</span>}
+            <button type="button" className="pj-rescan" aria-label="重新扫描" disabled={busy} onClick={() => run()}>
+              {busy ? <Reading mini label="扫描项目" /> : "重新扫描"}
+            </button>
+          </span>
         </div>
-        {curated && <p className="pj-project-definition">主项目有独立目标、跨任务阶段和单独的状态与验收；目录、任务和资产不自动算作项目。</p>}
+        {error && (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        )}
+        {c.github?.message && (
+          <p className="scan-notice" role="status">
+            {c.github.message}
+          </p>
+        )}
+        {!!c.errors?.length && (
+          <details className="scan-notice">
+            <summary>{c.errors.length} 条扫描提示</summary>
+            {c.errors.map((e, i) => (
+              <p key={i}>{e}</p>
+            ))}
+          </details>
+        )}
         {(library.length > 0 || assets.length > 0 || tasks.length > 0 || candidates.length > 0) && (
           <div className="pj-lib-tools">
-            <div
-              className="pj-filter"
-              role="radiogroup"
-              aria-label="项目来源筛选"
-            >
+            <div className="pj-filter" role="radiogroup" aria-label="项目来源筛选">
               {[
                 ["all", "全部"],
                 ["local", "LOCAL"],
@@ -942,17 +996,18 @@ export function ProjectsV16({
                   type="button"
                   role="radio"
                   aria-checked={filter === id}
+                  aria-label={`${label} ${counts[id]}`}
                   className={filter === id ? "on" : ""}
                   key={id}
                   onClick={() => setFilter(id)}
                 >
                   {label}
-                  <b>{counts[id]}</b>
+                  <LcdText text={pad2(counts[id])} px={2} label={null} />
                 </button>
               ))}
             </div>
             <label className="pj-search">
-              <Search size={17} />
+              <Search size={16} />
               <input
                 aria-label="搜索项目"
                 placeholder="搜索名称、路径"
@@ -967,76 +1022,62 @@ export function ProjectsV16({
             <Reading label="正在读取目录标记与 GitHub 仓库"/>
           </div>
         )}
-        {!busy &&
-          (curated ? groupPortfolioSections(projects, c.projectCatalog) : groupProjectRacks(projects, c.roots || [])).map((g, i) => (
-            <div className="pj-rack" key={g.key}>
-              <h4>
-                <span className="en">
-                  {curated ? "ZONE" : "RACK"} {String(i + 1).padStart(2, "0")}
-                </span>
-                <b title={g.label}>{g.label}</b>
-                <span className="pj-rack-n en">{g.items.length}</span>
-              </h4>
-              <ul>
-                {g.items.map((p) => (
-                  <li
-                    className={`pj-cs${projectSource(p) === "github" ? " git" : ""}${p.active ? " in-save" : ""}`}
-                    key={p.id}
-                  >
-                    <button
-                      className="pj-cs-tab project-discovery-row"
-                      onClick={() => setSelectedId(p.id)}
-                      aria-label={`项目：${p.name}`}
+        {!busy && (
+          <div className="pj-racks">
+            {(curated ? groupPortfolioSections(projects, c.projectCatalog) : groupProjectRacks(projects, c.roots || [])).map((g, i) => (
+              <div className="pj-rack" key={g.key}>
+                <h4>
+                  <span className="en">{curated ? "ZONE" : "RACK"} {pad2(i + 1)}</span>
+                  <b title={g.label}>{g.label}</b>
+                  <LcdText text={pad2(g.items.length)} px={2} label={`${g.items.length} 个`} />
+                </h4>
+                <ul>
+                  {g.items.map((p) => (
+                    <li
+                      className={`pj-cs${projectSource(p) === "github" ? " git" : ""}${p.active ? " in-save" : ""}`}
+                      key={p.id}
                     >
-                      <span className="pj-cs-code en">
-                        {projectSource(p) === "github" ? "GIT" : "LOCAL"}
-                      </span>
-                      <span className="pj-cs-name">
-                        <b>{p.name}</b>
-                        <PathLabel value={p.localPaths[0] || p.repoKey} />
-                      </span>
-                      <span className="pj-cs-tags">
-                        {p.active && (
-                          <span className="pj-cs-save">
-                            <Floppy />
-                            <span className="en">
-                              SLOT {String(slots.get(p.id)).padStart(2, "0")}
-                            </span>
-                          </span>
-                        )}
-                        {p.identityConflict && (
-                          <span className="pj-flag">身份待确认</span>
-                        )}
-                        {p.manual ? (
-                          <span className="pj-flag">手工登记</span>
-                        ) : !p.seenThisScan && (
-                          <span className="pj-flag">本次未检出</span>
-                        )}
-                        {displayOnly(p) && <span className="pj-flag">仅展示</span>}
-                      </span>
-                      <span
-                        className="pj-row-at en"
-                        title={p.recentUpdate?.reason}
+                      <button
+                        className="pj-cs-tab project-discovery-row"
+                        onClick={() => setSelectedId(p.id)}
+                        aria-label={`项目：${p.name}`}
+                        title={[p.manual && "手工登记", p.localPaths[0] || p.repoKey].filter(Boolean).join(" · ")}
                       >
-                        {recent(p)}
+                        <span className="pj-cs-code en">{projectSource(p) === "github" ? "GIT" : "LOCAL"}</span>
+                        <span className="pj-cs-name">
+                          <b>
+                            {p.name}
+                            {p.identityConflict && <span className="pj-flag">身份待确认</span>}
+                            {!p.manual && !p.seenThisScan && <span className="pj-flag">本次未检出</span>}
+                          </b>
+                          <PathLabel value={shortPath(p.localPaths[0] || p.repoKey)} />
+                        </span>
+                        <span className="pj-row-at en" title={p.recentUpdate?.reason}>{recent(p)}</span>
+                      </button>
+                      <span className="pj-cs-tail">
+                        {p.active ? (
+                          <span className="pj-cs-save"><i className="led" aria-hidden="true" />SLOT {pad2(slots.get(p.id))}</span>
+                        ) : displayOnly(p) ? (
+                          <span className="pj-cs-only" title="手工登记、仅展示的项目不开档">仅展示</span>
+                        ) : (
+                          <ActiveToggle
+                            project={p}
+                            state={state}
+                            adoptState={adoptState}
+                            notify={notify}
+                            launch
+                            onPrepare={prepareFlight}
+                            onMarked={() => fly(p)}
+                          />
+                        )}
                       </span>
-                    </button>
-                    {!p.active && !displayOnly(p) && (
-                      <ActiveToggle
-                        project={p}
-                        state={state}
-                        adoptState={adoptState}
-                        notify={notify}
-                        launch
-                        onPrepare={prepareFlight}
-                        onMarked={() => fly(p)}
-                      />
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
         {!busy && !projects.length && !assets.length && !tasks.length && !candidates.length && !hidden.length && (
           <div className="pj-none">
             <Pixel sprite="koromon" size={72} />
@@ -1047,42 +1088,36 @@ export function ProjectsV16({
             </Button>
           </div>
         )}
-        {curated && assets.length > 0 && <details className="pj-pending">
-          <summary>知识与工具资产 · {assets.length}<small>可持续使用的知识库、Skill 与工具，不占项目主卡</small></summary>
-          <ul>{assets.map((project) => <li key={project.id}>
-            <button type="button" onClick={() => setSelectedId(project.id)}>
-              <strong>{project.name}</strong>
-              <PathLabel value={project.localPaths[0] || project.repoKey} />
-            </button>
-          </li>)}</ul>
-        </details>}
-        {curated && tasks.length > 0 && <details className="pj-pending">
-          <summary>任务与阶段成果 · {tasks.length}<small>有边界的工作和交付，保留入口与未完成状态</small></summary>
-          <ul>{tasks.map((project) => <li key={project.id}>
-            <button type="button" onClick={() => setSelectedId(project.id)}>
-              <strong>{project.name}</strong>
-              <PathLabel value={project.localPaths[0] || project.repoKey} />
-            </button>
-          </li>)}</ul>
-        </details>}
-        {curated && candidates.length > 0 && <details className="pj-pending">
-          <summary>待归类与待判定 · {candidates.length}<small>扫描发现或尚未确认用途</small></summary>
-          <ul>{candidates.map((project) => <li key={project.id}>
-            <button type="button" onClick={() => setSelectedId(project.id)}>
-              <strong>{project.name}</strong>
-              <PathLabel value={project.localPaths[0] || project.repoKey} />
-            </button>
-          </li>)}</ul>
-        </details>}
-        {curated && hidden.length > 0 && <details className="pj-pending">
-          <summary>隐藏来源 · {hidden.length}<small>文件容器与历史副本，可在详情重新分类</small></summary>
-          <ul>{hidden.map((project) => <li key={project.id}>
-            <button type="button" onClick={() => setSelectedId(project.id)}>
-              <strong>{project.name}</strong>
-              <PathLabel value={project.localPaths[0] || project.repoKey} />
-            </button>
-          </li>)}</ul>
-        </details>}
+        {folds.length > 0 && (
+          <div className="pj-folds">
+            {folds.map(([name, list, desc], i) => (
+              <button
+                type="button"
+                key={name}
+                className="pj-fold"
+                aria-label={`${name} · ${list.length}`}
+                aria-expanded={fold === i}
+                aria-controls="pj-fold-panel"
+                title={desc}
+                onClick={() => setFold(fold === i ? null : i)}
+              >
+                <LcdText text={pad2(list.length)} px={2} label={null} />
+                <span><b>{name}</b><small>{desc}</small></span>
+                <i aria-hidden="true">▾</i>
+              </button>
+            ))}
+          </div>
+        )}
+        {folds[fold] && (
+          <div className="pj-fold-panel" id="pj-fold-panel" role="region" aria-label={folds[fold][0]}>
+            <ul>{folds[fold][1].map((project) => <li key={project.id}>
+              <button type="button" onClick={() => setSelectedId(project.id)}>
+                <strong>{project.name}</strong>
+                <PathLabel value={project.localPaths[0] || project.repoKey} />
+              </button>
+            </li>)}</ul>
+          </div>
+        )}
       </section>
       {!!state.projects?.length && (
         <details className="legacy-records">
@@ -1233,6 +1268,18 @@ export function ProjectsV16({
           </div>
         </Dialog>
       )}
+      {teamFor && (
+        <Dialog title={`队伍 · ${teamFor.name}`} onClose={() => setTeamFor(null)}>
+          <SlotDesk
+            rows={deskOf(teamFor.id)}
+            projectId={teamFor.id}
+            projectName={teamFor.name}
+            adoptState={adoptState}
+            notify={notify}
+            onLoadout={() => { setTeamFor(null); setLoadoutFor(teamFor); }}
+          />
+        </Dialog>
+      )}
       {loadoutFor && (
         <LoadoutDialog
           state={state}
@@ -1248,8 +1295,7 @@ export function ProjectsV16({
         <Dialog title="项目空间 · 这页怎么用" onClose={() => setHelp(false)}>
           <div className="asset-form">
             <p>
-              挑存档 → 继续 → 选伙伴 → 预览口令 →
-              复制。带到伙伴只打开已检测应用，粘贴和发送由你完成。
+              选卡带 → 选交给谁 → 复制口令，一个动作完成；勾上「复制后打开」会顺手打开已检测的应用，粘贴和发送由你完成。复制前会重读状态与工作台核对，有变化就不复制，换成最新内容后再点一次。
             </p>
             <p>
               本地 · {c.roots?.length || 0} 个目录；GitHub ·{" "}
