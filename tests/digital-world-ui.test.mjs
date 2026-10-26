@@ -268,18 +268,46 @@ test("UI v16：侧栏名称与首页中枢轻入口按用户决定", () => {
   for (const action of ["记一笔", "新建资产"]) assert.match(html, new RegExp(action));
 });
 
-test("首页资产读取现有数据，不再提供已删除板块入口", () => {
+test("世界总览四块：收藏、资产、随手记、项目，每条可点开，资产按使用次数排并可直接复制", () => {
+  // 用户 2026-10-26：恢复四块；资产去掉类型计数格，按使用次数排、带复制按钮；焚决不进常用列表；项目有提醒的排前面。
   const s = seed();
-  s.notes = [{ id: "n1", text: "合成随手记", at: "2026-09-29T00:00:00.000Z" }];
-  s.profileProposals=[{id:"home-proposal",status:"pending",path:"个人上下文/合成.md",reason:"合成需要核对",proposer:"Codex",createdAt:"2026-09-29T00:00:00.000Z"}];
-  const html = render(Home, { state: s, vaultReceipts:{loaded:true,noteIds:[]} });
-  // 用户 2026-10-16 用资产摘要替换日历卡；待处理来源语义保持。
-  assert.match(html, /资产类型统计/);
-  assert.match(html, /最近更新/);
-  assert.doesNotMatch(html, /夜间窗口 23:00–07:00/);
-  assert.doesNotMatch(html, /个人说明修改建议/);
-  assert.doesNotMatch(html,/随手记尚无当前正文匹配的 Vault 写入回执/);
-  assert.doesNotMatch(html, /在待处理打开/);
+  const live = s.assets.filter(a => !a.archived);
+  const [low, high] = [live[0], live[1]];
+  const use = (asset, n) => Array.from({ length: n }, (_, i) => ({ schema: 1, id: asset.id + "-u" + i, assetId: asset.id, versionId: asset.versions.at(-1).id, at: "2026-10-2" + i + "T00:00:00.000Z", kind: "use", action: "copy-prompt" }));
+  s.assetActivity = [...use(low, 1), ...use(high, 3)];
+  s.notes = [
+    { id: "n1", text: "旧的一条", at: "2026-10-20T00:00:00.000Z" },
+    { id: "n2", text: "**新的一条**\n第二行", at: "2026-10-25T00:00:00.000Z" },
+  ];
+  s.connections = { ...(s.connections || {}), projects: [
+    { id: "p1", name: "顺利项目", active: true, localPaths: ["/fixture/p1"] },
+    { id: "p2", name: "停滞项目", active: true, localPaths: ["/fixture/p2"] },
+    { id: "p3", name: "未启用项目", active: false, localPaths: ["/fixture/p3"] },
+  ] };
+  const projectStatus = { loaded: true, error: "", items: [
+    { projectId: "p1", name: "顺利项目", current: { state: "ok", fields: { next: "写[交接](x.md)" } }, activity: { state: "active", latestAt: "2026-10-26T00:00:00.000Z" } },
+    { projectId: "p2", name: "停滞项目", current: { state: "ok", fields: { next: "补测试" } }, activity: { state: "stalled", idleDays: 9, latestAt: "2026-10-10T00:00:00.000Z" } },
+  ] };
+  const html = render(Home, { state: s, projectStatus, refreshProjectStatus() {} });
+  const titles = [...html.matchAll(/<h2 id="hx-title-([a-d])"><span class="en">([A-Z]+)<\/span>([^<]+)<\/h2>/g)].map(m => m[3]);
+  assert.deepEqual(titles, ["个人收藏", "资产仓库", "随手记", "项目空间"]);
+  assert.doesNotMatch(html, /资产类型统计|hx-type-grid/);
+  // 资产：用过 3 次的排在用过 1 次的前面，每条都有打开按钮和复制按钮。
+  const picks = [...html.matchAll(/aria-label="打开资产：([^"]+)"/g)].map(m => m[1]);
+  assert.equal(picks.length, Math.min(5, live.filter(a => a.type !== "Scroll").length));
+  assert.ok(picks.indexOf(current(high).title) < picks.indexOf(current(low).title));
+  assert.match(html, /用过 <em class="mono">3<\/em> 次/);
+  // 总数写在标题行（用户 2026-10-26：数字用模块色调）。
+  assert.match(html, /<span class="hx-count" aria-label="2 个"><b class="mono">2<\/b><small>个<\/small><\/span>/);
+  assert.equal((html.match(/class="asset-copy"/g) || []).length, picks.length);
+  // 随手记：新的在前，标题去掉 Markdown 记号。
+  assert.ok(html.indexOf('aria-label="打开随手记：新的一条"') < html.indexOf('aria-label="打开随手记：旧的一条"'));
+  // 项目：只列在推进的，停滞的排前面，下一步去掉链接语法。
+  assert.ok(html.indexOf("打开项目：停滞项目") < html.indexOf("打开项目：顺利项目"));
+  assert.doesNotMatch(html, /未启用项目/);
+  assert.match(html, /停滞 9 天/);
+  assert.match(html, /下一步：写交接/);
+  assert.doesNotMatch(html, /搜索 ⌘K|夜间窗口 23:00–07:00|个人说明修改建议|在待处理打开/);
 });
 
 test("个人收藏保留learning路由，侧栏不分区且不恢复旧书架", () => {

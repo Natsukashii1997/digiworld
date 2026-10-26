@@ -10,7 +10,7 @@ import { LcdText } from "./v14.jsx";
 import { NOTE_MAX } from "./rich-note.js";
 import { now, uid } from "./store.js";
 import { settleAttempt } from "./write-attempt.js";
-import { AssetsScreen, CollectionScreen } from "./HomeOverviewContent.jsx";
+import { AssetsScreen, CollectionScreen, NotesScreen, ProjectsScreen, assetTotal, liveCollection, noteTotal, projectRows, useCollectionSummary } from "./HomeOverviewContent.jsx";
 import "./home-v16.css";
 
 const pad = n => String(n).padStart(2, "0");
@@ -30,13 +30,13 @@ function useTraces(panelRef, cardRefs, keyRefs) {
     const calculate = () => {
       const box = panel.getBoundingClientRect();
       if (!box.width || !box.height) return;
-      const specs = [["a", "c", -8], ["b", "b", 8]];
+      const specs = [["b", "c", -8], ["a", "c", 8], ["c", "a", 0], ["d", "b", 0]];
       const next = specs.flatMap(([name, key, offset]) => {
         const card = cardRefs.current[name];
         const target = keyRefs.current[key];
         if (!card || !target) return [];
         const a = card.getBoundingClientRect(), b = target.getBoundingClientRect();
-        const left = name === "a";
+        const left = name === "a" || name === "b";
         const sx = (left ? a.right : a.left) - box.left;
         const sy = a.top + a.height / 2 - box.top;
         const tx = (left ? b.left : b.right) - box.left;
@@ -73,7 +73,8 @@ function useTraces(panelRef, cardRefs, keyRefs) {
   return lines;
 }
 
-function Module({ id, code, english, title, navigate, destination, className = "", cardRefs, setActive, children }) {
+// 总数写在标题行，用模块色调。
+function Module({ id, code, english, title, navigate, destination, className = "", cardRefs, setActive, count, unit, children }) {
   const label = title + " · 前往" + destination;
   return (
     <section
@@ -88,6 +89,7 @@ function Module({ id, code, english, title, navigate, destination, className = "
       <header>
         <span className="hx-port mono" aria-hidden="true">{code}</span>
         <h2 id={"hx-title-" + id}><span className="en">{english}</span>{title}</h2>
+        {count != null && <span className="hx-count" aria-label={count + " " + unit}><b className="mono">{count}</b><small>{unit}</small></span>}
         <button type="button" className="hx-page-link" aria-label={label} onClick={navigate}>
           {destination} <ArrowUpRight size={13} aria-hidden="true" />
         </button>
@@ -98,7 +100,7 @@ function Module({ id, code, english, title, navigate, destination, className = "
 }
 
 export function HomeV16({
-  state, navigate, openCreate, save, adoptState, notify,
+  state, navigate, select, openCreate, save, adoptState, notify, projectStatus, refreshProjectStatus,
 }) {
   const [clockNow, setClockNow] = useState(Date.now);
   useEffect(() => {
@@ -179,6 +181,8 @@ export function HomeV16({
     finally { noteLock.current=false;if(liveNote.current)setNoteBusy(false); }
   }
   const greeting = homeGreeting(displayDate);
+  const collection = useCollectionSummary();
+  const projects = projectRows(state, projectStatus);
   return <div className="hx" ref={panelRef}>
     <h1 className="sr-only">世界总览</h1>
     <div className="hx-floor" aria-hidden="true" />
@@ -186,16 +190,22 @@ export function HomeV16({
       preserveAspectRatio="none" aria-hidden="true">
       {lines.map(line => <g key={line.name} data-trace={line.name} className={activePort === line.name ? "active" : ""}>
         <path className="hx-tr" d={line.d} />
+        <path className={"hx-sig hx-sig-" + line.name} d={line.d} />
         <circle className="hx-pin" cx={line.sx} cy={line.sy} r="4" />
         <circle className="hx-pin end" cx={line.tx} cy={line.ty} r="3" />
       </g>)}
     </svg>
+    {/* 用户 2026-10-26：左列个人收藏、资产仓库，右列随手记、项目空间；模块字母沿用各自色调（收藏红、资产青、随手记橙、项目黄）。 */}
     <div className="hx-col-l">
-      <Module id="a" code="1" english="ASSETS" title="资产仓库" destination="全部" navigate={() => navigate("assets", { filter: "all" })}
-        cardRefs={cardRefs} setActive={setActivePort}>
-        <AssetsScreen state={state} />
+      <Module id="b" code="1" english="COLLECTION" title="个人收藏" destination="全部" navigate={() => navigate("learning")}
+        cardRefs={cardRefs} setActive={setActivePort} count={liveCollection(collection)?.length} unit="条">
+        <CollectionScreen read={collection} onOpen={id => navigate("learning", { collectionNoteId: id })} />
       </Module>
-
+      <Module id="a" code="2" english="ASSETS" title="资产仓库" destination="全部" navigate={() => navigate("assets", { filter: "all" })}
+        cardRefs={cardRefs} setActive={setActivePort} count={assetTotal(state)} unit="份">
+        <AssetsScreen state={state} adoptState={adoptState} notify={notify}
+          onOpen={id => { if (navigate("assets", { filter: "all" })) select?.(id); }} />
+      </Module>
     </div>
     <div className="hx-core">
       <time className="hx-date" dateTime={ymd(displayDate) + "T" + clockText(displayDate)} aria-label={clockText(displayDate) + " " + (displayDate.getMonth() + 1) + "月" + displayDate.getDate() + "日 " + weekEnglish[displayDate.getDay()]}>
@@ -241,9 +251,14 @@ export function HomeV16({
       </div>
     </div>
     <div className="hx-col-r">
-      <Module id="b" code="2" english="COLLECTION" title="收藏" destination="全部" navigate={() => navigate("learning")}
-        cardRefs={cardRefs} setActive={setActivePort}>
-        <CollectionScreen />
+      <Module id="c" code="3" english="NOTES" title="随手记" destination="全部" navigate={() => navigate("notes")}
+        cardRefs={cardRefs} setActive={setActivePort} count={noteTotal(state)} unit="条">
+        <NotesScreen state={state} onOpen={id => navigate("notes", { noteId: id })} />
+      </Module>
+      <Module id="d" code="4" english="PROJECTS" title="项目空间" destination="全部" navigate={() => navigate("projects")}
+        cardRefs={cardRefs} setActive={setActivePort} count={projects.length} unit="个">
+        <ProjectsScreen state={state} projectStatus={projectStatus} onRetry={refreshProjectStatus}
+          onOpen={id => navigate("projects", { projectId: id })} />
       </Module>
     </div>
   </div>;

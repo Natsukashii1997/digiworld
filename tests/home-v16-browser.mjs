@@ -30,7 +30,7 @@ async function launch(staticRoot) {
   const app=await fixture();apps.push(app);await app.repository.write(sharedState,{initialize:true});return app;
 }
 async function open(app,width=1440,mode='full') {
- const context=await browser.newContext({viewport:{width,height:1000},timezoneId:'Asia/Shanghai',reducedMotion:'reduce'});
+ const context=await browser.newContext({viewport:{width,height:1000},timezoneId:'Asia/Shanghai',reducedMotion:'reduce',permissions:['clipboard-read','clipboard-write']});
  const page=await context.newPage();page.setDefaultTimeout(12000);
  page.on('pageerror',e=>errors.push(e.message));
  let fail=false,requests=[],delay=false;
@@ -62,8 +62,9 @@ async function geometry(page,width) {
  assert.equal(g.overflow,0,`${width} overflow`);
  for(const c of g.cards)assert(c.w>0&&c.x>=-1&&c.right<=width+1,JSON.stringify(c));
  for(const c of g.controls)assert(c.height>=43.5,`${width} small control ${JSON.stringify(c)}`);
- if(width>760)for(const [l,r] of [[0,1]])assert(Math.abs(g.cards[l].y-g.cards[r].y)<1&&Math.abs(g.cards[l].bottom-g.cards[r].bottom)<1,`${width} unequal cards`);
- else for(let i=1;i<2;i++)assert(g.cards[i].y>=g.cards[i-1].bottom,`${width} order`);
+ // 用户 2026-10-26 四块：DOM 顺序为收藏、资产、随手记、项目，宽屏时收藏与随手记同行、资产与项目同行。
+ if(width>760)for(const [l,r] of [[0,2],[1,3]])assert(Math.abs(g.cards[l].y-g.cards[r].y)<1&&Math.abs(g.cards[l].bottom-g.cards[r].bottom)<1,`${width} unequal cards`);
+ else for(let i=1;i<4;i++)assert(g.cards[i].y>=g.cards[i-1].bottom,`${width} order`);
  return g;
 }
 try {
@@ -73,28 +74,41 @@ try {
  for(const width of [1680,1440,1280,430,393,390,375,320]){
   const {page,context,requests}=await open(app,width);
   try{
-   await page.locator('.hx-mod-b .hx-summary-total').waitFor();
-   assert.deepEqual(await page.locator('.hx-mod h2').allTextContents(),['ASSETS资产仓库','COLLECTION收藏']);
-   assert.deepEqual(await page.locator('.hx-port').allTextContents(),['1','2']);
+   await page.locator('.hx-mod-b .hx-count').waitFor();
+   assert.deepEqual(await page.locator('.hx-mod h2').allTextContents(),['COLLECTION个人收藏','ASSETS资产仓库','NOTES随手记','PROJECTS项目空间']);
+   assert.deepEqual(await page.locator('.hx-port').allTextContents(),['1','2','3','4']);
    assert.deepEqual(await page.locator('.nav-item > span').allTextContents(),expectedNav);
-   assert.equal(await page.locator('.nav-zone-title,.nav-divider,.nav-group,.nav-zone').count(),0);
-   assert.equal(await page.locator('.hx-mod-a .hx-summary-total b').innerText(),'6');assert.equal(await page.locator('.nav-item').filter({hasText:'资产仓库'}).locator('small').innerText(),'6');
-   assert.equal(await page.locator('.hx-mod-b .hx-summary-total b').innerText(),'3');
-   assert.deepEqual(await page.locator('.hx-mod-b .hx-summary-list b').allTextContents(),['合成收藏 3','合成收藏 2','合成收藏 1']);
+   // 侧栏不分区、不加分组标题（用户 2026-10-26）；.nav-group 只用来把设置沉底。
+   assert.equal(await page.locator('.nav-zone-title,.nav-divider,.nav-zone,.sidebar .nav-heading').count(),0);
+   assert.equal(await page.locator('.hx-mod-a .hx-count b').innerText(),'6');assert.equal(await page.locator('.nav-item').filter({hasText:'资产仓库'}).locator('small').innerText(),'6');
+   assert.equal(await page.locator('.hx-mod-b .hx-count b').innerText(),'3');
+   assert.deepEqual(await page.locator('.hx-mod-b .hx-pick b').allTextContents(),['合成收藏 3','合成收藏 2','合成收藏 1']);
    assert.equal(await page.locator('.hx-mod-a').getByText('已删除不应出现',{exact:true}).count(),0);
    await page.screenshot({path:join(out,`after-${width}.png`),fullPage:true});
    checks.push({kind:'layout',width,geometry:await geometry(page,width)});
    if(width===1440){
-    for(const id of ['a','b'])await page.locator('.hx-mod-'+id).screenshot({path:join(out,`card-${id}-1440.png`)});
+    for(const id of ['a','b','c','d'])await page.locator('.hx-mod-'+id).screenshot({path:join(out,`card-${id}-1440.png`)});
     assert.equal(await page.locator('.hx-crest-stage .crest').count(),8);
     assert.match(await page.locator('.hx-date').getAttribute('datetime'),/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
     await page.getByRole('button',{name:'A 键：打开资产仓库'}).click();assert.equal(new URL(page.url()).hash,'#assets');
-    await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-summary-total').waitFor();
+    await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-count').waitFor();
     await page.getByRole('button',{name:'B 键：背光'}).click();assert.equal(await page.locator('.dv-key.b').getAttribute('aria-pressed'),'true');
-    for(const [id,route]of [['a','assets'],['b','learning']]){
+    for(const [id,route]of [['b','learning'],['a','assets'],['c','notes'],['d','projects']]){
      await page.locator('.hx-mod-'+id+' .hx-page-link').click();assert.equal(new URL(page.url()).hash,'#'+route);
-     await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-summary-total').waitFor();
+     await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-count').waitFor();
     }
+    // 条目可点开：收藏定位到那一条，资产打开详情抽屉。
+    await page.getByRole('button',{name:'打开收藏：合成收藏 2',exact:true}).click();assert.equal(new URL(page.url()).hash,'#learning');
+    await page.locator('.collection-overlay').waitFor();await page.keyboard.press('Escape');await page.locator('.collection-overlay').waitFor({state:'detached'});await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-count').waitFor();
+    const firstAsset=page.locator('.hx-mod-a .hx-pick').first(),assetLabel=await firstAsset.getAttribute('aria-label');
+    await firstAsset.click();assert.equal(new URL(page.url()).hash,'#assets');await page.getByRole('dialog').waitFor();
+    await page.keyboard.press('Escape');await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-count').waitFor();
+    // 首页一键复制：剪贴板拿到全文，主库追加一次使用记录，这一条显示“用过 1 次”。
+    const before=(await app.repository.read()).assetActivity?.length||0;
+    const row=page.locator('.hx-mod-a .hx-pick-list li').filter({has:page.locator(`[aria-label="${assetLabel}"]`)});
+    await row.locator('.asset-copy').click();await row.getByText(/用过 1 次/).waitFor();
+    assert.equal((await app.repository.read()).assetActivity.length,before+1);
+    assert.ok((await page.evaluate(()=>navigator.clipboard.readText())).length>0);
     assert.equal(await page.locator('.topbar-inbox').count(),0);
     const a11y=await new AxeBuilder({page}).include('.hx').include('.nav').withTags(['wcag2a','wcag2aa']).analyze();
     assert.deepEqual(a11y.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[]);
@@ -107,18 +121,18 @@ try {
  for(const mode of ['empty','error','long']){
   const {page,context,setFail,setDelay}=await open(app,390,mode);
   try{
-   if(mode==='error') {await page.locator('.hx-mod-b .source-read-error').waitFor();assert.equal(await page.locator('.hx-mod-b .hx-summary-total').count(),0);assert.equal(await page.getByText('还没有收藏，收录后会显示在这里').count(),0);}
+   if(mode==='error') {await page.locator('.hx-mod-b .source-read-error').waitFor();assert.equal(await page.locator('.hx-mod-b .hx-count').count(),0);assert.equal(await page.getByText('还没有收藏，收录后会显示在这里').count(),0);}
    else if(mode==='empty') await page.getByText('还没有收藏，收录后会显示在这里').waitFor();
-   else await page.locator('.hx-mod-b .hx-summary-list').waitFor();
+   else await page.locator('.hx-mod-b .hx-pick-list').waitFor();
    await geometry(page,390);await page.screenshot({path:join(out,mode+'-390.png'),fullPage:true});checks.push({kind:'state',mode});
   }finally{await context.close();}
  }
  const retained=await open(app,1440);
  try{
-  await retained.page.locator('.hx-mod-b .hx-summary-total').waitFor();retained.setFail(true);
+  await retained.page.locator('.hx-mod-b .hx-count').waitFor();retained.setFail(true);
   await retained.page.evaluate(()=>window.dispatchEvent(new Event('focus')));
   await retained.page.locator('.hx-mod-b .source-read-error').waitFor();
-  assert.equal(await retained.page.locator('.hx-mod-b .hx-summary-list li').count(),3);
+  assert.equal(await retained.page.locator('.hx-mod-b .hx-pick-list li').count(),3);
   retained.setFail(false);await retained.page.locator('.hx-mod-b .source-read-error button').click();await retained.page.waitForFunction(()=>!document.querySelector('.hx-mod-b .source-read-error'));
   checks.push({kind:'retained-and-retry',pass:true});
  }finally{await retained.context.close();}

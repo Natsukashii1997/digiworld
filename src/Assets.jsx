@@ -120,7 +120,7 @@ async function copyAssetVersion(asset, version, activity, notify) {
     activity.endCopy();
   }
 }
-function AssetCopyButton({ asset, state, adoptState, notify, disabled }) {
+export function AssetCopyButton({ asset, state, adoptState, notify, disabled }) {
   const version = current(asset);
   const activity = useAssetActivity(asset, state, adoptState);
   const label = asset.type === "Design" ? "复制生图提示词" : asset.type === "Skill" ? "复制安装口令" : asset.type === "MCP" ? "复制配置定义" : "复制全文";

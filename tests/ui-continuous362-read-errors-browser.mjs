@@ -23,7 +23,7 @@ try {
   else {await page.locator('.nv-report-shell').waitFor();await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>readScans.length),0,'进入页面后页面自己读完只显示内容，不补第二道线（常浩378）');assert.equal(await page.getByTestId('night-output-loading').count(),0);assert.equal(await page.locator('.nv-report-shell').count(),1,'新内容已在DOM中');await page.waitForTimeout(550);}
   await page.screenshot({path:join(out,fails?'failed.png':'ready.png'),fullPage:true});records.push({fails,scans:await page.evaluate(()=>readScans.length)});
   await page.evaluate(()=>{document.querySelector('.main-content').getAnimations=()=>{throw Error('合成动画API故障');};});
-  await page.getByRole('button',{name:/^项目空间/}).first().click();await page.getByRole('heading',{name:'项目空间',exact:true}).waitFor();
+  await page.locator('.nav').getByRole('button',{name:/^项目空间/}).first().click();await page.getByRole('heading',{name:'项目空间',exact:true}).waitFor();
   await context.close();context=null;
  }
  assert.deepEqual(errors,[]);await writeFile(join(out,'report.json'),JSON.stringify({records,errors},null,2));console.log('continuous362-read-errors-browser: all passed');
