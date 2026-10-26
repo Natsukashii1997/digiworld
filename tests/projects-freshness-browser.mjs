@@ -16,6 +16,6 @@ try{
  app.data.items[0].current.path='docs/CURRENT.md';await card.locator('.pj-give').click();await page.getByText(/项目内容或目录已变化，口令没有复制/).first().waitFor();assert.equal(await page.evaluate(()=>window.writes),0);
  app.data.items[0].current.fields.next='窗口重新聚焦的新决定';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await card.getByText('窗口重新聚焦的新决定',{exact:true}).waitFor();
  hold=true;await page.evaluate(()=>window.dispatchEvent(new Event('focus')));for(let i=0;i<50&&!held;i++)await new Promise(r=>setTimeout(r,20));assert.ok(held);app.data.items[0].current.fields.next='后发新请求';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await card.getByText('后发新请求',{exact:true}).waitFor();release();await page.waitForTimeout(100);assert.equal(await card.getByText('后发新请求',{exact:true}).count(),1);
- await page.getByRole('button',{name:'基地',exact:true}).click();app.data.items[0].current.fields.next='重进项目页的新决定';await page.getByRole('button',{name:/^项目空间/}).click();await card.getByText('重进项目页的新决定',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'世界总览',exact:true}).click();app.data.items[0].current.fields.next='重进项目页的新决定';await page.getByRole('button',{name:/^项目空间/}).click();await card.getByText('重进项目页的新决定',{exact:true}).waitFor();
  assert.deepEqual(errors,[]);console.log('PASS F06 cart select/copy fresh read, same-stateId next/path drift blocks copy, focus/reentry refresh, late response ignored');
 }finally{release?.();await browser.close();await app.close();}

@@ -1,27 +1,27 @@
 // 用户确认的七板块注册表；导航、页头和搜索共用此顺序。
-// UI v18（用户 2026-10-23 定 B 稿）：顺序即主线「捕获 → 炼化与出战」，编号按此顺序连续排，不再跳号。
+// 用户 2026-10-26：顺序为世界总览 / 资产仓库 / 个人收藏 / 随手记 / 项目空间 / 逆向工程，编号按此顺序连续排。
 export const MATURITY = {ready: "可用", partial: "部分可用", draft: "草稿", planned: "规划中"};
 export const PAGES = [
   {
     "id": "home",
     "group": "今日",
     "code": "00",
-    "label": "基地",
-    "title": "基地",
+    "label": "世界总览",
+    "title": "世界总览",
     "eyebrow": "TODAY · BASE",
     "maturity": "ready",
     "lead": "资产、收藏与随手记录，常用内容从这里进入。"
   },
   {
-    "id": "notes",
-    "group": "生活",
+    "id": "assets",
+    "group": "资产",
     "code": "01",
-    "label": "随手记",
-    "title": "随手记",
-    "eyebrow": "QUICK NOTES",
+    "label": "资产仓库",
+    "title": "资产仓库",
+    "eyebrow": "ASSET LIBRARY",
     "maturity": "ready",
-    "lead": "先把念头记下来；值得反复用的，炼入焚决。",
-    "stage": "捕捉"
+    "lead": "Skill、Prompt、工作流、规则模板与焚决在这里收录与迭代，复制后交给任意 Agent，规则还能装进项目。",
+    "stage": "收集 · 迭代 · 交付"
   },
   {
     "id": "learning",
@@ -35,15 +35,15 @@ export const PAGES = [
     "stage": "收录 · 整理"
   },
   {
-    "id": "assets",
-    "group": "资产",
+    "id": "notes",
+    "group": "生活",
     "code": "03",
-    "label": "资产仓库",
-    "title": "资产仓库",
-    "eyebrow": "ASSET LIBRARY",
+    "label": "随手记",
+    "title": "随手记",
+    "eyebrow": "QUICK NOTES",
     "maturity": "ready",
-    "lead": "Skill、Prompt、工作流、规则模板与焚决在这里收录与迭代，复制后交给任意 Agent，规则还能装进项目。",
-    "stage": "收集 · 迭代 · 交付"
+    "lead": "先把念头记下来；值得反复用的，炼入焚决。",
+    "stage": "捕捉"
   },
   {
     "id": "projects",
@@ -80,11 +80,9 @@ export const PAGES = [
   }
 ];
 export const page = id => PAGES.find(p => p.id === id);
-// 侧栏分区：基地 / 捕获 / 炼化与出战，设置沉底。逆向工程到阶段 3 并入资产仓库「新建 ▾」前暂留在这里，直达地址一直保留。
+// 侧栏不分区、不加分组标题（用户 2026-10-26），设置沉底。
 export const NAV = [
-  {items: ["home"]},
-  {heading: "捕获", items: ["notes", "learning"]},
-  {heading: "炼化与出战", items: ["assets", "projects", "references"]},
+  {items: ["home", "assets", "learning", "notes", "projects", "references"]},
   {items: ["settings"], end: true},
 ];
 export const GROUPS = ["今日", "资产", "目标", "生活", "系统"];
@@ -94,7 +92,7 @@ export const ZONES = [
  {id:"life",label:"生活区",en:"LIFE",groups:["生活"]},
  {id:"system",label:"系统",en:"SYSTEM",groups:["系统"]},
 ];
-// 焚决仍属于资产仓库；撤下的独立页面与未知地址一律回基地。
+// 焚决仍属于资产仓库；撤下的独立页面与未知地址一律回世界总览。
 export function resolveRoute(id) {
  if (id === "scrolls") return {route:"assets",anchor:null,filter:"Scroll"};
  return {route:page(id)?.id || "home",anchor:null};

@@ -180,7 +180,7 @@ export function HomeV16({
   }
   const greeting = homeGreeting(displayDate);
   return <div className="hx" ref={panelRef}>
-    <h1 className="sr-only">基地</h1>
+    <h1 className="sr-only">世界总览</h1>
     <div className="hx-floor" aria-hidden="true" />
     <svg className="hx-traces" viewBox={"0 0 " + (panelRef.current?.clientWidth || 1) + " " + (panelRef.current?.clientHeight || 1)}
       preserveAspectRatio="none" aria-hidden="true">

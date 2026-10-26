@@ -260,8 +260,8 @@ test("切片 1.3b：焚决是资产仓库第五种类型，#scrolls 旧链接落
 });
 
 test("UI v16：侧栏名称与首页中枢轻入口按用户决定", () => {
-  // 用户 2026-09-29：夜间值守改名“夜巡”，搜索只在右上角。用户 2026-10-23 定 UI v18 B 稿：首页改叫“基地”。
-  assert.equal(PAGES.find((p) => p.id === "home").label, "基地");
+  // 用户 2026-09-29：夜间值守改名“夜巡”，搜索只在右上角。用户 2026-10-26：首页改叫“世界总览”。
+  assert.equal(PAGES.find((p) => p.id === "home").label, "世界总览");
   assert.equal(PAGES.some(p => p.id === "night"), false);
   const html = render(Home);
   assert.doesNotMatch(html, /搜索 ⌘K/);
@@ -282,10 +282,10 @@ test("首页资产读取现有数据，不再提供已删除板块入口", () =>
   assert.doesNotMatch(html, /在待处理打开/);
 });
 
-test("个人收藏保留learning路由，按主线排在“捕获”里且不恢复旧书架", () => {
-  // UI v18（用户 2026-10-23 定 B 稿）：侧栏按主线分区，个人收藏在“捕获”里紧跟随手记；编号按此顺序连续。
-  const page=PAGES.find(page=>page.id==='learning');assert.equal(page.group,'资产');assert.equal(page.label,'个人收藏');assert.equal(PAGES[PAGES.findIndex(p=>p.id==='notes')+1].id,'learning');assert.equal(page.plan,undefined);
-  assert.deepEqual(NAV.find(s=>s.heading==='捕获').items,['notes','learning']);
+test("个人收藏保留learning路由，侧栏不分区且不恢复旧书架", () => {
+  // 用户 2026-10-26：侧栏去掉“捕获”“炼化与出战”分组标题，个人收藏排在资产仓库后、随手记前；编号按此顺序连续。
+  const page=PAGES.find(page=>page.id==='learning');assert.equal(page.group,'资产');assert.equal(page.label,'个人收藏');assert.equal(PAGES[PAGES.findIndex(p=>p.id==='assets')+1].id,'learning');assert.equal(PAGES[PAGES.findIndex(p=>p.id==='learning')+1].id,'notes');assert.equal(page.plan,undefined);
+  assert.equal(NAV.some(s=>s.heading),false);
   assert.deepEqual(NAV.flatMap(s=>s.items),PAGES.map(p=>p.id));
   assert.deepEqual(PAGES.map(p=>p.code),PAGES.map((_,i)=>String(i).padStart(2,'0')));
   const html=render(Collection);assert.match(html,/<h1[^>]*>个人收藏<\/h1>/);assert.match(html,/aria-label="收藏分组"/);assert.match(html,/aria-label="搜索收藏"/);assert.doesNotMatch(html,/<h2[^>]*>收藏画布<\/h2>/);assert.doesNotMatch(html,/书架|学习状态|链接收藏|回收区/);

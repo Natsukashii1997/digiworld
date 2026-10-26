@@ -370,7 +370,7 @@ export default function App() {
         <button
           className="brand"
           onClick={() => navigate("home")}
-          aria-label="数码世界 · 基地"
+          aria-label="数码世界 · 世界总览"
         >
           <PixelBadge sprite="crest" size={30} className="brand-crest" />
           <span className="brand-text">
@@ -393,7 +393,7 @@ export default function App() {
               {items.map((id) => {
                     const { label, maturity } = pageOf(id);
                     const Icon = ICONS[id];
-                    // 捕获项（随手记、收藏）显示待孵化数（绿色）；其余显示条数。
+                    // 随手记、收藏显示待孵化数（绿色）；其余显示条数。
                     const pending = id === "notes" ? state.notes.filter((n) => routeIndex.pending("note", n.id)).length
                       : id === "learning" ? collectionMeta.ids.filter((cid) => routeIndex.pending("collection", cid)).length : null;
                     const count =
@@ -433,7 +433,7 @@ export default function App() {
             partnerScreen.current?.poke();
             navigate("home");
           }}
-          aria-label={`伙伴 ${partner.name}，${partner.stage}；前往基地`}
+          aria-label={`伙伴 ${partner.name}，${partner.stage}；前往世界总览`}
         >
           <span className="partner-screen" data-partner-screen aria-hidden="true">
             <PartnerScreen ref={partnerScreen} mode="roam" onSeason={setSeason} />

@@ -916,7 +916,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   display: grid;
   gap: 1px;
 }
-/* UI v18 侧栏：按主线分区（基地 / 捕获 / 炼化与出战），设置沉到导航底部；伙伴屏规则不动。 */
+/* 侧栏：一组导航，设置沉到导航底部；伙伴屏规则不动。 */
 .sidebar .nav-group {
   flex-shrink: 0;
   gap: var(--s-1);
