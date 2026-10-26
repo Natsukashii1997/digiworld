@@ -265,7 +265,9 @@ test("UI v16：侧栏名称与首页中枢轻入口按用户决定", () => {
   assert.equal(PAGES.some(p => p.id === "night"), false);
   const html = render(Home);
   assert.doesNotMatch(html, /搜索 ⌘K/);
-  for (const action of ["记一笔", "新建资产"]) assert.match(html, new RegExp(action));
+  assert.match(html, /记一笔/);
+  // 用户 2026-10-26：首页删掉「新建资产」按钮，新建只在资产仓库里。
+  assert.doesNotMatch(html, /新建资产/);
 });
 
 test("世界总览四块：收藏、资产、随手记、项目，每条可点开，资产按使用次数排并可直接复制", () => {
@@ -308,6 +310,25 @@ test("世界总览四块：收藏、资产、随手记、项目，每条可点�
   assert.match(html, /停滞 9 天/);
   assert.match(html, /下一步：写交接/);
   assert.doesNotMatch(html, /搜索 ⌘K|夜间窗口 23:00–07:00|个人说明修改建议|在待处理打开/);
+  // 用户 2026-10-26 三块同水准：热度灯按列表最多那份折算 5 格；标题下「今天 +N」；随手记便签胶带；项目状态灯与最近动静。
+  assert.match(html, /aria-label="使用热度 5\/5"/);
+  assert.match(html, /aria-label="使用热度 2\/5"/);
+  assert.equal((html.match(/class="hx-today/g) || []).length, 3, "收藏未读到时不写今天计数，其余三块都有");
+  assert.match(html, /<li class="tone-(red|blue|green|yellow|gray)"><i class="hx-tape"/);
+  assert.match(html, /class="hx-lamp stalled"/);
+  assert.match(html, /class="hx-lamp active"/);
+});
+
+test("世界总览相对时间：刚刚、分钟、小时、昨天、天数，超过一周写日期", async () => {
+  const { ago } = await bundle("src/HomeOverviewContent.jsx", "HomeOverviewContent.mjs");
+  const now = Date.parse("2026-10-26T12:00:00+08:00");
+  assert.equal(ago("2026-10-26T11:59:40+08:00", now), "刚刚");
+  assert.equal(ago("2026-10-26T11:30:00+08:00", now), "30 分钟前");
+  assert.equal(ago("2026-10-26T08:00:00+08:00", now), "4 小时前");
+  assert.equal(ago("2026-10-25T23:00:00+08:00", now), "昨天");
+  assert.equal(ago("2026-10-23T09:00:00+08:00", now), "3 天前");
+  assert.match(ago("2026-10-10T09:00:00+08:00", now), /^10\/10$/);
+  assert.equal(ago("坏时间", now), "时间未知");
 });
 
 test("个人收藏保留learning路由，侧栏不分区且不恢复旧书架", () => {

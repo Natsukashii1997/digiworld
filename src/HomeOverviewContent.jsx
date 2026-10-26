@@ -1,16 +1,31 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Play } from "lucide-react";
 import { Reading, ReadReveal } from "./ScanMotion.jsx";
 import { SourceReadError } from "./components.jsx";
 import { request } from "./api.js";
 import { current } from "./store.js";
 import { AssetCopyButton } from "./Assets.jsx";
-import { usageByAsset } from "./asset-usage.js";
+import { usageByAsset, usageTime } from "./asset-usage.js";
+import { parseStoredNote } from "./note-document.js";
+import { notePaper } from "./note-paper.js";
 import { hasNoteContent, noteTitle } from "./note-types.js";
 import { deskRows } from "./ProjectDesk.jsx";
 import { readableCurrent } from "./projects-v16.js";
 import { linkText } from "./collab.js";
 
 const TYPES = [["Prompt", "Prompt"], ["Skill", "Skill"], ["Workflow", "工作流"], ["Rule", "规则"], ["MCP", "MCP"], ["Scroll", "焚决"], ["Design", "设计"]];
+const sameDay = (value, now) => Number.isFinite(Date.parse(value)) && new Date(value).toDateString() === new Date(now).toDateString();
+// 最近动静用相对时间：刚刚 / N 分钟前 / N 小时前 / 昨天 / N 天前，超过一周写日期。
+export function ago(value, now = Date.now()) {
+  const at = Date.parse(value);
+  if (!Number.isFinite(at)) return "时间未知";
+  const minutes = Math.max(0, Math.floor((now - at) / 60000));
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return minutes + " 分钟前";
+  if (sameDay(value, now)) return Math.floor(minutes / 60) + " 小时前";
+  const days = Math.round((new Date(now).setHours(0, 0, 0, 0) - new Date(at).setHours(0, 0, 0, 0)) / 864e5);
+  return days === 1 ? "昨天" : days < 7 ? days + " 天前" : stamp(value).slice(0, 5);
+}
 const stamp = value => Number.isFinite(Date.parse(value))
   ? new Date(value).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "时间未知";
 
@@ -45,14 +60,21 @@ function useSummary(path) {
 // 用户 2026-10-26：首页四块（个人收藏 / 资产仓库 / 随手记 / 项目空间），每一条都能点开；资产按使用次数排，可在首页直接复制。
 const COPYABLE = ["Prompt", "Skill", "Workflow", "Rule", "MCP", "Design"];
 const typeLabel = type => TYPES.find(([key]) => key === type)?.[1] || type;
-const noteLine = (text = "") => text.split("\n")
-  .map(line => line.replace(/^(#{1,6}\s+|- ?\[[ xX]\]\s*|[-*]\s+|\d+\.\s+|>\s*)/, "").replace(/\*\*/g, "").trim()).find(Boolean) || "";
+const noteLines = (text = "") => text.split("\n")
+  .map(line => line.replace(/^(#{1,6}\s+|- ?\[[ xX]\]\s*|[-*]\s+|\d+\.\s+|>\s*)/, "").replace(/\*\*/g, "").trim()).filter(Boolean);
 
 // 四块的总数写在模块标题行，由 HomeV16 用这些函数取。
 export const assetTotal = state => (state.assets || []).filter(asset => !asset.archived).length
   + (state.scrolls || []).filter(scroll => !scroll.deletedAt).length;
 export const noteTotal = state => (state.notes || []).filter(hasNoteContent).length;
 export const liveCollection = read => read.data?.notes?.filter(note => !note.deletedAt);
+// 标题下的「今天 +N」：收藏今天新收、资产今天复制次数、随手记今天新记、项目今天有动静的个数（用户 2026-10-26）。
+export const collectionToday = (read, now = Date.now()) => liveCollection(read)?.filter(note => sameDay(note.savedAt, now)).length;
+export const assetUsesToday = (state, now = Date.now()) => (state.assetActivity || []).filter(r => r.kind === "use" && sameDay(usageTime(r), now)).length;
+export const notesToday = (state, now = Date.now()) => (state.notes || []).filter(note => hasNoteContent(note) && sameDay(note.at, now)).length;
+export const projectsToday = (rows, now = Date.now()) => rows.filter(row => row.latestAt && sameDay(row.latestAt, now)).length;
+// 收藏封面只用本机收藏库已下载的图（/collection-media/），不在首页加载外链。
+const localCover = url => typeof url === "string" && /^\/collection-media\/[\w./-]+$/.test(url) ? url : "";
 
 // 焚决要先选条目才能复制，不进常用列表，只计入总数。
 export function AssetsScreen({ state, adoptState, notify, onOpen }) {
@@ -62,13 +84,17 @@ export function AssetsScreen({ state, adoptState, notify, onOpen }) {
     .sort((a, b) => b.use.count - a.use.count || b.use.lastAt.localeCompare(a.use.lastAt)
       || (current(b.asset).at || "").localeCompare(current(a.asset).at || ""))
     .slice(0, 5);
+  const most = Math.max(1, ...top.map(item => item.use.count));
   return <>
     {top.length ? <ul className="hx-pick-list">{top.map(({ asset, use }) => {
       const title = current(asset).title;
-      return <li key={asset.id}>
+      // 热度灯：按列表里用得最多的那份折算 0–5 格（用户 2026-10-26）。
+      const lit = use.count ? Math.max(1, Math.round(use.count / most * 5)) : 0;
+      return <li key={asset.id} className="hx-asset-row">
         <button type="button" className="hx-pick" aria-label={"打开资产：" + title} onClick={() => onOpen(asset.id)}>
           <b>{title}</b><small>{typeLabel(asset.type)} · {use.count ? <>用过 <em className="mono">{use.count}</em> 次</> : "还没用过"}</small>
         </button>
+        <span className="hx-heat" role="img" aria-label={`使用热度 ${lit}/5`}>{[0, 1, 2, 3, 4].map(i => <i key={i} className={i < lit ? "on" : undefined} />)}</span>
         <AssetCopyButton asset={asset} state={state} adoptState={adoptState} notify={notify} />
       </li>;
     })}</ul> : <p className="hx-empty">还没有资产，从资产仓库收录第一份</p>}
@@ -85,8 +111,13 @@ export function CollectionScreen({ read, onOpen }) {
     {!read.data && !read.error && <p className="hx-state" role="status"><Reading mini label="正在读取个人收藏" /></p>}
     {read.data && <>
       {recent.length ? <ul className={`hx-pick-list${read.error ? " read-failed" : ""}`}>{recent.map(note => {
-        const title = note.title || "未命名收藏";
-        return <li key={note.id}>
+        const title = note.title || "未命名收藏", cover = localCover(note.coverUrl);
+        // 用户 2026-10-26 选 B：封面垫在文字下、向左渐隐，文字下压暗；视频带小播放标。
+        return <li key={note.id} className={cover ? "has-cover" : undefined}>
+          {cover && <span className="hx-cover" aria-hidden="true">
+            <img src={cover} alt="" decoding="async" />
+            {note.type === "video" && <i><Play size={9} fill="currentColor" /></i>}
+          </span>}
           <button type="button" className="hx-pick" aria-label={"打开收藏：" + title} onClick={() => onOpen(note.id)}>
             <b>{title}</b><small>{note.category || note.author?.name || "个人收藏"} · <time className="mono">{stamp(note.savedAt)}</time></small>
           </button>
@@ -101,11 +132,17 @@ export function NotesScreen({ state, onOpen }) {
   const notes = (state.notes || []).filter(hasNoteContent);
   const recent = notes.slice().sort((a, b) => (b.at || "").localeCompare(a.at || "")).slice(0, 5);
   return <>
-    {recent.length ? <ul className="hx-pick-list">{recent.map(note => {
-      const title = note.title?.trim() || noteLine(note.text) || noteTitle(note);
-      return <li key={note.id}>
+    {recent.length ? <ul className="hx-pick-list hx-note-list">{recent.map(note => {
+      // 左侧胶带用随手记页同一张便签的纸色；第二行是正文的下一句（用户 2026-10-26）。
+      const lines = noteLines(note.text), title = note.title?.trim() || lines[0] || noteTitle(note);
+      const rest = note.title?.trim() ? lines[0] : lines[1];
+      let tone = "gray";
+      try { tone = notePaper(note.id, parseStoredNote(note)); } catch { /* 便签解析失败只影响色条，不影响列表 */ }
+      return <li key={note.id} className={"tone-" + tone}>
+        <i className="hx-tape" aria-hidden="true" />
         <button type="button" className="hx-pick" aria-label={"打开随手记：" + title} onClick={() => onOpen(note.id)}>
-          <b>{title}</b><small><time className="mono">{stamp(note.at)}</time></small>
+          <span className="hx-note-head"><b>{title}</b><time className="mono" dateTime={note.at}>{ago(note.at)}</time></span>
+          <small>{rest || <time className="mono" dateTime={note.at}>{stamp(note.at)}</time>}</small>
         </button>
       </li>;
     })}</ul> : <p className="hx-empty">还没有随手记，在中间输入框记一笔</p>}
@@ -122,9 +159,10 @@ export function projectRows(state, projectStatus) {
     const stalled = readable && item.activity?.state === "stalled";
     const flags = [stalled && `停滞 ${item.activity.idleDays} 天`, waiting && `收件待交代 ${waiting}`].filter(Boolean);
     const next = desk.next?.text || (readable && item.current.fields?.next ? linkText(item.current.fields.next) : "");
-    return { id: project.id, name: project.name, flags, next, stalled, readable,
-      latestAt: readable ? Date.parse(item.activity?.latestAt) || 0 : 0 };
-  }).sort((a, b) => Number(b.flags.length > 0) - Number(a.flags.length > 0) || b.latestAt - a.latestAt || a.name.localeCompare(b.name));
+    const latestAt = readable && Number.isFinite(Date.parse(item.activity?.latestAt)) ? item.activity.latestAt : "";
+    return { id: project.id, name: project.name, flags, next, stalled, readable, latestAt, source: latestAt ? item.activity.source || "" : "",
+      lamp: stalled ? "stalled" : readable && item.activity?.state === "active" ? "active" : "unknown" };
+  }).sort((a, b) => Number(b.flags.length > 0) - Number(a.flags.length > 0) || (Date.parse(b.latestAt) || 0) - (Date.parse(a.latestAt) || 0) || a.name.localeCompare(b.name));
 }
 
 export function ProjectsScreen({ state, projectStatus, onOpen, onRetry }) {
@@ -137,12 +175,16 @@ export function ProjectsScreen({ state, projectStatus, onOpen, onRetry }) {
     <ol className={`hx-proj-list${error ? " read-failed" : ""}`}>{rows.slice(0, 4).map((row, index) =>
       <li key={row.id} className={row.stalled ? "sleep" : ""}>
         <button type="button" aria-label={"打开项目：" + row.name} onClick={() => onOpen(row.id)}>
-          <span className="hx-slot mono">{String(index + 1).padStart(2, "0")}</span>
+          {/* 状态灯：推进中绿灯慢闪、停滞黄灯、待核实灰灯；第二行写最近一次动静与下一步（用户 2026-10-26）。 */}
+          <span className="hx-slot mono"><i className={"hx-lamp " + row.lamp} aria-hidden="true" />{String(index + 1).padStart(2, "0")}</span>
           <b>{row.name}</b>
           <span className={"hx-flag" + (row.flags.length ? " warn" : "")}>
             {row.flags.length ? row.flags.join(" · ") : row.readable ? "在推进" : loaded ? "状态待核实" : "读取中"}
           </span>
-          {row.next && <small className="hx-proj-next">下一步：{row.next}</small>}
+          {(row.latestAt || row.next) && <small className="hx-proj-next">
+            {row.latestAt && <span className="hx-proj-when">{row.source ? row.source + " · " : ""}{ago(row.latestAt)}</span>}
+            {row.latestAt && row.next && " · "}{row.next && "下一步：" + row.next}
+          </small>}
         </button>
       </li>)}</ol>
   </>;

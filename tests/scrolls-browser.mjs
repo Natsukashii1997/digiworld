@@ -389,9 +389,10 @@ try {
   // 第二版首页取消资产行；资产仓库入口与焚决数据仍须保留。
   await page.goto(`${app.url}/#home`);
   await page.locator('.hx').waitFor();
-  await page.getByRole('button', {name:'新建'}).waitFor();
+  // 用户 2026-10-26：首页不再放「新建资产」按钮，新建只在资产仓库里。
+  assert.equal(await page.locator('.hx').getByRole('button', {name:'新建资产'}).count(),0);
   assert.equal((await app.repository.read()).scrolls.filter(s=>!s.deletedAt).length,2);
-  ok("首页新建资产入口保留，焚决 2 卷仍存于主库和资产仓库");
+  ok("首页不再放新建资产按钮，焚决 2 卷仍存于主库和资产仓库");
 
   // 390 宽：新建资产六个类型自动换行；焚决抽屉无横向溢出，axe 无违规。
   const narrow = await open(390, 844);

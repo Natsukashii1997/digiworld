@@ -20,6 +20,6 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5179,
     strictPort: true,
-    proxy: { "/api": proxy, "/packages": proxy },
+    proxy: { "/api": proxy, "/packages": proxy, "/collection-media": proxy },
   },
 });

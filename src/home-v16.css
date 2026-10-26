@@ -7,10 +7,6 @@
 .page-home.v16 .hx-tr { fill:none; stroke:color-mix(in srgb,var(--cyan) 22%,transparent); stroke-width:1.5; vector-effect:non-scaling-stroke; transition:stroke var(--t-mid) var(--ease); }
 .page-home.v16 .hx-traces g.active .hx-tr { stroke:var(--cyan); filter:drop-shadow(0 0 5px var(--cyan)); }
 .page-home.v16 .hx-sig { fill:none; stroke-width:2.5; stroke-linecap:round; stroke-dasharray:3 46; vector-effect:non-scaling-stroke; animation:hx-flow 2.4s linear infinite; }
-.page-home.v16 .hx-sig-a { stroke:var(--cyan); filter:drop-shadow(0 0 4px var(--cyan)); }
-.page-home.v16 .hx-sig-b { stroke:var(--red); filter:drop-shadow(0 0 4px var(--red)); }
-.page-home.v16 .hx-sig-c { stroke:var(--orange); filter:drop-shadow(0 0 4px var(--orange)); }
-.page-home.v16 .hx-sig-d { stroke:var(--yellow); filter:drop-shadow(0 0 4px var(--yellow)); }
 .page-home.v16 .hx-pin { fill:var(--hw-pit); stroke:color-mix(in srgb,var(--cyan) 60%,transparent); stroke-width:1.5; vector-effect:non-scaling-stroke; }
 .page-home.v16 .hx-pin.end { fill:var(--cyan); stroke:none; }
 @keyframes hx-flow { to { stroke-dashoffset:-49; } }
@@ -67,22 +63,17 @@
 .page-home.v16 .hx-device { position:relative; display:grid; justify-items:center; gap:var(--s-2); margin:var(--s-2) 0 0; }
 .page-home.v16 .hx-crest-stage { --r:min(180px,calc(50cqw - 30px)); position:relative; display:grid; place-items:center; width:calc(var(--r) * 2 + 60px); height:calc(var(--r) * 2 + 60px); }
 .page-home.v16 .hx-crest-stage .hero-orbit.a::after { content:none; }
-.page-home.v16 .hx-crest-stage .crest-ring { animation:hx-crest-revolve 90s linear infinite; }
-.page-home.v16 .hx-crest-stage .crest svg { animation:hx-crest-upright 90s linear infinite; transform-origin:center; }
 .page-home.v16 .hx-crest-stage .dv-wrap { z-index:1; width:calc(var(--r) * 1.6); filter:drop-shadow(0 0 26px color-mix(in srgb,var(--cyan) 45%,transparent)); }
 .page-home.v16 .hx-crest-stage .digivice-art { width:100%!important; }
-@keyframes hx-crest-revolve { to { transform:rotate(360deg); } }
-@keyframes hx-crest-upright { to { transform:rotate(-360deg); } }
 .page-home.v16 .hx-device .lcd-stage canvas:not([data-view="number"]) { filter:brightness(1.28) saturate(1.2); }
 .page-home.v16 .hx-device figcaption { display:grid; justify-items:center; gap:4px; }.page-home.v16 .hx-device .en { color:var(--cyan); font-size:var(--fs-micro); letter-spacing:.2em; }.page-home.v16 .hx-device small { color:var(--muted); font-size:var(--fs-micro); }
 .page-home.v16 .hx-cmd { display:flex; align-items:center; gap:var(--s-3); width:100%; max-width:380px; min-height:50px; margin-top:var(--s-2); padding:0 3px 0 var(--s-4); border:1px solid color-mix(in srgb,var(--cyan) 35%,transparent); border-radius:var(--r-pill); background:color-mix(in srgb,var(--hw-pit) 85%,transparent); box-shadow:0 0 0 4px color-mix(in srgb,var(--cyan) 5%,transparent),0 0 28px -8px var(--cyan); }.page-home.v16 .hx-cmd:focus-within { border-color:var(--cyan); }
 .page-home.v16 .hx-prompt { color:var(--cyan); font-weight:700; }.page-home.v16 .hx-cmd input { flex:1; min-width:0; min-height:44px; padding:0; border:0!important; box-shadow:none!important; background:none!important; color:var(--text); font-size:var(--fs-caption); outline:none; }.page-home.v16 .hx-cmd input::placeholder { color:var(--muted); }.page-home.v16 .hx-key { color:var(--muted); font-size:var(--fs-micro); }
 .page-home.v16 .hx-cmd button { display:grid; place-items:center; flex:none; width:44px; height:44px; border:0; border-radius:var(--r-pill); background:color-mix(in srgb,var(--cyan) 16%,transparent); color:var(--cyan); cursor:pointer; }.page-home.v16 .hx-cmd button:disabled { opacity:.45; cursor:not-allowed; }
 .page-home.v16 .hx-note-status { max-width:380px; margin:0; color:var(--red-2); font-size:var(--fs-small); line-height:1.5; }
-.page-home.v16 .hx-quick { display:flex; align-items:center; gap:var(--s-3); }.page-home.v16 .hx-quick button { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; padding:0 2px; border:0; background:none; color:var(--muted); font:inherit; font-size:var(--fs-small); cursor:pointer; }.page-home.v16 .hx-quick button:hover { color:var(--cyan); }.page-home.v16 .hx-quick i { width:3px; height:3px; border-radius:var(--r-pill); background:var(--faint); }
 @media (max-width:1400px) { .page-home.v16 .hx { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:var(--s-5); }.page-home.v16 .hx-core { grid-column:1/-1; grid-row:1; }.page-home.v16 .hx-traces { display:none; }.page-home.v16 .hx-floor { transform:none; } }
-@media (max-width:760px) { .page-home.v16 .hx { grid-template-columns:minmax(0,1fr); min-height:0; padding:var(--s-4); }.page-home.v16 .hx-col-l,.page-home.v16 .hx-col-r { grid-template-rows:auto; gap:var(--s-4); }.page-home.v16 .hx-core { padding:var(--s-3) 0 var(--s-4); }.page-home.v16 .hx-date svg { width:150px; height:auto; }.page-home.v16 .hx-crest-stage .crest { width:34px; height:34px; margin:-17px 0 0 -17px; }.page-home.v16 .hx-device .dv-key.a,.page-home.v16 .hx-device .dv-key.b { left:80%; }.page-home.v16 .hx-device .dv-key.c { left:20%; }.page-home.v16 .hx-device .digivice-poke { width:70px; height:70px; }.page-home.v16 .hx-floor { height:30%; }.page-home.v16 .hx-mod header { flex-wrap:wrap; }.page-home.v16 .hx-mod h2 { flex:1; }.page-home.v16 .hx-page-link { margin-left:auto; } }
-@media (prefers-reduced-motion:reduce) { .page-home.v16 .hx-sig,.page-home.v16 .hx-device .dv-wrap,.page-home.v16 .hx-crest-stage .hero-orbit,.page-home.v16 .hx-crest-stage .crest-ring,.page-home.v16 .hx-crest-stage .crest,.page-home.v16 .hx-crest-stage .crest svg { animation:none; }.page-home.v16 .hx-mod { transition:none; }.page-home.v16 .hx-mod:hover,.page-home.v16 .hx-mod:focus-within { transform:none; } }
+@media (max-width:760px) { .page-home.v16 .hx { grid-template-columns:minmax(0,1fr); min-height:0; padding:var(--s-4); }.page-home.v16 .hx-col-l,.page-home.v16 .hx-col-r { grid-template-rows:auto; gap:var(--s-4); }.page-home.v16 .hx-core { padding:var(--s-3) 0 var(--s-4); }.page-home.v16 .hx-date svg { width:150px; height:auto; }.page-home.v16 .hx-device .dv-key.a,.page-home.v16 .hx-device .dv-key.b { left:80%; }.page-home.v16 .hx-device .dv-key.c { left:20%; }.page-home.v16 .hx-device .digivice-poke { width:70px; height:70px; }.page-home.v16 .hx-floor { height:30%; }.page-home.v16 .hx-mod header { flex-wrap:wrap; }.page-home.v16 .hx-mod h2 { flex:1; }.page-home.v16 .hx-page-link { margin-left:auto; } }
+@media (prefers-reduced-motion:reduce) { .page-home.v16 .hx-sig,.page-home.v16 .hx-device .dv-wrap,.page-home.v16 .hx-crest-stage .hero-orbit { animation:none; }.page-home.v16 .hx-mod { transition:none; }.page-home.v16 .hx-mod:hover,.page-home.v16 .hx-mod:focus-within { transform:none; } }
 /* 320px：保留完整时间与日期；模块 D 的长英文眉题和入口按可用宽度分行。 */
 /* 摘要从标题下方开始排布，保留模块等高但不把稀疏内容垂直居中。 */
 .page-home.v16 .hx-mod { display:flex; flex-direction:column; }
@@ -108,10 +99,6 @@
 .page-home.v16 .source-read-error > span { min-width:0; }
 .page-home.v16 .hx-module-body:has(> .source-read-error) { gap:var(--s-1); }
 
-/* 派单362批2：胶囊捷径，390先看今日，再看中枢。 */
-.page-home.v16 .hx-quick { gap:var(--s-2); flex-wrap:wrap; justify-content:center; }
-.page-home.v16 .hx-quick button { padding:0 var(--s-3); border:1px solid var(--line-2); border-radius:var(--r-pill); background:var(--field); }
-.page-home.v16 .hx-quick button:hover { border-color:var(--cyan); background:var(--panel-3); }
 .page-home.v16 .hx-q .hx-q-project { display:grid; gap:var(--s-1); white-space:normal; }
 .page-home.v16 .hx-q:has(.hx-q-project) button { padding-block:var(--s-2); }
 .page-home.v16 .hx-q-name { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; line-height:1.4; }
@@ -157,7 +144,8 @@
 .page-home.v16 .hx-count b { color:rgb(var(--hue)); font-size:var(--fs-section); font-weight:700; line-height:1; text-shadow:0 0 12px rgba(var(--hue),.55); }
 .page-home.v16 .hx-count small { color:var(--muted); font-size:var(--fs-small); }
 .page-home.v16 .hx-pick-list { display:grid; margin:0; padding:0; list-style:none; }
-.page-home.v16 .hx-pick-list li { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:var(--s-2); min-width:0; border-top:1px solid color-mix(in srgb,var(--text-hi) 7%,transparent); }
+.page-home.v16 .hx-pick-list li { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:var(--s-2); min-width:0; margin:0 calc(var(--s-2) * -1); padding:0 var(--s-2); border-top:1px solid color-mix(in srgb,var(--text-hi) 7%,transparent); border-radius:var(--r-s); }
+.page-home.v16 .hx-pick-list li:hover,.page-home.v16 .hx-pick-list li:focus-within { background:rgba(var(--hue),.06); }
 .page-home.v16 .hx-pick-list li:first-child { border-top:0; }
 .page-home.v16 .hx-pick { display:grid; gap:1px; min-width:0; min-height:44px; padding:4px 0; border:0; background:none; color:var(--text); font:inherit; text-align:left; cursor:pointer; }
 .page-home.v16 .hx-pick b { overflow:hidden; color:var(--text); font-size:var(--fs-caption); font-weight:600; line-height:1.35; text-overflow:ellipsis; white-space:nowrap; }
@@ -165,12 +153,58 @@
 .page-home.v16 .hx-pick small em { color:rgb(var(--hue)); font-style:normal; font-weight:700; }
 .page-home.v16 .hx-pick small time { color:var(--text-2); }
 .page-home.v16 .hx-pick:hover b,.page-home.v16 .hx-pick:focus-visible b { color:rgb(var(--hue)); }
-.page-home.v16 .hx-pick-list .asset-copy { display:grid; place-items:center; width:44px; height:44px; border:1px solid var(--line-2); border-radius:var(--r-s); background:color-mix(in srgb,var(--bg) 60%,transparent); color:var(--text-2); cursor:pointer; }
+.page-home.v16 .hx-pick-list .asset-copy { display:grid; place-items:center; width:44px; height:44px; border:1px solid transparent; border-radius:var(--r-s); background:none; color:var(--muted); cursor:pointer; }
 .page-home.v16 .hx-pick-list .asset-copy svg { width:16px; height:16px; }
 .page-home.v16 .hx-pick-list .asset-copy:hover,.page-home.v16 .hx-pick-list .asset-copy:focus-visible { border-color:rgb(var(--hue)); color:rgb(var(--hue)); }
 .page-home.v16 .hx-pick-list .asset-copy:disabled { cursor:wait; opacity:.6; }
 .page-home.v16 .hx-pick-list .asset-copy-recovery { grid-column:1/-1; display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-2); padding-bottom:var(--s-2); color:var(--yellow); font-size:var(--fs-small); }
 .page-home.v16 .hx-pick-list .asset-copy-recovery p { flex-basis:100%; margin:0; }
 .page-home.v16 .hx-proj-list button { grid-template-rows:auto auto; row-gap:1px; min-height:44px; padding:4px 0; }
+.page-home.v16 .hx-proj-list li { margin:0 calc(var(--s-2) * -1); padding:0 var(--s-2); border-radius:var(--r-s); }
+.page-home.v16 .hx-proj-list li:hover,.page-home.v16 .hx-proj-list li:focus-within { background:rgba(var(--hue),.06); }
 .page-home.v16 .hx-proj-list button:hover b,.page-home.v16 .hx-proj-list button:focus-visible b { color:rgb(var(--hue)); }
 .page-home.v16 .hx-proj-next { grid-column:2/-1; overflow:hidden; color:var(--muted); font-size:var(--fs-small); line-height:1.35; text-overflow:ellipsis; white-space:nowrap; }
+/* 用户 2026-10-26：中间一栏时钟贴顶、输入框贴底，与两侧模块上下对齐，暴龙机在中间居中；标题行不换行。 */
+.page-home.v16 .hx-core { grid-template-rows:auto auto minmax(0,1fr) auto; }
+.page-home.v16 .hx-core .hx-device { align-self:center; margin:0; }
+.page-home.v16 .hx-mod h2 { flex-wrap:nowrap; white-space:nowrap; }
+.page-home.v16 .hx-mod h2 .en { letter-spacing:.1em; }
+/* 用户 2026-10-26 选 B：收藏封面垫在每条右半边、向左渐隐；文字压在上面，靠暗化与字影保证清楚；悬停封面提亮。 */
+.page-home.v16 .hx-pick-list li.has-cover { position:relative; overflow:hidden; }
+.page-home.v16 .hx-pick-list li.has-cover .hx-pick { position:relative; z-index:1; }
+.page-home.v16 .hx-pick-list li.has-cover .hx-pick b,.page-home.v16 .hx-pick-list li.has-cover .hx-pick small { text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 10px rgba(0,0,0,.6); }
+.page-home.v16 .hx-cover { position:absolute; top:3px; right:0; bottom:3px; width:50%; overflow:hidden; border-radius:var(--r-s); pointer-events:none; -webkit-mask-image:linear-gradient(to left,#000 30%,transparent); mask-image:linear-gradient(to left,#000 30%,transparent); }
+.page-home.v16 .hx-cover img { display:block; width:100%; height:100%; object-fit:cover; opacity:.42; filter:brightness(.75) saturate(1.05); transition:opacity var(--t-mid) var(--ease),filter var(--t-mid) var(--ease); }
+.page-home.v16 .hx-pick-list li.has-cover:hover .hx-cover img,.page-home.v16 .hx-pick-list li.has-cover:focus-within .hx-cover img { opacity:.8; filter:brightness(.9) saturate(1.1); }
+.page-home.v16 .hx-cover i { position:absolute; top:50%; right:var(--s-2); display:grid; place-items:center; width:18px; height:18px; transform:translateY(-50%); border-radius:var(--r-pill); background:rgba(0,0,0,.6); color:var(--text-hi); }
+@media (prefers-reduced-motion:reduce) { .page-home.v16 .hx-cover img { transition:none; } }
+/* 用户 2026-10-26 三块同水准：标题下「今天 +N」；资产热度灯（正文垫底已按用户减法去掉）；随手记便签胶带 + 两行；项目状态灯 + 最近动静。 */
+.page-home.v16 .hx-today { margin:calc(var(--s-3) * -1 + 2px) 0 0; padding-left:28px; color:var(--muted); font-size:var(--fs-small); line-height:1.35; }
+.page-home.v16 .hx-today b { color:rgb(var(--hue)); font-weight:700; text-shadow:0 0 8px rgba(var(--hue),.45); }
+.page-home.v16 .hx-today.zero { color:var(--faint); }
+.page-home.v16 .hx-today.zero b { color:var(--faint); text-shadow:none; }
+.page-home.v16 .hx-heat { display:flex; align-items:flex-end; gap:2px; height:10px; }
+.page-home.v16 .hx-heat i { width:3px; border-radius:1px; background:color-mix(in srgb,var(--text-hi) 7%,transparent); }
+.page-home.v16 .hx-heat i:nth-child(1) { height:4px; }.page-home.v16 .hx-heat i:nth-child(2) { height:5.5px; }.page-home.v16 .hx-heat i:nth-child(3) { height:7px; }.page-home.v16 .hx-heat i:nth-child(4) { height:8.5px; }.page-home.v16 .hx-heat i:nth-child(5) { height:10px; }
+.page-home.v16 .hx-heat i.on { background:rgba(var(--hue),.85); }
+.page-home.v16 .hx-note-list li { grid-template-columns:auto minmax(0,1fr); }
+.page-home.v16 .hx-tape { width:2px; height:26px; border-radius:1px; background:color-mix(in srgb,var(--paper,var(--muted)) 55%,transparent); }
+.page-home.v16 .hx-note-list li.tone-red { --paper:var(--red); }.page-home.v16 .hx-note-list li.tone-blue { --paper:var(--blue); }.page-home.v16 .hx-note-list li.tone-green { --paper:var(--lcd); }.page-home.v16 .hx-note-list li.tone-yellow { --paper:var(--yellow); }.page-home.v16 .hx-note-list li.tone-gray { --paper:var(--muted); }
+.page-home.v16 .hx-note-head { display:flex; align-items:baseline; gap:var(--s-2); min-width:0; }
+.page-home.v16 .hx-note-head b { flex:1; min-width:0; }
+.page-home.v16 .hx-note-head time { flex:none; color:var(--muted); font-size:var(--fs-small); }
+.page-home.v16 .hx-proj-list .hx-slot { display:inline-flex; align-items:center; gap:5px; }
+.page-home.v16 .hx-proj-list button { grid-template-columns:38px minmax(0,1fr) auto; }
+.page-home.v16 .hx-lamp { flex:none; width:6px; height:6px; border-radius:1px; background:var(--faint); }
+.page-home.v16 .hx-lamp.active { background:var(--lcd); box-shadow:0 0 6px var(--lcd); animation:hx-lamp 2.4s steps(2,jump-none) infinite; }
+.page-home.v16 .hx-lamp.stalled { background:var(--yellow); box-shadow:0 0 6px var(--yellow); }
+@keyframes hx-lamp { 50% { opacity:.35; } }
+.page-home.v16 .hx-proj-when { color:var(--text-2); }
+@media (prefers-reduced-motion:reduce) { .page-home.v16 .hx-lamp.active { animation:none; } }
+.page-home.v16 .hx-pick-list li.hx-asset-row { grid-template-columns:minmax(0,1fr) auto auto; }
+/* 用户 2026-10-26：连线线身用模块色（收藏红、资产青、随手记橙、项目黄），线上流动的光点用同模块色提亮（用户选的方案 2，青白光点已否掉）；起点焊点同模块色。 */
+.page-home.v16 .hx-trace-a { --hue:77,227,255; }.page-home.v16 .hx-trace-b { --hue:255,107,107; }.page-home.v16 .hx-trace-c { --hue:255,138,36; }.page-home.v16 .hx-trace-d { --hue:255,209,102; }
+.page-home.v16 .hx-traces g .hx-tr { stroke:rgba(var(--hue),.42); }
+.page-home.v16 .hx-traces g.active .hx-tr { stroke:rgb(var(--hue)); filter:drop-shadow(0 0 5px rgb(var(--hue))); }
+.page-home.v16 .hx-traces g .hx-sig { stroke:color-mix(in srgb,rgb(var(--hue)) 55%,var(--text-hi)); filter:drop-shadow(0 0 3px rgb(var(--hue))) drop-shadow(0 0 7px rgba(var(--hue),.8)); }
+.page-home.v16 .hx-traces g .hx-pin { stroke:rgba(var(--hue),.75); }

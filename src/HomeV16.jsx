@@ -4,13 +4,13 @@ import {registerPageGuard} from './navigation-guard.js';
 import { ArrowUpRight, Check, RotateCw } from "lucide-react";
 import { request } from "./api.js";
 import { ymd } from "./calendar.js";
-import { CrestRing, DigiviceArt, partnerOf } from "./pixel.jsx";
+import { DigiviceArt, partnerOf } from "./pixel.jsx";
 import { PartnerScreen } from "./PartnerScreen.jsx";
 import { LcdText } from "./v14.jsx";
 import { NOTE_MAX } from "./rich-note.js";
 import { now, uid } from "./store.js";
 import { settleAttempt } from "./write-attempt.js";
-import { AssetsScreen, CollectionScreen, NotesScreen, ProjectsScreen, assetTotal, liveCollection, noteTotal, projectRows, useCollectionSummary } from "./HomeOverviewContent.jsx";
+import { AssetsScreen, CollectionScreen, NotesScreen, ProjectsScreen, assetTotal, assetUsesToday, collectionToday, liveCollection, noteTotal, notesToday, projectRows, projectsToday, useCollectionSummary } from "./HomeOverviewContent.jsx";
 import "./home-v16.css";
 
 const pad = n => String(n).padStart(2, "0");
@@ -36,15 +36,19 @@ function useTraces(panelRef, cardRefs, keyRefs) {
         const target = keyRefs.current[key];
         if (!card || !target) return [];
         const a = card.getBoundingClientRect(), b = target.getBoundingClientRect();
-        const left = name === "a" || name === "b";
+        const head = (card.querySelector("header") || card).getBoundingClientRect();
+        const left = name === "a" || name === "b", lower = name === "a" || name === "d";
         const sx = (left ? a.right : a.left) - box.left;
-        const sy = a.top + a.height / 2 - box.top;
+        // 上两块从标题行（端口编号）出发；下两块上下镜像，从底边往上同样距离出发（用户 2026-10-26）。
+        const inset = head.top + head.height / 2 - a.top;
+        const sy = (lower ? a.bottom - inset : a.top + inset) - box.top;
         const tx = (left ? b.left : b.right) - box.left;
         const ty = b.top + b.height / 2 - box.top + offset;
         const dx = Math.sign(tx - sx) || 1;
         const dy = Math.sign(ty - sy) || 1;
-        const middle = (sx + tx) / 2;
-        const radius = Math.min(10, Math.abs(ty - sy) / 2, Math.abs(tx - sx) / 4);
+        // 竖段贴着模块边走（离模块 16px），不走两者正中，横段与竖段都不碰中间的输入框。
+        const middle = sx + dx * Math.min(16, Math.abs(tx - sx) / 2);
+        const radius = Math.min(10, Math.abs(ty - sy) / 2, Math.abs(middle - sx));
         const d = radius < 1
           ? "M " + sx + " " + sy + " H " + tx
           : "M " + sx + " " + sy + " H " + (middle - dx * radius) +
@@ -73,8 +77,8 @@ function useTraces(panelRef, cardRefs, keyRefs) {
   return lines;
 }
 
-// 总数写在标题行，用模块色调。
-function Module({ id, code, english, title, navigate, destination, className = "", cardRefs, setActive, count, unit, children }) {
+// 总数写在标题行，用模块色调；标题下一行写「今天 +N」，为 0 时淡显。
+function Module({ id, code, english, title, navigate, destination, className = "", cardRefs, setActive, count, unit, today, todayLabel, children }) {
   const label = title + " · 前往" + destination;
   return (
     <section
@@ -94,13 +98,14 @@ function Module({ id, code, english, title, navigate, destination, className = "
           {destination} <ArrowUpRight size={13} aria-hidden="true" />
         </button>
       </header>
+      {today != null && <p className={"hx-today" + (today ? "" : " zero")} aria-label={todayLabel + " " + today}>今天 <b className="mono">+{today}</b></p>}
       <div className="hx-module-body">{children}</div>
     </section>
   );
 }
 
 export function HomeV16({
-  state, navigate, select, openCreate, save, adoptState, notify, projectStatus, refreshProjectStatus,
+  state, navigate, select, save, adoptState, notify, projectStatus, refreshProjectStatus,
 }) {
   const [clockNow, setClockNow] = useState(Date.now);
   useEffect(() => {
@@ -188,9 +193,9 @@ export function HomeV16({
     <div className="hx-floor" aria-hidden="true" />
     <svg className="hx-traces" viewBox={"0 0 " + (panelRef.current?.clientWidth || 1) + " " + (panelRef.current?.clientHeight || 1)}
       preserveAspectRatio="none" aria-hidden="true">
-      {lines.map(line => <g key={line.name} data-trace={line.name} className={activePort === line.name ? "active" : ""}>
+      {lines.map(line => <g key={line.name} data-trace={line.name} className={"hx-trace-" + line.name + (activePort === line.name ? " active" : "")}>
         <path className="hx-tr" d={line.d} />
-        <path className={"hx-sig hx-sig-" + line.name} d={line.d} />
+        <path className="hx-sig" d={line.d} />
         <circle className="hx-pin" cx={line.sx} cy={line.sy} r="4" />
         <circle className="hx-pin end" cx={line.tx} cy={line.ty} r="3" />
       </g>)}
@@ -198,11 +203,13 @@ export function HomeV16({
     {/* 用户 2026-10-26：左列个人收藏、资产仓库，右列随手记、项目空间；模块字母沿用各自色调（收藏红、资产青、随手记橙、项目黄）。 */}
     <div className="hx-col-l">
       <Module id="b" code="1" english="COLLECTION" title="个人收藏" destination="全部" navigate={() => navigate("learning")}
-        cardRefs={cardRefs} setActive={setActivePort} count={liveCollection(collection)?.length} unit="条">
+        cardRefs={cardRefs} setActive={setActivePort} count={liveCollection(collection)?.length} unit="条"
+        today={collectionToday(collection, clockNow)} todayLabel="今天新收藏">
         <CollectionScreen read={collection} onOpen={id => navigate("learning", { collectionNoteId: id })} />
       </Module>
       <Module id="a" code="2" english="ASSETS" title="资产仓库" destination="全部" navigate={() => navigate("assets", { filter: "all" })}
-        cardRefs={cardRefs} setActive={setActivePort} count={assetTotal(state)} unit="份">
+        cardRefs={cardRefs} setActive={setActivePort} count={assetTotal(state)} unit="份"
+        today={assetUsesToday(state, clockNow)} todayLabel="今天复制次数">
         <AssetsScreen state={state} adoptState={adoptState} notify={notify}
           onOpen={id => { if (navigate("assets", { filter: "all" })) select?.(id); }} />
       </Module>
@@ -217,7 +224,7 @@ export function HomeV16({
         <div className="hx-crest-stage">
           <span className="hero-orbit a" aria-hidden="true" />
           <span className="hero-orbit b" aria-hidden="true" />
-          <CrestRing />
+          {/* 用户 2026-10-26 做减法：首页不再环绕八枚徽章，暴龙机与轨道做主角，颜色收拢到四块模块色。 */}
           <div className="dv-wrap">
             <DigiviceArt size={290} className={lit ? "lit" : ""}>
               <PartnerScreen ref={stageScreen} mode="stage" cols={14} rows={15} />
@@ -246,17 +253,16 @@ export function HomeV16({
         </button>
       </form>
       {(recovery.error||noteStatus) && <p className="hx-note-status" role="alert">{recovery.error||noteStatus}</p>}
-      <div className="hx-quick">
-        <button type="button" onClick={() => openCreate?.("Skill")}>新建资产</button>
-      </div>
     </div>
     <div className="hx-col-r">
       <Module id="c" code="3" english="NOTES" title="随手记" destination="全部" navigate={() => navigate("notes")}
-        cardRefs={cardRefs} setActive={setActivePort} count={noteTotal(state)} unit="条">
+        cardRefs={cardRefs} setActive={setActivePort} count={noteTotal(state)} unit="条"
+        today={notesToday(state, clockNow)} todayLabel="今天新记">
         <NotesScreen state={state} onOpen={id => navigate("notes", { noteId: id })} />
       </Module>
       <Module id="d" code="4" english="PROJECTS" title="项目空间" destination="全部" navigate={() => navigate("projects")}
-        cardRefs={cardRefs} setActive={setActivePort} count={projects.length} unit="个">
+        cardRefs={cardRefs} setActive={setActivePort} count={projects.length} unit="个"
+        today={projectsToday(projects, clockNow)} todayLabel="今天有动静的项目">
         <ProjectsScreen state={state} projectStatus={projectStatus} onRetry={refreshProjectStatus}
           onOpen={id => navigate("projects", { projectId: id })} />
       </Module>

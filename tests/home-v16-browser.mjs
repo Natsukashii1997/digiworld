@@ -23,7 +23,9 @@ const firstScroll=createScroll([], '合成判断方法');
 const secondScroll=createScroll(firstScroll.scrolls, '已删除不应出现');
 sharedState.scrolls=deleteScroll(secondScroll.scrolls,secondScroll.scroll.id);
 validateState(sharedState);
-const notes=[3,1,2].map(i=>({...syntheticNote(i),savedAt:`2026-10-1${i}T08:00:00.000Z`,category:'工作方法'}));
+// 收藏 3 配本机封面且是视频，收藏 2 配外链封面（首页不得加载外链），收藏 1 无封面。
+const covers={3:{coverUrl:'/collection-media/v1/media/n3/01.webp',type:'video'},2:{coverUrl:'https://example.com/outside.webp'}};
+const notes=[3,1,2].map(i=>({...syntheticNote(i),savedAt:`2026-10-1${i}T08:00:00.000Z`,category:'工作方法',...(covers[i]||{})}));
 let apps=[];
 async function launch(staticRoot) {
   process.env.WORKBENCH_TEST_STATIC_ROOT=staticRoot;
@@ -88,7 +90,8 @@ try {
    checks.push({kind:'layout',width,geometry:await geometry(page,width)});
    if(width===1440){
     for(const id of ['a','b','c','d'])await page.locator('.hx-mod-'+id).screenshot({path:join(out,`card-${id}-1440.png`)});
-    assert.equal(await page.locator('.hx-crest-stage .crest').count(),8);
+    // 用户 2026-10-26 做减法：首页不再环绕八枚徽章。
+    assert.equal(await page.locator('.hx-crest-stage .crest').count(),0);
     assert.match(await page.locator('.hx-date').getAttribute('datetime'),/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
     await page.getByRole('button',{name:'A 键：打开资产仓库'}).click();assert.equal(new URL(page.url()).hash,'#assets');
     await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-count').waitFor();
@@ -97,6 +100,10 @@ try {
      await page.locator('.hx-mod-'+id+' .hx-page-link').click();assert.equal(new URL(page.url()).hash,'#'+route);
      await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-count').waitFor();
     }
+    // 收藏封面：只用本机 /collection-media/，视频带播放标；外链封面不加载。
+    assert.deepEqual(await page.locator('.hx-mod-b .hx-cover img').evaluateAll(els=>els.map(e=>e.getAttribute('src'))),['/collection-media/v1/media/n3/01.webp']);
+    assert.equal(await page.locator('.hx-mod-b li.has-cover .hx-cover i').count(),1);
+    assert.equal(await page.locator('.hx-mod-b .hx-cover').getAttribute('aria-hidden'),'true');
     // 条目可点开：收藏定位到那一条，资产打开详情抽屉。
     await page.getByRole('button',{name:'打开收藏：合成收藏 2',exact:true}).click();assert.equal(new URL(page.url()).hash,'#learning');
     await page.locator('.collection-overlay').waitFor();await page.keyboard.press('Escape');await page.locator('.collection-overlay').waitFor({state:'detached'});await page.locator('.brand').click();await page.locator('.hx-mod-b .hx-count').waitFor();
@@ -113,7 +120,7 @@ try {
     const a11y=await new AxeBuilder({page}).include('.hx').include('.nav').withTags(['wcag2a','wcag2aa']).analyze();
     assert.deepEqual(a11y.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[]);
     await page.locator('.hx-mod-a .hx-page-link').focus();assert.equal(await page.locator('.hx-mod-a .hx-page-link').evaluate(el=>el===document.activeElement),true);
-    await page.emulateMedia({reducedMotion:'no-preference'});assert.equal(await page.locator('.crest-ring').evaluate(el=>getComputedStyle(el).animationName),'hx-crest-revolve');
+    await page.emulateMedia({reducedMotion:'no-preference'});assert.equal(await page.locator('.hx-sig').first().evaluate(el=>getComputedStyle(el).animationName),'hx-flow');
    }
    assert(requests.every(r=>r==='GET collection'),'only retained summary is requested');
   }finally{await context.close();}
