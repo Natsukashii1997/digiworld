@@ -42,9 +42,11 @@
   box-shadow: 0 12px 24px -18px rgba(0,0,0,.9); }
 .fn-panel .sn.tone-red { --paper: var(--red); --a: .06; } .sn.tone-blue { --paper: var(--blue); --a: .06; }
 .fn-panel .sn.tone-green { --paper: var(--lcd); --a: .05; } .sn.tone-yellow { --paper: var(--yellow); --a: .06; }
-.fn-panel .sn-tape { position: absolute; top: -6px; left: 50%; width: 56px; height: 12px; transform: translateX(-50%) rotate(-2deg); border-radius: 2px; opacity: .85;
-  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--paper) 60%, transparent) 0 6px, color-mix(in srgb, var(--paper) 45%, transparent) 6px 8px); }
-.fn-panel .sn.tone-plain .sn-tape { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--text-2) 32%, transparent) 0 6px, color-mix(in srgb, var(--text-2) 22%, transparent) 6px 8px); }
+/* 用户 2026-10-26：同随手记页，胶带换成斜别的回形针 */
+.fn-panel .sn-tape { --clip: var(--paper); position: absolute; top: -13px; left: 50%; width: 13px; height: 33px; transform: translateX(-50%) rotate(35deg);
+  background: linear-gradient(90deg, color-mix(in srgb, #fff 55%, var(--clip)), var(--clip) 55%, color-mix(in srgb, #000 30%, var(--clip)));
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 40'%3E%3Cpath d='M11.5 13v15a3.5 3.5 0 0 1-7 0V8a5 5 0 0 1 10 0v22a7 7 0 0 1-14 0V12' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 40'%3E%3Cpath d='M11.5 13v15a3.5 3.5 0 0 1-7 0V8a5 5 0 0 1 10 0v22a7 7 0 0 1-14 0V12' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .5)); }
+.fn-panel .sn.tone-plain .sn-tape { --clip: var(--text-2); }
 .fn-panel .sn header { display: flex; align-items: center; gap: var(--s-2); min-height: 20px; }
 .fn-panel .sn-time { font: 500 var(--fs-small) var(--mono); color: var(--muted); letter-spacing: .04em; }
 .fn-panel .sn-chip { margin-left: auto; padding: 1px 7px; border-radius: var(--r-xs); font-size: var(--fs-small); border: 1px dashed color-mix(in srgb, var(--yellow) 70%, transparent); color: var(--yellow); }
