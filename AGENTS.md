@@ -34,6 +34,8 @@
 
 single-context：根目录 `GLOSSARY.md` 与 `docs/adr/`，用到时再建。见 `docs/agents/domain.md`。
 
+改动怎么走、分支怎么起名、交接写在哪、怎么合并：见 `/Users/nat/Documents/ChatGPT/个人/work/agent-kit/工程流程.md`。
+
 ## 每次结束
 
 按 `COLLABORATION.md` 保存可追溯交接，更新唯一的 `CURRENT.md`，回读确认后释放认领。聊天答复不能代替项目状态更新；未收到另一 Agent 的读回确认，不能声称它已接手。
