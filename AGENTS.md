@@ -18,6 +18,22 @@
 - 保留用户和另一 Agent 的未提交变化。Git 根可能位于上级目录；不对上级仓库批量 add、clean、reset、stash，不自动提交或推送。
 - 文件修改、自动测试、运行服务采用、真实使用、用户验收分别报告；不以版本号、页面存在或测试数量代替总体完成。
 
+## Agent skills
+
+开发流程用 Matt Pocock skills（`~/.agents/skills/`）：大活走 `to-spec` → `to-tickets` → `implement` / `tdd` → `code-review` → PR；小改（一张 issue、一天内做完）跳过 `to-spec`。Claude 用 `/技能名`，Codex 用 `$技能名`；这几个技能只在点名时加载，不会自动触发。
+
+### Issue tracker
+
+需求、规格与任务用本仓库 GitHub Issues。见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+五个默认分流标签。见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+single-context：根目录 `GLOSSARY.md` 与 `docs/adr/`，用到时再建。见 `docs/agents/domain.md`。
+
 ## 每次结束
 
 按 `COLLABORATION.md` 保存可追溯交接，更新唯一的 `CURRENT.md`，回读确认后释放认领。聊天答复不能代替项目状态更新；未收到另一 Agent 的读回确认，不能声称它已接手。
