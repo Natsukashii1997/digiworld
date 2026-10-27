@@ -191,11 +191,13 @@ export function readSkillZip(bytes) {
     offset = next;
   }
   if (offset !== end) fail("ZIP 目录长度不一致");
+  // Mac 压缩自带的 __MACOSX/ 与 .DS_Store 不属于 Skill，读包时直接略过（用户 2026-10-27）。
+  const kept = metadata.filter((f) => !/^__MACOSX(\/|$)|(^|\/)\.DS_Store$/.test(f.path));
   // Validate every path/type before decoding any file.
   validateSkillFiles(
-    metadata.map((f) => ({ ...f, data: new Uint8Array(), text: false })),
+    kept.map((f) => ({ ...f, data: new Uint8Array(), text: false })),
   );
-  const files = metadata.map(
+  const files = kept.map(
     ({
       path,
       directory,

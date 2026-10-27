@@ -1,0 +1,145 @@
+/* 自建 Skill（用户 2026-10-27）：类型图标上的「自」字小红印、「自建」标签、封面的全息构建场景。 */
+.type-icon-self {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  width: var(--s);
+  height: var(--s);
+  font-style: normal;
+  vertical-align: middle;
+}
+.type-icon-seal {
+  --b: calc(var(--s) * 0.62);
+  position: absolute;
+  right: calc(var(--b) * -0.42);
+  bottom: calc(var(--b) * -0.36);
+  display: grid;
+  place-items: center;
+  width: var(--b);
+  height: var(--b);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--red) 88%, #000);
+  box-shadow: 0 0 0 1.5px var(--bg-2);
+  color: #fff;
+  font: 700 calc(var(--b) - 3px) / 1 var(--sans);
+  font-style: normal;
+}
+.self-tag {
+  font: 600 var(--fs-micro) var(--sans);
+  letter-spacing: 0.04em;
+  color: var(--red);
+  border: 1px solid color-mix(in srgb, var(--red) 45%, transparent);
+  border-radius: var(--r-xs);
+  padding: 1px 5px;
+}
+.cover-seal {
+  display: inline-block;
+  margin: -6px 0 -6px 7px;
+  vertical-align: middle;
+  line-height: 0;
+  filter: drop-shadow(0 0 4px rgba(232, 72, 63, 0.45));
+}
+
+/* 全息构建：--egg 是蛋的高度，--px 是蛋的一个像素 */
+.holo-scene {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.holo-egg {
+  position: relative;
+  z-index: 2;
+  display: inline-block;
+  line-height: 0;
+  margin-bottom: calc(var(--px) * 0.9);
+}
+.holo-ghost {
+  display: block;
+  line-height: 0;
+  -webkit-mask-image: repeating-linear-gradient(to bottom, #000 0 calc(var(--px) * 0.66), rgba(0, 0, 0, 0.35) calc(var(--px) * 0.66) var(--px));
+  mask-image: repeating-linear-gradient(to bottom, #000 0 calc(var(--px) * 0.66), rgba(0, 0, 0, 0.35) calc(var(--px) * 0.66) var(--px));
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--cyan) 80%, transparent));
+  animation: holo-flicker 3.6s steps(1) infinite;
+}
+.holo-real,
+.holo-scan {
+  position: absolute;
+  line-height: 0;
+}
+.holo-real {
+  inset: 0;
+  opacity: 0;
+}
+.holo-scan {
+  left: -8px;
+  right: -8px;
+  bottom: 0;
+  height: 2px;
+  background: var(--cyan-2);
+  box-shadow: 0 0 6px 2px color-mix(in srgb, var(--cyan) 80%, transparent);
+  animation: holo-scan 2.6s steps(16) infinite;
+}
+.holo-pad {
+  position: relative;
+  z-index: 1;
+  line-height: 0;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--cyan) 60%, transparent));
+}
+.holo-cone {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--px) * 3.2);
+  width: calc(var(--egg) * 1.48);
+  height: calc(var(--egg) * 1.26);
+  transform: translateX(-50%);
+  clip-path: polygon(32% 100%, 68% 100%, 100% 0, 0 0);
+  background: linear-gradient(to top, color-mix(in srgb, var(--cyan) 42%, transparent), color-mix(in srgb, var(--cyan) 8%, transparent) 70%, transparent);
+  animation: holo-flicker 3.6s steps(1) infinite;
+}
+@keyframes holo-flicker {
+  0%, 100% { opacity: 0.9; }
+  41% { opacity: 0.55; }
+  43% { opacity: 0.95; }
+  72% { opacity: 0.7; }
+  74% { opacity: 0.9; }
+}
+@keyframes holo-scan {
+  0% { transform: translateY(0); opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translateY(calc(var(--egg) * -1)); opacity: 0; }
+}
+@keyframes holo-build {
+  0% { clip-path: inset(100% 0 0 0); animation-timing-function: steps(16, end); }
+  42%, 100% { clip-path: inset(0 0 0 0); }
+}
+@keyframes holo-materialize {
+  0%, 46% { opacity: 0; filter: brightness(2.6) saturate(0.3); }
+  50% { opacity: 1; filter: brightness(2.6) saturate(0.3); }
+  62%, 100% { opacity: 1; filter: none; }
+}
+@keyframes holo-scan-build {
+  0% { transform: translateY(0); opacity: 1; animation-timing-function: steps(16, end); }
+  42% { transform: translateY(calc(var(--egg) * -1)); opacity: 1; }
+  43%, 100% { transform: translateY(calc(var(--egg) * -1)); opacity: 0; }
+}
+.card-open:hover .holo-ghost,
+.cover.large:hover .holo-ghost {
+  animation: holo-build 3.6s infinite, holo-flicker 3.6s steps(1) infinite;
+}
+.card-open:hover .holo-real,
+.cover.large:hover .holo-real {
+  animation: holo-materialize 3.6s infinite;
+}
+.card-open:hover .holo-scan,
+.cover.large:hover .holo-scan {
+  animation: holo-scan-build 3.6s infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .holo-scene * { animation: none !important; }
+}
+.asset-form .type-picker.skill-mode {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

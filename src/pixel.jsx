@@ -10,11 +10,25 @@ export const SPRITES = {
   Design: {
     palette: { K: "currentColor", N: "var(--px-glyph-fill)", P: "color-mix(in srgb, currentColor 40%, transparent)", L: "var(--design-highlight)" },
     frames: [[
-      ".KKKKKKKKKKKKKK.", "KLNNNNNNNNNNNNPK", "KN...........NPK", "KN..LL.......NPK",
-      "KN..LL.......NPK", "KN...........NPK", "KN.......K...NPK", "KN......KLK..NPK",
-      "KN..K..KLNPK.NPK", "KN.KLKKLNNNPKNPK", "KNKLNNNNNNNNKPPK", "KPPPPPPPPPPPPPPK",
-      ".KKKKKKKKKKKKKK.", "................", "................", "................",
+      // 只留画面本身（16×13 → 15×13）：去掉底下 3 行空白和右边多出的一列阴影，放进小图标里不再偏上、不再显得歪（用户 2026-10-27）。
+      ".KKKKKKKKKKKKK.", "KLNNNNNNNNNNNNK", "KN...........NK", "KN..LL.......NK",
+      "KN..LL.......NK", "KN...........NK", "KN.......K...NK", "KN......KLK..NK",
+      "KN..K..KLNPK.NK", "KN.KLKKLNNNPKNK", "KNKLNNNNNNNNKPK", "KPPPPPPPPPPPPPK",
+      ".KKKKKKKKKKKKK.",
     ]],
+  },
+  // 自建 Skill 的「自」字印章（用户 2026-10-27 选定）：朱红底、白字，顶上一撇偏左。
+  seal: {
+    palette: { K: INK, R: "#e8483f", W: "#fff4ea" },
+    frames: [[
+      "KKKKKKKKK", "KRRWRRRRK", "KRWWWWWRK", "KRWRRRWRK", "KRWWWWWRK", "KRWRRRWRK",
+      "KRWWWWWRK", "KRWRRRWRK", "KRWWWWWRK", "KRRRRRRRK", "KKKKKKKKK",
+    ]],
+  },
+  // 自建 Skill 封面的全息投影台
+  holo_pad: {
+    palette: { K: INK, C: "var(--cyan)", L: "var(--cyan-2)", M: "color-mix(in srgb, var(--cyan) 30%, #0a1222)" },
+    frames: [["..KKKKKKKKKKKK..", ".KMLCCCCCCCCLMK.", "KMMMMMMMMMMMMMMK", "KKKKKKKKKKKKKKKK"]],
   },
   // 数码蛋：最初的对称椭圆（用户 2026-09-30 改回），与伙伴液晶屏里的蛋同一形状。
   egg: {
@@ -712,6 +726,11 @@ for (const key of ["bakemon", "mecha"])
     frames: [REF_SPRITES[key].frames[0].map((r) => r.replace(/[^.]/g, "X"))],
   };
 // Skill 用八颗数码蛋之一：按资产 ID 稳定取值，同一资产在各处显示同一颗蛋。
+// 把数码蛋换成青色全息像：轮廓用亮青，其余颜色轮流落到几档青色上。
+const HOLO = ["var(--cyan)", "color-mix(in srgb, var(--cyan) 55%, #0a1222)", "color-mix(in srgb, var(--cyan-2) 70%, #fff)", "color-mix(in srgb, var(--cyan) 80%, #0a1222)", "color-mix(in srgb, var(--cyan) 30%, #0a1222)"];
+export function holoPalette(sprite) {
+  return Object.fromEntries(Object.keys(SPRITES[sprite].palette).map((k, i) => [k, k === "K" ? "var(--cyan-2)" : HOLO[i % HOLO.length]]));
+}
 export function glyphOf(asset) {
   if (asset.type === "MCP") return "Workflow";
   if (asset.type !== "Skill") return asset.type;

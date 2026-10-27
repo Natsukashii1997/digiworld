@@ -32,7 +32,8 @@ export function createAssetActivity(repository, deliveries, clock = Date.now) {
           const asset = stored.assets.find((a) => a.id === payload.assetId);
           if (!asset || asset.archived)
             throw failure("资产不存在或已归档", 409);
-          if (payload.action === "copy-skill" || (payload.action === "copy-design" && payload.deliveryId)) {
+          // 带包的 Skill 复制必有交付链接（缺了由记录校验拒绝）；填安装地址的 Skill 只复制话术，没有链接（用户 2026-10-27）。
+          if ((payload.action === "copy-skill" || payload.action === "copy-design") && payload.deliveryId) {
             const links = await deliveries.list(asset.id);
             if (
               !links.some(

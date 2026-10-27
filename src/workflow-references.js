@@ -1,4 +1,5 @@
 import { planSkillVersion, materializeSkillVersion } from "./skill-version.js";
+import { isInstallSkill } from "./skill-install.js";
 import { request } from "./api.js";
 const browserMediaReader =
   typeof window === "undefined"
@@ -22,7 +23,7 @@ export function resolveReferences(version, assets) {
       ? "missing-asset"
       : !selected
         ? "missing-version"
-        : !["Skill", "Prompt"].includes(asset.type)
+        : !["Skill", "Prompt"].includes(asset.type) || isInstallSkill(selected)
           ? "invalid-type"
           : asset.archived
             ? "archived"
@@ -71,7 +72,7 @@ function usableReferences(version, assets) {
     "missing-asset": "引用资产已缺失",
     "missing-version": "引用版本已缺失",
     archived: "引用资产已归档",
-    "invalid-type": "仅支持引用 Skill 或 Prompt",
+    "invalid-type": "仅支持引用自建 Skill 或 Prompt",
   };
   const invalid = resolved.find((reference) => !reference.usable);
   if (invalid)

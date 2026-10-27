@@ -1,7 +1,9 @@
 import { inspectSkill, validateSkillFiles } from "./skill-package.js";
+import { isInstallSkill } from "./skill-install.js";
 
+// 填安装地址的 Skill 不带包（用户 2026-10-27），只有自建 Skill 与 Skill 形态的设计有包。
 export function hasSkillPackage(asset, version) {
-  return asset.type === "Skill" || (asset.type === "Design" && version?.design?.kind === "skill");
+  return (asset.type === "Skill" && !isInstallSkill(version)) || (asset.type === "Design" && version?.design?.kind === "skill");
 }
 
 export function validateDesignVersion(version) {

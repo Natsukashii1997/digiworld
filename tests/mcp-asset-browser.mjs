@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { geometry, axe } from './ui-v14-checks.mjs';
 import { createRequire } from 'node:module';
 import { fixture } from './fixture.mjs';
-import { seed } from '../src/store.js';
+import { seed, makeAsset } from '../src/store.js';
 const { chromium } = createRequire(import.meta.url)(
   process.env.PLAYWRIGHT_MODULE ||
   '/Users/nat/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright',
@@ -15,7 +15,11 @@ const app = await fixture({ discovery: { inspectAgentInventory: async () => ({ a
 const browser = await chromium.launch();
 const errors = [];
 try {
-  await app.repository.write(seed(), { initialize: true });
+  // 用户 2026-10-27 起不再新建 MCP；已有 MCP 资产照常查看、复制与下载，这里直接放进合成主库。
+  const initial = seed();
+  initial.assets.push(makeAsset({ type: 'MCP', title: 'openai_docs', mcpConfig: { schema: 1, transport: 'streamable-http',
+    serverId: 'openai_docs', origin: 'https://developers.openai.com', path: '/mcp', credentialEnvVar: 'DOCS_MCP_TOKEN' } }));
+  await app.repository.write(initial, { initialize: true });
   const stamp = '2026-10-07T00:00:00.000Z';
   await app.repository.updateConnections(() => ({
     roots: [], projects: [], agents: [{ id: 'codex', name: 'Codex', kind: '开发 Agent',
@@ -38,15 +42,8 @@ try {
   await page.goto(app.url + '/#assets');
   await page.getByRole('button', { name: '新建', exact: true }).click();
   const form = page.getByRole('dialog', { name: '新建资产' });
-  await form.getByRole('button', { name: 'MCP 配置' }).click();
-  await form.getByLabel('服务标识').fill('openai_docs');
-  await form.getByLabel('公开 origin').fill('https://developers.openai.com');
-  await form.getByLabel('公开 path').fill('/mcp?token=bad');
-  await form.getByRole('button', { name: '保存资产' }).click();
-  assert.match(await form.getByRole('alert').innerText(), /path|公开/);
-  await form.getByLabel('公开 path').fill('/mcp');
-  await form.getByLabel('Bearer token 环境变量名（可选）').fill('DOCS_MCP_TOKEN');
-  await form.getByRole('button', { name: '保存资产' }).click();
+  assert.equal(await form.getByRole('radio', { name: 'MCP 配置' }).count(), 0, '新建弹窗不再出现 MCP');
+  await form.getByRole('button', { name: '取消' }).click();
   await page.getByRole('button', { name: '查看 openai_docs' }).click();
   const detail = page.getByRole('dialog', { name: '资产详情' });
   assert.equal(await detail.getByLabel('Codex MCP TOML 片段').count(), 0, '未选目标不能生成片段');
@@ -79,7 +76,7 @@ try {
   await page.getByRole('button', { name: '查看 openai_docs' }).waitFor();
   assert.equal(await page.getByRole('button', { name: '查看 openai_docs' }).count(), 1);
   assert.deepEqual(errors, []);
-  console.log('mcp-asset-browser: create, reject, target, copy/count, download, reload passed');
+  console.log('mcp-asset-browser: no-create, target, copy/count, download, reload passed');
   await context.close();
 } finally {
   await browser.close();

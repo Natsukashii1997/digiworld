@@ -2,6 +2,7 @@ import { copyText } from './data-flight.js';
 import React, { useRef, useState } from "react";
 import { Plus, X, Copy, Download, PenLine } from "lucide-react";
 import { Button, Badge, typeLabel } from "./components.jsx";
+import { isSelfSkill } from "./skill-install.js";
 import {
   resolveReferences,
   workflowText,
@@ -91,7 +92,7 @@ export function WorkflowReferenceEditor({
   const resolved = resolveReferences({ references }, assets);
   const candidates = assets.filter(
     (a) =>
-      ["Prompt", "Skill"].includes(a.type) &&
+      (a.type === "Prompt" || isSelfSkill(a)) &&
       !a.archived &&
       !references.some((r) => r.assetId === a.id),
   );

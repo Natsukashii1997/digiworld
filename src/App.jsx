@@ -31,6 +31,7 @@ import { initializeWorkspace, writeState, request } from "./api.js";
 import { ProjectsV16 as Projects } from "./ProjectsV16.jsx";
 import { Button, Dialog, TypeIcon, Maturity, PixelBadge, typeLabel } from "./components.jsx";
 import { Assets, AssetEditor, AssetDetail } from "./Assets.jsx";
+import { isSelfSkill } from "./skill-install.js";
 import { Home, ICONS as PAGE_ICONS } from "./Home.jsx";
 import { PartnerScreen } from "./PartnerScreen.jsx";
 import { Odometer } from "./Odometer.jsx";
@@ -755,7 +756,7 @@ function SearchPalette({ state, onClose, navigate, openResult }) {
       assets,
       ({ asset, where, snippet }) => (
         <button key={asset.id} disabled={opening} onClick={() => open("asset",asset.id)}>
-          <TypeIcon type={asset.type} size={17} />
+          <TypeIcon type={asset.type} size={17} self={isSelfSkill(asset)} />
           <SearchHit
             title={current(asset).title}
             snippet={snippet}

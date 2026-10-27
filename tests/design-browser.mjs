@@ -33,6 +33,7 @@ try {
  let form=page.getByRole('dialog',{name:'新建资产',exact:true});
  assert.equal(await form.getByRole('radio',{name:'设计',exact:true}).getAttribute('aria-checked'),'true');
  await form.getByRole('radio',{name:'Skill',exact:true}).click();
+ await form.getByRole('radio',{name:/自建/}).click(); // 用户 2026-10-27：Skill 默认填安装地址，上传 ZIP 要选自建
  await form.getByLabel('选择 Skill ZIP 文件').setInputFiles({name:'frame.zip',mimeType:'application/zip',buffer:Buffer.from(buildSkillZip(files))});
  await form.getByText('已包含 3 个文件',{exact:true}).waitFor();
  await form.getByRole('radio',{name:'设计',exact:true}).click();

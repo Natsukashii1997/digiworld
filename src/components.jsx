@@ -1,7 +1,8 @@
 import { Reading, usePanelScan } from './ScanMotion.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import { X, Layers, Quote, Workflow, Flame, Plug } from "lucide-react";
-import { Pixel, StageBar } from "./pixel.jsx";
+import { Pixel, StageBar, holoPalette } from "./pixel.jsx";
+import "./skill-self.css";
 import { Odometer } from "./Odometer.jsx";
 import { LcdText } from "./v14.jsx";
 
@@ -40,7 +41,15 @@ export const typeCode = {
   Design: "DES",
 };
 // 规则的小角标用像素卷轴（用户 2026-09-30 与封面对调），尺寸与其他线条小图标一致。
-export function TypeIcon({ type, size = 24, className = "" }) {
+// self：自建 Skill，在层叠图标右下角盖一枚「自」字小红印（用户 2026-10-27）；16px 以上印里写字。
+export function TypeIcon({ type, size = 24, className = "", self = false }) {
+  if (type === "Skill" && self)
+    return (
+      <i className={`type-icon-self ${className}`} style={{ "--s": `${size}px` }}>
+        <Layers size={size} />
+        <i className="type-icon-seal">{size >= 16 ? "自" : ""}</i>
+      </i>
+    );
   if (type === "Rule" || type === "Design")
     return (
       <Pixel
@@ -296,7 +305,23 @@ export function Dialog({ title, children, onClose, drawer = false, recoverFocus 
 // uses：资产库卡片左下角的大号使用次数（切片 1.1），只显示数字；读屏文字由卡片正文提供。
 // 次数变化时像里程表一样滚到新值（R87-S1）；减少动态效果时由 Odometer 直接显示新值。
 // version 为 null 时不显示版本（焚决卷不做版本）。
-export function Cover({ type, sprite, serial = 1, version = 1, stage, large = false, bump = false, uses }) {
+// 自建 Skill 的封面（V6 全息构建，用户 2026-10-27 选定）：平时是投影台上的青色全息蛋，扫描线往上走；
+// 悬停时从底往上逐行打印，打完一闪变成真身颜色。
+function HoloEgg({ sprite, size }) {
+  return (
+    <span className="holo-scene" style={{ "--egg": `${(size * 16) / 14}px`, "--px": `${size / 14}px` }}>
+      <span className="holo-cone" />
+      <span className="holo-egg">
+        <span className="holo-ghost"><Pixel sprite={sprite} size={size} palette={holoPalette(sprite)} /></span>
+        <span className="holo-real"><Pixel sprite={sprite} size={size} /></span>
+        <span className="holo-scan" />
+      </span>
+      <span className="holo-pad"><Pixel sprite="holo_pad" size={(size * 16 * 0.8) / 14} /></span>
+    </span>
+  );
+}
+export function Cover({ type, sprite, serial = 1, version = 1, stage, large = false, bump = false, uses, self = false }) {
+  const holo = self && type === "Skill" && /^egg\d$/.test(sprite || "");
   return (
     <div
       className={`cover lcd type-${type} ${large ? "large" : ""}`}
@@ -304,6 +329,7 @@ export function Cover({ type, sprite, serial = 1, version = 1, stage, large = fa
     >
       <span className="cover-code">
         {typeCode[type]}.{String(serial).padStart(2, "0")}
+        {self && type === "Skill" && <span className="cover-seal"><Pixel sprite="seal" size={(large ? 2 : 1.6) * 9} /></span>}
       </span>
       {version !== null && <span className="cover-version">v{version}.0</span>}
       {uses !== undefined && (
@@ -312,7 +338,7 @@ export function Cover({ type, sprite, serial = 1, version = 1, stage, large = fa
         </span>
       )}
       {large && <span className="cover-ring" />}
-      <Pixel sprite={sprite || type} size={large ? 96 : 64} className="cover-glyph" />
+      {holo ? <HoloEgg sprite={sprite} size={large ? 96 : 64} /> : <Pixel sprite={sprite || type} size={large ? 96 : 64} className="cover-glyph" />}
       {bump && (
         <>
           <span className="version-scan" />

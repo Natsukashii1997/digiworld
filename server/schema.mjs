@@ -11,6 +11,7 @@ import { validateDesignVersion } from "../src/design-asset.js";
 import { safePath } from "../src/store.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
 import { validateMcpVersion } from "../src/mcp-config.js";
+import { validateInstallUrl } from "../src/skill-install.js";
 import { stringify } from "../src/serialization.js";
 import {planSkillVersion} from "../src/skill-version.js";
 import { validateNightV2 } from "../src/night-v2-model.js";
@@ -522,6 +523,7 @@ export function validateState(state) {
         "mcpConfig",
         "design",
         "hatchedFrom",
+        "installUrl",
       ]);
       id(v.id);
       // 阶段 2：从随手记或收藏孵成的资产，在首个版本记来源条目；之后的版本不继承。
@@ -590,7 +592,13 @@ export function validateState(state) {
           versionBytes += f.data.length;
         }
       }
-      if (
+      // 填安装地址的 Skill 不带包；其余 Skill 必须有 SKILL.md（用户 2026-10-27）。
+      if (v.installUrl !== undefined) {
+        if (a.type !== "Skill" || v.files.length || v.mediaManifest !== undefined) invalid("只有不带包的 Skill 可设置安装地址");
+        let normalized;
+        try { normalized = validateInstallUrl(v.installUrl); } catch (error) { invalid(error.message); }
+        if (normalized !== v.installUrl) invalid("安装地址需为规范链接");
+      } else if (
         a.type === "Skill" &&
         !v.files.some((f) => /(^|\/)SKILL\.md$/.test(f.path))
       )

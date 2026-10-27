@@ -2,6 +2,7 @@ import { validateDesignVersion } from "./design-asset.js";
 import { validateWorkflowTemplate } from "./workflow-template.js";
 import { nightV2Of } from "./night-v2-model.js";
 import { validateMcpConfig, validateMcpVersion } from "./mcp-config.js";
+import { isInstallSkill, validateInstallUrl } from "./skill-install.js";
 export const DB_NAME = "guiji-workbench-v1";
 export const now = () => new Date().toISOString();
 export const uid = () => crypto.randomUUID();
@@ -21,11 +22,14 @@ export function makeAsset(input) {
     mcpConfig,
     design,
     hatchedFrom,
+    installUrl,
   } = input;
   if (!title?.trim()) throw new Error("请填写资产名称");
   if (!["Skill", "Prompt", "Workflow", "Rule", "MCP", "Design"].includes(type))
     throw new Error("请选择资产类型");
-  if (type === "Skill" && !files.some((f) => /(^|\/)SKILL\.md$/.test(f.path)))
+  if (installUrl !== undefined && (type !== "Skill" || files.length))
+    throw new Error("只有不带包的 Skill 可设置安装地址");
+  if (type === "Skill" && installUrl === undefined && !files.some((f) => /(^|\/)SKILL\.md$/.test(f.path)))
     throw new Error("Skill 包中必须包含 SKILL.md");
   if (workflowTemplate != null && type !== "Workflow")
     throw new Error("只有工作流资产可设置协同模板");
@@ -46,6 +50,7 @@ export function makeAsset(input) {
     ...(mcpConfig === undefined ? {} : { mcpConfig }),
     ...(design === undefined ? {} : { design }),
     ...(hatchedFrom === undefined ? {} : { hatchedFrom }),
+    ...(installUrl === undefined ? {} : { installUrl: validateInstallUrl(installUrl) }),
     ...(workflowTemplate == null
       ? {}
       : { workflowTemplate: validateWorkflowTemplate(workflowTemplate) }),
@@ -86,6 +91,10 @@ export function revise(asset, values) {
   else if (next.design !== undefined) throw new Error("只有设计资产可设置设计形态");
   if (asset.type === "MCP") validateMcpVersion(next);
   else if (next.mcpConfig !== undefined) throw new Error("只有 MCP 资产可设置 MCP 配置");
+  if (next.installUrl !== undefined) {
+    if (asset.type !== "Skill" || next.files.length) throw new Error("只有不带包的 Skill 可设置安装地址");
+    next.installUrl = validateInstallUrl(next.installUrl);
+  }
   return { ...asset, versions: [...asset.versions, next] };
 }
 export function restore(asset, versionId) {
@@ -99,7 +108,7 @@ export function restore(asset, versionId) {
           workflowTemplate: version.workflowTemplate ?? null,
         }
       : {}),
-    ...(asset.type === "Skill"
+    ...(asset.type === "Skill" && !isInstallSkill(version)
       ? { mediaManifest: version.mediaManifest ?? [] }
       : {}),
     restoredFrom: version.id,

@@ -19,6 +19,7 @@ import "./assets-detail.css";
 import "./assets-quick-copy.css";
 import { hasSkillPackage, designPromptText } from "./design-asset.js";
 import { readSkillZip, buildSkillZip } from "./skill-package.js";
+import { isInstallSkill, isSelfSkill, skillInstallText, validateInstallUrl } from "./skill-install.js";
 import { SkillDelivery } from "./SkillDelivery.jsx";
 import { SkillCopies } from "./SkillCopies.jsx";
 import { SkillPublish } from "./AgentWriteUI.jsx";
@@ -98,6 +99,8 @@ async function copyAssetVersion(asset, version, activity, notify) {
     if (asset.type === "Workflow") {
       const fresh = await readWorkflow(asset.id, version.id);
       text = workflowText(fresh.version, fresh.assets);
+    } else if (asset.type === "Skill" && isInstallSkill(version)) {
+      text = skillInstallText(version);
     } else if (hasSkillPackage(asset, version)) {
       delivery = await request("/deliveries", { assetId: asset.id, versionId: version.id });
       text = delivery.instructions;
@@ -123,7 +126,7 @@ async function copyAssetVersion(asset, version, activity, notify) {
 export function AssetCopyButton({ asset, state, adoptState, notify, disabled }) {
   const version = current(asset);
   const activity = useAssetActivity(asset, state, adoptState);
-  const label = asset.type === "Design" ? "复制生图提示词" : asset.type === "Skill" ? "复制安装口令" : asset.type === "MCP" ? "复制配置定义" : "复制全文";
+  const label = asset.type === "Design" ? "复制生图提示词" : asset.type === "Skill" ? (isInstallSkill(version) ? "复制安装话术" : "复制安装口令") : asset.type === "MCP" ? "复制配置定义" : "复制全文";
   return <>
     <button type="button" className="asset-copy"
       aria-label={`${label} ${version.title}`} title={activity.pending ? "记录待核对" : label}
@@ -154,6 +157,7 @@ export function serialsOf(assets) {
 const HANDOFF = {
   Design: ["复制生图提示词", "粘贴到 ChatGPT，按需补充本次需求", "Prompt 直接生图；Skill 包需导出并作为附件上传"],
   Skill: ["复制口令（含 10 分钟下载链接）", "粘贴给任意 Agent", "由它下载完整包并确认安装范围"],
+  InstallSkill: ["复制安装话术", "粘贴给 Claude Code 或 Codex", "它按安装地址里的文档装好并试用一次"],
   Prompt: ["复制完整提示词", "粘贴到 Agent 对话", "按需补充本次背景"],
   Workflow: ["复制流程与固定引用", "交给 Agent 按步骤推进", "引用版本不会随上游变动"],
   Rule: ["装进项目的 AGENTS.md 或 CLAUDE.md", "只维护文件里的托管区块", "模板改版后逐个预览再升级"],
@@ -459,11 +463,13 @@ export function Assets({
                   serial={serials[a.id]}
                   version={null}
                   uses={usage.get(a.id).count}
+                  self={isSelfSkill(a)}
                 />
                 <div className="card-body">
                   <div className="card-type">
-                    <TypeIcon type={a.type} size={13} />
+                    <TypeIcon type={a.type} size={13} self={isSelfSkill(a)} />
                     {typeLabel[a.type]}
+                    {isSelfSkill(a) && <b className="self-tag">自建</b>}
                     <span>{originLabel(a)}</span>
                   </div>
                   <h3>{v.title}</h3>
@@ -821,6 +827,9 @@ export function AssetEditor({
     [tags, setTags] = useState(old?.tags.join("，") || ""),
     [files, setFiles] = useState(old?.files || []),
     [designKind, setDesignKind] = useState(old?.design?.kind || "skill"),
+    // Skill 两种来源：install 填安装地址（默认），self 自建上传 ZIP（用户 2026-10-27）；已有资产不切换。
+    [skillMode, setSkillMode] = useState(old ? (isInstallSkill(old) ? "install" : "self") : "install"),
+    [installUrl, setInstallUrl] = useState(old?.installUrl || ""),
     [uploading, setUploading] = useState(false),
     [references, setReferences] = useState(old?.references || []),
     [workflowTemplate, setWorkflowTemplate] = useState(old?.workflowTemplate || null),
@@ -895,7 +904,8 @@ export function AssetEditor({
           ),
         ],
         source: old?.source || "个人创建",
-        files: type === "Design" && designKind === "prompt" ? [] : files,
+        files: (type === "Design" && designKind === "prompt") || (type === "Skill" && skillMode === "install") ? [] : files,
+        ...(type === "Skill" && skillMode === "install" ? { installUrl: validateInstallUrl(installUrl) } : {}),
         ...(type === "Design" ? { design: { kind: designKind } } : {}),
         ...(type === "Workflow" ? { references } : {}),
         ...(type === "Workflow" ? { workflowTemplate: parsedTemplate } : {}),
@@ -931,7 +941,8 @@ export function AssetEditor({
           </p>
         </div>}
         <div className="type-picker" role="radiogroup" aria-label="资产类型">
-          {["Prompt", "Skill", "Workflow", "Rule", "MCP", "Scroll", "Design"].filter((t) => !draft || !["MCP", "Scroll"].includes(t)).map((t, index, types) => (
+          {/* MCP 不再新建（用户 2026-10-27）；只在编辑已有 MCP 资产时保留这一格。 */}
+          {["Prompt", "Skill", "Workflow", "Rule", "MCP", "Scroll", "Design"].filter((t) => (t !== "MCP" || asset?.type === "MCP") && (!draft || t !== "Scroll")).map((t, index, types) => (
             <button
               type="button"
               role="radio"
@@ -958,6 +969,18 @@ export function AssetEditor({
             </button>
           ))}
         </div>
+        {type === "Skill" && (
+          <div className="type-picker skill-mode" role="radiogroup" aria-label="Skill 来源">
+            {[["install", "安装地址"], ["self", "自建 · ZIP"]].map(([mode, label]) => (
+              <button type="button" role="radio" key={mode} aria-checked={skillMode === mode}
+                className={skillMode === mode ? "active" : ""} disabled={!!asset || busy || uploading}
+                onClick={() => setSkillMode(mode)}>
+                <TypeIcon type="Skill" size={18} self={mode === "self"} />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         {scroll ? (
           <label>
             卷名
@@ -1009,7 +1032,21 @@ export function AssetEditor({
                 ? "上传完整 ZIP，生图提示词可选。在 ChatGPT 使用时，请导出完整包并作为附件上传；上传不会覆盖已填提示词。"
                 : "填写生图提示词，复制到 ChatGPT 即可使用默认生图能力。"}</p>
             </>}
-            {(type === "Skill" || (type === "Design" && designKind === "skill")) && (
+            {type === "Skill" && skillMode === "install" && <>
+              <label>
+                安装地址
+                <input
+                  required
+                  type="url"
+                  maxLength={2048}
+                  value={installUrl}
+                  onChange={(e) => setInstallUrl(e.target.value)}
+                  placeholder="https://github.com/作者/仓库/tree/main/skills/名称"
+                />
+              </label>
+              <p className="helper">填 Skill 所在仓库或目录的链接。复制时得到一段安装话术，粘贴给 Claude Code 或 Codex，它会按这个地址里的文档装好。</p>
+            </>}
+            {((type === "Skill" && skillMode === "self") || (type === "Design" && designKind === "skill")) && (
               <label className="upload-zone">
                 <Upload size={22} />
                 <strong>
@@ -1213,13 +1250,15 @@ export function AssetDetail({
         stage={stage}
         large
         bump={bump}
+        self={isSelfSkill(asset)}
       />
       <div className="detail-content">
         <div className="detail-type">
           <Badge>
-            <TypeIcon type={asset.type} size={13} />
+            <TypeIcon type={asset.type} size={13} self={isSelfSkill(asset)} />
             {typeLabel[asset.type]}
           </Badge>
+          {isSelfSkill(asset) && <b className="self-tag">自建</b>}
           <span className="detail-version">
             v<Odometer value={asset.versions.length} from={bump ? versionBump.from : undefined} />.0
           </span>
@@ -1233,7 +1272,7 @@ export function AssetDetail({
             <h3>交给 Agent</h3>
           </header>
           <ol className="handoff-steps">
-            {HANDOFF[asset.type].map((step, i) => (
+            {HANDOFF[asset.type === "Skill" && isInstallSkill(v) ? "InstallSkill" : asset.type].map((step, i) => (
               <li key={step}>
                 <span>{i + 1}</span>
                 {step}
@@ -1290,7 +1329,7 @@ export function AssetDetail({
           <div className="detail-actions">
             <Button disabled={copying || usageBlocked} onClick={copyPrompt}>
               <Copy size={16} />
-              {asset.type === "Design" ? "复制生图提示词" : "复制全文"}
+              {asset.type === "Design" ? "复制生图提示词" : asset.type === "Skill" ? "复制安装话术" : "复制全文"}
             </Button>
             <button
               className="outlined-icon"
@@ -1329,6 +1368,7 @@ export function AssetDetail({
           {asset.type === "Design" && <>
             <div><dt>内容形式</dt><dd>{v.design.kind === "skill" ? "Skill 包" : "Prompt"}</dd></div>
           </>}
+          {asset.type === "Skill" && <div><dt>形态</dt><dd>{isInstallSkill(v) ? <>安装地址 · <a href={v.installUrl} target="_blank" rel="noreferrer">{v.installUrl}</a></> : "自建 · ZIP 包"}</dd></div>}
           <div>
             <dt>来源</dt>
             <dd>{v.source}</dd>
@@ -1352,7 +1392,7 @@ export function AssetDetail({
           ]
             .filter(
               ([id]) =>
-                id === "files" ? hasSkillPackage(asset, v) : id !== "copies" || asset.type === "Skill",
+                id === "files" ? hasSkillPackage(asset, v) : id !== "copies" || (asset.type === "Skill" && hasSkillPackage(asset, v)),
             )
             .map(([id, label]) => (
               <button
@@ -1385,7 +1425,7 @@ export function AssetDetail({
                 <WorkflowReferenceList version={v} assets={state.assets} />
               </section>
             )}
-            {asset.type === "Skill" && (
+            {asset.type === "Skill" && hasSkillPackage(asset, v) && (
               <SkillOrigin
                 key={`${asset.id}:${v.id}`}
                 asset={asset}
@@ -1413,7 +1453,7 @@ export function AssetDetail({
             ))}
           </div>
         )}
-        {tab === "copies" && asset.type === "Skill" && (
+        {tab === "copies" && asset.type === "Skill" && hasSkillPackage(asset, v) && (
           <SkillCopies
             key={asset.id}
             asset={asset}
