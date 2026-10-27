@@ -931,13 +931,12 @@ export function AssetEditor({
       onClose={onClose}
     >
       <form onSubmit={submit} className={asset ? "asset-form" : "asset-form asset-create"}>
-        {(asset || scroll || draft) && <div className="form-intro">
+        {/* 焚决说明挪到卷名下方（用户 2026-10-27）：切类型时类型栏位置不动。 */}
+        {(asset || draft) && <div className="form-intro">
           <p>
             {asset
               ? `保存后成为 v${next}.0，v${next - 1}.0 及更早版本完整保留在历史中。`
-              : scroll
-                ? "焚决是一卷有序的碎片：心法、prompt 碎片、判断准则。先起个卷名，建好后直接在卷里添加条目。"
-                : `从${draft.hatchedFrom.kind === "note" ? "随手记" : "个人收藏"}孵化：正文已带入，可以改；保存后原条目显示“已孵成资产”，原条目不变。`}
+              : `从${draft.hatchedFrom.kind === "note" ? "随手记" : "个人收藏"}孵化：正文已带入，可以改；保存后原条目显示“已孵成资产”，原条目不变。`}
           </p>
         </div>}
         <div className="type-picker" role="radiogroup" aria-label="资产类型">
@@ -982,6 +981,7 @@ export function AssetEditor({
           </div>
         )}
         {scroll ? (
+          <>
           <label>
             卷名
             <input
@@ -992,6 +992,8 @@ export function AssetEditor({
               placeholder="例如：心法、prompt 碎片、判断准则"
             />
           </label>
+          <p className="helper">焚决是一卷有序的碎片：心法、prompt 碎片、判断准则。先起个卷名，建好后直接在卷里添加条目。</p>
+          </>
         ) : type === "MCP" ? (
           <>
             <p>只保存公开 HTTP MCP 地址与可选环境变量名引用。首版仅生成 Codex CLI 的 TOML 配置片段；不保存 token、header 值、stdio 命令、Hook 或任意 JSON。</p>
