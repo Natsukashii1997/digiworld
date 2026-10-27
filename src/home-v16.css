@@ -71,7 +71,7 @@
 .page-home.v16 .hx-cmd button { display:grid; place-items:center; flex:none; width:44px; height:44px; border:0; border-radius:var(--r-pill); background:color-mix(in srgb,var(--cyan) 16%,transparent); color:var(--cyan); cursor:pointer; }.page-home.v16 .hx-cmd button:disabled { opacity:.45; cursor:not-allowed; }
 .page-home.v16 .hx-note-status { max-width:380px; margin:0; color:var(--red-2); font-size:var(--fs-small); line-height:1.5; }
 @media (max-width:1400px) { .page-home.v16 .hx { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:var(--s-5); }.page-home.v16 .hx-core { grid-column:1/-1; grid-row:1; }.page-home.v16 .hx-traces { display:none; }.page-home.v16 .hx-floor { transform:none; } }
-@media (max-width:760px) { .page-home.v16 .hx { grid-template-columns:minmax(0,1fr); min-height:0; padding:var(--s-4); }.page-home.v16 .hx-col-l,.page-home.v16 .hx-col-r { grid-template-rows:auto; gap:var(--s-4); }.page-home.v16 .hx-core { padding:var(--s-3) 0 var(--s-4); }.page-home.v16 .hx-clock { gap:5px; }.page-home.v16 .hx-clock svg { width:auto; height:36px; }.page-home.v16 .hx-device .dv-key.a,.page-home.v16 .hx-device .dv-key.b { left:80%; }.page-home.v16 .hx-device .dv-key.c { left:20%; }.page-home.v16 .hx-device .digivice-poke { width:70px; height:70px; }.page-home.v16 .hx-floor { height:30%; }.page-home.v16 .hx-mod header { flex-wrap:wrap; }.page-home.v16 .hx-mod h2 { flex:1; }.page-home.v16 .hx-page-link { margin-left:auto; } }
+@media (max-width:760px) { .page-home.v16 .hx { grid-template-columns:minmax(0,1fr); min-height:0; padding:var(--s-4); }.page-home.v16 .hx-col-l,.page-home.v16 .hx-col-r { grid-template-rows:auto; gap:var(--s-4); }.page-home.v16 .hx-core { padding:var(--s-3) 0 var(--s-4); }.page-home.v16 .hx-date svg { width:150px; height:auto; }.page-home.v16 .hx-device .dv-key.a,.page-home.v16 .hx-device .dv-key.b { left:80%; }.page-home.v16 .hx-device .dv-key.c { left:20%; }.page-home.v16 .hx-device .digivice-poke { width:70px; height:70px; }.page-home.v16 .hx-floor { height:30%; }.page-home.v16 .hx-mod header { flex-wrap:wrap; }.page-home.v16 .hx-mod h2 { flex:1; }.page-home.v16 .hx-page-link { margin-left:auto; } }
 @media (prefers-reduced-motion:reduce) { .page-home.v16 .hx-sig,.page-home.v16 .hx-device .dv-wrap,.page-home.v16 .hx-crest-stage .hero-orbit { animation:none; }.page-home.v16 .hx-mod { transition:none; }.page-home.v16 .hx-mod:hover,.page-home.v16 .hx-mod:focus-within { transform:none; } }
 /* 320px：保留完整时间与日期；模块 D 的长英文眉题和入口按可用宽度分行。 */
 /* 摘要从标题下方开始排布，保留模块等高但不把稀疏内容垂直居中。 */
@@ -89,7 +89,7 @@
 
 @media (max-width:350px) {
   .page-home.v16 .hx-date { gap:var(--s-2); }
-  .page-home.v16 .hx-clock { gap:4.5px; }.page-home.v16 .hx-clock svg { width:auto; height:32px; }
+  .page-home.v16 .hx-date svg { width:132px; }
   .page-home.v16 .hx-dow .en { white-space:nowrap; }
   .page-home.v16 .hx-mod h2 { flex:none; min-width:max-content; }
 }
@@ -169,12 +169,6 @@
 /* 用户 2026-10-27：「记一笔」紧跟在暴龙机下方（原伙伴名一行的位置），暴龙机与输入框作为一组在时钟下方的空间里居中。 */
 .page-home.v16 .hx-stage { display:grid; justify-items:center; align-self:center; gap:var(--s-3); width:100%; }
 .page-home.v16 .hx-stage .hx-cmd { margin-top:0; }
-/* 用户 2026-10-27：时钟每个字单独一块，按原点阵字距排开；冒号每秒亮灭一次（按帧跳变）；换分钟时变了的那一位按列扫亮。 */
-.page-home.v16 .hx-clock { display:inline-flex; gap:7px; line-height:0; }
-.page-home.v16 .hx-clock .on rect { animation-duration:.24s; animation-delay:calc(var(--c) * 60ms); }
-.page-home.v16 .hx-clock .hx-colon g:last-child rect { animation:hx-colon 2s steps(1,end) infinite; }
-@keyframes hx-colon { 50% { opacity:.12; } }
-@media (prefers-reduced-motion:reduce) { .page-home.v16 .hx-clock .on rect,.page-home.v16 .hx-clock .hx-colon g:last-child rect { animation:none; } }
 .page-home.v16 .hx-mod h2 { flex-wrap:nowrap; white-space:nowrap; }
 .page-home.v16 .hx-mod h2 .en { letter-spacing:.1em; }
 /* 用户 2026-10-26 选 B：收藏封面垫在每条右半边、向左渐隐；文字压在上面，靠暗化与字影保证清楚；悬停封面提亮。 */

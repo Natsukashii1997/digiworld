@@ -216,12 +216,7 @@ export function HomeV16({
     </div>
     <div className="hx-core">
       <time className="hx-date" dateTime={ymd(displayDate) + "T" + clockText(displayDate)} aria-label={clockText(displayDate) + " " + (displayDate.getMonth() + 1) + "月" + displayDate.getDate() + "日 " + weekEnglish[displayDate.getDay()]}>
-        {/* 用户 2026-10-27：冒号每秒闪一下；每位数字单独按 key 重放，换分钟时只有变了的那一位按列扫亮；打开页面整块扫亮一次。 */}
-        <span className="hx-clock" aria-hidden="true">
-          {[...clockText(displayDate)].map((ch, i) => ch === ":"
-            ? <LcdText key="colon" text=":" px={7} label={null} className="hx-colon" />
-            : <LcdText key={i + ch} text={ch} px={7} boot label={null} />)}
-        </span>
+        <LcdText text={clockText(displayDate)} px={7} />
         <span className="hx-dow"><b>{displayDate.getMonth() + 1}月{displayDate.getDate()}日</b><small className="en">{weekEnglish[displayDate.getDay()]}</small></span>
       </time>
       <p className="hx-greet">{greeting}</p>
