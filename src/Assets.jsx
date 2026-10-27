@@ -930,7 +930,7 @@ export function AssetEditor({
       title={asset ? "编辑资产 · 保存为新版本" : draft ? "孵成资产" : "新建资产"}
       onClose={onClose}
     >
-      <form onSubmit={submit} className="asset-form">
+      <form onSubmit={submit} className={asset ? "asset-form" : "asset-form asset-create"}>
         {(asset || scroll || draft) && <div className="form-intro">
           <p>
             {asset

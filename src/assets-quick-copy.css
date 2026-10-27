@@ -213,6 +213,10 @@
   .page-assets .asset-toolbar .segmented button { padding-inline:var(--s-2); }
   .asset-form .type-picker { grid-template-columns:repeat(3,minmax(0,1fr)); }
 }
+/* 用户 2026-10-27：新建资产切类型时画框不动——高度固定为最高那档，内容少的类型下方留白、按钮贴底；滚动条位置常驻，内宽不随出没变化。 */
+.modal:has(> .asset-create) { height:min(88vh,900px); display:flex; flex-direction:column; scrollbar-gutter:stable; }
+.modal > .asset-create { flex:1 0 auto; display:flex; flex-direction:column; }
+.asset-create > .form-actions { margin-top:auto; }
 
 /* 418：焚决卡悬停——四角各一簇静态像素火苗，向外斜上方窜，出现方式同普通卡的四角（淡入 + 归位）。
    卡片本身裁切圆角，所以火苗挂在整卡外层，并放开裁切；最多伸出卡外 8px，窄屏 16px 边距内不撑出横向滚动。 */
