@@ -800,11 +800,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   backdrop-filter: blur(14px);
   z-index: 40;
 }
+/* 用户 2026-10-27：标题块形式不变，字距拉开、光晕减弱，上下多留白，和导航不挤。 */
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 4px 6px 16px;
+  gap: 14px;
+  padding: 8px 6px 22px;
   text-align: left;
   border-radius: var(--r);
 }
@@ -818,7 +819,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .brand-text {
   display: inline-grid;
   grid-template-columns: min-content;
-  gap: 6px;
+  gap: 8px;
 }
 .brand-cn,
 .brand-text > .pixel-text {
@@ -826,7 +827,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 .brand-text > img.pixel-text {
   image-rendering: pixelated;
-  filter: drop-shadow(0 0 6px rgba(255, 138, 36, 0.45));
+  filter: drop-shadow(0 0 3px rgba(255, 138, 36, 0.3));
 }
 .brand-text > .pixel-text.fallback {
   font-size: 22px;

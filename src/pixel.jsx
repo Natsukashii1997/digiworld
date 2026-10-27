@@ -850,7 +850,8 @@ export function Digivice({ children, size = "md", className = "" }) {
 
 // 像素文字：先用小字号画到画布，再把每个像素硬切成全透明或不透明，得到真正的点阵字。
 // 服务端渲染或画布不可用时，退回普通文字（仍保留可读的替代文本）。
-export function PixelText({ text, size = 13, weight = 700, threshold = 120, scale = 2, color = "#ffffff", className = "" }) {
+// spacing：字间距（画布像素），逐字绘制，不依赖画布 letterSpacing。
+export function PixelText({ text, size = 13, weight = 700, threshold = 120, scale = 2, spacing = 0, color = "#ffffff", className = "" }) {
   const [src, setSrc] = React.useState(null);
   const [box, setBox] = React.useState(null);
   React.useEffect(() => {
@@ -859,14 +860,21 @@ export function PixelText({ text, size = 13, weight = 700, threshold = 120, scal
       const ctx = canvas.getContext("2d");
       const font = `${weight} ${size}px "PingFang SC", "Hiragino Sans GB", sans-serif`;
       ctx.font = font;
-      const width = Math.ceil(ctx.measureText(text).width) + 2,
+      const chars = [...text];
+      const width = Math.ceil(ctx.measureText(text).width + spacing * (chars.length - 1)) + 2,
         height = size + 4;
       canvas.width = width;
       canvas.height = height;
       ctx.font = font;
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#fff";
-      ctx.fillText(text, 1, height / 2 + 1);
+      if (spacing) {
+        let x = 1;
+        for (const ch of chars) {
+          ctx.fillText(ch, x, height / 2 + 1);
+          x += ctx.measureText(ch).width + spacing;
+        }
+      } else ctx.fillText(text, 1, height / 2 + 1);
       const data = ctx.getImageData(0, 0, width, height);
       const [r, g, b] = color.match(/\w\w/g).map((h) => parseInt(h, 16));
       for (let i = 0; i < data.data.length; i += 4) {
@@ -898,7 +906,7 @@ export function PixelText({ text, size = 13, weight = 700, threshold = 120, scal
     } catch {
       setSrc(null);
     }
-  }, [text, size, weight, threshold, scale, color]);
+  }, [text, size, weight, threshold, scale, spacing, color]);
   return src ? (
     <img
       className={`pixel-text ${className}`}

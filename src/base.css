@@ -141,6 +141,9 @@
   border-color: var(--cyan);
 }
 
-/* 阶段 2：捕获项（随手记、收藏）后面的绿色待孵化数，按 v18 B 稿。 */
-.nav-count.egg { color: var(--lcd); background: color-mix(in srgb, var(--lcd) 10%, transparent); }
-.nav-item.active .nav-count.egg { color: var(--lcd); background: color-mix(in srgb, var(--lcd) 16%, transparent); }
+/* 侧栏计数块（用户 2026-10-27）：三个同一套，平时灰色，悬停或选中变橙。 */
+.sidebar .nav-count.egg { color: var(--text-2); background: rgba(140, 178, 255, 0.08); }
+.sidebar .nav-item:hover .nav-count,
+.sidebar .nav-item.active .nav-count { color: var(--orange-2); background: rgba(255, 138, 36, 0.14); }
+/* 世界总览下的分隔线。 */
+.sidebar .nav-sep { height: 1px; margin: 6px 10px; background: var(--line-2); }

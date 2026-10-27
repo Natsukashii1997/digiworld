@@ -123,6 +123,8 @@
 .fn-panel .sn-other span{white-space:pre-wrap;overflow-wrap:anywhere;max-height:162px;overflow:auto}
 .fn-panel .fn-ft .open{text-decoration:none;padding:0 8px}
 .fn-panel :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+/* 用户 2026-10-27：悬浮窗打开时原生窗口把焦点交给网页，WebKit 按键盘方式落到第一张便签正文（按钮不在 Tab 序里），亮出青框；正文整块不描边。 */
+.fn-panel .sn-body:focus-visible{outline:none;box-shadow:none}
 .fn-panel .fn-scroll{min-height:0}
 .fn-standalone-collapsed{display:grid;place-items:center;height:100vh;background:var(--panel)}
 @media(prefers-reduced-motion:reduce){.fn-panel *{animation:none!important;transition:none!important}}

@@ -375,7 +375,7 @@ export default function App() {
         >
           <PixelBadge sprite="crest" size={30} className="brand-crest" />
           <span className="brand-text">
-            <PixelText text="数码世界" size={24} weight={600} threshold={110} scale={1} />
+            <PixelText text="数码世界" size={24} weight={600} threshold={110} scale={1} spacing={3} />
             <span className="brand-en" aria-hidden="true">
               {[..."DIGITAL"].map((ch, i) => (
                 <b key={`d${i}`}>{ch}</b>
@@ -402,8 +402,8 @@ export default function App() {
                         ? state.assets.filter((a) => !a.archived).length + scrollsOf(state).filter((s) => !s.deletedAt).length
                         : pending || null;
                     return (
+                      <React.Fragment key={id}>
                       <button
-                        key={id}
                         className={`nav-item ${route === id ? "active" : ""}`}
                         aria-current={route === id ? "page" : undefined}
                         onClick={() => {
@@ -423,6 +423,9 @@ export default function App() {
                           </small>
                         ) : null}
                       </button>
+                      {/* 用户 2026-10-27：世界总览下一条横线，和正式工作版块分开。 */}
+                      {id === "home" && <div className="nav-sep" aria-hidden="true" />}
+                      </React.Fragment>
                     );
               })}
             </div>

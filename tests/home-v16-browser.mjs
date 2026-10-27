@@ -82,6 +82,8 @@ try {
    assert.deepEqual(await page.locator('.nav-item > span').allTextContents(),expectedNav);
    // 侧栏不分区、不加分组标题（用户 2026-10-26）；.nav-group 只用来把设置沉底。
    assert.equal(await page.locator('.nav-zone-title,.nav-divider,.nav-zone,.sidebar .nav-heading').count(),0);
+   // 用户 2026-10-27：世界总览下一条横线，和正式工作版块分开。
+   assert.equal(await page.locator('.sidebar .nav-sep').count(),1);assert.equal(await page.locator('.sidebar .nav-sep').evaluate(el=>el.previousElementSibling.innerText.trim()),'世界总览');
    assert.equal(await page.locator('.hx-mod-a .hx-count b').innerText(),'6');assert.equal(await page.locator('.nav-item').filter({hasText:'资产仓库'}).locator('small').innerText(),'6');
    assert.equal(await page.locator('.hx-mod-b .hx-count b').innerText(),'3');
    assert.deepEqual(await page.locator('.hx-mod-b .hx-pick b').allTextContents(),['合成收藏 3','合成收藏 2','合成收藏 1']);
