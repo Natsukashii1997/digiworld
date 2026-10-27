@@ -1,10 +1,11 @@
 import {NOTE_TYPES,noteTitle,hasNoteContent} from './note-types.js';
-import {createNoteDoc,editorSignature} from './note-document.js';
+import {createNoteDoc,editorSignature,noteTilt} from './note-document.js';
 import {NoteActions} from './NoteActions.jsx';
 import {notePaper} from './note-paper.js';
 import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {Plus,Pin,Minus,ArrowUpRight,StickyNote,ListTodo,Clock3} from 'lucide-react';
 import {Pixel} from './Pixel.jsx';
+import {useReducedMotion} from './v14.jsx';
 import {NoteEditor,NoteLines} from './NoteEditor.jsx';
 import {parseStoredNote,serializeEditorDoc,boundedDoc,sortedNotes,toggleEditorTask,storedEditorContent} from './note-document.js';
 import {plainText} from './rich-note.js';
@@ -27,6 +28,7 @@ function ReadNote({note,onEdit,onToggle}){
 export default function FloatingNotes(){
  const singleId=new URLSearchParams(location.search).get('noteId');
  const opening=useRef(false);
+ const reduced=useReducedMotion();
  const [snapshot,setSnapshot]=useState({notes:[],records:{},ready:false,online:false}),[active,setActive]=useState(null),[doc,setDoc]=useState(null),[pinned,setPinned]=useState(!singleId&&!!window.floatingNoteWindow?.pinned),[message,setMessage]=useState(''),[collapsed,setCollapsed]=useState(false);
  const [deleting,setDeleting]=useState(null),deleteBusy=useRef(false);
  const forkOpening=useRef(false),live=useRef(true),initialized=useRef(null),editor=useRef(null),ime=useRef(false),timers=useRef({server:new Map()}),latest=useRef({active,doc});latest.current={active,doc,deleting};
@@ -87,7 +89,7 @@ export default function FloatingNotes(){
  function key(e){if(deleting&&e.key==='Escape'){e.preventDefault();if(!deleting.busy)setDeleting(null);return;}if(e.defaultPrevented||(e.nativeEvent||e).isComposing||ime.current)return;if(e.metaKey&&e.key==='Enter'&&latest.current.active){e.preventDefault();editor.current?.flush().then(finish).catch(problem);}else if(e.metaKey&&e.key.toLowerCase()==='n'){e.preventDefault();if(!singleId)open();}else if(e.key==='Escape'){e.preventDefault();collapse();}else if(['ArrowDown','ArrowUp'].includes(e.key)&&!e.target.closest('[contenteditable],input,textarea')){const cards=[...document.querySelectorAll('.fn-scroll [role="group"][tabindex="0"]')],index=cards.indexOf(e.target),next=cards[index+(e.key==='ArrowDown'?1:-1)];if(next){e.preventDefault();next.focus();}}}
  useEffect(()=>{window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);});
  function card(note){const r=snapshot.records[note.id],editing=active===note.id,conflict=r?.phase==='conflict',display=parseStoredNote(note),tone=notePaper(note.id,display);
- return <article key={note.id} data-note-id={note.id} className={`sn tone-${tone}${editing?' is-edit':''}${r?.phase==='failed'?' is-failed':''}${conflict?' is-conflict':''}`}><i className="sn-tape" aria-hidden="true"/><header><time className="sn-time">{stamp(note.at)}</time>{r?.dirty&&r.phase==='draft'&&<span className="sn-chip">草稿</span>}<NoteActions getDoc={()=>{if(editing){if(ime.current)throw Error("中文输入尚未完成");return editor.current?.flush()||doc;}return display;}} onDelete={()=>openDelete(note)} disabled={!!deleting}/>{singleId&&<div className="fn-single-controls"><button className="fn-icon" aria-label="关闭便签窗口" onClick={collapse}><Minus size={17}/></button></div>}</header>
+ return <article key={note.id} data-note-id={note.id} className={`sn tone-${tone}${editing?' is-edit':''}${r?.phase==='failed'?' is-failed':''}${conflict?' is-conflict':''}`} style={{'--tilt':reduced||editing?'0deg':noteTilt(note.id)+'deg'}}><i className="sn-tape" aria-hidden="true"/><header><time className="sn-time">{stamp(note.at)}</time>{r?.dirty&&r.phase==='draft'&&<span className="sn-chip">草稿</span>}<NoteActions getDoc={()=>{if(editing){if(ime.current)throw Error("中文输入尚未完成");return editor.current?.flush()||doc;}return display;}} onDelete={()=>openDelete(note)} disabled={!!deleting}/>{singleId&&<div className="fn-single-controls"><button className="fn-icon" aria-label="关闭便签窗口" onClick={collapse}><Minus size={17}/></button></div>}</header>
  {deleting?.id===note.id&&<div className="sn-alert amber" role="alertdialog" aria-label="删除便签确认"><span className="grow">{deleting.error||'删除这条便签？'}</span><span className="acts"><button className="sn-btn red" disabled={deleting.busy} onClick={remove}>{deleting.busy?'正在核对…':deleting.stage==='unknown'?'查询删除结果':'确认删除'}</button><button className="sn-btn" disabled={deleting.busy} onClick={()=>setDeleting(null)}>取消</button></span></div>}
  {conflict&&<><div className="sn-alert amber" role="alert">这条在数码世界里也改过了</div><div className="sn-other"><b>别处的版本 · {r.current?stamp(r.current.at):'已移除'}</b><span>{r.current?plainText(r.current.text):'这条便签已在别处删除。'}</span></div><div className="sn-mine">我的版本</div></>}
  {!editing&&note.title?.trim()&&<h3 className="sn-title" onClick={()=>open(note)}>{note.title}</h3>}
