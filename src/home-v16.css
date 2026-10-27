@@ -66,13 +66,12 @@
 .page-home.v16 .hx-crest-stage .dv-wrap { z-index:1; width:calc(var(--r) * 1.6); filter:drop-shadow(0 0 26px color-mix(in srgb,var(--cyan) 45%,transparent)); }
 .page-home.v16 .hx-crest-stage .digivice-art { width:100%!important; }
 .page-home.v16 .hx-device .lcd-stage canvas:not([data-view="number"]) { filter:brightness(1.28) saturate(1.2); }
-.page-home.v16 .hx-device figcaption { display:grid; justify-items:center; gap:4px; }.page-home.v16 .hx-device .en { color:var(--cyan); font-size:var(--fs-micro); letter-spacing:.2em; }.page-home.v16 .hx-device small { color:var(--muted); font-size:var(--fs-micro); }
 .page-home.v16 .hx-cmd { display:flex; align-items:center; gap:var(--s-3); width:100%; max-width:380px; min-height:50px; margin-top:var(--s-2); padding:0 3px 0 var(--s-4); border:1px solid color-mix(in srgb,var(--cyan) 35%,transparent); border-radius:var(--r-pill); background:color-mix(in srgb,var(--hw-pit) 85%,transparent); box-shadow:0 0 0 4px color-mix(in srgb,var(--cyan) 5%,transparent),0 0 28px -8px var(--cyan); }.page-home.v16 .hx-cmd:focus-within { border-color:var(--cyan); }
 .page-home.v16 .hx-prompt { color:var(--cyan); font-weight:700; }.page-home.v16 .hx-cmd input { flex:1; min-width:0; min-height:44px; padding:0; border:0!important; box-shadow:none!important; background:none!important; color:var(--text); font-size:var(--fs-caption); outline:none; }.page-home.v16 .hx-cmd input::placeholder { color:var(--muted); }.page-home.v16 .hx-key { color:var(--muted); font-size:var(--fs-micro); }
 .page-home.v16 .hx-cmd button { display:grid; place-items:center; flex:none; width:44px; height:44px; border:0; border-radius:var(--r-pill); background:color-mix(in srgb,var(--cyan) 16%,transparent); color:var(--cyan); cursor:pointer; }.page-home.v16 .hx-cmd button:disabled { opacity:.45; cursor:not-allowed; }
 .page-home.v16 .hx-note-status { max-width:380px; margin:0; color:var(--red-2); font-size:var(--fs-small); line-height:1.5; }
 @media (max-width:1400px) { .page-home.v16 .hx { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:var(--s-5); }.page-home.v16 .hx-core { grid-column:1/-1; grid-row:1; }.page-home.v16 .hx-traces { display:none; }.page-home.v16 .hx-floor { transform:none; } }
-@media (max-width:760px) { .page-home.v16 .hx { grid-template-columns:minmax(0,1fr); min-height:0; padding:var(--s-4); }.page-home.v16 .hx-col-l,.page-home.v16 .hx-col-r { grid-template-rows:auto; gap:var(--s-4); }.page-home.v16 .hx-core { padding:var(--s-3) 0 var(--s-4); }.page-home.v16 .hx-date svg { width:150px; height:auto; }.page-home.v16 .hx-device .dv-key.a,.page-home.v16 .hx-device .dv-key.b { left:80%; }.page-home.v16 .hx-device .dv-key.c { left:20%; }.page-home.v16 .hx-device .digivice-poke { width:70px; height:70px; }.page-home.v16 .hx-floor { height:30%; }.page-home.v16 .hx-mod header { flex-wrap:wrap; }.page-home.v16 .hx-mod h2 { flex:1; }.page-home.v16 .hx-page-link { margin-left:auto; } }
+@media (max-width:760px) { .page-home.v16 .hx { grid-template-columns:minmax(0,1fr); min-height:0; padding:var(--s-4); }.page-home.v16 .hx-col-l,.page-home.v16 .hx-col-r { grid-template-rows:auto; gap:var(--s-4); }.page-home.v16 .hx-core { padding:var(--s-3) 0 var(--s-4); }.page-home.v16 .hx-clock { gap:5px; }.page-home.v16 .hx-clock svg { width:auto; height:36px; }.page-home.v16 .hx-device .dv-key.a,.page-home.v16 .hx-device .dv-key.b { left:80%; }.page-home.v16 .hx-device .dv-key.c { left:20%; }.page-home.v16 .hx-device .digivice-poke { width:70px; height:70px; }.page-home.v16 .hx-floor { height:30%; }.page-home.v16 .hx-mod header { flex-wrap:wrap; }.page-home.v16 .hx-mod h2 { flex:1; }.page-home.v16 .hx-page-link { margin-left:auto; } }
 @media (prefers-reduced-motion:reduce) { .page-home.v16 .hx-sig,.page-home.v16 .hx-device .dv-wrap,.page-home.v16 .hx-crest-stage .hero-orbit { animation:none; }.page-home.v16 .hx-mod { transition:none; }.page-home.v16 .hx-mod:hover,.page-home.v16 .hx-mod:focus-within { transform:none; } }
 /* 320px：保留完整时间与日期；模块 D 的长英文眉题和入口按可用宽度分行。 */
 /* 摘要从标题下方开始排布，保留模块等高但不把稀疏内容垂直居中。 */
@@ -90,7 +89,7 @@
 
 @media (max-width:350px) {
   .page-home.v16 .hx-date { gap:var(--s-2); }
-  .page-home.v16 .hx-date svg { width:132px; }
+  .page-home.v16 .hx-clock { gap:4.5px; }.page-home.v16 .hx-clock svg { width:auto; height:32px; }
   .page-home.v16 .hx-dow .en { white-space:nowrap; }
   .page-home.v16 .hx-mod h2 { flex:none; min-width:max-content; }
 }
@@ -166,7 +165,16 @@
 .page-home.v16 .hx-proj-next { grid-column:2/-1; overflow:hidden; color:var(--muted); font-size:var(--fs-small); line-height:1.35; text-overflow:ellipsis; white-space:nowrap; }
 /* 用户 2026-10-26：中间一栏时钟贴顶、输入框贴底，与两侧模块上下对齐，暴龙机在中间居中；标题行不换行。 */
 .page-home.v16 .hx-core { grid-template-rows:auto auto minmax(0,1fr) auto; }
-.page-home.v16 .hx-core .hx-device { align-self:center; margin:0; }
+.page-home.v16 .hx-core .hx-device { margin:0; }
+/* 用户 2026-10-27：「记一笔」紧跟在暴龙机下方（原伙伴名一行的位置），暴龙机与输入框作为一组在时钟下方的空间里居中。 */
+.page-home.v16 .hx-stage { display:grid; justify-items:center; align-self:center; gap:var(--s-3); width:100%; }
+.page-home.v16 .hx-stage .hx-cmd { margin-top:0; }
+/* 用户 2026-10-27：时钟每个字单独一块，按原点阵字距排开；冒号每秒亮灭一次（按帧跳变）；换分钟时变了的那一位按列扫亮。 */
+.page-home.v16 .hx-clock { display:inline-flex; gap:7px; line-height:0; }
+.page-home.v16 .hx-clock .on rect { animation-duration:.24s; animation-delay:calc(var(--c) * 60ms); }
+.page-home.v16 .hx-clock .hx-colon g:last-child rect { animation:hx-colon 2s steps(1,end) infinite; }
+@keyframes hx-colon { 50% { opacity:.12; } }
+@media (prefers-reduced-motion:reduce) { .page-home.v16 .hx-clock .on rect,.page-home.v16 .hx-clock .hx-colon g:last-child rect { animation:none; } }
 .page-home.v16 .hx-mod h2 { flex-wrap:nowrap; white-space:nowrap; }
 .page-home.v16 .hx-mod h2 .en { letter-spacing:.1em; }
 /* 用户 2026-10-26 选 B：收藏封面垫在每条右半边、向左渐隐；文字压在上面，靠暗化与字影保证清楚；悬停封面提亮。 */

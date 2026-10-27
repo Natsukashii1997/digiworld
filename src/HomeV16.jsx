@@ -216,42 +216,49 @@ export function HomeV16({
     </div>
     <div className="hx-core">
       <time className="hx-date" dateTime={ymd(displayDate) + "T" + clockText(displayDate)} aria-label={clockText(displayDate) + " " + (displayDate.getMonth() + 1) + "月" + displayDate.getDate() + "日 " + weekEnglish[displayDate.getDay()]}>
-        <LcdText text={clockText(displayDate)} px={7} />
+        {/* 用户 2026-10-27：冒号每秒闪一下；每位数字单独按 key 重放，换分钟时只有变了的那一位按列扫亮；打开页面整块扫亮一次。 */}
+        <span className="hx-clock" aria-hidden="true">
+          {[...clockText(displayDate)].map((ch, i) => ch === ":"
+            ? <LcdText key="colon" text=":" px={7} label={null} className="hx-colon" />
+            : <LcdText key={i + ch} text={ch} px={7} boot label={null} />)}
+        </span>
         <span className="hx-dow"><b>{displayDate.getMonth() + 1}月{displayDate.getDate()}日</b><small className="en">{weekEnglish[displayDate.getDay()]}</small></span>
       </time>
       <p className="hx-greet">{greeting}</p>
-      <figure className="hx-device">
-        <div className="hx-crest-stage">
-          <span className="hero-orbit a" aria-hidden="true" />
-          <span className="hero-orbit b" aria-hidden="true" />
-          {/* 用户 2026-10-26 做减法：首页不再环绕八枚徽章，暴龙机与轨道做主角，颜色收拢到四块模块色。 */}
-          <div className="dv-wrap">
-            <DigiviceArt size={290} className={lit ? "lit" : ""}>
-              <PartnerScreen ref={stageScreen} mode="stage" cols={14} rows={15} />
-            </DigiviceArt>
-            <button type="button" className="digivice-poke" aria-label={"戳一下" + partner.name} onClick={poke} />
-            <button ref={el => { keyRefs.current.a = el; }} type="button" className="dv-key a" data-key="A"
-              aria-label="A 键：打开资产仓库" onClick={() => navigate("assets")} />
-            <button ref={el => { keyRefs.current.b = el; }} type="button" className="dv-key b" data-key="B"
-              aria-label="B 键：背光" aria-pressed={lit} onClick={() => setLit(!lit)} />
-            <button ref={el => { keyRefs.current.c = el; }} type="button" className="dv-key c" data-key="C"
-              aria-label={"C 键：戳一下" + partner.name} onClick={poke} />
+      <div className="hx-stage">
+        <figure className="hx-device">
+          <div className="hx-crest-stage">
+            <span className="hero-orbit a" aria-hidden="true" />
+            <span className="hero-orbit b" aria-hidden="true" />
+            {/* 用户 2026-10-26 做减法：首页不再环绕八枚徽章，暴龙机与轨道做主角，颜色收拢到四块模块色。 */}
+            <div className="dv-wrap">
+              <DigiviceArt size={290} className={lit ? "lit" : ""}>
+                <PartnerScreen ref={stageScreen} mode="stage" cols={14} rows={15} />
+              </DigiviceArt>
+              <button type="button" className="digivice-poke" aria-label={"戳一下" + partner.name} onClick={poke} />
+              <button ref={el => { keyRefs.current.a = el; }} type="button" className="dv-key a" data-key="A"
+                aria-label="A 键：打开资产仓库" onClick={() => navigate("assets")} />
+              <button ref={el => { keyRefs.current.b = el; }} type="button" className="dv-key b" data-key="B"
+                aria-label="B 键：背光" aria-pressed={lit} onClick={() => setLit(!lit)} />
+              <button ref={el => { keyRefs.current.c = el; }} type="button" className="dv-key c" data-key="C"
+                aria-label={"C 键：戳一下" + partner.name} onClick={poke} />
+            </div>
           </div>
-        </div>
-        <figcaption><span className="en">PARTNER · {partner.name}</span></figcaption>
-      </figure>
-      <form className="hx-cmd" onSubmit={submitNote}>
-        <span className="hx-prompt mono" aria-hidden="true">&gt;</span>
-        <input aria-label="记一笔" placeholder="记一笔：一个念头、一个问题……"
-          value={noteText} readOnly={!recovery.ready || !!noteAttempt || noteBusy}
-          onCompositionStart={()=>{composingNote.current=true;}} onCompositionEnd={()=>{composingNote.current=false;}}
-          onChange={event => {const text=event.target.value;setNoteText(text);try{recovery.save({text,attempt:noteAttempt});}catch{}}}
-          onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") submitNote(event); }} />
-        <kbd className="hx-key mono">⌘↵</kbd>
-        <button type="submit" aria-label={noteAttempt ? "核对并重试随手记" : "保存随手记"} disabled={!recovery.ready || noteBusy || !noteText.trim()}>
-          {noteAttempt ? <RotateCw size={16} /> : <Check size={16} />}
-        </button>
-      </form>
+          {/* 用户 2026-10-27：「记一笔」挪到暴龙机正下方，原「PARTNER · 伙伴名」一行让位（侧栏伙伴屏已显示伙伴名）。 */}
+        </figure>
+        <form className="hx-cmd" onSubmit={submitNote}>
+          <span className="hx-prompt mono" aria-hidden="true">&gt;</span>
+          <input aria-label="记一笔" placeholder="记一笔：一个念头、一个问题……"
+            value={noteText} readOnly={!recovery.ready || !!noteAttempt || noteBusy}
+            onCompositionStart={()=>{composingNote.current=true;}} onCompositionEnd={()=>{composingNote.current=false;}}
+            onChange={event => {const text=event.target.value;setNoteText(text);try{recovery.save({text,attempt:noteAttempt});}catch{}}}
+            onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") submitNote(event); }} />
+          <kbd className="hx-key mono">⌘↵</kbd>
+          <button type="submit" aria-label={noteAttempt ? "核对并重试随手记" : "保存随手记"} disabled={!recovery.ready || noteBusy || !noteText.trim()}>
+            {noteAttempt ? <RotateCw size={16} /> : <Check size={16} />}
+          </button>
+        </form>
+      </div>
       {(recovery.error||noteStatus) && <p className="hx-note-status" role="alert">{recovery.error||noteStatus}</p>}
     </div>
     <div className="hx-col-r">
