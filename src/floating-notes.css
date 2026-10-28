@@ -9,16 +9,18 @@
 }
 .desk .fn-panel { position: absolute; transform-origin: var(--ox, 100%) var(--oy, 0); transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease); }
 .desk .fn-panel.is-hidden { opacity: 0; transform: scale(.92); pointer-events: none; }
-.fn-hd { display: flex; align-items: center; gap: var(--s-2); height: 52px; padding: 0 var(--s-1) 0 var(--s-4); border-bottom: 1px solid var(--line); cursor: grab; }
+/* 顶栏用户 2026-10-28 选 B：手写刊头（翩翩体，与便签主标题同款）+ 淡黄渐变，去掉分隔线。 */
+.fn-hd { display: flex; align-items: center; gap: var(--s-2); height: 58px; padding: 0 var(--s-2) 0 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--yellow) 5%, transparent), transparent); cursor: grab; }
 .fn-hd svg.px { width: 14px; height: 14px; color: var(--yellow); shape-rendering: crispEdges; }
-.fn-hd h3 { margin: 0; font-size: var(--fs-title); font-weight: 700; }
-.fn-hd .n { font: 500 var(--fs-small) var(--mono); color: var(--muted); letter-spacing: .04em; }
+.fn-hd h3 { margin: 0; font: 700 var(--fs-section)/1 "HanziPen SC", var(--sans); letter-spacing: .06em; }
+.fn-hd .n { align-self: flex-start; margin-top: 17px; font: 500 var(--fs-label) var(--mono); color: var(--muted); letter-spacing: .04em; }
+.fn-hd .fn-icon { color: var(--muted); }
 .fn-hd .sp { flex: 1; }
 .fn-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: var(--r-s); background: none; color: var(--text-2); cursor: pointer; }
 .fn-icon:hover { color: var(--text); background: color-mix(in srgb, var(--line-3) 30%, transparent); }
 .fn-icon.on { color: var(--yellow); }
 .fn-icon svg.i { width: 17px; height: 17px; }
-.fn-scroll { overflow-y: auto; padding: var(--s-4) var(--s-4) var(--s-5); display: grid; gap: calc(var(--s-5) + 4px); align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
+.fn-scroll { overflow-y: auto; padding: 2px var(--s-4) var(--s-5); display: grid; gap: calc(var(--s-5) + 4px); align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
 .fn-ft { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-1) 0 var(--s-4); border-top: 1px solid var(--line); font-size: var(--fs-caption); color: var(--muted); }
 .fn-ft .lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--lcd); flex: none; }
 .fn-ft[data-s=saving] .lamp, .fn-ft[data-s=unknown] .lamp { background: none; border: 1.5px solid var(--yellow); border-top-color: transparent; animation: spin .9s linear infinite; }
@@ -33,7 +35,7 @@
 .fn-ft .retry { min-height: 32px; padding: 0 var(--s-3); border: 1px solid color-mix(in srgb, var(--red) 55%, transparent); border-radius: var(--r-s); background: none; color: var(--red-2); font-size: var(--fs-caption); cursor: pointer; }
 
 /* 便签（继承 notes-v16 的 .sn：深色纸淡染 + 回形针）。用户 2026-10-27 选 B：内边距、字号、回形针与间距对齐随手记页，并按同一算法微倾斜。 */
-.fn-panel .sn { --paper: var(--text-hi); --a: .05; position: relative; display: grid; gap: var(--s-3); padding: var(--s-5) var(--s-5) var(--s-4);
+.fn-panel .sn { --paper: var(--text-hi); --a: .05; position: relative; display: grid; gap: calc(var(--s-2) + 2px); padding: calc(var(--s-3) + 2px) var(--s-5) var(--s-4);
   border: 1px solid color-mix(in srgb, var(--paper) 20%, transparent); border-radius: var(--r-s);
   background: linear-gradient(180deg, color-mix(in srgb, var(--paper) calc(var(--a) * 200%), transparent), color-mix(in srgb, var(--paper) calc(var(--a) * 100%), transparent) 60%), var(--panel);
   box-shadow: 0 14px 28px -18px color-mix(in srgb, #000 90%, transparent); }

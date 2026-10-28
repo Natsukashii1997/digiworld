@@ -28,7 +28,7 @@
 /* 便签：沿用原五色纸面 */
 .notes-v16 .sn { --paper: var(--text-hi); --a: 0.05;
   position: relative; display: grid; gap: var(--s-3);
-  padding: var(--s-5);
+  padding: calc(var(--s-3) + 2px) var(--s-5) var(--s-5);
   border: 1px solid color-mix(in srgb, var(--paper) 20%, transparent); border-radius: var(--r-s);
   background: linear-gradient(180deg, color-mix(in srgb, var(--paper) calc(var(--a) * 200%), transparent), color-mix(in srgb, var(--paper) calc(var(--a) * 100%), transparent) 60%), var(--panel);
   box-shadow: 0 14px 28px -18px color-mix(in srgb, #000 90%, transparent);
@@ -275,7 +275,6 @@
 .notes-v16 .sn-copy { cursor:pointer; }
 .notes-v16 .sn-copy:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
 .notes-v16 .sn-copy-status:not(:empty) { position:absolute; z-index:5; top:100%; right:0; width:max-content; max-width:min(230px,65vw); padding:6px 10px; border:1px solid var(--line-2); border-radius:var(--r-s); background:var(--panel); color:var(--text); font-size:var(--fs-caption); line-height:1.5; overflow-wrap:anywhere; pointer-events:none; }
-.notes-v16 .sn:has(.sn-refined) .sn-copy-wrap,.notes-v16.fn-panel .sn:has(.sn-chip) .sn-copy-wrap { top:-12px; }
 
 /* Pasted attachments only; existing card and toolbar geometry is unchanged. */
 .sn-image-atom{display:inline;white-space:normal}.sn-note-image{display:block;max-width:100%;height:auto;margin:6px 0;object-fit:contain}.sn-image-char{font-size:0;line-height:0}.sn-image-message{display:block;padding:10px 0;font-size:var(--fs-caption);color:inherit}.sn-image-message button{min-width:44px;min-height:44px;margin-left:6px}.sn-image-progress{font-size:var(--fs-caption);margin:4px 0}

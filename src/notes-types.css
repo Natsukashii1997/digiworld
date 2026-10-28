@@ -47,11 +47,11 @@
 .notes-v16 .sn-line-timeline.done>[data-note-text]{text-decoration:line-through;color:var(--muted)}
 
 /* Compact card actions: requested local exception; touch targets remain 44px. */
-.notes-v16 .sn-corner-actions{position:absolute;top:4px;right:4px;z-index:2;display:flex;align-items:center;gap:2px}
+/* 复制 / 删除和时间同一水平线（用户 2026-10-28）：留在头部行内靠右，卡片顶部留白随之收到 14px。 */
+.notes-v16 .sn-corner-actions{position:relative;z-index:2;display:flex;align-items:center;gap:2px;margin:0 calc(var(--s-2) * -1) 0 auto}
 .notes-v16 .sn-corner-actions .sn-copy-wrap{position:relative;top:auto;right:auto}
 .notes-v16 .sn-corner-actions .sn-ico{width:28px;min-width:28px;height:28px;min-height:28px;padding:0}
 .notes-v16 .sn-corner-actions svg{width:14px;height:14px}
-.notes-v16 .sn:has(.sn-refined) .sn-corner-actions,.notes-v16.fn-panel .sn:has(.sn-chip) .sn-corner-actions{top:-12px}
 .notes-v16.fn-single .sn-corner-actions{position:relative;top:auto;right:auto;margin-left:auto}
 @media(pointer:coarse){.notes-v16 .sn-corner-actions .sn-ico{width:44px;min-width:44px;height:44px;min-height:44px}}
 /* 按类型新建（用户 2026-10-28 选 A）：三种类型常驻，点哪种开哪种；图标按类型着色，悬停时边框随之亮起。随手记页与悬浮窗共用。 */
@@ -70,6 +70,15 @@
 /* 入口行窄于 380px（窄屏、两栏、悬浮窗）时按钮变紧凑；超长时省略，不撑出页面。 */
 .notes-v16 .sn-type-tile{overflow:hidden;text-overflow:ellipsis}
 @container sn-tiles (max-width:380px){.notes-v16 .sn-type-tile{justify-content:center;gap:6px;padding:0 var(--s-2);font-size:var(--fs-caption)}}
+/* 悬浮窗新建入口用户 2026-10-28 选 B：「新建」+ 三颗带类型色的胶囊，下接虚线分隔。 */
+.notes-v16.fn-panel .sn-type-tiles{align-items:center;gap:var(--s-2);padding-bottom:calc(var(--s-3) + 2px);border-bottom:1px dashed var(--line-2)}
+.notes-v16.fn-panel .sn-type-tiles::before{content:"新建";margin-right:2px;color:var(--muted);font:500 var(--fs-small) var(--mono);letter-spacing:.08em}
+/* 点击区仍是 44px 高，30px 的胶囊由 ::before 画出。 */
+.notes-v16.fn-panel .sn-type-tile{position:relative;isolation:isolate;flex:none;justify-content:flex-start;padding:0 var(--s-3) 0 10px;gap:6px;border:0;background:none;color:var(--text);font-size:var(--fs-caption)}
+.notes-v16.fn-panel .sn-type-tile::before{position:absolute;z-index:-1;inset:7px 0;content:"";border:1px solid color-mix(in srgb,var(--tc) 30%,transparent);border-radius:var(--r-pill);background:color-mix(in srgb,var(--tc) 9%,transparent)}
+.notes-v16.fn-panel .sn-type-tile:hover:not(:disabled){background:none}
+.notes-v16.fn-panel .sn-type-tile:hover:not(:disabled)::before{border-color:color-mix(in srgb,var(--tc) 60%,transparent);background:color-mix(in srgb,var(--tc) 16%,transparent)}
+.notes-v16.fn-panel .sn-type-tile svg{width:14px;height:14px}
 @container sn-pad-row (max-width:440px){.notes-v16 .sn-pad-hint small{display:none}}
 /* 入口区本身不再可点，悬停不亮边框，光标恢复默认。 */
 .notes-v16 .sn-new .sn-pad:not(.editing){cursor:default}
