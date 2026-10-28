@@ -32,7 +32,6 @@
 .sn-float-wrap{position:relative;display:inline-flex}
 .sn-float-error{position:absolute;z-index:5;right:0;top:100%;width:240px;padding:var(--s-2);border:1px solid var(--line-2);border-radius:var(--r-s);background:var(--panel);color:var(--red-2);font-size:var(--fs-small)}
 .notes-v16.fn-panel:not(.fn-single) .sn header>.sn-float-wrap{position:absolute;top:4px;right:48px}
-.notes-v16.fn-panel:not(.fn-single) .sn:has(.sn-chip) header>.sn-float-wrap{top:-12px}
 .fn-single{max-width:none;grid-template-rows:1fr}
 .fn-single .fn-scroll{display:block}
 .fn-single .sn{min-height:calc(100dvh - 2 * var(--s-4));box-sizing:border-box;align-content:start}
@@ -99,4 +98,32 @@
 .notes-v16 .sn-body>p:first-child::first-line,.notes-v16.fn-panel .sn-body>p:first-child::first-line{font-weight:700}
 /* 用户 2026-10-28：悬浮窗便签多到可滚动时，WebKit 点空正文不画光标；正文单独成层即可画出 */
 .notes-v16 .sn-editable{will-change:transform}
+/* 用户 2026-10-28 选样稿：待办框贴内容左缘、对齐首行，点击区 44 宽伸进内边距；单条待办不再被撑到正文最小高度 */
+.notes-v16 .sn-body .sn-line-task{min-height:32px;align-items:flex-start;gap:0}
+.notes-v16 .sn-line-task .sn-prefix{position:relative;width:26px;min-width:26px;font-size:var(--fs-body);line-height:1.65;height:1.65em;align-self:flex-start}
+.notes-v16 .sn-line-task .sn-task-hit,.notes-v16.fn-panel .sn-line-task .sn-task-hit{display:grid;place-items:center;position:absolute;left:-14px;top:50%;width:44px;height:32px;min-height:0;margin-top:-18px}
+.notes-v16 .sn-line-task .sn-task-hit input{width:44px;height:32px}
+.notes-v16 .sn-line-task .sn-task-hit .sn-box{border-color:var(--text-2);border-radius:var(--r-xs)}
+.notes-v16 .sn-editable .sn-line-task [data-note-text]{min-height:1.65em}
+.notes-v16 .sn-body .sn-task{gap:4px;align-content:start}
+/* 时间轴：左侧细轨 + 青色小圆点；时间是一行小号等宽字（点它照样改时间），事件文字在下；添加节点是轨道末端的一行字 */
+.notes-v16 .sn-timeline .sn-line-timeline{grid-template-columns:14px minmax(0,1fr);column-gap:var(--s-3);padding:0 0 var(--s-3)}
+.notes-v16 .sn-line-timeline:has(.sn-event-list-prefix){grid-template-columns:14px 24px minmax(0,1fr)}
+.notes-v16 .sn-timeline .sn-line-timeline::before,.notes-v16 .sn-timeline .sn-line-timeline:not(:last-child)::before{position:absolute;content:"";left:6.5px;top:14px;bottom:-4px;width:1px;background:var(--line-3)}
+.notes-v16 .sn-timeline .sn-line-timeline:last-child::before{bottom:0;background:linear-gradient(var(--line-3),transparent)}
+.notes-v16 .sn-line-timeline>.sn-prefix{font-size:0;padding:0;min-width:0;width:14px;height:22px;position:relative}
+.notes-v16 .sn-line-timeline>.sn-prefix::after{content:"";position:absolute;left:3px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--panel);box-shadow:0 0 0 1.5px var(--cyan)}
+.notes-v16 .sn-event-time{font:var(--fs-small) var(--mono);line-height:22px;color:var(--muted);letter-spacing:.02em}
+.notes-v16 .sn-event-time input{-webkit-appearance:none;appearance:none;width:auto;max-width:100%;min-height:22px;height:22px;padding:0 4px;margin-left:-4px;background:transparent;border:0;box-shadow:none;border-radius:var(--r-xs);color:var(--text-2);font:inherit;letter-spacing:inherit}
+.notes-v16 .sn-event-time input:hover{background:color-mix(in srgb,var(--cyan) 10%,transparent)}
+.notes-v16 .sn-event-time input::-webkit-calendar-picker-indicator{opacity:.45;filter:invert(1);cursor:pointer}
+.notes-v16 .sn-line-timeline>[data-note-text]{min-height:1.65em}
+.notes-v16 .sn-add-event{display:flex;align-items:center;gap:var(--s-3);width:100%;min-height:36px;margin-top:calc(-1 * var(--s-2));padding:0;border:0;background:transparent;color:var(--muted);font:var(--fs-caption) var(--sans);text-align:left;cursor:pointer}
+.notes-v16 .sn-add-event::first-letter{color:var(--cyan)}
+.notes-v16 .sn-add-event:hover{color:var(--text-2)}
+/* 用户 2026-10-28：工具栏字色旁加「加粗」（与 ⌘B、右键加粗同一逻辑）；窄屏与悬浮窗排在「A▾」之后 */
+.notes-v16 .sn-tools>.sn-bold{font:800 var(--fs-title) var(--sans)}
+.notes-v16 .sn-tools>.sn-bold[aria-pressed=true]{color:var(--text);background:color-mix(in srgb,var(--text) 10%,transparent)}
+@media(max-width:760px){.notes-v16 .sn-tools>.sn-bold{order:3}}
+.notes-v16.fn-panel .sn-editor-compact .sn-tools>.sn-bold{order:2}
 @media (max-width:640px){.notes-v16 .sn-page{padding:var(--s-3)}.notes-v16 .page-heading .page-heading-action{width:100%;margin-left:0}.notes-v16 .page-heading-action .sn-type-tiles{width:100%}.notes-v16 .page-heading-action .sn-type-tile{flex:1 1 0;padding:0 var(--s-2)}}

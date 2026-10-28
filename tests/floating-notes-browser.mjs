@@ -31,7 +31,7 @@ try{
  // Service rejects the write; a successful ID query proves it was not committed.
  await p.route('**/api/notes/*',async r=>{if(r.request().method()==='PUT')await r.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'合成拒绝'})});else await r.continue();});
  await p.keyboard.press('Meta+n');await replace175(p,'关闭后仍保留的草稿');await p.getByText('没保存上，内容还在这里。',{exact:true}).waitFor();await shot('H-failed');
- await p.route('**/api/notes',r=>r.abort('failed'));await p.reload();await editor175(p).waitFor();assert.match(await editor175(p).innerText(),/关闭后仍保留的草稿/);await p.locator('.sn-state').getByText('草稿已留在本机',{exact:true}).waitFor();await shot('G-restored-draft');await p.unroute('**/api/notes');await p.unroute('**/api/notes/*'); // No focus/online event: the local service recovering must trigger bounded reconnect.
+ await p.route('**/api/notes',r=>r.abort('failed'));await p.reload();await editor175(p).waitFor();assert.match(await editor175(p).innerText(),/关闭后仍保留的草稿/);await p.locator('.sn-state').getByText('草稿在本机',{exact:true}).waitFor();await shot('G-restored-draft');await p.unroute('**/api/notes');await p.unroute('**/api/notes/*'); // No focus/online event: the local service recovering must trigger bounded reconnect.
  await until(async()=>(await api('/notes')).notes.some(n=>n.text==='关闭后仍保留的草稿'));
  // Server commit precedes browser write-readback acceptance; finish the recovery scenario first.
  await p.locator('.sn-state').getByText('已保存',{exact:true}).waitFor();await until(async()=>!(await p.evaluate(()=>JSON.parse(localStorage.getItem('floating-notes-recovery-v1')).records)).length);

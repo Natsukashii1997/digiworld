@@ -33,14 +33,14 @@ export function NoteEditor({value,onChange,onPost,onCancel,onOutside,busy=false,
  const editor=useRef(null),host=useRef(null),bookmark=useRef(null),composing=useRef(false),finalizing=useRef(false),compositionBase=useRef(null),compositionTimer=useRef(null),outsideIntent=useRef(false),nativeBase=useRef(null),compositionReplay=useRef(null),generation=useRef(0),alive=useRef(true),handlers=useRef({}),pending=useRef(null),colorButton=useRef(null),undo=useRef([]),redo=useRef([]),current=useRef(value),typing=useRef(null);
  const imageTask=useRef(null),imageAbort=useRef(null);
  const [pasting,setPasting]=useState(false),[contextMenu,setContextMenu]=useState(null);
- const [version,setVersion]=useState(0),[error,setError]=useState(''),[palette,setPalette]=useState(false),[ink,setInk]=useState(null),[ime,setIme]=useState(false);
+ const [version,setVersion]=useState(0),[error,setError]=useState(''),[palette,setPalette]=useState(false),[ink,setInk]=useState(null),[bold,setBold]=useState(false),[ime,setIme]=useState(false);
  if(current.current!==value&&editorSignature(current.current)!==editorSignature(value)){undo.current=[];redo.current=[];bookmark.current=null;pending.current=null;nativeBase.current=null;compositionReplay.current=null;}
  current.current=value;
- function remember(found){if(!found?.anchor||!found?.focus)found=captureBookmark(editor.current,current.current);if(found){const old=bookmark.current;if(!old||['anchor','focus'].some(k=>old[k].line!==found[k].line||old[k].offset!==found[k].offset)){typing.current=typingStyleAt(current.current,found);setInk(typing.current.ink||null);}bookmark.current=found;}return found||bookmark.current||docSelection(current.current);}
+ function remember(found){if(!found?.anchor||!found?.focus)found=captureBookmark(editor.current,current.current);if(found){const old=bookmark.current;if(!old||['anchor','focus'].some(k=>old[k].line!==found[k].line||old[k].offset!==found[k].offset)){typing.current=typingStyleAt(current.current,found);setInk(typing.current.ink||null);setBold(!!typing.current.bold);}bookmark.current=found;}return found||bookmark.current||docSelection(current.current);}
  function apply(result,{history=true,beforeSelection}={}) {
   if(busy||composing.current)return;
   if(history){undo.current.push({doc:current.current,selection:beforeSelection||remember(),typingInk:typing.current});if(undo.current.length>100)undo.current.shift();redo.current=[];}
-  current.current=result.doc;typing.current=result.typingInk===undefined?typing.current:result.typingInk;setInk(typeof typing.current==='object'?typing.current?.ink:typing.current);
+  current.current=result.doc;typing.current=result.typingInk===undefined?typing.current:result.typingInk;setInk(typeof typing.current==='object'?typing.current?.ink:typing.current);setBold(typeof typing.current==='object'&&!!typing.current?.bold);
   pending.current=result.selection||bookmark.current;bookmark.current=pending.current;onChange(result.doc);setVersion(v=>v+1);setError('');
  }
  function act(fn){if(imageTask.current)return;compositionReplay.current=null;try{apply(fn(remember()));}catch(e){setError(e.message);}}
@@ -118,6 +118,7 @@ export function NoteEditor({value,onChange,onPost,onCancel,onOutside,busy=false,
  {palette&&<div className="sn-colors" role="group" aria-label="选择字色" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();setPalette(false);colorButton.current?.focus();}}}>{INKS.map(([key,label])=><button key={key} type="button" aria-label={label} className={'ink-'+key} aria-pressed={ink===key} onPointerDown={e=>{remember();e.preventDefault();}} onClick={()=>{act(sel=>applyEditorInk(current.current,sel,key,typing.current));setPalette(false);}}>A</button>)}</div>}</div>
  {button('无序列表',List,'ul')}{button('有序列表',ListOrdered,'ol')}{button('任务列表',ListChecks,'task')}
  <div className="sn-ink" role="group" aria-label="字色">{INKS.map(([key,label])=><button type="button" className={'sn-ico ink-'+key} aria-label={label} aria-pressed={ink===key} key={key} disabled={busy||ime||pasting} onPointerDown={e=>{remember();e.preventDefault();}} onClick={()=>act(sel=>applyEditorInk(current.current,sel,key,typing.current))}>A</button>)}</div>
+ <button type="button" className="sn-bold" aria-label="加粗" aria-pressed={bold} disabled={busy||ime||pasting} onPointerDown={e=>{remember();e.preventDefault();}} onClick={()=>contextAction('bold')}>B</button>
  <div className="sn-tools-end">{toolbarEnd!==undefined?toolbarEnd:<><span className="sn-key">⌘↵</span><button type="button" className="sn-post" aria-label={newNote?'贴上':'保存修改'} disabled={busy||ime||pasting||(newNote&&!hasNoteContent({...value.meta,text:serializeEditorDoc(value)}))} onPointerDown={e=>e.preventDefault()} onClick={()=>!composing.current&&!finalizing.current&&flushDOM()&&onPost?.(current.current)}>{busy?'保存中…':newNote?'贴上':'保存'}<ArrowUpRight size={16}/></button></>}</div>
  </div>}</div>;
 }

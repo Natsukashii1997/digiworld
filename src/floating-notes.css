@@ -55,7 +55,6 @@
 .fn-panel .sn.tone-plain .sn-tape { --clip: var(--text-2); }
 .fn-panel .sn header { display: flex; align-items: center; gap: var(--s-2); min-height: 22px; }
 .fn-panel .sn-time { font: 500 var(--fs-small) var(--mono); color: var(--muted); letter-spacing: .04em; }
-.fn-panel .sn-chip { margin-left: auto; padding: 1px 7px; border-radius: var(--r-xs); font-size: var(--fs-small); border: 1px dashed color-mix(in srgb, var(--yellow) 70%, transparent); color: var(--yellow); }
 .fn-panel .sn-body { display: grid; gap: var(--s-2); font-size: var(--fs-read); line-height: 1.65; color: var(--text); overflow-wrap: anywhere; outline: none; }
 .fn-panel .sn-body p { margin: 0; }
 .fn-panel .sn-body > p:first-child { font-weight: 700; }
