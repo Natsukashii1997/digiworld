@@ -1119,7 +1119,8 @@ export async function startServer({
       );
       response.writeHead(200, {
         "content-type": MIME[extname(file)] || "application/octet-stream",
-        "cache-control": "no-cache",
+        // 首页不落盘：Safari 网页应用恢复窗口会直接用磁盘里的旧首页，发布后旧哈希资源已不在，打开即黑屏。
+        "cache-control": pathname === "/" ? "no-store" : "no-cache",
       });
       response.end(request.method === "HEAD" ? undefined : content);
     } catch (error) {
