@@ -121,11 +121,11 @@
 .notes-v16 .sn-add-event{display:flex;align-items:center;gap:var(--s-3);width:100%;min-height:36px;margin-top:calc(-1 * var(--s-2));padding:0;border:0;background:transparent;color:var(--muted);font:var(--fs-caption) var(--sans);text-align:left;cursor:pointer}
 .notes-v16 .sn-add-event::first-letter{color:var(--cyan)}
 .notes-v16 .sn-add-event:hover{color:var(--text-2)}
-/* 用户 2026-10-28：工具栏字色旁加「加粗」（与 ⌘B、右键加粗同一逻辑）；窄屏与悬浮窗排在「A▾」之后 */
-.notes-v16 .sn-tools>.sn-bold{font:800 var(--fs-title) var(--sans)}
+/* 用户 2026-10-28：工具栏字色旁加「加粗」（与 ⌘B、右键加粗同一逻辑）；窄屏与悬浮窗排在「A▾」之后；按钮收窄到 32 宽贴近字色（可见间距约 10，宽屏约 20） */
+.notes-v16 .sn-tools>.sn-bold{width:32px;min-width:32px;margin-left:-8px;font:800 var(--fs-title) var(--sans)}
 .notes-v16 .sn-tools>.sn-bold[aria-pressed=true]{color:var(--text);background:color-mix(in srgb,var(--text) 10%,transparent)}
-@media(max-width:760px){.notes-v16 .sn-tools>.sn-bold{order:3}}
-.notes-v16.fn-panel .sn-editor-compact .sn-tools>.sn-bold{order:2}
+@media(max-width:760px){.notes-v16 .sn-tools>.sn-bold{order:3;margin-left:-12px}}
+.notes-v16.fn-panel .sn-editor-compact .sn-tools>.sn-bold{order:2;width:32px;min-width:32px;margin-left:-14px}
 /* 用户 2026-10-28：悬浮窗字色面板原被窄屏规则挂到整张卡片顶上、盖住新建胶囊；改为贴「A▾」正上方弹出 */
 .notes-v16.fn-panel .sn-editor-compact .sn-color-wrap{position:relative}
 .notes-v16.fn-panel .sn-editor-compact .sn-colors{left:50%;right:auto;bottom:calc(100% + 4px);transform:translateX(-50%)}
