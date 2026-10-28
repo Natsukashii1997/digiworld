@@ -1,4 +1,5 @@
 // 路线 v3 切片 2.1/2.2：在推进标记、项目状态卡、停滞标红、安全体检与待处理事项。
+// 项目空间第二版后，旧项目页（接力口令、收件、装备）只在地址带 ?projects-v16 时挂上；本回归守的是旧组件，断言不变。
 // 合成 Git 仓库在临时目录现建（见 project-status-fixture.mjs）；GitHub 可见性用模拟适配器，不依赖真实账号。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
@@ -43,7 +44,7 @@ async function open(width, route = "projects", height = 1000) {
   const page = await context.newPage();
   page.setDefaultTimeout(10000);
   page.on("pageerror", (e) => errors.push(`${width} ${e.message}`));
-  await page.goto(`${app.url}/#${route}`);
+  await page.goto(`${app.url}/?projects-v16#${route}`);
   await page.locator(".page-heading").waitFor();
   return page;
 }
@@ -211,7 +212,7 @@ try {
   await atLeast44(button(narrow, "保存阈值"), "390 保存阈值");
   await atLeast44(button(narrow.getByRole("region",{name:"在推进项目"}), "刷新"), "390 刷新");
   await axe(narrow, "projects-390");
-  await narrow.keyboard.press("Escape");await narrow.goto(`${app.url}/#inbox`);
+  await narrow.keyboard.press("Escape");await narrow.goto(`${app.url}/?projects-v16#inbox`);
   await narrow.getByRole("dialog", {name:"待处理",exact:true}).getByRole("button", { name: /项目「泄露项目」安全体检/ }).waitFor();
   await noOverflow(narrow, "390 待处理");
   ok("390 宽无横向溢出、44px、axe 无违规");

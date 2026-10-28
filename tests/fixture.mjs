@@ -109,6 +109,8 @@ export async function fixture({ discovery = {}, nightV2 = {}, controlledExecutio
           ],
         };
       },
+      // 项目空间第二版：默认指向临时目录里不存在的名册，任何浏览器测试都不会读到真实的数字分身名册。
+      projectsSpace: { rosterPath: join(directory, "no-roster.json") },
       ...discovery,
     },
   });

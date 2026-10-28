@@ -167,7 +167,7 @@ export function projectRows(state, projectStatus) {
 
 export function ProjectsScreen({ state, projectStatus, onOpen, onRetry }) {
   const rows = projectRows(state, projectStatus);
-  if (!rows.length) return <p className="hx-empty">还没有在推进的项目，到项目空间开新档</p>;
+  if (!rows.length) return <p className="hx-empty">还没有置顶的项目，到项目空间置顶（最多 3 个）</p>;
   const loaded = !!projectStatus?.loaded, error = projectStatus?.error;
   return <>
     <ReadReveal pending={!loaded} ready={loaded && !error} />
@@ -179,7 +179,7 @@ export function ProjectsScreen({ state, projectStatus, onOpen, onRetry }) {
           <span className="hx-slot mono"><i className={"hx-lamp " + row.lamp} aria-hidden="true" />{String(index + 1).padStart(2, "0")}</span>
           <b>{row.name}</b>
           <span className={"hx-flag" + (row.flags.length ? " warn" : "")}>
-            {row.flags.length ? row.flags.join(" · ") : row.readable ? "在推进" : loaded ? "状态待核实" : "读取中"}
+            {row.flags.length ? row.flags.join(" · ") : row.readable ? "已置顶" : loaded ? "状态待核实" : "读取中"}
           </span>
           {(row.latestAt || row.next) && <small className="hx-proj-next">
             {row.latestAt && <span className="hx-proj-when">{row.source ? row.source + " · " : ""}{ago(row.latestAt)}</span>}

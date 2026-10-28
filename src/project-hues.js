@@ -17,12 +17,13 @@ function stableIndex(id) {
   return h % PALETTE.length;
 }
 
-// 名字前两个字母：优先取拉丁字母或数字（大写），不够时取前两个字符。
+// 名字前两个字母（芯片上是 5×7 像素字，只认字母和数字）：名字里不够两个时取 id 的，再不够写 ??。
 export function fallbackCode(name, id) {
-  const letters = String(name || "").match(/[A-Za-z0-9]/g) || [];
-  if (letters.length >= 2) return (letters[0] + letters[1]).toUpperCase();
-  const chars = [...String(name || id || "??").replace(/\s+/g, "")];
-  return (chars.slice(0, 2).join("") || "??").toUpperCase();
+  for (const source of [name, id]) {
+    const letters = String(source || "").match(/[A-Za-z0-9]/g) || [];
+    if (letters.length >= 2) return (letters[0] + letters[1]).toUpperCase();
+  }
+  return "??";
 }
 
 export function projectHue({ id, name } = {}) {

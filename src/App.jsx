@@ -28,7 +28,10 @@ import {
 import { current } from "./store.js";
 import { searchWorkspace, terms, GROUP_LIMIT } from "./search.js";
 import { initializeWorkspace, writeState, request } from "./api.js";
-import { ProjectsV16 as Projects } from "./ProjectsV16.jsx";
+import { ProjectsSpace } from "./ProjectsSpace.jsx";
+import { ProjectsV16 } from "./ProjectsV16.jsx";
+// 项目空间第二版替换旧页；旧页（接力口令、收件、装备）代码保留，只在地址带 ?projects-v16 时挂上，供旧组件自己的回归使用。
+const Projects = new URLSearchParams(location.search).has("projects-v16") ? ProjectsV16 : ProjectsSpace;
 import { Button, Dialog, TypeIcon, Maturity, PixelBadge, typeLabel } from "./components.jsx";
 import { Assets, AssetEditor, AssetDetail } from "./Assets.jsx";
 import { isSelfSkill } from "./skill-install.js";
