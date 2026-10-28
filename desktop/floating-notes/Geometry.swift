@@ -2,7 +2,8 @@ import AppKit
 
 struct BallPosition: Codable { var edge: String; var fraction: Double }
 enum Geometry {
-    static let hit: CGFloat = 32
+    // 用户 2026-10-28：悬浮球太小，32 → 48。
+    static let hit: CGFloat = 48
     static func clamp(_ value: CGFloat, _ lo: CGFloat, _ hi: CGFloat) -> CGFloat { min(max(value, lo), max(lo, hi)) }
     static func ball(_ position: BallPosition, in screen: CGRect) -> CGRect {
         let x = position.edge == "left" ? screen.minX + 8 : screen.maxX - 8 - hit

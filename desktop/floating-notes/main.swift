@@ -19,6 +19,7 @@ final class BallView:NSView {
     override func acceptsFirstMouse(for event:NSEvent?)->Bool {true}
     var phase="saved",expanded=false,hover=false,dragging=false
     var arc:CGFloat=0
+    static let icon=Bundle.main.image(forResource:"ball")
     override init(frame:NSRect){super.init(frame:frame);setAccessibilityElement(true);setAccessibilityRole(.button);setAccessibilityLabel("随手记悬浮球");toolTip="随手记"}
     required init?(coder:NSCoder){fatalError()}
     override func updateTrackingAreas(){super.updateTrackingAreas();trackingAreas.forEach(removeTrackingArea);addTrackingArea(NSTrackingArea(rect:bounds,options:[.mouseEnteredAndExited,.activeAlways],owner:self,userInfo:nil))}
@@ -29,16 +30,15 @@ final class BallView:NSView {
         guard let context=NSGraphicsContext.current?.cgContext else{return}
         context.saveGState();defer{context.restoreGState()}
         context.clear(bounds)
+        // 以下按 32pt 坐标绘制，按悬浮球实际尺寸等比放大。
+        let scale=Geometry.hit/32;context.scaleBy(x:scale,y:scale)
         if dragging {context.translateBy(x:16,y:16);context.scaleBy(x:1.06,y:1.06);context.translateBy(x:-16,y:-16)}
         if hover && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {context.translateBy(x:0,y:1)}
         context.setAlpha(hover||expanded ? 1:0.94)
         let disk=CGRect(x:2,y:2,width:28,height:28)
-        color(0x0f1729).setFill();NSBezierPath(ovalIn:disk).fill()
-        (expanded||hover ? color(0xffd166,expanded ? 1:0.6):color(0x8cb2ff,0.32)).setStroke();let outer=NSBezierPath(ovalIn:disk.insetBy(dx:0.5,dy:0.5));outer.lineWidth=1;outer.stroke()
-        // 像素暴龙机：O 金色外壳，B 机身，C/c 屏幕亮/暗，G 按键
-        let rows=["..OOOOOO..",".OBBBBBBO.","OBCCCCCCBO","OBCcCCcCBO","OBCCCCCCBO","OBCcccCCBO","OBCCCCCCBO","OBBBBBBBBO","OBGBBBBGBO",".OBBGGBBO.","..OOOOOO.."]
-        let palette:[Character:UInt32]=["O":0xffd166,"B":0x1c2a4a,"C":0x4de3ff,"c":0x1f8fb0,"G":0xffd166];let pixel:CGFloat=2
-        for (y,row) in rows.enumerated(){for (x,char) in row.enumerated(){guard let hex=palette[char] else{continue};color(hex).setFill();NSRect(x:6+CGFloat(x)*pixel,y:5+CGFloat(rows.count-1-y)*pixel,width:pixel,height:pixel).fill()}}
+        // 用户 2026-10-28：图标换成上传的新图（Resources/ball.png）；缺图时退回深色圆底。
+        if let icon=BallView.icon {icon.draw(in:disk.insetBy(dx:-2,dy:-2))}else{color(0x0f1729).setFill();NSBezierPath(ovalIn:disk).fill()}
+        if expanded||hover {color(0xffd166,expanded ? 1:0.6).setStroke();let outer=NSBezierPath(ovalIn:disk.insetBy(dx:-1.5,dy:-1.5));outer.lineWidth=1;outer.stroke()}
         if ["draft","failed","conflict"].contains(phase){let dot=NSRect(x:22,y:22,width:8,height:8);color(0x0c1325).setFill();NSBezierPath(ovalIn:dot).fill();color(phase=="draft" ? 0xffd166:0xff6b6b).setFill();NSBezierPath(ovalIn:dot.insetBy(dx:1.5,dy:1.5)).fill()}
         if phase=="saving"||phase=="unknown" {color(0xffd166).setStroke();let path=NSBezierPath();path.lineWidth=1.5;if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion{path.setLineDash([3,3],count:2,phase:0);path.appendOval(in:NSRect(x:1,y:1,width:30,height:30))}else{path.appendArc(withCenter:NSPoint(x:16,y:16),radius:15,startAngle:arc,endAngle:arc+90)};path.stroke()}
     }
