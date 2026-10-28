@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 export const editor175=p=>p.getByRole('textbox',{name:'随手记内容',exact:true});
-export async function enterNew175(p){await p.getByRole('button',{name:'记一条新念头',exact:true}).click();await editor175(p).waitFor();}
+export async function enterNew175(p){await p.getByRole('button',{name:'新建普通便签',exact:true}).click();await editor175(p).waitFor();}
 export async function select175(p,start,end=start){await editor175(p).evaluate((root,[a,b])=>{root.focus();const spans=[...root.querySelectorAll('[data-note-text]')];const point=offset=>{for(let i=0;i<spans.length;i++){const e=spans[i],size=e.textContent.length;if(offset<=size||i===spans.length-1){const walker=document.createTreeWalker(e,NodeFilter.SHOW_TEXT);let n,last;while(n=walker.nextNode()){last=n;if(offset<=n.length)return [n,offset];offset-=n.length;}return last?[last,last.length]:[e,0];}offset-=size+1;}return[root,0];};const x=point(a),y=point(b);window.getSelection().setBaseAndExtent(x[0],x[1],y[0],y[1]);},[start,end]);}
 export async function visible175(p){return editor175(p).locator('[data-note-text]').evaluateAll(es=>es.map(e=>e.textContent).join('\n'));}
 export async function replace175(p,text){const current=await visible175(p);await select175(p,0,current.length);await editor175(p).evaluate((el,text)=>{const data=new DataTransfer();data.setData('text/plain',text);el.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));},text);assert.equal(await visible175(p),text);}

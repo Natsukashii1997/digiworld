@@ -13,7 +13,7 @@ const hasImage=async locator=>{await locator.locator('img.sn-note-image').first(
 try{
  for(const route of ['#notes','#/float']){
   const context=await browser.newContext({permissions:['clipboard-read','clipboard-write'],viewport:{width:route==='#notes'?1000:368,height:route==='#notes'?1000:600}}),page=await context.newPage();page.setDefaultTimeout(6000);page.on('pageerror',e=>errors.push(e.message));await page.goto(app.url+'/'+route);
-  if(route==='#notes')await enterNew175(page);else await page.getByRole('button',{name:'写一条'}).click();
+  if(route==='#notes')await enterNew175(page);else await page.getByRole('button',{name:'新建普通便签',exact:true}).click();
   await replace175(page,'图片前');await point(page,0,3);await paste(page);await hasImage(editor175(page));await page.keyboard.insertText('图片后');
   assert.equal(await editor175(page).locator('[data-note-image]').count(),1);assert((await editor175(page).textContent()).includes('图片后'));
   await page.keyboard.press('Meta+z');assert.equal(await editor175(page).locator('[data-note-image]').count(),1);await page.keyboard.press('Meta+z');assert.equal(await editor175(page).locator('[data-note-image]').count(),0);await page.keyboard.press('Meta+Shift+z');await hasImage(editor175(page));await page.keyboard.press('Meta+Shift+z');
@@ -24,7 +24,7 @@ try{
   await card.getByRole('button',{name:'复制便签（含格式）',exact:true}).click();await card.getByRole('status').filter({hasText:'已复制（含格式）'}).waitFor();const copied=await page.evaluate(async()=>{const items=await navigator.clipboard.read();return{html:await(await items[0].getType('text/html')).text(),text:await(await items[0].getType('text/plain')).text()};});assert.match(copied.html,/<img src="data:image\/png;base64,/);assert.equal(copied.text,'图片前[图片]图片后');
   await page.evaluate(()=>{const target=document.createElement('div');target.id='image-paste-target';target.contentEditable='true';document.body.append(target);target.focus();});await page.keyboard.press('Meta+v');await page.locator('#image-paste-target img').waitFor();await page.locator('#image-paste-target').evaluate(el=>el.remove());results.push(route+': actual rich-copy/paste includes embedded image and surrounding text');
   // Invalid images must not erase the visible draft or consume its selection.
-  if(route==='#notes')await enterNew175(page);else await page.getByRole('button',{name:'写一条'}).click();await replace175(page,'原内容保留');await paste(page,{invalid:true});await page.getByRole('alert').filter({hasText:'图片无法读取'}).waitFor();assert.equal(await editor175(page).textContent(),'原内容保留');await paste(page,{large:true});await page.getByRole('alert').filter({hasText:'不能超过8 MB'}).waitFor();assert.equal(await editor175(page).textContent(),'原内容保留');results.push(route+': invalid/oversize failure keeps original draft');
+  if(route==='#notes')await enterNew175(page);else await page.getByRole('button',{name:'新建普通便签',exact:true}).click();await replace175(page,'原内容保留');await paste(page,{invalid:true});await page.getByRole('alert').filter({hasText:'图片无法读取'}).waitFor();assert.equal(await editor175(page).textContent(),'原内容保留');await paste(page,{large:true});await page.getByRole('alert').filter({hasText:'不能超过8 MB'}).waitFor();assert.equal(await editor175(page).textContent(),'原内容保留');results.push(route+': invalid/oversize failure keeps original draft');
   await context.close();
  }
  // Legacy plain text stays plain when an image is added.

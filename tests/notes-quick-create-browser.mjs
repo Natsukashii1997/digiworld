@@ -33,7 +33,7 @@ try{
  });
  await run('full-row-default-and-keyboard',async p=>{
   await open(p);assert.equal(await p.getByRole('combobox',{name:'新便签类型'}).count(),0);
-  await p.getByRole('button',{name:/写一条/}).click();await editor(p).waitFor();assert.equal(await editor(p).locator('.sn-line-p').count(),1);
+  await p.getByRole('button',{name:'新建普通便签',exact:true}).click();await editor(p).waitFor();assert.equal(await editor(p).locator('.sn-line-p').count(),1);
   await title(p).fill('默认普通');await p.keyboard.press('Meta+Enter');await editor(p).waitFor({state:'detached'});await p.keyboard.press('Meta+n');await editor(p).waitFor();assert.equal(await editor(p).locator('.sn-line-p').count(),1);
   await title(p).fill('快捷普通');await stored(ns=>ns.some(n=>n.title==='快捷普通'&&n.type==='plain'));
  });
@@ -61,8 +61,8 @@ try{
  });
  await run('widths-and-read-title',async p=>{
   await open(p);for(const width of [320,368,430]){
-   await p.setViewportSize({width,height:760});const geometry=await p.evaluate(()=>{const box=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};};return {panel:box(document.querySelector('.fn-panel')),pad:box(document.querySelector('.fn-pad')),card:box(document.querySelector('.sn')),controls:[...document.querySelectorAll('.fn-hd button')].map(box),overflow:document.documentElement.scrollWidth>innerWidth};});
-   assert.equal(geometry.overflow,false);assert.ok(Math.abs(geometry.pad.w-geometry.card.w)<1);assert.ok(Math.abs(geometry.pad.x-geometry.card.x)<1);assert.equal(geometry.controls.length,5);
+   await p.setViewportSize({width,height:760});const geometry=await p.evaluate(()=>{const box=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};};return {panel:box(document.querySelector('.fn-panel')),pad:box(document.querySelector('.fn-panel .sn-type-tiles')),tiles:[...document.querySelectorAll('.fn-panel .sn-type-tile')].map(box),card:box(document.querySelector('.sn')),controls:[...document.querySelectorAll('.fn-hd button')].map(box),overflow:document.documentElement.scrollWidth>innerWidth};});
+   assert.equal(geometry.overflow,false);assert.ok(Math.abs(geometry.pad.w-geometry.card.w)<1);assert.ok(Math.abs(geometry.pad.x-geometry.card.x)<1);assert.equal(geometry.controls.length,2);for(const t of geometry.tiles){assert.ok(t.x>=geometry.panel.x&&t.right<=geometry.panel.right+.5);assert.ok(t.h>=44);}
    for(const b of geometry.controls){assert.ok(b.x>=geometry.panel.x&&b.right<=geometry.panel.right+.5);assert.ok(b.w>=44&&b.h>=44);}
    for(let i=0;i<geometry.controls.length;i++)for(let j=i+1;j<geometry.controls.length;j++){const a=geometry.controls[i],b=geometry.controls[j];assert.ok(Math.min(a.right,b.right)-Math.max(a.x,b.x)<=.5||Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)<=.5);}
    await checkTitle(p.getByRole('heading',{name:'原有便签',exact:true}));await p.screenshot({path:`${out}/bar-${width}.png`});

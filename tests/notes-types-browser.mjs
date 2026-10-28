@@ -15,7 +15,7 @@ async function menu(name,value){await editor().click({button:'right'});const m=p
 const results=[];
 try{
  await page.goto(app.url+'/#notes');
- await page.getByRole('button',{name:'记一条新念头',exact:true}).click();
+ await page.getByRole('button',{name:'新建普通便签',exact:true}).click();
  await page.getByRole('textbox',{name:'便签标题',exact:true}).fill('会议随记');
  await type('重要结论');
  await page.keyboard.press('Meta+a');await menu('格式','加粗');
@@ -32,13 +32,13 @@ try{
  const copied=await page.evaluate(async()=>{const [item]=await navigator.clipboard.read();return{plain:await(await item.getType('text/plain')).text(),html:await(await item.getType('text/html')).text()};});
  assert.equal(copied.plain,'会议随记\n重要结论');assert.match(copied.html,/font-weight:700/);
  results.push('普通便签：标题、选区加粗/高亮/字号、保存重开与带标题复制');
- await page.getByRole('button',{name:'记一条新念头',exact:true}).click();await editor().click();await page.keyboard.press('Meta+v');
+ await page.getByRole('button',{name:'新建普通便签',exact:true}).click();await editor().click();await page.keyboard.press('Meta+v');
  assert.match(await editor().innerText(),/重要结论/);assert.equal(await editor().locator('[data-note-text] span').last().evaluate(el=>getComputedStyle(el).fontWeight),'700');
  await page.keyboard.press('Meta+z');assert.equal((await editor().innerText()).trim(),'');await page.keyboard.press('Meta+Shift+z');assert.match(await editor().innerText(),/重要结论/);
  await page.keyboard.press('Escape');
  results.push('带格式粘贴与撤销重做保留文字和样式');
 
- await page.getByRole('combobox',{name:'新便签类型'}).selectOption('todo');await page.getByRole('button',{name:'记一条新念头',exact:true}).click();
+ await page.getByRole('button',{name:'新建待办事项',exact:true}).click();
  await page.getByRole('textbox',{name:'便签标题',exact:true}).fill('工作事项');
  await editor().click();await page.keyboard.insertText('写工作报告，发给老板');await page.keyboard.press('Enter');await page.keyboard.insertText('跟产品沟通新版本问题');
  await page.getByRole('button',{name:'贴上',exact:true}).click();await editor().waitFor({state:'detached'});
@@ -49,7 +49,7 @@ try{
  for(let i=0;i<50;i++){if((await app.repository.read()).notes.find(n=>n.id===todo.id)?.text.startsWith('- [x]'))break;await new Promise(r=>setTimeout(r,100));}
  const storedTodo=(await app.repository.read()).notes.find(n=>n.id===todo.id);assert.match(storedTodo.text,/^- \[x\] 写工作报告/);assert.equal(Object.hasOwn(storedTodo,'completedAt'),false);
  results.push('待办：新增连续任务、原位勾选完成、无任务时间字段');
- await page.getByRole('combobox',{name:'新便签类型'}).selectOption('timeline');await page.getByRole('button',{name:'记一条新念头',exact:true}).click();
+ await page.getByRole('button',{name:'新建时间轴',exact:true}).click();
  await page.getByRole('textbox',{name:'便签标题',exact:true}).fill('项目进程');
  await editor().locator('[data-note-text]').click();await page.keyboard.insertText('版本发布');
  await page.getByLabel('事件时间',{exact:true}).fill('2027-01-20T10:30');

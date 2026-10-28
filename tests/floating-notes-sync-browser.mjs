@@ -44,7 +44,7 @@ try{
  await api('/notes/task-note',{id:'task-note',format:'md1',text:'已变成普通正文',base:{text:'- [ ] 合成待办',format:'md1'}});
  await p.evaluate(()=>window.dispatchEvent(new Event('focus')));await p.getByText('这条记录已被其他页面修改或删除，当前输入已保留。').waitFor();
  assert.match(await editor175(p).innerText(),/筛选中的未保存稿/);
- await p.getByRole('button',{name:'记一条新念头',exact:true}).click();assert.match(await editor175(p).innerText(),/筛选中的未保存稿/);
+ await p.getByRole('button',{name:'新建普通便签',exact:true}).click();assert.match(await editor175(p).innerText(),/筛选中的未保存稿/);
  const remote=await app.repository.read();await app.repository.write({...remote,notes:remote.notes.filter(n=>n.id!=='task-note')});
  await p.evaluate(()=>window.dispatchEvent(new Event('focus')));await p.waitForTimeout(100);assert.match(await editor175(p).innerText(),/筛选中的未保存稿/);
  await p.getByRole('button',{name:'另存为新便签'}).click();await editor175(p).waitFor({state:'detached'});

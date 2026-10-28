@@ -19,9 +19,6 @@
 .fn-icon.on { color: var(--yellow); }
 .fn-icon svg.i { width: 17px; height: 17px; }
 .fn-scroll { overflow-y: auto; padding: var(--s-4) var(--s-4) var(--s-5); display: grid; gap: calc(var(--s-5) + 4px); align-content: start; scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
-.fn-pad { display: flex; align-items: center; gap: var(--s-2); width: 100%; min-height: 56px; padding: 0 var(--s-4); border: 1.5px dashed var(--line-3); border-radius: var(--r-s); background: color-mix(in srgb, var(--bg) 35%, transparent); color: var(--muted); font-size: var(--fs-read); cursor: text; }
-.fn-pad:hover { border-color: color-mix(in srgb, var(--yellow) 55%, transparent); color: var(--text-2); }
-.fn-pad kbd { margin-left: auto; font: 500 var(--fs-small) var(--mono); color: var(--muted); }
 .fn-ft { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-1) 0 var(--s-4); border-top: 1px solid var(--line); font-size: var(--fs-caption); color: var(--muted); }
 .fn-ft .lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--lcd); flex: none; }
 .fn-ft[data-s=saving] .lamp, .fn-ft[data-s=unknown] .lamp { background: none; border: 1.5px solid var(--yellow); border-top-color: transparent; animation: spin .9s linear infinite; }
@@ -61,10 +58,10 @@
 .ink-red { color: var(--red); } .ink-blue { color: var(--blue); } .ink-green { color: var(--lcd); } .ink-yellow { color: var(--yellow); } .ink-gray { color: var(--muted); }
 .fn-panel .sn.is-long .sn-body { max-height: 162px; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent); mask-image: linear-gradient(180deg, #000 62%, transparent); }
 .fn-panel .sn-more { justify-self: start; min-height: 28px; padding: 0; border: 0; background: none; color: var(--cyan); font-size: var(--fs-caption); cursor: pointer; }
-/* 编辑中：唯一亮起来的一张（暖黄，同 notes-v16 .sn-pad.editing） */
-.fn-panel .sn.is-edit { border-color: color-mix(in srgb, var(--yellow) 75%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--yellow) 18%, transparent), color-mix(in srgb, var(--yellow) 9%, transparent)), var(--panel-2);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 10%, transparent), 0 18px 36px -22px color-mix(in srgb, var(--yellow) 45%, transparent); }
+/* 编辑中：唯一亮起来的一张，按便签自己的颜色亮（用户 2026-10-28：不再一律变黄；同 notes-v16 .sn-pad.editing） */
+.fn-panel .sn.is-edit { border-color: color-mix(in srgb, var(--paper) 75%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--paper) 18%, transparent), color-mix(in srgb, var(--paper) 9%, transparent)), var(--panel-2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--paper) 10%, transparent), 0 18px 36px -22px color-mix(in srgb, var(--paper) 45%, transparent); }
 .fn-panel .sn.is-edit .sn-tape { display: none; }
 .fn-panel .sn.is-edit .sn-body { min-height: 66px; }
 /* 编辑中整张便签已亮起作为焦点指示，正文区不再叠加青色焦点框 */
@@ -132,4 +129,3 @@
 .floating-notes-page body::before,.floating-notes-page body::after{display:none}
 
 .fn-panel .fn-conflict-actions .acts{display:flex;gap:var(--s-2)}
-.fn-panel .fn-pad kbd{padding:0;border:0;background:none;box-shadow:none}

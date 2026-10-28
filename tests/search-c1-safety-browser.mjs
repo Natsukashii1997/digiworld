@@ -20,7 +20,7 @@ try{
  await page.route('**/api/collection/notes/version',async r=>{if(!challenged){challenged=true;pauseSession=true;return r.fulfill({status:403,json:{error:'合成重新认证'}});}await r.continue();});
  await page.goto(app.url+'/#learning');await page.locator('.collection-load-error').filter({hasText:'读取超时'}).waitFor({timeout:11000});releasedSession();await page.locator('.collection-paper').waitFor();await page.unroute('**/api/session');await page.unroute('**/api/collection/notes/version');console.log('PASS auth handshake timeout/recovery');
  // Composition guard still blocks search navigation while keeping both editor and palette.
- await page.goto(app.url+'/#notes');await page.getByRole('button',{name:'记一条新念头',exact:true}).click();
+ await page.goto(app.url+'/#notes');await page.getByRole('button',{name:'新建普通便签',exact:true}).click();
  const editor=page.getByRole('textbox',{name:'随手记内容',exact:true});await editor.fill('保留的草稿');await editor.dispatchEvent('compositionstart',{data:'未完成'});
  await page.getByRole('button',{name:'搜索',exact:true}).click();await page.getByLabel('全局搜索').fill('安全定位622');await page.locator('.search-results[aria-busy="false"]').waitFor();await page.getByRole('dialog',{name:'搜索工作台'}).getByRole('button').filter({hasText:'安全定位622'}).click();
  assert.match(page.url(),/#notes$/);assert.equal(await page.getByRole('dialog',{name:'搜索工作台'}).count(),1);assert.match(await editor.innerText(),/保留的草稿/);await editor.dispatchEvent('compositionend',{data:'未完成'});await page.keyboard.press('Escape');

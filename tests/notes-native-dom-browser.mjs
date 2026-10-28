@@ -14,7 +14,7 @@ try{
   const context=await browser.newContext({viewport:{width:368,height:600}}),page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   try{
-   await page.goto(app.url+'/#/float');await page.getByRole('button',{name:'写一条'}).click();
+   await page.goto(app.url+'/#/float');await page.getByRole('button',{name:'新建普通便签',exact:true}).click();
    const input=page.getByRole('textbox',{name:'随手记内容'});await input.waitFor();const noteId=await input.evaluate(el=>el.closest('[data-note-id]').dataset.noteId);
    if(mode.startsWith('delete-all'))await page.keyboard.insertText('删除全部');
    await input.evaluate((el,mode)=>{
@@ -41,7 +41,7 @@ try{
  for(const mode of ['continuous-typing-history','multiline-delete-history','consecutive-composition']){
   const context=await browser.newContext({viewport:{width:368,height:600}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   try{
-   await page.goto(app.url+'/#/float');await page.getByRole('button',{name:'写一条'}).click();
+   await page.goto(app.url+'/#/float');await page.getByRole('button',{name:'新建普通便签',exact:true}).click();
    const input=page.getByRole('textbox',{name:'随手记内容'});await input.waitFor();
    const text=async expected=>{const visible=await input.innerText();assert.equal(visible==='\n'?'':visible,expected);assert.equal(await input.evaluate(el=>document.activeElement===el),true);assert.equal(await page.locator('.fn-panel').count(),1);};
    if(mode==='consecutive-composition'){

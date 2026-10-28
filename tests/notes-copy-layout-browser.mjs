@@ -14,7 +14,7 @@ try{
   assert.deepEqual(await metrics(pages[1]),await metrics(pages[0]));results.push(route+' '+width+': original card/header/body geometry, paper/text colors, tape and list rendering unchanged');
   if(route==='#notes'){
    const hit=await pages[1].locator('.sn-refined').evaluate(e=>{const b=e.getBoundingClientRect();return document.elementFromPoint(b.x+b.width/2,b.y+b.height/2)?.closest('.sn-refined')===e;});assert.ok(hit,'copy must not cover old refined action center');
-   for(const p of pages){await p.getByRole('button',{name:'记一条新念头'}).click();}
+   for(const p of pages){await p.getByRole('button',{name:/^(记一条新念头|新建普通便签)$/}).click();}
    assert.equal(await pages[1].getByRole('textbox',{name:'便签标题'}).count(),1);for(const p of pages)await p.getByRole('textbox',{name:'随手记内容'}).press('Escape');results.push(route+' '+width+': original entry retained; title field remains functional');
   }
   for(const p of pages)await p.locator('[data-note-id="layout-rich"] .sn-body').click();const toolbar=pages[1].getByRole('toolbar',{name:'随手记格式'});for(const label of ['无序列表','有序列表','任务列表'])assert.equal(await toolbar.getByRole('button',{name:label,exact:true}).count(),1);results.push(route+' '+width+': original bottom toolbar and list controls retained');

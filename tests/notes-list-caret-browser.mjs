@@ -14,7 +14,7 @@ try {
  for(const [kind,label] of [['ol','有序列表'],['ul','无序列表'],['task','任务列表']]) {
   const page=await browser.newPage({viewport:{width:368,height:600},reducedMotion:'reduce'});page.setDefaultTimeout(6000);
   try {
-   await page.goto(app.url+'/#/float');await page.getByRole('button',{name:'写一条'}).click();
+   await page.goto(app.url+'/#/float');await page.getByRole('button',{name:'新建普通便签',exact:true}).click();
    await page.getByRole('button',{name:label,exact:true}).click();
    await page.keyboard.insertText('第一项');await page.keyboard.press('Enter');
    const metrics=await page.getByRole('textbox',{name:'随手记内容'}).evaluate(root=>{

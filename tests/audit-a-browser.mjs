@@ -19,7 +19,7 @@ try{
   assert.equal((await app.repository.read()).notes.length,3,'恢复草稿不自动正式提交');
  }
  if(mode==='notes'){
-  await page.goto(app.url+'/#notes');await page.getByRole('button',{name:'记一条新念头',exact:true}).click();
+  await page.goto(app.url+'/#notes');await page.getByRole('button',{name:'新建普通便签',exact:true}).click();
   await page.getByRole('textbox',{name:'便签标题'}).fill('三类型草稿标题');
   await page.getByRole('textbox',{name:'随手记内容',exact:true}).fill('未提交的正文');
   await page.getByRole('button',{name:'世界总览',exact:true}).click();await page.getByRole('button',{name:/^随手记 \d/}).click();
@@ -36,7 +36,7 @@ try{
    await page.waitForFunction(id=>document.activeElement?.closest('[data-note-id]')?.dataset.noteId===id,'note-'+i);
    assert.equal(await page.getByRole('textbox',{name:'随手记内容',exact:true}).count(),0,'定位不自动编辑');
   }
-  await page.getByRole('button',{name:'记一条新念头',exact:true}).click();await page.getByRole('textbox',{name:'便签标题'}).fill('搜索时保留草稿');
+  await page.getByRole('button',{name:'新建普通便签',exact:true}).click();await page.getByRole('textbox',{name:'便签标题'}).fill('搜索时保留草稿');
   await page.getByRole('button',{name:'搜索',exact:true}).click();const dialog=page.getByRole('dialog',{name:'搜索工作台'});await dialog.getByRole('textbox').fill('标题专用词 plain');await dialog.getByRole('button').filter({hasText:'标题专用词 plain'}).click();
   assert.equal(await page.getByRole('textbox',{name:'便签标题'}).inputValue(),'搜索时保留草稿');await page.getByRole('textbox',{name:'随手记内容',exact:true}).focus();await page.keyboard.press('Escape');
   await page.waitForFunction(()=>document.activeElement?.closest('[data-note-id]')?.dataset.noteId==='note-0');

@@ -41,7 +41,7 @@ async function stored(id,predicate){for(let i=0;i<50;i++){if(predicate(await not
 try{
  for(const type of ['plain','todo','timeline']){
   await run(type+'-wall-create-edit-reopen',async p=>{
-   await p.goto(app.url+'/#notes');await p.getByRole('combobox',{name:'新便签类型'}).selectOption(type);await p.getByRole('button',{name:'记一条新念头',exact:true}).click();
+   await p.goto(app.url+'/#notes');await p.getByRole('button',{name:{plain:'新建普通便签',todo:'新建待办事项',timeline:'新建时间轴'}[type],exact:true}).click();
    await title(p).fill(type+'新增');await (type==='plain'?editor(p):editor(p).locator('[data-note-text]').first()).click();await p.keyboard.insertText(type+'正文');
    if(type==='timeline')await p.getByLabel('事件时间',{exact:true}).fill('2026-10-22T10:00');
    await p.getByRole('button',{name:'贴上',exact:true}).click();await editor(p).waitFor({state:'detached'});

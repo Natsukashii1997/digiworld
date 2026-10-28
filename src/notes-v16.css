@@ -114,11 +114,11 @@
 .notes-v16 .sn-pad:hover { border-color: color-mix(in srgb, var(--yellow) 55%, transparent); color: var(--text-2); }
 .notes-v16 .sn-pad-hint { display: inline-flex; align-items: center; gap: var(--s-2); font-size: var(--fs-read); }
 .notes-v16 .sn-pad-key { justify-self: end; font: 500 var(--fs-small) var(--mono); color: var(--faint); }
-/* 编辑中：唯一亮起来的便签（暖黄） */
+/* 编辑中：唯一亮起来的便签，按便签自己的颜色亮；新建便签没有颜色，仍是暖黄（用户 2026-10-28） */
 .notes-v16 .sn-pad.editing {
-  cursor: auto; border: 1px solid color-mix(in srgb, var(--yellow) 75%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--yellow) 18%, transparent), color-mix(in srgb, var(--yellow) 9%, transparent)), var(--panel-2);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--yellow) 10%, transparent), 0 24px 48px -24px color-mix(in srgb, var(--yellow) 45%, transparent);
+  cursor: auto; border: 1px solid color-mix(in srgb, var(--paper, var(--yellow)) 75%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--paper, var(--yellow)) 18%, transparent), color-mix(in srgb, var(--paper, var(--yellow)) 9%, transparent)), var(--panel-2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--paper, var(--yellow)) 10%, transparent), 0 24px 48px -24px color-mix(in srgb, var(--paper, var(--yellow)) 45%, transparent);
   color: var(--text);
 }
 .notes-v16 .sn-edit { display: grid; gap: var(--s-2); min-height: 120px; font-size: var(--fs-read); line-height: 1.65; outline: none; }
@@ -172,7 +172,6 @@
 .notes-v16 .sn-wall { grid-auto-rows: 8px; grid-auto-flow: row dense; align-items: start; }
 .notes-v16 .sn-cell { align-self: start; min-width: 0; }
 .notes-v16 .sn-cell.editing { grid-column: span 2; }
-.notes-v16 .sn-pad-enter { display:grid;align-content:space-between;gap:var(--s-5);width:100%;min-height:100%;text-align:left;background:none;border:0;color:inherit;font:inherit; }
 .notes-v16 .sn-line { display: flex; align-items: flex-start; min-height: 1.65em; }
 .notes-v16 .sn-line [data-note-text] { white-space: pre-wrap; overflow-wrap: anywhere; min-width:0; }
 .notes-v16 .sn-editable .sn-line [data-note-text] { flex:1; min-width:1px; min-height:1.65em; }
@@ -226,7 +225,6 @@
 @media(max-width:640px){.notes-v16 .sn-mobile-color {display:block;} .notes-v16 .sn-tools .sn-ink,.notes-v16 .sn-tools .sn-key {display:none;} .notes-v16 .sn-tools-end {gap:0;}}
 
 /* 确认稿布局与可访问点击区分别约束。 */
-.notes-v16 .sn-pad-enter { padding:0; min-height:0; height:100%; }
 .notes-v16 .sn-editor-host { display:grid; gap:var(--s-5); min-width:0; }
 .notes-v16 .sn-editable > div { display:grid; gap:var(--s-2); }
 .notes-v16 .sn-refined { padding:0; background:none; border:0; }
@@ -256,7 +254,6 @@
 
 .notes-v16 .sn-editable:focus-visible {outline:2px solid var(--cyan);outline-offset:4px;border-radius:var(--r-xs);}
 .notes-v16 .sn-body .sn-ul,.notes-v16 .sn-body .sn-ol {gap:0;}
-@media(min-width:761px){.notes-v16 .sn-pad:not(.editing) .sn-pad-enter {min-height:calc(150px - 2 * var(--s-5) - 3px);}}
 /* 少量便签按内容高度平衡两列；编辑时回到网格以保留跨列编辑卡。 */
 @media(min-width:761px){
  .notes-v16 .sn-wall.compact:not(:has(.sn-cell.editing)){display:block;columns:2;column-gap:var(--s-5)}
