@@ -45,3 +45,4 @@
 唯一下一步 / 建议接手者：无本轮后续；新清单随下次 5178 发布带上。
 
 本轮新坑：Safari「添加到程序坞」的网页应用不能改包内文件后重签（LaunchServices 校验模板应用签名，-10410），换图标只能贴自定义图标或让 Safari 重建。
+提升：已提升为全局 G-15（`/Users/nat/Documents/ChatGPT/个人/work/agent-kit/LESSONS.md`，agent-kit `011a196`）。
