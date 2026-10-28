@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目空间 · 七 · E 卡带电路</title>
+<!-- 样稿：项目空间五 · 图鉴（2026-10-28，方案 docs/product/2026-10-28-项目空间定位与重构方案.md）。侧栏与伙伴屏原样取自 4-1 稿，主区由本页脚本按真实只读数据画出；生成脚本不进仓库。 -->
+<link rel="stylesheet" href="../ui-v18/common.css"><link rel="stylesheet" href="../../../src/partner-lcd.css"><link rel="stylesheet" href="../../../src/scan-motion.css"><link rel="stylesheet" href="v19.css">
+<style>
+/* 项目空间七 · 卡带（6B 定稿后再优化）；前半沿用五号与六号的公共部分。沿用 common.css 令牌与 v19 做工：面板不透明、单层边框、硬边。
+   第三版原则：一块面板不套框；每张卡带只说一件要注意的事；灰色小字只留一级；青色 = 提交，紫色 = 技能。 */
+
+/* v19.css 的 .v19 .mark（收藏封面角标）会把侧栏品牌标拉成绝对定位，这里还原 */
+.g5 .brand .mark { position: static; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: var(--r-2); background: #0d1426; color: var(--orange); font: inherit; }
+.g5 .brand .mark svg { width: 26px; height: 26px; }
+
+.g5 .grow { flex: 1; }
+.g5 .lcd svg { --h: 18px; }
+.g5 .lcd.cyan { color: var(--cyan); }
+.g5 .lcd.violet { color: var(--violet); }
+.g5 .ibtn { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
+.g5 .ibtn svg { width: 15px; height: 15px; }
+.g5 .ibtn:hover { color: var(--text); box-shadow: inset 0 0 0 1px var(--line-3); }
+.g5 .bar { gap: 28px; margin-bottom: 22px; }
+.g5 .bar .ibtn + .ibtn { margin-left: -20px; }
+.g5 .counts { gap: 22px; }
+
+/* ---- 卡带：一行 7 盘，每盘两行：名字 / 要注意的一件事 ---- */
+.g5-carts { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.g5-cart { position: relative; display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 8px 8px; padding: 12px 10px 11px; text-align: left; color: var(--text); font: inherit; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--panel); cursor: pointer; }
+.g5-cart::before { content: ""; position: absolute; inset: -1px 10px auto 10px; height: 2px; border-radius: 0 0 2px 2px; background: var(--hue); opacity: 0.7; }
+.g5-cart:hover { border-color: var(--line-3); background: var(--panel-2); }
+.g5-cart:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.g5-cart[aria-selected="true"] { border-color: var(--orange); background: var(--panel-2); box-shadow: 0 8px 22px -14px rgba(255, 138, 36, 0.7); }
+.g5-cart[aria-selected="true"]::after { content: ""; position: absolute; left: 50%; bottom: -8px; width: 12px; height: 7px; margin-left: -6px; background: var(--orange); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.g5-mono { width: 26px; height: 26px; padding: 2px; border-radius: 6px; background: #05080f; box-shadow: inset 0 0 0 1px var(--line); color: var(--hue); }
+.g5-mono svg { display: block; width: 100%; height: 100%; }
+.g5-mono .off { opacity: 0.1; }
+.g5-cart .nm { display: flex; align-items: center; gap: 5px; min-width: 0; font: 700 13px/1.2 var(--sans); letter-spacing: -0.01em; }
+.g5-cart .nm b { min-width: 0; font-weight: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g5-cart .nm .pin { flex: none; width: 6px; height: 6px; border-radius: 1px; background: var(--orange-2); box-shadow: 0 0 5px rgba(255, 179, 92, 0.7); }
+.g5-cart .flag { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; min-width: 0; font: 500 11px var(--sans); color: var(--faint); white-space: nowrap; }
+.g5-cart .flag .led { flex: none; }
+.g5-cart .flag span { overflow: hidden; text-overflow: ellipsis; }
+.g5-cart .flag .warn { color: var(--yellow); }
+.g5-cart .flag .info { color: var(--text-2); }
+.g5-cart.press { animation: g5-press 0.24s steps(3) 1; }
+@keyframes g5-press { 0% { transform: translateY(0); } 50% { transform: translateY(2px); } 100% { transform: translateY(0); } }
+
+/* ---- 档案屏：一块面板，左右两栏，不再套框 ---- */
+.g5-screen { position: relative; scroll-margin-top: 64px; margin-top: 18px; padding: 26px 30px 28px; border: 1px solid var(--line-2); border-radius: var(--r-2); background: var(--m-screen); box-shadow: var(--m-screen-edge); overflow: hidden; }
+.g5-screen .scan { position: absolute; inset: 0 0 auto 0; height: 2px; background: color-mix(in srgb, var(--cyan) 70%, transparent); box-shadow: 0 0 12px var(--cyan); pointer-events: none; opacity: 0; }
+
+.g5-head { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; column-gap: 16px; align-items: start; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.g5-head .g5-mono { width: 48px; height: 48px; padding: 5px; }
+.g5-head h3 { font: 800 24px/1.2 var(--sans); }
+.g5-head .one { margin-top: 6px; max-width: 760px; font-size: 14.5px; line-height: 1.6; color: var(--text-2); }
+.g5-head .doc { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 8px; font-size: 12.5px; }
+.g5-head .doc button { min-height: 28px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; cursor: pointer; }
+.g5-head .doc button:hover, .g5-head .doc a:hover { color: var(--text); }
+.g5-head .doc a { color: var(--cyan); text-decoration: none; }
+.g5-head .doc .meta { color: var(--faint); font: 500 11px var(--mono); }
+.g5-head dl { grid-column: 2 / 3; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; margin-top: 10px; max-width: 760px; font-size: 13px; line-height: 1.6; }
+.g5-head dl[hidden] { display: none; }
+.g5-head dt { color: var(--faint); white-space: nowrap; }
+.g5-head dd { color: var(--text-2); }
+.g5-head .acts { display: flex; gap: 8px; }
+.g5 .btn { min-height: 36px; height: 36px; padding: 0 12px; font-size: 12.5px; cursor: pointer; font-family: var(--sans); background: transparent; }
+.g5 .btn[aria-pressed="true"] { color: var(--orange-2); border-color: rgba(255, 179, 92, 0.45); }
+
+.g5-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 36px; padding-top: 22px; }
+.g5-col + .g5-col { padding-left: 36px; margin-left: -36px; border-left: 1px solid var(--line); }
+.g5-col > h4 { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; font: 700 14px var(--sans); }
+.g5-col > h4 small { font: 500 11.5px var(--mono); color: var(--faint); }
+.g5-col > h4 .grow { flex: 1; }
+.g5-col > h4 .hint { font: 500 11.5px var(--sans); color: var(--yellow); }
+
+/* 现在 */
+.g5-now .ttl { font: 600 17px/1.5 var(--sans); color: var(--text); }
+.g5-now .src { margin-top: 4px; font: 500 11.5px var(--mono); color: var(--faint); }
+.g5-next { margin-top: 18px; padding: 2px 0 2px 14px; border-left: 2px solid var(--orange); }
+.g5-next .lb { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; font: 600 11.5px var(--sans); color: var(--orange-2); }
+.g5-next .lb .from { font: 500 11px var(--mono); color: var(--faint); }
+.g5-next .lb .from.warn { color: var(--yellow); }
+.g5-next p { margin-top: 4px; font: 500 15px/1.6 var(--sans); color: var(--text); min-height: 1.6em; }
+.g5-next p.none { color: var(--muted); font-size: 14px; }
+.g5-next p .caret { display: inline-block; width: 7px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--orange-2); }
+.g5-stats { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 22px; }
+.g5-stats div { display: grid; gap: 2px; }
+.g5-stats small { font: 500 11px var(--sans); color: var(--faint); }
+.g5-stats b { font: 700 16px var(--mono); color: var(--text); }
+.g5-stats b.warn { color: var(--yellow); }
+.g5-stats b.dim { color: var(--faint); }
+.g5-act { margin-top: 24px; }
+.g5-act .hd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font: 500 11px var(--mono); color: var(--faint); }
+.g5-act .hd b { color: var(--cyan); }
+.g5-act .hd .k { white-space: nowrap; }
+.g5-bars { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); align-items: end; gap: 3px; height: 52px; margin-top: 8px; }
+.g5-bars i { display: block; min-height: 2px; border-radius: 1px; background: rgba(140, 178, 255, 0.1); }
+.g5-bars i.on { background: var(--cyan); box-shadow: 0 0 5px rgba(77, 227, 255, 0.4); }
+.g5-bars i.today { outline: 1px solid rgba(255, 179, 92, 0.6); outline-offset: 1px; }
+.g5-axis { display: flex; justify-content: space-between; margin-top: 5px; font: 500 10px var(--mono); color: var(--faint); }
+
+/* 实战：紫色像素格，一格 = 一次调用 */
+.g5-fsum { display: flex; gap: 18px; margin: -6px 0 10px; font: 500 11.5px var(--sans); color: var(--muted); }
+.g5-fsum b { font: 700 15px var(--mono); color: var(--text); margin-right: 3px; }
+.g5-fsum .calls b { color: var(--violet); }
+.g5-skills { list-style: none; display: grid; }
+.g5-skills li { display: grid; grid-template-columns: minmax(0, 1fr) 118px 46px 64px; align-items: center; gap: 12px; min-height: 42px; padding: 0 4px; border-bottom: 1px solid rgba(140, 178, 255, 0.06); }
+.g5-skills li:last-child { border-bottom: 0; }
+.g5-skills .nm { min-width: 0; display: flex; align-items: baseline; gap: 8px; }
+.g5-skills .nm b { font: 600 13px var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g5-skills .nm small { font-size: 11px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g5-skills .pips { display: flex; align-items: center; gap: 2px; }
+.g5-skills .pips i { flex: none; width: 6px; height: 10px; border-radius: 1px; background: rgba(168, 145, 255, 0.12); }
+.g5-skills .pips i.on { background: var(--violet); box-shadow: 0 0 4px rgba(168, 145, 255, 0.5); }
+.g5-skills .pips em { margin-left: 3px; font: 600 10px var(--mono); font-style: normal; color: var(--violet); }
+.g5-skills .n { font: 600 13px var(--mono); color: var(--text); text-align: right; white-space: nowrap; }
+.g5-skills .n small { font: 500 10.5px var(--sans); color: var(--faint); }
+.g5-skills .st { justify-self: end; font: 500 11px var(--sans); color: var(--faint); white-space: nowrap; }
+.g5-skills .st .btn { min-height: 28px; height: 28px; padding: 0 9px; font-size: 12px; color: var(--cyan); border-color: rgba(77, 227, 255, 0.35); }
+.g5-skills .st .ok { color: var(--lcd); }
+@media (hover: hover) {
+  .g5-skills li .st .btn { display: none; }
+  .g5-skills li:hover .st .btn, .g5-skills li:focus-within .st .btn { display: inline-flex; }
+  .g5-skills li:hover .st .tag-off, .g5-skills li:focus-within .st .tag-off { display: none; }
+}
+@media (hover: none) { .g5-skills .st .tag-off { display: none; } }
+.g5-skills li.kept { background: rgba(166, 227, 110, 0.04); }
+.g5-more { display: inline-block; min-height: 36px; margin-top: 4px; padding: 0 4px; border: 0; background: none; color: var(--cyan); font: 500 12px var(--sans); cursor: pointer; }
+.g5-codex { margin-top: 8px; font-size: 11.5px; line-height: 1.6; color: var(--faint); }
+.g5-codex b { font-weight: 500; color: var(--muted); }
+.g5-empty { padding: 18px 0; font-size: 13px; line-height: 1.7; color: var(--muted); }
+.g5-empty b { display: block; color: var(--text-2); font-weight: 600; }
+.g5-receipt { min-height: 16px; margin-top: 8px; font: 600 11px var(--mono); color: var(--lcd); }
+.g5-receipt:empty { visibility: hidden; }
+
+/* 页脚与样稿说明 */
+.g5-foot { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 18px; font-size: 12px; }
+.g5-foot a, .g5-link { display: inline-flex; align-items: center; min-height: 32px; padding: 0; border: 0; background: none; color: var(--muted); font: inherit; text-decoration: none; cursor: pointer; }
+.g5-foot a:hover, .g5-link:hover { color: var(--text); }
+.g5-foot .sep { width: 1px; height: 12px; background: var(--line-2); }
+.g5-foot .g5-receipt { margin-top: 0; }
+.g5-draft { margin-top: 6px; font-size: 11.5px; line-height: 1.6; color: var(--faint); }
+.g5-draft .tag { display: inline-block; margin-right: 8px; padding: 0 6px; border-radius: 4px; background: rgba(255, 209, 102, 0.14); color: var(--yellow); font: 700 10.5px/18px var(--mono); }
+
+.g5-new { animation: g5-in 0.32s steps(4) 1; }
+@keyframes g5-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+@media (max-width: 1280px) {
+  .g5-carts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .g5-body { grid-template-columns: minmax(0, 1fr); }
+  .g5-col + .g5-col { margin: 26px 0 0; padding: 22px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+}
+@media (max-width: 760px) {
+  .g5 .counts { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 8px 16px; }
+  .g5 .cnt small { white-space: nowrap; }
+  .g5-carts { display: flex; gap: 8px; margin: 0 -16px; padding: 2px 16px 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; scrollbar-width: none; }
+  .g5-carts::-webkit-scrollbar { display: none; }
+  .g5-cart { flex: none; width: 150px; scroll-snap-align: start; }
+  .g5-screen { margin: 10px -16px 0; padding: 20px 16px 22px; border-radius: 0; border-left: 0; border-right: 0; }
+  .g5-head { grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; }
+  .g5-head .g5-mono { width: 40px; height: 40px; }
+  .g5-head h3 { font-size: 20px; }
+  .g5-head .acts { grid-column: 1 / -1; margin-top: 12px; }
+  .g5-head dl { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .g5-head dd { margin-bottom: 6px; }
+  .g5-stats { gap: 10px 22px; }
+  .g5-skills li { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: auto auto; gap: 4px 10px; padding: 8px 0; }
+  .g5-skills .nm { grid-column: 1; flex-direction: column; gap: 0; }
+  .g5-skills .pips { grid-column: 1 / -1; grid-row: 2; }
+  .g5-skills .n { grid-column: 2; grid-row: 1; }
+  .g5-skills .st { grid-column: 3; grid-row: 1; }
+  .g5-foot .sep { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .g5-cart.press, .g5-new { animation: none; }
+}
+
+/* ================= 第六轮三版：只做电脑宽度 ================= */
+.g5-cart .spark { display: flex; align-items: flex-end; gap: 2px; height: 26px; }
+.g5-cart .spark i { flex: 1; min-width: 3px; border-radius: 1px; background: rgba(140, 178, 255, 0.12); }
+.g5-cart .spark i.on { background: var(--cyan); box-shadow: 0 0 4px rgba(77, 227, 255, 0.4); }
+.g5-cart .reads { display: flex; gap: 14px; font: 500 11px var(--mono); color: var(--faint); }
+.g5-cart .reads b { color: var(--text); }
+.g5-cart .reads .sk b { color: var(--violet); }
+
+/* ---- A · 主卡：置顶项目做大卡，其余一行小卡 ---- */
+[data-v="a"] .g5-carts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+[data-v="a"] .g5-hero { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 12px; }
+[data-v="a"] .g5-rest { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 10px; }
+[data-v="a"] .g5-cart.hero { grid-template-columns: 64px minmax(0, 1fr) 150px; gap: 0 18px; align-items: center; min-height: 132px; padding: 20px 22px; border-color: var(--line-2);
+  background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--hue) 16%, transparent), transparent 55%), var(--m-panel); }
+[data-v="a"] .g5-cart.hero::before { inset: -1px 0 auto 0; height: 3px; border-radius: var(--r-2) var(--r-2) 0 0; opacity: 0.9; }
+[data-v="a"] .g5-cart.hero .g5-mono { width: 64px; height: 64px; padding: 7px; border-radius: 10px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue) 40%, transparent), 0 0 24px -8px var(--hue); }
+[data-v="a"] .g5-cart.hero .txt { display: grid; gap: 6px; min-width: 0; }
+[data-v="a"] .g5-cart.hero .nm { font-size: 21px; font-weight: 800; }
+[data-v="a"] .g5-cart.hero .nm .pin { width: 7px; height: 7px; }
+[data-v="a"] .g5-cart.hero .one { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-v="a"] .g5-cart.hero .flag { font-size: 12px; }
+[data-v="a"] .g5-cart.hero .hmeta { display: grid; gap: 10px; justify-items: stretch; }
+[data-v="a"] .g5-cart.hero .spark { height: 34px; }
+[data-v="a"] .g5-cart.hero .reads { justify-content: space-between; }
+[data-v="a"] .g5-cart.hero[aria-selected="true"] { box-shadow: 0 0 0 1px var(--orange), 0 14px 30px -16px rgba(255, 138, 36, 0.8); }
+
+/* ---- B · 卡带：6B 底子（上半截代表色标签，下半截机壳） ---- */
+[data-v="b"] .g5-carts { gap: 12px; padding-top: 6px; }
+[data-v="b"] .g5-cart.cart-b { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0; overflow: hidden; border: 1px solid var(--line-2); border-radius: 12px 12px 6px 6px; background: #0b1222; }
+[data-v="b"] .g5-cart.cart-b::before { display: none; }
+[data-v="b"] .cart-b .label { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 3px; margin: 8px 8px 0; padding: 12px 10px 12px; border-radius: 8px 8px 3px 3px;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.12) 0 1px, transparent 1px 4px),
+    linear-gradient(160deg, color-mix(in srgb, var(--hue) 34%, #0f1729), color-mix(in srgb, var(--hue) 12%, #0b1222));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue) 45%, transparent); }
+[data-v="b"] .cart-b .label .g5-mono { width: 44px; height: 44px; margin-bottom: 9px; padding: 5px; background: rgba(5, 8, 15, 0.85); }
+[data-v="b"] .cart-b .label .nm { font-size: 15px; font-weight: 800; color: #fff; }
+[data-v="b"] .cart-b .label .sub { font-size: 11px; color: color-mix(in srgb, var(--hue) 35%, #cfd8ef); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[data-v="b"] .cart-b .idx, [data-v="b"] .cart-b .foot { display: none; }
+[data-v="b"] .cart-b .cshell { position: relative; display: grid; gap: 8px; padding: 11px 12px 12px; background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(140, 178, 255, 0.03) 6px 7px); }
+[data-v="b"] .cart-b .cshell::before { content: ""; justify-self: center; width: 46%; height: 4px; margin: -4px 0 2px; border-radius: 0 0 3px 3px; background: #05080f; box-shadow: inset 0 1px 0 rgba(140, 178, 255, 0.12); }
+[data-v="b"] .cart-b .pwr { position: absolute; top: 6px; right: 10px; width: 6px; height: 6px; }
+[data-v="b"] .cart-b .reads { justify-content: space-between; }
+[data-v="b"] .g5-cart.cart-b[aria-selected="true"] { transform: translateY(-4px); border-color: var(--orange); box-shadow: 0 0 0 1px var(--orange), 0 16px 30px -14px rgba(255, 138, 36, 0.75); }
+[data-v="b"] .g5-cart.cart-b[aria-selected="true"]::after { bottom: -12px; }
+[data-v="b"] .g5-screen { margin-top: 24px; }
+
+/* 7A 精修：6B 原样，只加细节——机壳顶边高光、标签顶上一道代表色亮线、右上角名册编号、底边一道代表色收边；选中时标签发光 */
+[data-cart="1"] .g5-cart.cart-b { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07); }
+[data-cart="1"] .cart-b .label { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue) 45%, transparent), inset 0 2px 0 color-mix(in srgb, var(--hue) 75%, #fff); }
+[data-cart="1"] .cart-b .idx { display: block; position: absolute; top: 9px; right: 10px; font: 600 10px var(--mono); letter-spacing: 0.08em; color: color-mix(in srgb, var(--hue) 45%, #fff); opacity: 0.7; }
+[data-cart="1"] .cart-b .foot { display: block; height: 3px; margin: 0 14px; border-radius: 2px 2px 0 0; background: var(--hue); opacity: 0.55; }
+[data-cart="1"] .g5-cart.cart-b[aria-selected="true"] .label { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue) 70%, transparent), inset 0 2px 0 color-mix(in srgb, var(--hue) 75%, #fff), 0 0 18px -6px var(--hue); }
+[data-cart="1"] .g5-cart.cart-b[aria-selected="true"] .foot { opacity: 1; box-shadow: 0 0 8px var(--hue); }
+
+/* 7B 液晶窗：字母放进一块下沉的液晶窗（暗格可见、字发光），编号写成 No.01；机壳底部一排散热缝，两角各一颗螺丝 */
+[data-cart="2"] .cart-b .label .g5-mono { width: 52px; height: 44px; padding: 6px 7px; border-radius: 4px; background: #04070d; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.07); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--hue) 55%, transparent)); }
+[data-cart="2"] .cart-b .label .g5-mono .off { opacity: 0.2; }
+[data-cart="2"] .cart-b .idx { display: block; position: absolute; top: 14px; right: 10px; font: 600 10px var(--mono); color: color-mix(in srgb, var(--hue) 40%, #dfe6f7); opacity: 0.75; }
+[data-cart="2"] .cart-b .idx::before { content: "No."; opacity: 0.7; }
+[data-cart="2"] .cart-b .cshell { background:
+    radial-gradient(circle at 7px calc(100% - 7px), #05080f 0 2px, rgba(140, 178, 255, 0.18) 2px 2.6px, transparent 2.7px),
+    radial-gradient(circle at calc(100% - 7px) calc(100% - 7px), #05080f 0 2px, rgba(140, 178, 255, 0.18) 2px 2.6px, transparent 2.7px),
+    repeating-linear-gradient(90deg, transparent 0 6px, rgba(140, 178, 255, 0.03) 6px 7px); }
+[data-cart="2"] .cart-b .foot { display: block; justify-self: center; width: 46%; height: 7px; margin: -4px 0 9px; border-radius: 2px; background: repeating-linear-gradient(90deg, #04070d 0 2px, rgba(140, 178, 255, 0.16) 2px 3px, transparent 3px 5px); }
+[data-cart="2"] .g5-cart.cart-b[aria-selected="true"] .label .g5-mono { filter: drop-shadow(0 0 7px var(--hue)); }
+
+/* 7C 色壳：整盘机壳染成代表色暗调；标签下沿用两行像素棋盘格过渡（位图风抖动），底部一排代表色像素触点 */
+[data-cart="3"] .g5-cart.cart-b { --shell: color-mix(in srgb, var(--hue) 20%, #0f1729); border-color: color-mix(in srgb, var(--hue) 38%, #1f2a44); background: linear-gradient(180deg, var(--shell), color-mix(in srgb, var(--hue) 9%, #0b1222)); }
+[data-cart="3"] .cart-b .label { padding-bottom: 20px; border-radius: 8px 8px 0 0; box-shadow: inset 1px 0 0 color-mix(in srgb, var(--hue) 45%, transparent), inset -1px 0 0 color-mix(in srgb, var(--hue) 45%, transparent), inset 0 1px 0 color-mix(in srgb, var(--hue) 45%, transparent); }
+/* 两行 4px 像素棋盘格：标签色一格一格溶进机壳 */
+[data-cart="3"] .cart-b .label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 8px;
+  background: conic-gradient(transparent 25%, var(--shell) 0 50%, transparent 0 75%, var(--shell) 0) 0 0 / 8px 8px repeat-x; }
+[data-cart="3"] .cart-b .cshell { background: none; }
+[data-cart="3"] .cart-b .cshell::before { background: rgba(0, 0, 0, 0.45); }
+[data-cart="3"] .cart-b .idx { display: block; position: absolute; top: 9px; right: 10px; font: 600 10px var(--mono); color: #fff; opacity: 0.55; }
+[data-cart="3"] .cart-b .foot { display: block; justify-self: center; width: 58%; height: 5px; margin: -2px 0 8px; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--hue) 65%, #0b1222) 0 5px, transparent 5px 9px); }
+[data-cart="3"] .g5-cart.cart-b[aria-selected="true"] .foot { background: repeating-linear-gradient(90deg, var(--hue) 0 5px, transparent 5px 9px); filter: drop-shadow(0 0 3px var(--hue)); }
+
+/* ---- C · 名册栏：左边一列名册，右边档案 ---- */
+[data-v="c"] .g5-stage { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 0; align-items: start; }
+[data-v="c"] .g5-rack { position: relative; z-index: 1; padding: 14px 0 14px 14px; border: 1px solid var(--line-2); border-right: 0; border-radius: var(--r-2) 0 0 var(--r-2); background: var(--panel); }
+[data-v="c"] .g5-rack::before { content: "名册 · 7"; display: block; margin: 2px 0 10px 4px; font: 600 11px var(--mono); letter-spacing: 0.1em; color: var(--faint); }
+[data-v="c"] .g5-carts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+[data-v="c"] .g5-cart.row-c { grid-template-columns: 40px minmax(0, 1fr) 64px; gap: 0 12px; min-height: 66px; padding: 10px 14px 10px 12px; border: 1px solid transparent; border-right: 0; border-radius: 8px 0 0 8px; background: transparent; }
+[data-v="c"] .g5-cart.row-c::before { inset: 10px auto 10px -1px; width: 3px; height: auto; border-radius: 0 2px 2px 0; }
+[data-v="c"] .g5-cart.row-c:hover { background: rgba(140, 178, 255, 0.04); }
+[data-v="c"] .row-c .g5-mono { width: 40px; height: 40px; padding: 4px; }
+[data-v="c"] .row-c .txt { display: grid; gap: 5px; min-width: 0; }
+[data-v="c"] .row-c .nm { font-size: 15px; font-weight: 800; }
+[data-v="c"] .row-c .spark { height: 24px; }
+[data-v="c"] .g5-cart.row-c[aria-selected="true"] { margin-right: -1px; border-color: var(--orange); border-right: 0; background: #0a1224; box-shadow: none; }
+[data-v="c"] .g5-cart.row-c[aria-selected="true"]::after { display: none; }
+[data-v="c"] .g5-screen { margin-top: 0; min-height: 100%; border-radius: 0 var(--r-2) var(--r-2) var(--r-2); }
+[data-v="c"] .g5-body { grid-template-columns: minmax(0, 1fr); }
+[data-v="c"] .g5-col + .g5-col { margin: 26px 0 0; padding: 22px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+[data-v="c"] .g5-skills { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+[data-v="c"] .g5-skills li { grid-template-columns: minmax(0, 1fr) 118px 40px; }
+[data-v="c"] .g5-skills li .st { grid-column: 1 / -1; display: none; }
+[data-v="c"] .g5-skills li:hover .st, [data-v="c"] .g5-skills li:focus-within .st, [data-v="c"] .g5-skills li.kept .st { display: block; justify-self: start; margin: -6px 0 6px; }
+[data-v="c"] .g5-skills .nm small { display: none; }
+
+/* ================= 第七版档案屏：整宽分段 ================= */
+.g7-head { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; column-gap: 16px; align-items: start; }
+.g7-head .g5-mono { width: 52px; height: 52px; padding: 6px; }
+.g7-head h3 { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; font: 800 24px/1.2 var(--sans); }
+.g7-head h3 small { font: 500 12px var(--mono); color: var(--faint); }
+.g7-head .one { margin-top: 6px; font-size: 14.5px; line-height: 1.6; color: var(--text-2); }
+.g7-head .acts { display: flex; gap: 8px; }
+.g7-head .acts a.btn { display: inline-flex; align-items: center; color: var(--cyan); text-decoration: none; }
+.g7-head dl { grid-column: 2 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 36px; margin-top: 14px; }
+.g7-head dl div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; font-size: 13px; line-height: 1.65; }
+.g7-head dt { color: var(--faint); white-space: nowrap; }
+.g7-head dd { color: var(--text-2); }
+
+.g7-reads { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 24px; border: 1px solid var(--line); border-radius: 8px; background: rgba(5, 8, 15, 0.45); }
+.g7-reads > div { display: grid; align-content: start; gap: 8px; padding: 14px 18px 13px; }
+.g7-reads > div + div { border-left: 1px solid var(--line); }
+.g7-reads small { font: 500 11.5px var(--sans); color: var(--muted); }
+.g7-reads .lcd { color: var(--text); }
+.g7-reads .lcd svg { --h: 24px; }
+.g7-reads .lcd.warn { color: var(--yellow); }
+.g7-reads .lcd.cyan { color: var(--cyan); }
+.g7-reads .lcd.violet { color: var(--violet); }
+.g7-reads .dash { font: 700 22px/24px var(--mono); color: var(--faint); }
+.g7-reads em { min-height: 16px; font: 500 11px var(--sans); font-style: normal; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g7-reads .warn em { color: var(--yellow); }
+
+.g7-now { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 40px; margin-top: 26px; }
+.g7-now > div + div { padding-left: 40px; margin-left: -40px; border-left: 1px solid var(--line); }
+.g7-now h4, .g7-sec h4 { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; font: 700 14px var(--sans); color: var(--text); }
+.g7-now .ttl { font: 600 17px/1.5 var(--sans); }
+.g7-now .src { margin-top: 6px; font: 500 11.5px var(--mono); color: var(--faint); }
+.g7-now .nx p[data-g5-next] { font: 500 15px/1.6 var(--sans); min-height: 1.6em; }
+.g7-now .nx p.none { color: var(--muted); font-size: 14px; }
+.g7-now .nx p .caret { display: inline-block; width: 7px; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--orange-2); }
+.g7-now .nx h4 { color: var(--orange-2); }
+.g7-now .tag { padding: 0 6px; border-radius: 4px; background: rgba(255, 209, 102, 0.14); color: var(--yellow); font: 600 11px/18px var(--sans); }
+
+.g7-sec { margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--line); }
+.g7-sec h4 .sum { font: 500 12px var(--sans); color: var(--muted); }
+.g7-sec h4 .sum b { font: 700 13px var(--mono); color: var(--text); }
+.g7-sec h4 .sum b.v { color: var(--violet); }
+.g7-sec h4 .grow { flex: 1; }
+.g7-sec h4 .gap { font: 500 12px var(--sans); color: var(--yellow); }
+
+/* 提交图：整宽 30 列，周一一道分隔，峰值标数，今天在轴上标橙 */
+.g7-chart .plot { position: relative; display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); align-items: end; height: 132px; margin-top: 16px; padding: 0 2px; border-bottom: 1px solid var(--line-2);
+  background: repeating-linear-gradient(180deg, transparent 0 32px, rgba(140, 178, 255, 0.05) 32px 33px); }
+.g7-chart .plot i { position: relative; display: block; height: 100%; }
+.g7-chart .plot i::before { content: ""; position: absolute; left: 22%; right: 22%; bottom: 0; height: var(--h); min-height: 2px; border-radius: 2px 2px 0 0; background: rgba(140, 178, 255, 0.12); }
+.g7-chart .plot i.on::before { background: linear-gradient(180deg, #8af0ff, var(--cyan) 35%); box-shadow: 0 0 6px rgba(77, 227, 255, 0.35); }
+.g7-chart .plot i.wk { border-left: 1px dashed rgba(140, 178, 255, 0.12); }
+.g7-chart .plot i b { position: absolute; left: 0; right: 0; bottom: calc(var(--h) + 4px); text-align: center; font: 700 11px var(--mono); color: var(--cyan); }
+.g7-chart .axis { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); margin-top: 7px; padding: 0 2px; font: 500 10.5px var(--mono); color: var(--faint); }
+.g7-chart .axis span { white-space: nowrap; overflow: visible; }
+.g7-chart .axis span:last-child { justify-self: end; color: var(--orange-2); }
+.g7-chart .plot i.today::before { box-shadow: 0 0 0 1px rgba(255, 179, 92, 0.7), 0 0 6px rgba(77, 227, 255, 0.35); }
+
+/* 实战：两列 */
+.g7-skills { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 40px; }
+.g7-skills li { grid-template-columns: minmax(0, 1fr) 118px 44px 52px; border-bottom: 1px solid rgba(140, 178, 255, 0.06); }
+.g7-skills li:nth-last-child(-n+2) { border-bottom: 0; }
+.g7-skills .st .last { font: 500 11px var(--mono); color: var(--faint); }
+@media (hover: hover) {
+  .g7-skills li:hover .st .last, .g7-skills li:focus-within .st .last { display: none; }
+}
+@media (hover: none) { .g7-skills .st .btn { display: none; } }
+.g7-codex { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 10px; font: 500 11.5px var(--mono); color: var(--faint); }
+.g7-codex b { font: 600 12px var(--sans); color: var(--muted); }
+.g7-codex span { font: 500 11px var(--sans); }
+
+@media (max-width: 760px) {
+  [data-v="b"] .g5-carts { gap: 10px; padding-top: 8px; padding-bottom: 18px; }  /* 手机：留出选中上浮和三角的位置 */
+  [data-v="b"] .g5-cart.cart-b { width: 148px; }
+  [data-v="b"] .g5-screen { margin-top: 6px; }
+  .g7-head { grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; }
+  .g7-head .g5-mono { width: 40px; height: 40px; padding: 4px; }
+  .g7-head h3 { font-size: 20px; }
+  .g7-head .acts { grid-column: 1 / -1; grid-row: 3; margin-top: 12px; }
+  .g7-head dl { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); margin-top: 12px; }
+  .g7-reads { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g7-reads > div { padding: 12px 14px; }
+  .g7-reads > div + div { border-left: 0; }
+  .g7-reads > div:nth-child(even) { border-left: 1px solid var(--line); }
+  .g7-reads > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .g7-reads > div:last-child { grid-column: 1 / -1; }
+  .g7-now { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .g7-now > div + div { padding: 20px 0 0; margin: 0; border-left: 0; border-top: 1px solid var(--line); }
+  .g7-sec h4 { flex-wrap: wrap; }
+  .g7-chart .plot { height: 112px; }
+  .g7-chart .plot i.wk { border-left: 0; }
+  .g7-chart .axis span:not(:first-child):not(:last-child):nth-child(odd) { visibility: hidden; }
+  .g7-chart .axis span:nth-last-child(-n+5):not(:last-child) { visibility: hidden; }  /* 手机上今天前几天的日期会和「今天」挤在一起 */
+  .g7-skills { grid-template-columns: minmax(0, 1fr); }
+  .g7-skills li:nth-last-child(2) { border-bottom: 1px solid rgba(140, 178, 255, 0.06); }
+}
+
+/* ================= 第十轮：三个差异大的卡带（cart-x，不用 6B 机壳） ================= */
+[data-v="b"] .g5-cart.cart-x { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 0; padding: 0; }
+[data-v="b"] .g5-cart.cart-x::before { display: none; }
+.cart-x .nm { font-size: 15px; font-weight: 800; }
+.cart-x .sub { display: block; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cart-x .reads { justify-content: space-between; }
+.cart-x .pwr { position: absolute; width: 6px; height: 6px; }
+
+/* 7D 像素：8-bit 精灵图。纯色机壳、四角切像素台阶（右上多切一阶），两块黑窗，硬阴影不模糊 */
+[data-cart="4"] .g5-carts { gap: 14px; padding: 6px 6px 8px 0; }
+[data-cart="4"] .g5-cart.px { position: relative; padding: 0 6px 6px; border: 0; border-radius: 0; background: color-mix(in srgb, var(--hue) 58%, #0b1222); box-shadow: 4px 4px 0 #02040a; }
+[data-cart="4"] .g5-cart.px:hover { background: color-mix(in srgb, var(--hue) 68%, #0b1222); }
+[data-cart="4"] .px .pxc { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    linear-gradient(var(--bg), var(--bg)) 0 0 / 4px 4px no-repeat, linear-gradient(var(--bg), var(--bg)) 0 100% / 4px 4px no-repeat,
+    linear-gradient(var(--bg), var(--bg)) 100% 100% / 4px 4px no-repeat,
+    linear-gradient(var(--bg), var(--bg)) 100% 0 / 12px 4px no-repeat, linear-gradient(var(--bg), var(--bg)) 100% 4px / 8px 4px no-repeat, linear-gradient(var(--bg), var(--bg)) 100% 8px / 4px 4px no-repeat; }
+[data-cart="4"] .px .grip { display: grid; justify-items: center; gap: 2px; padding: 7px 0 6px; }
+[data-cart="4"] .px .grip i { width: 40%; height: 2px; background: rgba(0, 0, 0, 0.35); }
+[data-cart="4"] .px .win, [data-cart="4"] .px .strip { position: relative; display: grid; background: #05080f; box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.7), inset -2px -2px 0 rgba(255, 255, 255, 0.07); }
+[data-cart="4"] .px .win { gap: 3px; padding: 12px 10px 11px; }
+[data-cart="4"] .px .win .g5-mono { width: 52px; height: 42px; margin-bottom: 8px; padding: 0; background: none; box-shadow: none; }
+[data-cart="4"] .px .win .nm { color: #fff; }
+[data-cart="4"] .px .win .sub { color: color-mix(in srgb, var(--hue) 55%, #cfd8ef); }
+[data-cart="4"] .px .strip { gap: 7px; margin-top: 6px; padding: 10px 10px 9px; }
+[data-cart="4"] .px .pwr { top: 6px; right: 6px; border-radius: 0; }
+[data-cart="4"] .px .flag { padding-right: 10px; }
+[data-cart="4"] .g5-cart.px[aria-selected="true"] { transform: translate(-2px, -4px); background: color-mix(in srgb, var(--hue) 72%, #0b1222); box-shadow: 6px 6px 0 var(--orange); }
+[data-cart="4"] .g5-cart.px[aria-selected="true"]::after { bottom: -18px; border-radius: 0; }
+
+/* 7E 电路：烟色半透明壳，透出里面的代表色电路板，字母是板上的芯片，底边一排代表色触点 */
+[data-cart="5"] .g5-cart.pcb { position: relative; padding: 8px 8px 0; overflow: hidden; border: 1px solid rgba(180, 200, 255, 0.18); border-radius: 14px 14px 6px 6px;
+  background: linear-gradient(180deg, rgba(46, 60, 96, 0.5), rgba(14, 20, 36, 0.85)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+[data-cart="5"] .g5-cart.pcb:hover { border-color: rgba(180, 200, 255, 0.3); background: linear-gradient(180deg, rgba(56, 72, 112, 0.55), rgba(16, 23, 42, 0.85)); }
+[data-cart="5"] .pcb .board { position: relative; display: grid; align-content: start; height: 136px; padding: 12px 10px 10px; overflow: hidden; border-radius: 8px 8px 4px 4px; color: var(--hue);
+  background: radial-gradient(120% 90% at 30% 20%, color-mix(in srgb, var(--hue) 20%, #0a161c), color-mix(in srgb, var(--hue) 7%, #070d18));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue) 30%, transparent); }
+[data-cart="5"] .pcb .board::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255, 255, 255, 0.08) 0 24%, transparent 24%); pointer-events: none; }
+[data-cart="5"] .pcb .trace { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.24; }
+[data-cart="5"] .pcb .chip { position: relative; isolation: isolate; display: grid; place-items: center; width: 54px; height: 44px; border-radius: 3px; background: #05080f; box-shadow: 0 0 0 1px color-mix(in srgb, var(--hue) 55%, transparent), 0 0 16px -4px var(--hue); }
+[data-cart="5"] .pcb .chip::before, [data-cart="5"] .pcb .chip::after { content: ""; position: absolute; top: 7px; bottom: 7px; width: 4px; background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--hue) 50%, #9aa6c0) 0 2px, transparent 2px 5px); }
+[data-cart="5"] .pcb .chip::before { left: -4px; }
+[data-cart="5"] .pcb .chip::after { right: -4px; }
+[data-cart="5"] .pcb .chip .g5-mono { width: 40px; height: 32px; padding: 0; background: none; box-shadow: none; }
+[data-cart="5"] .pcb .tx { position: relative; display: grid; gap: 3px; margin-top: 12px; }
+[data-cart="5"] .pcb .tx .nm { color: #fff; }
+[data-cart="5"] .pcb .tx .sub { color: color-mix(in srgb, var(--hue) 45%, #cfd8ef); }
+[data-cart="5"] .pcb .no { position: absolute; top: 10px; right: 10px; font: 600 10px var(--mono); color: var(--hue); opacity: 0.8; }
+[data-cart="5"] .pcb .cshell { position: relative; display: grid; gap: 7px; padding: 11px 4px 9px; }
+[data-cart="5"] .pcb .pwr { top: 13px; right: 4px; }
+[data-cart="5"] .pcb .flag { padding-right: 12px; }
+[data-cart="5"] .pcb .pins { height: 8px; margin: 0 10px; background: repeating-linear-gradient(90deg, var(--hue) 0 4px, transparent 4px 7px); opacity: 0.45; }
+[data-cart="5"] .g5-cart.pcb[aria-selected="true"] { transform: translateY(-4px); border-color: var(--orange); background: linear-gradient(180deg, rgba(56, 72, 112, 0.6), rgba(16, 23, 42, 0.9)); box-shadow: 0 0 0 1px var(--orange), 0 16px 30px -14px rgba(255, 138, 36, 0.75); }
+/* 选中：走线常亮一圈光晕（静态）；选中那一刻一道电流沿走线按帧跑一遍（一次到位，不常驻循环） */
+[data-cart="5"] .pcb .flow { display: none; stroke: color-mix(in srgb, var(--hue) 35%, #fff); }
+[data-cart="5"] .g5-cart.pcb[aria-selected="true"] .trace { opacity: 0.9; filter: drop-shadow(0 0 1.5px var(--hue)) drop-shadow(0 0 5px color-mix(in srgb, var(--hue) 70%, transparent)); }
+[data-cart="5"] .g5-cart.pcb[aria-selected="true"] .lines { opacity: 0.75; }
+[data-cart="5"] .g5-cart.pcb[aria-selected="true"] .vias { fill: color-mix(in srgb, var(--hue) 45%, #fff); }
+[data-cart="5"] .g5-cart.pcb[aria-selected="true"] .board { background: radial-gradient(120% 90% at 30% 20%, color-mix(in srgb, var(--hue) 28%, #0a161c), color-mix(in srgb, var(--hue) 10%, #070d18)); }
+[data-cart="5"] .g5-cart.pcb[aria-selected="true"] .flow { display: inline; }
+[data-cart="5"] .g5-cart.pcb[aria-selected="true"] .flow path { stroke-dasharray: 18 200; stroke-dashoffset: 18; animation: g7-flow 0.72s steps(12) 1 both; }
+@keyframes g7-flow { from { stroke-dashoffset: 18; } to { stroke-dashoffset: -100; } }
+@media (prefers-reduced-motion: reduce) { [data-cart="5"] .pcb .flow { display: none !important; } }
+[data-cart="5"] .g5-cart.pcb[aria-selected="true"] .pins { opacity: 1; filter: drop-shadow(0 0 3px var(--hue)); }
+[data-cart="5"] .g5-cart.pcb[aria-selected="true"]::after { bottom: -12px; }
+
+/* 7F 海报：不要机壳框，上面三分之二是一整块代表色海报，超大像素字母做底纹，深色字压在色块上，斜切进下方黑底 */
+[data-cart="6"] .g5-cart.poster { position: relative; overflow: hidden; border: 0; border-radius: 10px; background: #0c1324; box-shadow: inset 0 0 0 1px var(--line-2); }
+[data-cart="6"] .g5-cart.poster:hover { background: #111a30; }
+[data-cart="6"] .poster .art { position: relative; height: 152px; overflow: hidden; clip-path: polygon(0 0, 100% 0, 100% 82%, 0 100%);
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 3px),
+    linear-gradient(155deg, color-mix(in srgb, var(--hue) 92%, #fff) 0%, color-mix(in srgb, var(--hue) 62%, #0b1222) 100%); }
+[data-cart="6"] .poster .big { position: absolute; top: 8px; right: -22px; width: 128px; height: 100px; color: rgba(5, 9, 20, 0.22); }
+[data-cart="6"] .poster .big svg { display: block; width: 100%; height: 100%; }
+[data-cart="6"] .poster .big .off { opacity: 0; }
+[data-cart="6"] .poster .no { position: absolute; top: 10px; left: 12px; font: 700 11px var(--mono); letter-spacing: 0.08em; color: rgba(5, 9, 20, 0.7); }
+[data-cart="6"] .poster .tx { position: absolute; left: 12px; right: 12px; bottom: 30px; display: grid; gap: 2px; }
+[data-cart="6"] .poster .tx .nm { font-size: 17px; color: #060b17; }
+[data-cart="6"] .poster .tx .nm .pin { background: #060b17; box-shadow: none; }
+[data-cart="6"] .poster .tx .sub { color: rgba(6, 11, 23, 0.72); font-weight: 600; }
+[data-cart="6"] .poster .cshell { position: relative; display: grid; gap: 7px; padding: 4px 12px 12px; }
+[data-cart="6"] .poster .pwr { top: -6px; right: 12px; }
+[data-cart="6"] .poster .flag { padding-right: 12px; }
+[data-cart="6"] .g5-cart.poster[aria-selected="true"] { transform: translateY(-4px); background: #111a30; box-shadow: 0 0 0 2px var(--orange), 0 16px 30px -14px rgba(255, 138, 36, 0.75); }
+[data-cart="6"] .g5-cart.poster[aria-selected="true"]::after { bottom: -12px; }
+
+@media (max-width: 760px) {
+  [data-v="b"] .g5-cart.cart-x { width: 148px; }
+}
+
+</style>
+</head>
+<body class="v19 pj g5 m390" data-v="b" data-cart="5">
+<aside class="side"><div class="brand"><span class="mark"><svg class="" viewBox="0 0 40 40" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" style="color:#ff8a24;--crest-color:#ff8a24" aria-hidden="true"><path d="M20 1 L22.6 9.5 H17.4 Z M20 39 L22.6 30.5 H17.4 Z M1 20 L9.5 17.4 V22.6 Z M39 20 L30.5 17.4 V22.6 Z M7 7 L10.2 12.6 L12.6 10.2 Z M33 7 L29.8 12.6 L27.4 10.2 Z M7 33 L10.2 27.4 L12.6 29.8 Z M33 33 L29.8 27.4 L27.4 29.8 Z"></path><circle cx="20" cy="20" r="7.5"></circle><circle cx="20" cy="20" r="3"></circle></svg></span><div><b>数码世界</b><small><span class="lcd-num "><svg width="123.2" height="11.200000000000001" viewBox="0 0 123.2 11.200000000000001" role="img" aria-label="DIGITAL·WORLD"><g fill="currentColor" opacity=".1"><rect x="4.800000000000001" y="0" width="1.25" height="1.25" style="--c:3"></rect><rect x="6.4" y="0" width="1.25" height="1.25" style="--c:4"></rect><rect x="1.6" y="1.6" width="1.25" height="1.25" style="--c:1"></rect><rect x="3.2" y="1.6" width="1.25" height="1.25" style="--c:2"></rect><rect x="6.4" y="1.6" width="1.25" height="1.25" style="--c:4"></rect><rect x="1.6" y="3.2" width="1.25" height="1.25" style="--c:1"></rect><rect x="3.2" y="3.2" width="1.25" height="1.25" style="--c:2"></rect><rect x="4.800000000000001" y="3.2" width="1.25" height="1.25" style="--c:3"></rect><rect x="1.6" y="4.800000000000001" width="1.25" height="1.25" style="--c:1"></rect><rect x="3.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:2"></rect><rect x="4.800000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:3"></rect><rect x="1.6" y="6.4" width="1.25" height="1.25" style="--c:1"></rect><rect x="3.2" y="6.4" width="1.25" height="1.25" style="--c:2"></rect><rect x="4.800000000000001" y="6.4" width="1.25" height="1.25" style="--c:3"></rect><rect x="1.6" y="8" width="1.25" height="1.25" style="--c:1"></rect><rect x="3.2" y="8" width="1.25" height="1.25" style="--c:2"></rect><rect x="6.4" y="8" width="1.25" height="1.25" style="--c:4"></rect><rect x="4.800000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:3"></rect><rect x="6.4" y="9.600000000000001" width="1.25" height="1.25" style="--c:4"></rect><rect x="9.600000000000001" y="0" width="1.25" height="1.25" style="--c:6"></rect><rect x="16" y="0" width="1.25" height="1.25" style="--c:10"></rect><rect x="9.600000000000001" y="1.6" width="1.25" height="1.25" style="--c:6"></rect><rect x="11.200000000000001" y="1.6" width="1.25" height="1.25" style="--c:7"></rect><rect x="14.4" y="1.6" width="1.25" height="1.25" style="--c:9"></rect><rect x="16" y="1.6" width="1.25" height="1.25" style="--c:10"></rect><rect x="9.600000000000001" y="3.2" width="1.25" height="1.25" style="--c:6"></rect><rect x="11.200000000000001" y="3.2" width="1.25" height="1.25" style="--c:7"></rect><rect x="14.4" y="3.2" width="1.25" height="1.25" style="--c:9"></rect><rect x="16" y="3.2" width="1.25" height="1.25" style="--c:10"></rect><rect x="9.600000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:6"></rect><rect x="11.200000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:7"></rect><rect x="14.4" y="4.800000000000001" width="1.25" height="1.25" style="--c:9"></rect><rect x="16" y="4.800000000000001" width="1.25" height="1.25" style="--c:10"></rect><rect x="9.600000000000001" y="6.4" width="1.25" height="1.25" style="--c:6"></rect><rect x="11.200000000000001" y="6.4" width="1.25" height="1.25" style="--c:7"></rect><rect x="14.4" y="6.4" width="1.25" height="1.25" style="--c:9"></rect><rect x="16" y="6.4" width="1.25" height="1.25" style="--c:10"></rect><rect x="9.600000000000001" y="8" width="1.25" height="1.25" style="--c:6"></rect><rect x="11.200000000000001" y="8" width="1.25" height="1.25" style="--c:7"></rect><rect x="14.4" y="8" width="1.25" height="1.25" style="--c:9"></rect><rect x="16" y="8" width="1.25" height="1.25" style="--c:10"></rect><rect x="9.600000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:6"></rect><rect x="16" y="9.600000000000001" width="1.25" height="1.25" style="--c:10"></rect><rect x="19.200000000000003" y="0" width="1.25" height="1.25" style="--c:12"></rect><rect x="25.6" y="0" width="1.25" height="1.25" style="--c:16"></rect><rect x="20.8" y="1.6" width="1.25" height="1.25" style="--c:13"></rect><rect x="22.400000000000002" y="1.6" width="1.25" height="1.25" style="--c:14"></rect><rect x="24" y="1.6" width="1.25" height="1.25" style="--c:15"></rect><rect x="20.8" y="3.2" width="1.25" height="1.25" style="--c:13"></rect><rect x="22.400000000000002" y="3.2" width="1.25" height="1.25" style="--c:14"></rect><rect x="24" y="3.2" width="1.25" height="1.25" style="--c:15"></rect><rect x="25.6" y="3.2" width="1.25" height="1.25" style="--c:16"></rect><rect x="20.8" y="4.800000000000001" width="1.25" height="1.25" style="--c:13"></rect><rect x="20.8" y="6.4" width="1.25" height="1.25" style="--c:13"></rect><rect x="22.400000000000002" y="6.4" width="1.25" height="1.25" style="--c:14"></rect><rect x="24" y="6.4" width="1.25" height="1.25" style="--c:15"></rect><rect x="20.8" y="8" width="1.25" height="1.25" style="--c:13"></rect><rect x="22.400000000000002" y="8" width="1.25" height="1.25" style="--c:14"></rect><rect x="24" y="8" width="1.25" height="1.25" style="--c:15"></rect><rect x="19.200000000000003" y="9.600000000000001" width="1.25" height="1.25" style="--c:12"></rect><rect x="28.8" y="0" width="1.25" height="1.25" style="--c:18"></rect><rect x="35.2" y="0" width="1.25" height="1.25" style="--c:22"></rect><rect x="28.8" y="1.6" width="1.25" height="1.25" style="--c:18"></rect><rect x="30.400000000000002" y="1.6" width="1.25" height="1.25" style="--c:19"></rect><rect x="33.6" y="1.6" width="1.25" height="1.25" style="--c:21"></rect><rect x="35.2" y="1.6" width="1.25" height="1.25" style="--c:22"></rect><rect x="28.8" y="3.2" width="1.25" height="1.25" style="--c:18"></rect><rect x="30.400000000000002" y="3.2" width="1.25" height="1.25" style="--c:19"></rect><rect x="33.6" y="3.2" width="1.25" height="1.25" style="--c:21"></rect><rect x="35.2" y="3.2" width="1.25" height="1.25" style="--c:22"></rect><rect x="28.8" y="4.800000000000001" width="1.25" height="1.25" style="--c:18"></rect><rect x="30.400000000000002" y="4.800000000000001" width="1.25" height="1.25" style="--c:19"></rect><rect x="33.6" y="4.800000000000001" width="1.25" height="1.25" style="--c:21"></rect><rect x="35.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:22"></rect><rect x="28.8" y="6.4" width="1.25" height="1.25" style="--c:18"></rect><rect x="30.400000000000002" y="6.4" width="1.25" height="1.25" style="--c:19"></rect><rect x="33.6" y="6.4" width="1.25" height="1.25" style="--c:21"></rect><rect x="35.2" y="6.4" width="1.25" height="1.25" style="--c:22"></rect><rect x="28.8" y="8" width="1.25" height="1.25" style="--c:18"></rect><rect x="30.400000000000002" y="8" width="1.25" height="1.25" style="--c:19"></rect><rect x="33.6" y="8" width="1.25" height="1.25" style="--c:21"></rect><rect x="35.2" y="8" width="1.25" height="1.25" style="--c:22"></rect><rect x="28.8" y="9.600000000000001" width="1.25" height="1.25" style="--c:18"></rect><rect x="35.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:22"></rect><rect x="38.400000000000006" y="1.6" width="1.25" height="1.25" style="--c:24"></rect><rect x="40" y="1.6" width="1.25" height="1.25" style="--c:25"></rect><rect x="43.2" y="1.6" width="1.25" height="1.25" style="--c:27"></rect><rect x="44.800000000000004" y="1.6" width="1.25" height="1.25" style="--c:28"></rect><rect x="38.400000000000006" y="3.2" width="1.25" height="1.25" style="--c:24"></rect><rect x="40" y="3.2" width="1.25" height="1.25" style="--c:25"></rect><rect x="43.2" y="3.2" width="1.25" height="1.25" style="--c:27"></rect><rect x="44.800000000000004" y="3.2" width="1.25" height="1.25" style="--c:28"></rect><rect x="38.400000000000006" y="4.800000000000001" width="1.25" height="1.25" style="--c:24"></rect><rect x="40" y="4.800000000000001" width="1.25" height="1.25" style="--c:25"></rect><rect x="43.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:27"></rect><rect x="44.800000000000004" y="4.800000000000001" width="1.25" height="1.25" style="--c:28"></rect><rect x="38.400000000000006" y="6.4" width="1.25" height="1.25" style="--c:24"></rect><rect x="40" y="6.4" width="1.25" height="1.25" style="--c:25"></rect><rect x="43.2" y="6.4" width="1.25" height="1.25" style="--c:27"></rect><rect x="44.800000000000004" y="6.4" width="1.25" height="1.25" style="--c:28"></rect><rect x="38.400000000000006" y="8" width="1.25" height="1.25" style="--c:24"></rect><rect x="40" y="8" width="1.25" height="1.25" style="--c:25"></rect><rect x="43.2" y="8" width="1.25" height="1.25" style="--c:27"></rect><rect x="44.800000000000004" y="8" width="1.25" height="1.25" style="--c:28"></rect><rect x="38.400000000000006" y="9.600000000000001" width="1.25" height="1.25" style="--c:24"></rect><rect x="40" y="9.600000000000001" width="1.25" height="1.25" style="--c:25"></rect><rect x="43.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:27"></rect><rect x="44.800000000000004" y="9.600000000000001" width="1.25" height="1.25" style="--c:28"></rect><rect x="48" y="0" width="1.25" height="1.25" style="--c:30"></rect><rect x="54.400000000000006" y="0" width="1.25" height="1.25" style="--c:34"></rect><rect x="49.6" y="1.6" width="1.25" height="1.25" style="--c:31"></rect><rect x="51.2" y="1.6" width="1.25" height="1.25" style="--c:32"></rect><rect x="52.800000000000004" y="1.6" width="1.25" height="1.25" style="--c:33"></rect><rect x="49.6" y="3.2" width="1.25" height="1.25" style="--c:31"></rect><rect x="51.2" y="3.2" width="1.25" height="1.25" style="--c:32"></rect><rect x="52.800000000000004" y="3.2" width="1.25" height="1.25" style="--c:33"></rect><rect x="49.6" y="6.4" width="1.25" height="1.25" style="--c:31"></rect><rect x="51.2" y="6.4" width="1.25" height="1.25" style="--c:32"></rect><rect x="52.800000000000004" y="6.4" width="1.25" height="1.25" style="--c:33"></rect><rect x="49.6" y="8" width="1.25" height="1.25" style="--c:31"></rect><rect x="51.2" y="8" width="1.25" height="1.25" style="--c:32"></rect><rect x="52.800000000000004" y="8" width="1.25" height="1.25" style="--c:33"></rect><rect x="49.6" y="9.600000000000001" width="1.25" height="1.25" style="--c:31"></rect><rect x="51.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:32"></rect><rect x="52.800000000000004" y="9.600000000000001" width="1.25" height="1.25" style="--c:33"></rect><rect x="59.2" y="0" width="1.25" height="1.25" style="--c:37"></rect><rect x="60.800000000000004" y="0" width="1.25" height="1.25" style="--c:38"></rect><rect x="62.400000000000006" y="0" width="1.25" height="1.25" style="--c:39"></rect><rect x="64" y="0" width="1.25" height="1.25" style="--c:40"></rect><rect x="59.2" y="1.6" width="1.25" height="1.25" style="--c:37"></rect><rect x="60.800000000000004" y="1.6" width="1.25" height="1.25" style="--c:38"></rect><rect x="62.400000000000006" y="1.6" width="1.25" height="1.25" style="--c:39"></rect><rect x="64" y="1.6" width="1.25" height="1.25" style="--c:40"></rect><rect x="59.2" y="3.2" width="1.25" height="1.25" style="--c:37"></rect><rect x="60.800000000000004" y="3.2" width="1.25" height="1.25" style="--c:38"></rect><rect x="62.400000000000006" y="3.2" width="1.25" height="1.25" style="--c:39"></rect><rect x="64" y="3.2" width="1.25" height="1.25" style="--c:40"></rect><rect x="59.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:37"></rect><rect x="60.800000000000004" y="4.800000000000001" width="1.25" height="1.25" style="--c:38"></rect><rect x="62.400000000000006" y="4.800000000000001" width="1.25" height="1.25" style="--c:39"></rect><rect x="64" y="4.800000000000001" width="1.25" height="1.25" style="--c:40"></rect><rect x="59.2" y="6.4" width="1.25" height="1.25" style="--c:37"></rect><rect x="60.800000000000004" y="6.4" width="1.25" height="1.25" style="--c:38"></rect><rect x="62.400000000000006" y="6.4" width="1.25" height="1.25" style="--c:39"></rect><rect x="64" y="6.4" width="1.25" height="1.25" style="--c:40"></rect><rect x="59.2" y="8" width="1.25" height="1.25" style="--c:37"></rect><rect x="60.800000000000004" y="8" width="1.25" height="1.25" style="--c:38"></rect><rect x="62.400000000000006" y="8" width="1.25" height="1.25" style="--c:39"></rect><rect x="64" y="8" width="1.25" height="1.25" style="--c:40"></rect><rect x="67.2" y="0" width="1.25" height="1.25" style="--c:42"></rect><rect x="68.8" y="0" width="1.25" height="1.25" style="--c:43"></rect><rect x="70.4" y="0" width="1.25" height="1.25" style="--c:44"></rect><rect x="72" y="0" width="1.25" height="1.25" style="--c:45"></rect><rect x="73.60000000000001" y="0" width="1.25" height="1.25" style="--c:46"></rect><rect x="67.2" y="1.6" width="1.25" height="1.25" style="--c:42"></rect><rect x="68.8" y="1.6" width="1.25" height="1.25" style="--c:43"></rect><rect x="70.4" y="1.6" width="1.25" height="1.25" style="--c:44"></rect><rect x="72" y="1.6" width="1.25" height="1.25" style="--c:45"></rect><rect x="73.60000000000001" y="1.6" width="1.25" height="1.25" style="--c:46"></rect><rect x="67.2" y="3.2" width="1.25" height="1.25" style="--c:42"></rect><rect x="68.8" y="3.2" width="1.25" height="1.25" style="--c:43"></rect><rect x="70.4" y="3.2" width="1.25" height="1.25" style="--c:44"></rect><rect x="72" y="3.2" width="1.25" height="1.25" style="--c:45"></rect><rect x="73.60000000000001" y="3.2" width="1.25" height="1.25" style="--c:46"></rect><rect x="67.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:42"></rect><rect x="72" y="4.800000000000001" width="1.25" height="1.25" style="--c:45"></rect><rect x="73.60000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:46"></rect><rect x="67.2" y="6.4" width="1.25" height="1.25" style="--c:42"></rect><rect x="72" y="6.4" width="1.25" height="1.25" style="--c:45"></rect><rect x="73.60000000000001" y="6.4" width="1.25" height="1.25" style="--c:46"></rect><rect x="67.2" y="8" width="1.25" height="1.25" style="--c:42"></rect><rect x="68.8" y="8" width="1.25" height="1.25" style="--c:43"></rect><rect x="70.4" y="8" width="1.25" height="1.25" style="--c:44"></rect><rect x="72" y="8" width="1.25" height="1.25" style="--c:45"></rect><rect x="73.60000000000001" y="8" width="1.25" height="1.25" style="--c:46"></rect><rect x="67.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:42"></rect><rect x="68.8" y="9.600000000000001" width="1.25" height="1.25" style="--c:43"></rect><rect x="70.4" y="9.600000000000001" width="1.25" height="1.25" style="--c:44"></rect><rect x="72" y="9.600000000000001" width="1.25" height="1.25" style="--c:45"></rect><rect x="73.60000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:46"></rect><rect x="78.4" y="0" width="1.25" height="1.25" style="--c:49"></rect><rect x="80" y="0" width="1.25" height="1.25" style="--c:50"></rect><rect x="81.60000000000001" y="0" width="1.25" height="1.25" style="--c:51"></rect><rect x="78.4" y="1.6" width="1.25" height="1.25" style="--c:49"></rect><rect x="80" y="1.6" width="1.25" height="1.25" style="--c:50"></rect><rect x="81.60000000000001" y="1.6" width="1.25" height="1.25" style="--c:51"></rect><rect x="78.4" y="3.2" width="1.25" height="1.25" style="--c:49"></rect><rect x="80" y="3.2" width="1.25" height="1.25" style="--c:50"></rect><rect x="81.60000000000001" y="3.2" width="1.25" height="1.25" style="--c:51"></rect><rect x="78.4" y="4.800000000000001" width="1.25" height="1.25" style="--c:49"></rect><rect x="81.60000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:51"></rect><rect x="78.4" y="6.4" width="1.25" height="1.25" style="--c:49"></rect><rect x="81.60000000000001" y="6.4" width="1.25" height="1.25" style="--c:51"></rect><rect x="78.4" y="8" width="1.25" height="1.25" style="--c:49"></rect><rect x="81.60000000000001" y="8" width="1.25" height="1.25" style="--c:51"></rect><rect x="76.80000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:48"></rect><rect x="80" y="9.600000000000001" width="1.25" height="1.25" style="--c:50"></rect><rect x="83.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:52"></rect><rect x="86.4" y="0" width="1.25" height="1.25" style="--c:54"></rect><rect x="92.80000000000001" y="0" width="1.25" height="1.25" style="--c:58"></rect><rect x="88" y="1.6" width="1.25" height="1.25" style="--c:55"></rect><rect x="89.60000000000001" y="1.6" width="1.25" height="1.25" style="--c:56"></rect><rect x="91.2" y="1.6" width="1.25" height="1.25" style="--c:57"></rect><rect x="88" y="3.2" width="1.25" height="1.25" style="--c:55"></rect><rect x="89.60000000000001" y="3.2" width="1.25" height="1.25" style="--c:56"></rect><rect x="91.2" y="3.2" width="1.25" height="1.25" style="--c:57"></rect><rect x="88" y="4.800000000000001" width="1.25" height="1.25" style="--c:55"></rect><rect x="89.60000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:56"></rect><rect x="91.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:57"></rect><rect x="88" y="6.4" width="1.25" height="1.25" style="--c:55"></rect><rect x="89.60000000000001" y="6.4" width="1.25" height="1.25" style="--c:56"></rect><rect x="91.2" y="6.4" width="1.25" height="1.25" style="--c:57"></rect><rect x="88" y="8" width="1.25" height="1.25" style="--c:55"></rect><rect x="89.60000000000001" y="8" width="1.25" height="1.25" style="--c:56"></rect><rect x="91.2" y="8" width="1.25" height="1.25" style="--c:57"></rect><rect x="86.4" y="9.600000000000001" width="1.25" height="1.25" style="--c:54"></rect><rect x="92.80000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:58"></rect><rect x="102.4" y="0" width="1.25" height="1.25" style="--c:64"></rect><rect x="97.60000000000001" y="1.6" width="1.25" height="1.25" style="--c:61"></rect><rect x="99.2" y="1.6" width="1.25" height="1.25" style="--c:62"></rect><rect x="100.80000000000001" y="1.6" width="1.25" height="1.25" style="--c:63"></rect><rect x="97.60000000000001" y="3.2" width="1.25" height="1.25" style="--c:61"></rect><rect x="99.2" y="3.2" width="1.25" height="1.25" style="--c:62"></rect><rect x="100.80000000000001" y="3.2" width="1.25" height="1.25" style="--c:63"></rect><rect x="102.4" y="4.800000000000001" width="1.25" height="1.25" style="--c:64"></rect><rect x="97.60000000000001" y="6.4" width="1.25" height="1.25" style="--c:61"></rect><rect x="100.80000000000001" y="6.4" width="1.25" height="1.25" style="--c:63"></rect><rect x="102.4" y="6.4" width="1.25" height="1.25" style="--c:64"></rect><rect x="97.60000000000001" y="8" width="1.25" height="1.25" style="--c:61"></rect><rect x="99.2" y="8" width="1.25" height="1.25" style="--c:62"></rect><rect x="102.4" y="8" width="1.25" height="1.25" style="--c:64"></rect><rect x="97.60000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:61"></rect><rect x="99.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:62"></rect><rect x="100.80000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:63"></rect><rect x="107.2" y="0" width="1.25" height="1.25" style="--c:67"></rect><rect x="108.80000000000001" y="0" width="1.25" height="1.25" style="--c:68"></rect><rect x="110.4" y="0" width="1.25" height="1.25" style="--c:69"></rect><rect x="112" y="0" width="1.25" height="1.25" style="--c:70"></rect><rect x="107.2" y="1.6" width="1.25" height="1.25" style="--c:67"></rect><rect x="108.80000000000001" y="1.6" width="1.25" height="1.25" style="--c:68"></rect><rect x="110.4" y="1.6" width="1.25" height="1.25" style="--c:69"></rect><rect x="112" y="1.6" width="1.25" height="1.25" style="--c:70"></rect><rect x="107.2" y="3.2" width="1.25" height="1.25" style="--c:67"></rect><rect x="108.80000000000001" y="3.2" width="1.25" height="1.25" style="--c:68"></rect><rect x="110.4" y="3.2" width="1.25" height="1.25" style="--c:69"></rect><rect x="112" y="3.2" width="1.25" height="1.25" style="--c:70"></rect><rect x="107.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:67"></rect><rect x="108.80000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:68"></rect><rect x="110.4" y="4.800000000000001" width="1.25" height="1.25" style="--c:69"></rect><rect x="112" y="4.800000000000001" width="1.25" height="1.25" style="--c:70"></rect><rect x="107.2" y="6.4" width="1.25" height="1.25" style="--c:67"></rect><rect x="108.80000000000001" y="6.4" width="1.25" height="1.25" style="--c:68"></rect><rect x="110.4" y="6.4" width="1.25" height="1.25" style="--c:69"></rect><rect x="112" y="6.4" width="1.25" height="1.25" style="--c:70"></rect><rect x="107.2" y="8" width="1.25" height="1.25" style="--c:67"></rect><rect x="108.80000000000001" y="8" width="1.25" height="1.25" style="--c:68"></rect><rect x="110.4" y="8" width="1.25" height="1.25" style="--c:69"></rect><rect x="112" y="8" width="1.25" height="1.25" style="--c:70"></rect><rect x="120" y="0" width="1.25" height="1.25" style="--c:75"></rect><rect x="121.60000000000001" y="0" width="1.25" height="1.25" style="--c:76"></rect><rect x="116.80000000000001" y="1.6" width="1.25" height="1.25" style="--c:73"></rect><rect x="118.4" y="1.6" width="1.25" height="1.25" style="--c:74"></rect><rect x="121.60000000000001" y="1.6" width="1.25" height="1.25" style="--c:76"></rect><rect x="116.80000000000001" y="3.2" width="1.25" height="1.25" style="--c:73"></rect><rect x="118.4" y="3.2" width="1.25" height="1.25" style="--c:74"></rect><rect x="120" y="3.2" width="1.25" height="1.25" style="--c:75"></rect><rect x="116.80000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:73"></rect><rect x="118.4" y="4.800000000000001" width="1.25" height="1.25" style="--c:74"></rect><rect x="120" y="4.800000000000001" width="1.25" height="1.25" style="--c:75"></rect><rect x="116.80000000000001" y="6.4" width="1.25" height="1.25" style="--c:73"></rect><rect x="118.4" y="6.4" width="1.25" height="1.25" style="--c:74"></rect><rect x="120" y="6.4" width="1.25" height="1.25" style="--c:75"></rect><rect x="116.80000000000001" y="8" width="1.25" height="1.25" style="--c:73"></rect><rect x="118.4" y="8" width="1.25" height="1.25" style="--c:74"></rect><rect x="121.60000000000001" y="8" width="1.25" height="1.25" style="--c:76"></rect><rect x="120" y="9.600000000000001" width="1.25" height="1.25" style="--c:75"></rect><rect x="121.60000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:76"></rect></g><g fill="currentColor"><rect x="0" y="0" width="1.25" height="1.25" style="--c:0"></rect><rect x="1.6" y="0" width="1.25" height="1.25" style="--c:1"></rect><rect x="3.2" y="0" width="1.25" height="1.25" style="--c:2"></rect><rect x="0" y="1.6" width="1.25" height="1.25" style="--c:0"></rect><rect x="4.800000000000001" y="1.6" width="1.25" height="1.25" style="--c:3"></rect><rect x="0" y="3.2" width="1.25" height="1.25" style="--c:0"></rect><rect x="6.4" y="3.2" width="1.25" height="1.25" style="--c:4"></rect><rect x="0" y="4.800000000000001" width="1.25" height="1.25" style="--c:0"></rect><rect x="6.4" y="4.800000000000001" width="1.25" height="1.25" style="--c:4"></rect><rect x="0" y="6.4" width="1.25" height="1.25" style="--c:0"></rect><rect x="6.4" y="6.4" width="1.25" height="1.25" style="--c:4"></rect><rect x="0" y="8" width="1.25" height="1.25" style="--c:0"></rect><rect x="4.800000000000001" y="8" width="1.25" height="1.25" style="--c:3"></rect><rect x="0" y="9.600000000000001" width="1.25" height="1.25" style="--c:0"></rect><rect x="1.6" y="9.600000000000001" width="1.25" height="1.25" style="--c:1"></rect><rect x="3.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:2"></rect><rect x="11.200000000000001" y="0" width="1.25" height="1.25" style="--c:7"></rect><rect x="12.8" y="0" width="1.25" height="1.25" style="--c:8"></rect><rect x="14.4" y="0" width="1.25" height="1.25" style="--c:9"></rect><rect x="12.8" y="1.6" width="1.25" height="1.25" style="--c:8"></rect><rect x="12.8" y="3.2" width="1.25" height="1.25" style="--c:8"></rect><rect x="12.8" y="4.800000000000001" width="1.25" height="1.25" style="--c:8"></rect><rect x="12.8" y="6.4" width="1.25" height="1.25" style="--c:8"></rect><rect x="12.8" y="8" width="1.25" height="1.25" style="--c:8"></rect><rect x="11.200000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:7"></rect><rect x="12.8" y="9.600000000000001" width="1.25" height="1.25" style="--c:8"></rect><rect x="14.4" y="9.600000000000001" width="1.25" height="1.25" style="--c:9"></rect><rect x="20.8" y="0" width="1.25" height="1.25" style="--c:13"></rect><rect x="22.400000000000002" y="0" width="1.25" height="1.25" style="--c:14"></rect><rect x="24" y="0" width="1.25" height="1.25" style="--c:15"></rect><rect x="19.200000000000003" y="1.6" width="1.25" height="1.25" style="--c:12"></rect><rect x="25.6" y="1.6" width="1.25" height="1.25" style="--c:16"></rect><rect x="19.200000000000003" y="3.2" width="1.25" height="1.25" style="--c:12"></rect><rect x="19.200000000000003" y="4.800000000000001" width="1.25" height="1.25" style="--c:12"></rect><rect x="22.400000000000002" y="4.800000000000001" width="1.25" height="1.25" style="--c:14"></rect><rect x="24" y="4.800000000000001" width="1.25" height="1.25" style="--c:15"></rect><rect x="25.6" y="4.800000000000001" width="1.25" height="1.25" style="--c:16"></rect><rect x="19.200000000000003" y="6.4" width="1.25" height="1.25" style="--c:12"></rect><rect x="25.6" y="6.4" width="1.25" height="1.25" style="--c:16"></rect><rect x="19.200000000000003" y="8" width="1.25" height="1.25" style="--c:12"></rect><rect x="25.6" y="8" width="1.25" height="1.25" style="--c:16"></rect><rect x="20.8" y="9.600000000000001" width="1.25" height="1.25" style="--c:13"></rect><rect x="22.400000000000002" y="9.600000000000001" width="1.25" height="1.25" style="--c:14"></rect><rect x="24" y="9.600000000000001" width="1.25" height="1.25" style="--c:15"></rect><rect x="25.6" y="9.600000000000001" width="1.25" height="1.25" style="--c:16"></rect><rect x="30.400000000000002" y="0" width="1.25" height="1.25" style="--c:19"></rect><rect x="32" y="0" width="1.25" height="1.25" style="--c:20"></rect><rect x="33.6" y="0" width="1.25" height="1.25" style="--c:21"></rect><rect x="32" y="1.6" width="1.25" height="1.25" style="--c:20"></rect><rect x="32" y="3.2" width="1.25" height="1.25" style="--c:20"></rect><rect x="32" y="4.800000000000001" width="1.25" height="1.25" style="--c:20"></rect><rect x="32" y="6.4" width="1.25" height="1.25" style="--c:20"></rect><rect x="32" y="8" width="1.25" height="1.25" style="--c:20"></rect><rect x="30.400000000000002" y="9.600000000000001" width="1.25" height="1.25" style="--c:19"></rect><rect x="32" y="9.600000000000001" width="1.25" height="1.25" style="--c:20"></rect><rect x="33.6" y="9.600000000000001" width="1.25" height="1.25" style="--c:21"></rect><rect x="38.400000000000006" y="0" width="1.25" height="1.25" style="--c:24"></rect><rect x="40" y="0" width="1.25" height="1.25" style="--c:25"></rect><rect x="41.6" y="0" width="1.25" height="1.25" style="--c:26"></rect><rect x="43.2" y="0" width="1.25" height="1.25" style="--c:27"></rect><rect x="44.800000000000004" y="0" width="1.25" height="1.25" style="--c:28"></rect><rect x="41.6" y="1.6" width="1.25" height="1.25" style="--c:26"></rect><rect x="41.6" y="3.2" width="1.25" height="1.25" style="--c:26"></rect><rect x="41.6" y="4.800000000000001" width="1.25" height="1.25" style="--c:26"></rect><rect x="41.6" y="6.4" width="1.25" height="1.25" style="--c:26"></rect><rect x="41.6" y="8" width="1.25" height="1.25" style="--c:26"></rect><rect x="41.6" y="9.600000000000001" width="1.25" height="1.25" style="--c:26"></rect><rect x="49.6" y="0" width="1.25" height="1.25" style="--c:31"></rect><rect x="51.2" y="0" width="1.25" height="1.25" style="--c:32"></rect><rect x="52.800000000000004" y="0" width="1.25" height="1.25" style="--c:33"></rect><rect x="48" y="1.6" width="1.25" height="1.25" style="--c:30"></rect><rect x="54.400000000000006" y="1.6" width="1.25" height="1.25" style="--c:34"></rect><rect x="48" y="3.2" width="1.25" height="1.25" style="--c:30"></rect><rect x="54.400000000000006" y="3.2" width="1.25" height="1.25" style="--c:34"></rect><rect x="48" y="4.800000000000001" width="1.25" height="1.25" style="--c:30"></rect><rect x="49.6" y="4.800000000000001" width="1.25" height="1.25" style="--c:31"></rect><rect x="51.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:32"></rect><rect x="52.800000000000004" y="4.800000000000001" width="1.25" height="1.25" style="--c:33"></rect><rect x="54.400000000000006" y="4.800000000000001" width="1.25" height="1.25" style="--c:34"></rect><rect x="48" y="6.4" width="1.25" height="1.25" style="--c:30"></rect><rect x="54.400000000000006" y="6.4" width="1.25" height="1.25" style="--c:34"></rect><rect x="48" y="8" width="1.25" height="1.25" style="--c:30"></rect><rect x="54.400000000000006" y="8" width="1.25" height="1.25" style="--c:34"></rect><rect x="48" y="9.600000000000001" width="1.25" height="1.25" style="--c:30"></rect><rect x="54.400000000000006" y="9.600000000000001" width="1.25" height="1.25" style="--c:34"></rect><rect x="57.6" y="0" width="1.25" height="1.25" style="--c:36"></rect><rect x="57.6" y="1.6" width="1.25" height="1.25" style="--c:36"></rect><rect x="57.6" y="3.2" width="1.25" height="1.25" style="--c:36"></rect><rect x="57.6" y="4.800000000000001" width="1.25" height="1.25" style="--c:36"></rect><rect x="57.6" y="6.4" width="1.25" height="1.25" style="--c:36"></rect><rect x="57.6" y="8" width="1.25" height="1.25" style="--c:36"></rect><rect x="57.6" y="9.600000000000001" width="1.25" height="1.25" style="--c:36"></rect><rect x="59.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:37"></rect><rect x="60.800000000000004" y="9.600000000000001" width="1.25" height="1.25" style="--c:38"></rect><rect x="62.400000000000006" y="9.600000000000001" width="1.25" height="1.25" style="--c:39"></rect><rect x="64" y="9.600000000000001" width="1.25" height="1.25" style="--c:40"></rect><rect x="68.8" y="4.800000000000001" width="1.25" height="1.25" style="--c:43"></rect><rect x="70.4" y="4.800000000000001" width="1.25" height="1.25" style="--c:44"></rect><rect x="68.8" y="6.4" width="1.25" height="1.25" style="--c:43"></rect><rect x="70.4" y="6.4" width="1.25" height="1.25" style="--c:44"></rect><rect x="76.80000000000001" y="0" width="1.25" height="1.25" style="--c:48"></rect><rect x="83.2" y="0" width="1.25" height="1.25" style="--c:52"></rect><rect x="76.80000000000001" y="1.6" width="1.25" height="1.25" style="--c:48"></rect><rect x="83.2" y="1.6" width="1.25" height="1.25" style="--c:52"></rect><rect x="76.80000000000001" y="3.2" width="1.25" height="1.25" style="--c:48"></rect><rect x="83.2" y="3.2" width="1.25" height="1.25" style="--c:52"></rect><rect x="76.80000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:48"></rect><rect x="80" y="4.800000000000001" width="1.25" height="1.25" style="--c:50"></rect><rect x="83.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:52"></rect><rect x="76.80000000000001" y="6.4" width="1.25" height="1.25" style="--c:48"></rect><rect x="80" y="6.4" width="1.25" height="1.25" style="--c:50"></rect><rect x="83.2" y="6.4" width="1.25" height="1.25" style="--c:52"></rect><rect x="76.80000000000001" y="8" width="1.25" height="1.25" style="--c:48"></rect><rect x="80" y="8" width="1.25" height="1.25" style="--c:50"></rect><rect x="83.2" y="8" width="1.25" height="1.25" style="--c:52"></rect><rect x="78.4" y="9.600000000000001" width="1.25" height="1.25" style="--c:49"></rect><rect x="81.60000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:51"></rect><rect x="88" y="0" width="1.25" height="1.25" style="--c:55"></rect><rect x="89.60000000000001" y="0" width="1.25" height="1.25" style="--c:56"></rect><rect x="91.2" y="0" width="1.25" height="1.25" style="--c:57"></rect><rect x="86.4" y="1.6" width="1.25" height="1.25" style="--c:54"></rect><rect x="92.80000000000001" y="1.6" width="1.25" height="1.25" style="--c:58"></rect><rect x="86.4" y="3.2" width="1.25" height="1.25" style="--c:54"></rect><rect x="92.80000000000001" y="3.2" width="1.25" height="1.25" style="--c:58"></rect><rect x="86.4" y="4.800000000000001" width="1.25" height="1.25" style="--c:54"></rect><rect x="92.80000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:58"></rect><rect x="86.4" y="6.4" width="1.25" height="1.25" style="--c:54"></rect><rect x="92.80000000000001" y="6.4" width="1.25" height="1.25" style="--c:58"></rect><rect x="86.4" y="8" width="1.25" height="1.25" style="--c:54"></rect><rect x="92.80000000000001" y="8" width="1.25" height="1.25" style="--c:58"></rect><rect x="88" y="9.600000000000001" width="1.25" height="1.25" style="--c:55"></rect><rect x="89.60000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:56"></rect><rect x="91.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:57"></rect><rect x="96" y="0" width="1.25" height="1.25" style="--c:60"></rect><rect x="97.60000000000001" y="0" width="1.25" height="1.25" style="--c:61"></rect><rect x="99.2" y="0" width="1.25" height="1.25" style="--c:62"></rect><rect x="100.80000000000001" y="0" width="1.25" height="1.25" style="--c:63"></rect><rect x="96" y="1.6" width="1.25" height="1.25" style="--c:60"></rect><rect x="102.4" y="1.6" width="1.25" height="1.25" style="--c:64"></rect><rect x="96" y="3.2" width="1.25" height="1.25" style="--c:60"></rect><rect x="102.4" y="3.2" width="1.25" height="1.25" style="--c:64"></rect><rect x="96" y="4.800000000000001" width="1.25" height="1.25" style="--c:60"></rect><rect x="97.60000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:61"></rect><rect x="99.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:62"></rect><rect x="100.80000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:63"></rect><rect x="96" y="6.4" width="1.25" height="1.25" style="--c:60"></rect><rect x="99.2" y="6.4" width="1.25" height="1.25" style="--c:62"></rect><rect x="96" y="8" width="1.25" height="1.25" style="--c:60"></rect><rect x="100.80000000000001" y="8" width="1.25" height="1.25" style="--c:63"></rect><rect x="96" y="9.600000000000001" width="1.25" height="1.25" style="--c:60"></rect><rect x="102.4" y="9.600000000000001" width="1.25" height="1.25" style="--c:64"></rect><rect x="105.60000000000001" y="0" width="1.25" height="1.25" style="--c:66"></rect><rect x="105.60000000000001" y="1.6" width="1.25" height="1.25" style="--c:66"></rect><rect x="105.60000000000001" y="3.2" width="1.25" height="1.25" style="--c:66"></rect><rect x="105.60000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:66"></rect><rect x="105.60000000000001" y="6.4" width="1.25" height="1.25" style="--c:66"></rect><rect x="105.60000000000001" y="8" width="1.25" height="1.25" style="--c:66"></rect><rect x="105.60000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:66"></rect><rect x="107.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:67"></rect><rect x="108.80000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:68"></rect><rect x="110.4" y="9.600000000000001" width="1.25" height="1.25" style="--c:69"></rect><rect x="112" y="9.600000000000001" width="1.25" height="1.25" style="--c:70"></rect><rect x="115.2" y="0" width="1.25" height="1.25" style="--c:72"></rect><rect x="116.80000000000001" y="0" width="1.25" height="1.25" style="--c:73"></rect><rect x="118.4" y="0" width="1.25" height="1.25" style="--c:74"></rect><rect x="115.2" y="1.6" width="1.25" height="1.25" style="--c:72"></rect><rect x="120" y="1.6" width="1.25" height="1.25" style="--c:75"></rect><rect x="115.2" y="3.2" width="1.25" height="1.25" style="--c:72"></rect><rect x="121.60000000000001" y="3.2" width="1.25" height="1.25" style="--c:76"></rect><rect x="115.2" y="4.800000000000001" width="1.25" height="1.25" style="--c:72"></rect><rect x="121.60000000000001" y="4.800000000000001" width="1.25" height="1.25" style="--c:76"></rect><rect x="115.2" y="6.4" width="1.25" height="1.25" style="--c:72"></rect><rect x="121.60000000000001" y="6.4" width="1.25" height="1.25" style="--c:76"></rect><rect x="115.2" y="8" width="1.25" height="1.25" style="--c:72"></rect><rect x="120" y="8" width="1.25" height="1.25" style="--c:75"></rect><rect x="115.2" y="9.600000000000001" width="1.25" height="1.25" style="--c:72"></rect><rect x="116.80000000000001" y="9.600000000000001" width="1.25" height="1.25" style="--c:73"></rect><rect x="118.4" y="9.600000000000001" width="1.25" height="1.25" style="--c:74"></rect></g></svg></span></small></div></div><nav class="nav"><a class="" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>世界总览</a><a class="" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layers"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></svg>资产仓库<i class="">8</i></a><a class="" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bookmark"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>个人收藏<i class="">15</i></a><a class="" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pen-line"><path d="M12 20h9"></path><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"></path></svg>随手记<i class="">16</i></a><a class="on" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-folder"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>项目空间</a><a class="" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-line"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 12h10"></path></svg>逆向工程</a></nav><div class="spacer"></div><nav class="nav"><a class="" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings2"><path d="M20 7h-9"></path><path d="M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg>设置</a></nav><button class="partner" aria-label="伙伴 数码蛋，孵化前；前往世界总览"><span class="partner-screen" data-partner-screen="true" aria-hidden="true"><span class="lcd-screen lcd-roam"><canvas data-partner="roam" data-start="720"></canvas></span></span><span class="partner-line" aria-hidden="true"><span class="partner-season" data-season-label="true">秋 · 落叶 · 数码蛋</span></span></button><p class="saved">已保存到本机</p></aside>
+<main data-g5>
+<div class="mtop"><button class="ibtn" data-pj-navopen aria-label="打开导航"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><span class="crumb">数码世界 / <b>项目空间</b></span><span class="grow"></span><button class="ibtn" aria-label="搜索工作台"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button></div>
+<div class="top"><span class="crumb">数码世界 / <b>项目空间</b></span><span class="search">搜索工作台<kbd>⌘K</kbd></span></div>
+<div class="bar">
+  <h1>项目空间<span class="en">PROJECTS</span></h1>
+  <div class="counts">
+    <span class="cnt"><span class="lcd" data-g5-count="total"></span><small>项目</small></span>
+    <span class="cnt"><span class="lcd cyan" data-g5-count="issues"></span><small>开着的 issue</small></span>
+    <span class="cnt"><span class="lcd violet" data-g5-count="skills"></span><small>近 30 天技能调用</small></span>
+  </div>
+  <span class="grow"></span>
+  <button class="ibtn" data-g5-refresh title="刷新：重新读名册、CURRENT 与 GitHub" aria-label="刷新"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg></button><button class="ibtn" data-g5-settings title="设置 · 名册路径与目录扫描" aria-label="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></button>
+</div>
+
+<div class="g5-stage">
+<section class="g5-rack" aria-label="项目图鉴">
+  <div class="g5-carts" data-g5-carts role="tablist" aria-label="选择项目"></div>
+</section>
+
+<section class="g5-screen" data-g5-screen role="tabpanel" aria-live="polite"></section>
+</div>
+
+<footer class="g5-foot">
+  <button class="g5-link" data-g5-legacy>复制接手口令</button>
+  <span class="grow"></span>
+  <span class="g5-receipt" data-g5-receipt="legacy"></span>
+</footer>
+<p class="g5-draft"><span class="tag">样稿</span>10-28 只读实况；实战只统计技能名、次数和日期，不读对话内容。</p>
+</main>
+
+<script type="application/json" id="g5-data">{"days": ["2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28"], "assetSkills": 0, "projects": [{"id": "personal-ai-workbench", "name": "数码世界", "sub": "个人 AI 工作台", "code": "DW", "hue": "#4de3ff", "path": "~/Documents/ChatGPT/个人/work/personal-ai-workbench", "pinned": true, "card": "10 项目/数码世界.md", "doc": {"one": "把散在各 Agent 里的 Skill、Prompt、规则收成能复用的资产，界面是数码世界。", "goal": "已有能力能被稳定复用、管理和延续；不以入口多少论成败。", "not": "不做聊天工作台；调度、接力、提醒不再做；不复制 CURRENT 与 Vault 正文。"}, "now": {"src": "CURRENT", "title": "发布到正式 5178（wb-20261028-671），回读通过", "short": "发布 wb-671：首页 no-store，回读通过", "date": "10-28", "by": "Claude"}, "next": {"text": "接手会话读 settings-v19-impl-651-wip.md，从第 2 批继续，再做动效与回归", "from": "CURRENT 头表 · 停在 10-24，可能过期", "warn": true}, "issues": {"open": 1, "agent": 0, "human": 0, "triage": 1, "top": "#6 测试 reverse-ai-process 在负载下偶发失败（needs-triage）"}, "pr": 0, "unpushed": 43, "last": "10-28 22:45", "commits": [0, 76, 0, 0, 18, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 2, 0, 5, 18, 29], "skills": [{"name": "grill-me", "n": 5, "last": "2026-10-06", "src": "Matt Pocock"}, {"name": "frontend-design", "n": 3, "last": "2026-10-15", "src": "Anthropic"}, {"name": "taste-skill", "n": 2, "last": "2026-10-15", "src": "taste-skill"}, {"name": "schedule", "n": 1, "last": "2026-09-30", "src": "Claude Code 内置"}], "sessions": 8, "codex": []}, {"id": "work-desk", "name": "牛马之家", "sub": "work-desk · 个人工作台", "code": "NM", "hue": "#ffd166", "path": "~/Documents/ChatGPT/个人/work/work-desk", "pinned": true, "card": "10 项目/牛马之家.md", "doc": {"one": "本机常驻的个人工作台，把营销、带教、业务数据、飞书资料收进一个入口。", "goal": "按工作事项逐步覆盖常见工作，以可用成果判断，不以页面数论完成。", "not": "与数码世界完全独立，不共享数据；不放业务管理工作台与 CarvoMOTO。"}, "now": {"src": "CURRENT", "title": "首页改为 no-store，防 Safari 网页应用打开黑屏", "short": "首页改为 no-store，防打开黑屏", "date": "10-28", "by": "Claude"}, "next": {"text": "顶节没写下一步（遗留：无）", "from": "CURRENT 顶节", "warn": false, "none": true}, "issues": {"open": 0, "agent": 0, "human": 0, "triage": 0}, "pr": 0, "unpushed": 12, "last": "10-28 23:04", "commits": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 10, 7, 10, 12, 28, 28, 9, 53, 12, 52, 19, 0, 12, 12, 12], "skills": [{"name": "lark-doc", "n": 15, "last": "2026-10-26", "src": "飞书 lark-cli"}, {"name": "grilling", "n": 11, "last": "2026-10-27", "src": "Matt Pocock"}, {"name": "code-review", "n": 10, "last": "2026-10-24", "src": "Matt Pocock"}, {"name": "design-taste-frontend", "n": 8, "last": "2026-10-24", "src": "taste-skill"}, {"name": "domain-modeling", "n": 6, "last": "2026-10-27", "src": "Matt Pocock"}, {"name": "grill-me", "n": 6, "last": "2026-10-23", "src": "Matt Pocock"}, {"name": "grill-with-docs", "n": 6, "last": "2026-10-27", "src": "Matt Pocock"}, {"name": "frontend-design", "n": 5, "last": "2026-10-23", "src": "Anthropic"}, {"name": "taste-skill", "n": 5, "last": "2026-10-23", "src": "taste-skill"}, {"name": "kb-weekly", "n": 2, "last": "2026-10-23", "src": "Obsidian 知识库"}, {"name": "security-audit", "n": 2, "last": "2026-10-23", "src": "已安装"}, {"name": "to-spec", "n": 2, "last": "2026-10-23", "src": "Matt Pocock"}, {"name": "to-tickets", "n": 2, "last": "2026-10-23", "src": "Matt Pocock"}, {"name": "workflow-authoring", "n": 2, "last": "2026-10-28", "src": "Claude Code 内置"}, {"name": "lark-base", "n": 1, "last": "2026-10-18", "src": "飞书 lark-cli"}, {"name": "lark-sheets", "n": 1, "last": "2026-10-27", "src": "飞书 lark-cli"}, {"name": "tdd", "n": 1, "last": "2026-10-23", "src": "Matt Pocock"}], "sessions": 35, "codex": [["project-starter", 12], ["to-spec", 1], ["setup-matt-pocock-skills", 1], ["grill-me", 1]]}, {"id": "digital-twin", "name": "数字分身", "sub": "Hermes 中枢", "code": "DT", "hue": "#a891ff", "path": "~/Documents/ChatGPT/个人/work/digital-twin", "pinned": false, "card": "10 项目/数字分身.md", "doc": {"one": "让 Hermes 成为飞书里唯一的“我的 AI”，派活给 Claude / Codex 并收回结果。", "goal": "一个入口；Claude、Codex 退到身后当车间；项目工程化；Vault 是唯一真源。", "not": "v1 不替我对外发言；不做多用户版、培训演示版。"}, "now": {"src": "CURRENT", "title": "首日运行核对；巡检定时任务误报修复（已上线）", "short": "首日运行核对；巡检误报修复", "date": "10-28", "by": "Claude"}, "next": {"text": "T7：日报按新结构落地，恢复晨报和主动提醒（M1 第 4 批）", "from": "issue #12 · ready-for-agent", "warn": false}, "issues": {"open": 1, "agent": 1, "human": 0, "triage": 0}, "pr": 0, "unpushed": 0, "last": "10-28 14:51", "commits": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 39, 6], "skills": [], "sessions": 0, "codex": [["project-starter", 5]]}, {"id": "github-center", "name": "GitHub 快速中心", "sub": "私人项目发现站", "code": "GH", "hue": "#ff8fb8", "path": "~/Documents/ChatGPT/个人/work/github-center", "pinned": false, "card": "10 项目/GitHub 快速中心.md", "doc": {"one": "替代刷自媒体：每天出 GitHub 客观榜单和中文简介，帮我挑要装进 AI 的项目。", "goal": "准、全、看得懂；四类榜单每天更新，每榜前 20。", "not": "首版不做推荐、对比、手机适配；不新增费用、不开放公网。"}, "now": {"src": "CURRENT", "title": "交接入口与本地变更（更新日期 10-24）", "short": "CURRENT 10-24 · 交接入口与本地变更", "date": "10-24", "by": ""}, "next": {"text": "规格：GitHub 快速中心首版", "from": "issue #1 · ready-for-agent（另有 #3、#4 待 Agent，#15 待人工验收）", "warn": false}, "issues": {"open": 4, "agent": 3, "human": 1, "triage": 0}, "pr": 0, "unpushed": 0, "last": "10-27 05:19", "commits": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 46, 27, 0, 1, 1, 0], "skills": [], "sessions": 0, "codex": [["project-starter", 2]]}, {"id": "agent-kit", "name": "agent-kit", "sub": "协作底座 · 全局坑", "code": "AK", "hue": "#a6e36e", "path": "~/Documents/ChatGPT/个人/work/agent-kit", "pinned": false, "card": "10 项目/agent-kit.md", "doc": {"one": "Claude、Codex、Hermes 跨项目共用的协作底座：全局坑与《工程流程》，只此一份。", "goal": "全局坑和改动走法只有一份，各项目 AGENTS 都指向它。", "not": "不写私人信息与凭据；不放开发流程本身。"}, "now": {"src": "提交", "title": "全局坑 G-16：Safari 网页应用打开用磁盘旧首页黑屏", "short": "提交 · 全局坑 G-16 首页要 no-store", "date": "10-28", "by": ""}, "next": {"text": "没有 CURRENT，也没有开着的 issue", "from": "看最近提交", "warn": false, "none": true}, "issues": {"open": 0, "agent": 0, "human": 0, "triage": 0}, "pr": 0, "unpushed": 2, "last": "10-28 23:04", "commits": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 6, 3], "skills": [], "sessions": 0, "codex": [["project-starter", 4]]}, {"id": "my-skills", "name": "自建技能库", "sub": "my-skills", "code": "SK", "hue": "#b4bfda", "path": "~/Documents/ChatGPT/个人/work/my-skills", "pinned": false, "card": "10 项目/自建技能库.md", "doc": {"one": "自建 Claude / Codex skill 的唯一存放处，工具目录里只放软链接。", "goal": "所有自建 skill 都在 skills/<名字>/ 下，由 link.sh 链到各工具目录。", "not": "第三方 skill 不放这里；不在工具目录里直接新建。"}, "now": {"src": "提交", "title": "excel-aura：预览保留单元格换行，审查按最长一行估列宽", "short": "提交 · excel-aura 预览保留换行", "date": "10-27", "by": ""}, "next": {"text": "PR #12 excel-aura 补两条经验，待合并", "from": "GitHub PR", "warn": false}, "issues": {"open": 1, "agent": 0, "human": 0, "triage": 0}, "pr": 1, "unpushed": 0, "last": "10-27 23:11", "commits": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0], "skills": [], "sessions": 0, "codex": []}, {"id": "carvomoto", "name": "CarvoMOTO", "sub": "汽配出海获客", "code": "CM", "hue": "#ff6a3d", "path": "~/Documents/ChatGPT/个人/work/carvomoto", "pinned": false, "card": "10 项目/CarvoMOTO-汽配.md", "doc": {"one": "ATV / UTV 配件出海获客，面向海外 B2B 买家。", "goal": "90 天跑通“海外买家 → 合格询盘 → 样品单”；北极星是每月合格询盘数。", "not": "不放进牛马之家；不用工作相关的账号、表格与机器人。"}, "now": {"src": "提交", "title": "工作台新商机默认线索资格待确认、阶段需求确认", "short": "提交 · 新商机默认线索资格待确认", "date": "10-28", "by": ""}, "next": {"text": "没有 CURRENT，也没有 GitHub 远端", "from": "进度看 docs/任务清单.md", "warn": true, "none": true, "nogh": true}, "issues": null, "pr": null, "unpushed": null, "last": "10-28 23:14", "commits": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 14], "skills": [], "sessions": 0, "codex": []}]}</script>
+<script src="../ui-v18/page.js"></script>
+<script src="v19.js" defer></script>
+<script>
+// 项目空间七 · 卡带（6B 定稿后再优化）。只在状态变化和操作反馈时动，按帧（steps）；减少动态效果时直接到位。
+// · 换卡带：卡带按帧压下，档案屏扫描线自上而下，下一步逐字打出，实战格一格一格亮起（一格 = 一次调用）。
+// · 置顶：卡带重排，名字旁的橙色小点闪两下。
+// · 收录进资产仓库：数据点从这一行飞进左下角伙伴屏，蛋接住；这一行变「已收录」并闪两下。
+(() => {
+  const D = JSON.parse(document.getElementById("g5-data").textContent);
+  const reduced = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return true; } })();
+  const STEP = { easing: "steps(1, end)" };
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const $ = (s, el = document) => el.querySelector(s);
+
+  // ---- 液晶数字 ----
+  const G = {
+    0: "01110100011001110101110011000101110", 1: "00100011000010000100001000010001110", 2: "01110100010000100010001000100011111",
+    3: "11111000100010000010000011000101110", 4: "00010001100101010010111110001000010", 5: "11111100001111000001000011000101110",
+    6: "00110010001000011110100011000101110", 7: "11111000010001000100010000100001000", 8: "01110100011000101110100011000101110",
+    9: "01110100011000101111000010001001100",
+  };
+  function lcdSvg(text) {
+    let off = "", on = "";
+    [...text].forEach((ch, i) => {
+      for (let y = 0; y < 7; y++) for (let x = 0; x < 5; x++) {
+        const r = `<rect x="${i * 6 + x}" y="${y}" width=".75" height=".75"/>`;
+        off += r;
+        if ((G[ch] || "")[y * 5 + x] === "1") on += r;
+      }
+    });
+    return `<svg viewBox="0 0 ${text.length * 6 - 1} 7" role="img" aria-label="${text}"><g class="off">${off}</g><g class="on">${on}</g></svg>`;
+  }
+  function lcd(el, n, roll) {
+    if (!el) return;
+    const text = pad2(n);
+    el.innerHTML = lcdSvg(text);
+    el.dataset.text = text;
+    if (roll && !reduced)
+      el.firstElementChild.animate([3, 2, 1, 0].map((k, i) => ({ offset: i / 3, clipPath: `inset(0 0 ${k * 33}% 0)`, ...STEP })).concat({ clipPath: "inset(0 0 0 0)" }), { duration: 160 });
+  }
+  function rollIn(el, n) {
+    if (reduced || !n) return lcd(el, n);
+    const steps = Math.min(n, 5); let k = 0;
+    lcd(el, 0);
+    const id = setInterval(() => { k++; lcd(el, Math.round(n * k / steps), true); if (k >= steps) clearInterval(id); }, 70);
+  }
+
+  // ---- 卡带上的像素字母（5×7） ----
+  const L = {
+    D: "11110100011000110001100011000111110", W: "10001100011000110101101011010101010", N: "10001110011010110011100011000110001",
+    M: "10001110111010110101100011000110001", T: "11111001000010000100001000010000100", A: "01110100011000111111100011000110001",
+    K: "10001100101010011000101001001010001", S: "01111100001000001110000010000111110", G: "01110100011000010111100011000101111",
+    H: "10001100011000111111100011000110001", C: "01110100011000010000100001000101110",
+  };
+  function mono(code) {
+    let off = "", on = "";
+    [...code].forEach((ch, i) => {
+      for (let y = 0; y < 7; y++) for (let x = 0; x < 5; x++) {
+        const r = `<rect x="${i * 6 + x}" y="${y}" width=".86" height=".86"/>`;
+        off += r;
+        if ((L[ch] || "")[y * 5 + x] === "1") on += r;
+      }
+    });
+    return `<svg viewBox="-1 -3 13 13" fill="currentColor" aria-hidden="true"><g class="off">${off}</g><g>${on}</g></svg>`;
+  }
+
+  // ---- 状态（样稿内存，刷新即复原） ----
+  const P = D.projects;
+  const kept = new Set();
+  let current = "work-desk", open = false, docOpen = false;
+  const FOLD = 10, CELLS = 15;
+  const cur = () => P.find((p) => p.id === current);
+  const calls = (p) => p.skills.reduce((s, x) => s + x.n, 0);
+  const ordered = () => [...P.filter((p) => p.pinned), ...P.filter((p) => !p.pinned)];
+  const recent = (p) => p.commits.slice(-7).some((n) => n > 0);
+
+  // 每张卡带只说一件最该注意的事；没事就只写最近提交日期
+  function flagOf(p) {
+    const i = p.issues;
+    if (i && i.human) return ["warn", `${i.human} 张待人工验收`];
+    if (p.next.warn && p.now.src === "CURRENT") return ["warn", "下一步可能过期"];
+    if (p.unpushed > 10) return ["warn", `${p.unpushed} 个提交未推送`];
+    if (i && i.agent) return ["info", `${i.agent} 张待 Agent`];
+    if (p.pr) return ["info", `${p.pr} 个 PR 待合并`];
+    if (!i) return ["warn", "没有 GitHub 远端"];
+    return ["", `最近提交 ${p.last.slice(0, 5)}`];
+  }
+
+  function paintCounts(first) {
+    const v = { total: P.length, issues: P.reduce((s, p) => s + (p.issues ? p.issues.open : 0), 0), skills: P.reduce((s, p) => s + calls(p), 0) };
+    for (const [k, n] of Object.entries(v)) { const el = $(`[data-g5-count="${k}"]`); first ? rollIn(el, n) : lcd(el, n); }
+  }
+
+  const V = document.body.dataset.v || "";   // ""：第三版；a 主卡；b 卡带；c 名册栏
+  function spark(p, n = 14) {
+    const xs = p.commits.slice(-n), max = Math.max(1, ...xs);
+    return `<span class="spark" title="近 ${n} 天提交 ${xs.reduce((a, b) => a + b, 0)} 次" aria-hidden="true">${xs.map((x) => `<i class="${x ? "on" : ""}" style="height:${x ? Math.max(18, Math.round((x / max) * 100)) : 10}%"></i>`).join("")}</span>`;
+  }
+  const flagHtml = (p) => { const [cls, text] = flagOf(p); return `<span class="flag"><i class="led ${recent(p) ? "on" : ""}" title="${recent(p) ? "近 7 天有提交" : "近 7 天没有提交"}"></i><span class="${cls}">${esc(text)}</span></span>`; };
+  const nameHtml = (p) => `<span class="nm"><b title="${esc(p.name)}">${esc(p.name)}</b>${p.pinned ? '<i class="pin" data-g5-pin title="已置顶"></i>' : ""}</span>`;
+  const open_ = (p, cls) => `<button class="g5-cart ${cls}" role="tab" data-g5-cart="${p.id}" aria-selected="${p.id === current}" aria-label="${esc(p.name)}：${esc(flagOf(p)[1])}" style="--hue:${p.hue}">`;
+  function cartHtml(p) {
+    if (V === "a" && p.pinned)
+      return `${open_(p, "hero")}<span class="g5-mono">${mono(p.code)}</span>
+        <span class="txt">${nameHtml(p)}<span class="one">${esc(p.doc.one)}</span>${flagHtml(p)}</span>
+        <span class="hmeta">${spark(p)}<span class="reads"><span>ISSUE <b>${p.issues ? pad2(p.issues.open) : "—"}</b></span><span class="sk">技能 <b>${pad2(p.skills.length)}</b></span></span></span></button>`;
+    // 卡带：灯装在机壳上（近 7 天有提交），不和要注意的事挨着，免得绿灯配黄字
+    // 第十轮三个差异大的卡带：4 像素 / 5 电路 / 6 海报（不再套 6B 机壳，类名用 cart-x 避开 6B 样式）
+    const CART = document.body.dataset.cart || "";
+    if (V === "b" && "456".includes(CART) && CART) {
+      const [cls, text] = flagOf(p);
+      const led = `<i class="led pwr ${recent(p) ? "on" : ""}" title="${recent(p) ? "近 7 天有提交" : "近 7 天没有提交"}"></i>`;
+      const flag = `<span class="flag"><span class="${cls}">${esc(text)}</span></span>`;
+      const reads = `<span class="reads"><span>ISSUE <b>${p.issues ? pad2(p.issues.open) : "—"}</b></span><span class="sk">技能 <b>${pad2(p.skills.length)}</b></span></span>`;
+      const no = pad2(P.indexOf(p) + 1);
+      if (CART === "4")
+        return `${open_(p, "cart-x px")}<span class="pxc" aria-hidden="true"></span><span class="grip" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="win"><span class="g5-mono">${mono(p.code)}</span>${nameHtml(p)}<span class="sub">${esc(p.sub)}</span></span>
+          <span class="strip">${led}${flag}${reads}</span></button>`;
+      if (CART === "5") {
+        // 走线画两层：底层常显（选中时发光），上层是选中那一刻跑一遍的电流（pathLength=100 方便按帧推进）
+        const paths = `<path d="M0 18H34l10 10H86l8-8h46"/><path d="M0 46h12l6 6v54l6 6h34"/><path d="M140 52h-22l-8 8v52"/><path d="M58 0v14"/><path d="M88 0v20"/><path d="M112 120V96l8-8h20"/><path d="M0 118h70l6-6h26"/>`;
+        return `${open_(p, "cart-x pcb")}<span class="board"><svg class="trace" viewBox="0 0 140 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g class="lines" fill="none" stroke="currentColor" stroke-width="1.2">${paths}</g><g class="flow" fill="none" stroke-width="1.8" stroke-linecap="round">${paths.replaceAll("<path ", '<path pathLength="100" ')}</g><g class="vias" fill="currentColor"><circle cx="34" cy="18" r="2.2"/><circle cx="94" cy="20" r="2.2"/><circle cx="18" cy="52" r="2.2"/><circle cx="110" cy="60" r="2.2"/><circle cx="76" cy="112" r="2.2"/><circle cx="112" cy="96" r="2.2"/></g></svg>
+          <span class="chip"><span class="g5-mono">${mono(p.code)}</span></span><span class="tx">${nameHtml(p)}<span class="sub">${esc(p.sub)}</span></span><span class="no">${no}</span></span>
+          <span class="cshell">${led}${flag}${reads}</span><span class="pins" aria-hidden="true"></span></button>`;
+      }
+      return `${open_(p, "cart-x poster")}<span class="art"><span class="big" aria-hidden="true">${mono(p.code)}</span><span class="no">${no}</span><span class="tx">${nameHtml(p)}<span class="sub">${esc(p.sub)}</span></span></span>
+        <span class="cshell">${led}${flag}${reads}</span></button>`;
+    }
+    // 卡带：6B 底子（上半截代表色标签、下半截机壳），三版细节靠 body[data-cart] 切换
+    if (V === "b") {
+      const [cls, text] = flagOf(p);
+      return `${open_(p, "cart-b")}<span class="label"><span class="g5-mono">${mono(p.code)}</span>${nameHtml(p)}<span class="sub">${esc(p.sub)}</span><span class="idx" aria-hidden="true">${pad2(P.indexOf(p) + 1)}</span></span>
+        <span class="cshell"><i class="led pwr ${recent(p) ? "on" : ""}" title="${recent(p) ? "近 7 天有提交" : "近 7 天没有提交"}"></i><span class="flag"><span class="${cls}">${esc(text)}</span></span><span class="reads"><span>ISSUE <b>${p.issues ? pad2(p.issues.open) : "—"}</b></span><span class="sk">技能 <b>${pad2(p.skills.length)}</b></span></span></span>
+        <span class="foot" aria-hidden="true"></span></button>`;
+    }
+    if (V === "c")
+      return `${open_(p, "row-c")}<span class="g5-mono">${mono(p.code)}</span><span class="txt">${nameHtml(p)}${flagHtml(p)}</span>${spark(p)}</button>`;
+    return `${open_(p, "")}<span class="g5-mono">${mono(p.code)}</span>${nameHtml(p)}${flagHtml(p)}</button>`;
+  }
+  function paintCarts() {
+    const el = $("[data-g5-carts]");
+    if (V === "a") {
+      const pin = P.filter((p) => p.pinned), rest = P.filter((p) => !p.pinned);
+      el.innerHTML = `<div class="g5-hero" style="--n:${pin.length}">${pin.map(cartHtml).join("")}</div><div class="g5-rest" style="--n:${rest.length}">${rest.map(cartHtml).join("")}</div>`;
+    } else el.innerHTML = ordered().map(cartHtml).join("");
+  }
+
+  // ---- 档案屏（第七版：整宽分段，往下读：档案 → 读数 → 现在 / 下一步 → 提交 → 实战） ----
+  function headHtml(p) {
+    return `<div class="g7-head"><span class="g5-mono" style="--hue:${p.hue}">${mono(p.code)}</span>
+      <div class="id"><h3>${esc(p.name)}<small>${esc(p.sub)}</small></h3><p class="one">${esc(p.doc.one)}</p></div>
+      <div class="acts"><button class="btn" data-g5-pintoggle aria-pressed="${p.pinned}">${p.pinned ? "已置顶" : "置顶"}</button><a class="btn" href="#" data-g5-obsidian title="Vault · ${esc(p.card)}">项目卡 ↗</a><button class="btn" data-g5-detail title="${esc(p.path)}">详情</button></div>
+      <dl><div><dt>目标</dt><dd>${esc(p.doc.goal)}</dd></div><div><dt>不做</dt><dd>${esc(p.doc.not)}</dd></div></dl>
+    </div>`;
+  }
+  // 读数条：一格一个数，下面一行只写拆分，没有就不写
+  function readsHtml(p) {
+    const i = p.issues, total = p.commits.reduce((a, b) => a + b, 0), days = p.commits.filter(Boolean).length;
+    const split = i && i.open ? [["待 Agent", i.agent], ["待人工", i.human], ["待分流", i.triage]].filter(([, n]) => n).map(([k, n]) => `${k} ${n}`).join(" · ") : "";
+    const cells = [
+      ["开着的 issue", i ? i.open : null, "", i ? split : "没有 GitHub 远端"],
+      ["待合并 PR", p.pr, "", p.pr == null ? "没有 GitHub 远端" : ""],
+      ["未推送提交", p.unpushed, p.unpushed > 10 ? "warn" : "", p.unpushed == null ? "本地仓库" : p.unpushed > 10 ? "该推了" : ""],
+      ["近 30 天提交", total, "cyan", `${days} 天有提交`],
+      ["近 30 天技能调用", calls(p), "violet", p.skills.length ? `${p.skills.length} 个技能 · ${p.sessions} 个会话` : "没有调用"],
+    ];
+    return `<div class="g7-reads">${cells.map(([k, n, c, t]) => `<div class="${c}"><small>${k}</small>${n == null ? '<b class="dash">—</b>' : `<span class="lcd ${c}" data-n="${n}"></span>`}<em>${esc(t)}</em></div>`).join("")}</div>`;
+  }
+  function nowHtml(p) {
+    const src = p.now.src === "CURRENT" ? `${p.now.date}${p.now.by ? " · " + p.now.by : ""}` : `${p.now.date} · 最近提交（没有 CURRENT）`;
+    const from = p.next.from === "CURRENT 顶节" ? "" : p.next.from;
+    return `<div class="g7-now">
+      <div><h4>现在</h4><p class="ttl">${esc(p.now.title)}</p><p class="src">${esc(src)}</p></div>
+      <div class="nx ${p.next.warn ? "warn" : ""}"><h4>下一步${p.next.warn ? '<span class="tag">可能过期</span>' : ""}</h4><p class="${p.next.none ? "none" : ""}" data-g5-next></p>${from ? `<p class="src">${esc(from)}</p>` : ""}</div>
+    </div>`;
+  }
+  // 近 30 天提交：整宽，按周分隔，峰值标数，今天标在轴上
+  function chartHtml(p) {
+    const xs = p.commits, max = Math.max(1, ...xs), peak = xs.indexOf(Math.max(...xs));
+    const md = (d) => `${+d.slice(5, 7)}/${+d.slice(8)}`;
+    const mon = (k) => new Date(D.days[k]).getUTCDay() === 1;
+    const bars = xs.map((n, k) => `<i class="${n ? "on" : ""} ${mon(k) ? "wk" : ""} ${k === xs.length - 1 ? "today" : ""}" style="--h:${n ? Math.max(6, Math.round((n / max) * 100)) : 0}%" title="${md(D.days[k])}：${n} 次提交">${n && k === peak ? `<b>${n}</b>` : ""}</i>`).join("");
+    const axis = xs.map((_, k) => `<span>${k === xs.length - 1 ? "今天" : k === 0 || mon(k) ? md(D.days[k]) : ""}</span>`).join("");
+    const total = xs.reduce((a, b) => a + b, 0);
+    return `<section class="g7-sec g7-chart"><h4>近 30 天提交<span class="sum">${total ? `<b>${total}</b> 次 · ${xs.filter(Boolean).length} 天 · 最多 ${md(D.days[peak])} ${xs[peak]} 次` : "没有提交"}</span></h4>
+      <div class="plot" role="img" aria-label="近 30 天每日提交数">${bars}</div><div class="axis">${axis}</div></section>`;
+  }
+  function skillRow(x) {
+    const ok = kept.has(x.name);
+    const pips = Array.from({ length: CELLS }, (_, k) => `<i class="${k < x.n ? "on" : ""}"></i>`).join("") + (x.n > CELLS ? `<em>+${x.n - CELLS}</em>` : "");
+    return `<li data-g5-skill="${esc(x.name)}" class="${ok ? "kept" : ""}">
+      <span class="nm"><b>${esc(x.name)}</b><small>${esc(x.src)}</small></span>
+      <span class="pips" aria-hidden="true">${pips}</span>
+      <span class="n">${x.n}<small> 次</small></span>
+      <span class="st">${ok ? '<span class="ok">已收录</span>' : `<span class="last">${esc(x.last.slice(5))}</span><button class="btn" data-g5-keep aria-label="把 ${esc(x.name)} 收录进资产仓库">收录</button>`}</span></li>`;
+  }
+  function fieldHtml(p) {
+    const left = p.skills.filter((x) => !kept.has(x.name)).length;
+    if (!p.skills.length)
+      return `<section class="g7-sec g7-field"><h4>实战<span class="sum">近 30 天没有调用技能的会话</span></h4></section>`;
+    const codex = p.codex.length ? `<p class="g7-codex"><b>Codex 点名</b>${p.codex.map(([n, k]) => `${esc(n)} ×${k}`).join(" · ")}<span>仅参考</span></p>` : "";
+    return `<section class="g7-sec g7-field"><h4>实战<span class="sum"><b>${p.skills.length}</b> 个技能 · <b class="v">${calls(p)}</b> 次调用 · <b>${p.sessions}</b> 个会话 · 近 30 天</span><span class="grow"></span>${left ? `<span class="gap" data-g5-gap>未收录 ${left}</span>` : ""}</h4>
+      <ul class="g5-skills g7-skills">${(open ? p.skills : p.skills.slice(0, FOLD)).map(skillRow).join("")}</ul>
+      ${p.skills.length > FOLD ? `<button class="g5-more" data-g5-more aria-expanded="${open}">${open ? "收起" : `其余 ${p.skills.length - FOLD} 个 ▾`}</button>` : ""}
+      ${codex}<div class="g5-receipt" data-g5-receipt="field"></div></section>`;
+  }
+
+  // ---- 动效 ----
+  function type(el, text) {
+    if (!el) return;
+    if (reduced) { el.textContent = text; return; }
+    let k = 0;
+    el.innerHTML = '<span></span><i class="caret"></i>';
+    const span = el.firstChild;
+    clearInterval(type.id);
+    type.id = setInterval(() => {
+      k = Math.min(text.length, k + 2);
+      span.textContent = text.slice(0, k);
+      if (k >= text.length) { clearInterval(type.id); setTimeout(() => el.querySelector(".caret")?.remove(), 500); }
+    }, 22);
+  }
+  function scan(screen) {
+    const bar = screen.querySelector(".scan");
+    if (reduced || !bar) return;
+    const h = screen.offsetHeight;
+    bar.animate([{ opacity: 1, transform: "translateY(0)", ...STEP }, ...Array.from({ length: 10 }, (_, i) => ({ offset: (i + 1) / 11, opacity: 1, transform: `translateY(${((i + 1) / 10) * h}px)`, ...STEP })), { opacity: 0, transform: `translateY(${h}px)` }], { duration: 420 });
+  }
+  function light(screen) {
+    if (reduced) return;
+    screen.querySelectorAll(".g5-skills .pips").forEach((row, k) =>
+      row.querySelectorAll("i.on").forEach((el, i) => el.animate([{ opacity: 0.12, ...STEP }, { opacity: 1 }], { duration: 1, delay: k * 40 + i * 30, fill: "backwards" })));
+  }
+  function blink(el, times = 2) {
+    if (!el || reduced) return;
+    const f = [];
+    for (let i = 0; i < times; i++) f.push({ opacity: 0.25, ...STEP }, { opacity: 1, ...STEP });
+    el.animate(f.map((x, i) => ({ ...x, offset: i / f.length })).concat({ opacity: 1 }), { duration: times * 220 });
+  }
+  const partner = () => { const el = $("[data-partner-screen]"); return el && el.getBoundingClientRect().width ? el : $("[data-pj-navopen]"); };
+  function fly(from, color = "#4de3ff") {
+    const to = partner();
+    return new Promise((done) => {
+      if (reduced || !from || !to) return done();
+      const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+      const bit = document.createElement("i");
+      bit.className = "v19-bit"; bit.style.background = color; document.body.appendChild(bit);
+      const x0 = a.left + a.width / 2, y0 = a.top + a.height / 2, x1 = b.left + b.width / 2, y1 = b.top + b.height / 2, N = 16, frames = [];
+      for (let i = 0; i <= N; i++) { const t = i / N; frames.push({ offset: t, transform: `translate(${x0 + (x1 - x0) * t}px, ${y0 + (y1 - y0) * t - Math.sin(t * Math.PI) * 48}px)`, ...STEP }); }
+      let over = false;
+      const end = () => { if (over) return; over = true; bit.remove(); done(); };
+      bit.animate(frames, { duration: N * 36 }).onfinish = end;
+      setTimeout(end, N * 36 + 200);  // 页面在后台时动画可能不推进，兜底结束
+    });
+  }
+  function receipt(kind, text) { const el = $(`[data-g5-receipt="${kind}"]`); if (!el) return; el.textContent = text; blink(el, 1); }
+
+  function paintScreen(animate) {
+    const p = cur(), screen = $("[data-g5-screen]");
+    screen.innerHTML = `<span class="scan" aria-hidden="true"></span>${headHtml(p)}${readsHtml(p)}${nowHtml(p)}${chartHtml(p)}${fieldHtml(p)}`;
+    screen.querySelectorAll(".g7-reads .lcd").forEach((el) => (animate ? rollIn : lcd)(el, +el.dataset.n));
+    const next = $("[data-g5-next]", screen);
+    if (animate) { scan(screen); type(next, p.next.text); light(screen); } else next.textContent = p.next.text;
+  }
+
+  // ---- 交互 ----
+  document.addEventListener("click", async (e) => {
+    const t = e.target;
+    if (t.closest("[data-pj-navopen]")) { document.body.classList.toggle("pj-nav"); return; }
+    if (document.body.classList.contains("pj-nav") && (t.closest(".side a") || !t.closest(".side"))) document.body.classList.remove("pj-nav");
+    if (t.closest('a[href="#"]')) e.preventDefault();
+
+    const cart = t.closest("[data-g5-cart]");
+    if (cart) {
+      const id = cart.dataset.g5Cart;
+      if (id === current) return;
+      current = id; open = false;
+      for (const c of document.querySelectorAll("[data-g5-cart]")) c.setAttribute("aria-selected", String(c.dataset.g5Cart === id));
+      if (!reduced) { cart.classList.remove("press"); void cart.offsetWidth; cart.classList.add("press"); }
+      paintScreen(true);
+      if (matchMedia("(max-width: 760px)").matches) $("[data-g5-screen]").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      return;
+    }
+    if (t.closest("[data-g5-doc]")) { docOpen = !docOpen; paintScreen(false); return; }
+    if (t.closest("[data-g5-pintoggle]")) {
+      const p = cur();
+      if (!p.pinned && P.filter((x) => x.pinned).length >= 3) { receipt("legacy", "置顶最多 3 个：先取消一个再置顶"); return; }
+      p.pinned = !p.pinned;
+      paintCarts(); paintScreen(false);
+      blink($(`[data-g5-cart="${p.id}"] [data-g5-pin]`), 2);
+      receipt("legacy", p.pinned ? `已置顶 ${p.name}：排到最前，并显示在世界总览` : `已取消置顶 ${p.name}`);
+      return;
+    }
+    const keep = t.closest("[data-g5-keep]");
+    if (keep) {
+      const name = keep.closest("[data-g5-skill]").dataset.g5Skill;
+      await fly(keep, "#a6e36e");
+      dispatchEvent(new Event("guiji:data-caught"));
+      kept.add(name);
+      paintScreen(false);
+      blink($(`[data-g5-skill="${CSS.escape(name)}"]`), 2);
+      receipt("field", `已收录 ${name}：资产仓库多一张 Skill 卡，来源记安装位置，进化从实战次数起算（正式版写入前先预览，写后回读）`);
+      return;
+    }
+    if (t.closest("[data-g5-more]")) {
+      open = !open;
+      paintScreen(false);
+      if (open && !reduced) $(".g5-skills").querySelectorAll(`li:nth-child(n+${FOLD + 1})`).forEach((li, k) => setTimeout(() => { li.classList.add("g5-new"); setTimeout(() => li.classList.remove("g5-new"), 400); }, k * 40));
+      return;
+    }
+    if (t.closest("[data-g5-legacy]")) {
+      const p = cur();
+      try { await navigator.clipboard?.writeText(`继续「${p.name}」：先读仓库的 AGENTS.md 和 CURRENT.md，再看开着的 issue。\n路径：${p.path}`); } catch {}
+      receipt("legacy", "口令已复制（旧功能）");
+      return;
+    }
+    if (t.closest("[data-g5-refresh]")) {
+      for (const [i, c] of [...document.querySelectorAll("[data-g5-cart]")].entries()) setTimeout(() => blink(c, 1), reduced ? 0 : i * 60);
+      scan($("[data-g5-screen]"));
+      receipt("legacy", "正式版会重读名册、CURRENT、GitHub 与会话统计（样稿不真读）");
+      return;
+    }
+    if (t.closest("[data-g5-settings]")) { receipt("legacy", "正式版跳到设置：名册路径、目录扫描、「读取会话里的技能使用」开关都在那里"); return; }
+    if (t.closest("[data-g5-detail]")) { receipt("legacy", "正式版打开现有项目抽屉：位置 / GitHub / 规则 / 体检"); return; }
+    if (t.closest("[data-g5-obsidian]")) { receipt("legacy", `正式版在 Obsidian 打开 ${cur().card}`); return; }
+  });
+
+  paintCounts(true);
+  paintCarts();
+  paintScreen(true);
+})();
+
+</script>
+</body>
+</html>
