@@ -8,7 +8,7 @@
 .notes-v16.fn-panel input.sn-title-input{margin-bottom:-4px}
 .notes-v16 .sn-cell.editing{position:relative;z-index:2}
 .notes-v16 input.sn-title-input::placeholder{color:var(--muted);font-weight:400;-webkit-text-stroke:0}
-.notes-v16 input.sn-title-input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.notes-v16 input.sn-title-input:is(:focus,:focus-visible){outline:none;box-shadow:none}
 .notes-v16 .sn:has(>.sn-title) .sn-body>p:first-child,.notes-v16 .sn-editor-host.has-title .sn-body>p:first-child{font-weight:400}
 .notes-v16 .sn-new .sn-pad{position:relative}
 .notes-v16 .sn-line [data-note-text]{min-width:1ch;overflow-wrap:anywhere;white-space:pre-wrap}

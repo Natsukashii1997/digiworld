@@ -249,7 +249,7 @@
 .notes-v16 .sn-help::before {content:'';position:absolute;inset:8px;border:1px solid var(--line-3);border-radius:var(--r-pill);}
 .notes-v16 .en {font:600 var(--fs-label) var(--mono);letter-spacing:.22em;text-transform:uppercase;}
 
-.notes-v16 .sn-editable:focus-visible {outline:2px solid var(--cyan);outline-offset:4px;border-radius:var(--r-xs);}
+.notes-v16 .sn-editable:is(:focus,:focus-visible) {outline:none;box-shadow:none;}
 .notes-v16 .sn-body .sn-ul,.notes-v16 .sn-body .sn-ol {gap:0;}
 /* 少量便签按内容高度平衡两列；编辑时回到网格以保留跨列编辑卡。 */
 @media(min-width:761px){
