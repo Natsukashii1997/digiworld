@@ -97,4 +97,6 @@
 /* 无标题便签只加粗第一行，不再整段加粗（随手记页与悬浮窗一致） */
 .notes-v16 .sn-body>p:first-child,.notes-v16.fn-panel .sn-body>p:first-child{font-weight:400}
 .notes-v16 .sn-body>p:first-child::first-line,.notes-v16.fn-panel .sn-body>p:first-child::first-line{font-weight:700}
+/* 用户 2026-10-28：悬浮窗便签多到可滚动时，WebKit 点空正文不画光标；正文单独成层即可画出 */
+.notes-v16 .sn-editable{will-change:transform}
 @media (max-width:640px){.notes-v16 .sn-page{padding:var(--s-3)}.notes-v16 .page-heading .page-heading-action{width:100%;margin-left:0}.notes-v16 .page-heading-action .sn-type-tiles{width:100%}.notes-v16 .page-heading-action .sn-type-tile{flex:1 1 0;padding:0 var(--s-2)}}
