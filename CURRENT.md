@@ -21,10 +21,10 @@
 用户反馈：“任何一个颜色的便签，点进去都会变成黄色的框；无法点击画框外部使他退出便签编辑；主标题显示默认文字，从普通便签改为主标题三个字；主标题的字体要换……给我5种”（选「手札体粗」）；“我现在3种类型的便签……选择某一个类型新建的话，现在的路径非常麻烦”（三版样稿选 A 常驻三入口）。
 - 编辑框颜色：`.fn-panel .sn.is-edit` 与 `.notes-v16 .sn-pad.editing` 原写死 `--yellow`，改用便签自身的 `--paper`；新建便签无颜色时回退暖黄。
 - 点外部退出：悬浮窗原未接 `NoteEditor` 的 `onOutside`；接上 `finish`，但以捕获阶段记下的 pointerdown 目标判断——落在正在编辑的卡片内（冲突「两条都留」、复制、删除）或类型按钮上都不算外部（否则与按钮自身的保存后切换双写，测试里出现修订冲突）。独立便签窗口不接。
-- 主标题：`NoteEditor` 占位改「主标题」（删去不再用的 `noteTitle` 引入）；`.notes-v16 .sn-title` 改手札体粗 19px（`"Hannotate SC"`，缺字体回系统字体），随手记页与悬浮窗共用。
+- 主标题：`NoteEditor` 占位改「主标题」（删去不再用的 `noteTitle` 引入）；`.notes-v16 .sn-title` 改手札体粗，字号用令牌 `--fs-section`（20px；先写的 19px 被「样式层字号只用令牌」拦下后改正）（`"Hannotate SC"`，缺字体回系统字体），随手记页与悬浮窗共用。
 - 按类型新建：随手记页去掉原生下拉框与整块入口按钮，改为提示行 + 三块按钮（普通便签 / 待办事项 / 时间轴，图标黄 / 绿 / 青，悬停边框随类型亮）；悬浮窗去掉顶栏三个图标与「写一条」，换同款三块按钮（短名），编辑中也常驻、点了先存当前再开新；⌘N 仍是普通便签。按钮行用容器查询，窄于 380px 变紧凑；提示行不折行、窄时藏「点一种开写」。删去因此失效的 `.fn-pad`、`.sn-pad-enter`、`.sn-type-select`、`.fn-type-actions` 样式与 `newType`、`setNewType`、`newActive`、`Plus` 引入。
 - 测试：14 份浏览器测试里「记一条新念头」/ 下拉框选类型改为直接点「新建＋类型」按钮；`notes-quick-create` 的宽度检查改为顶栏 2 个按钮 + 3 块类型按钮；`notes-copy-layout` 同时认新旧两个名字（它对照旧版本）。
-测试：开发页实看随手记页 1440 / 780 / 390 与悬浮窗，无横向滚动，点三种按钮分别开对应类型；编辑框绿 / 红便签边框随本色；点卡片间空白、底栏保存退出，点卡片内复制不退出；主标题阅读与编辑均为手札体粗 19px。浏览器测试 audit-a、floating-notes、floating-notes-sync、home-notes-floating、notes-types、notes-quick-create（9/9）、notes-lifecycle、notes-native-dom、notes-images、notes-list-caret、notes-context-editing 通过；单元 notes-types / note-document / digital-world-ui 33/33。notes-v16、notes-copy-layout、search-c1-safety、web-draft 四份改动前 HEAD 构建失败在同一行，与本轮无关。随手记页开始写新便签时正文区仍有青色焦点框，未改，待用户定。
+测试：开发页实看随手记页 1440 / 780 / 390 与悬浮窗，无横向滚动，点三种按钮分别开对应类型；编辑框绿 / 红便签边框随本色；点卡片间空白、底栏保存退出，点卡片内复制不退出；主标题阅读与编辑均为手札体粗。浏览器测试 audit-a、floating-notes、floating-notes-sync、home-notes-floating、notes-types、notes-quick-create（9/9）、notes-lifecycle、notes-native-dom、notes-images、notes-list-caret、notes-context-editing 通过；单元 notes-types / note-document / digital-world-ui 33/33。notes-v16、notes-copy-layout、search-c1-safety、web-draft 四份改动前 HEAD 构建失败在同一行，与本轮无关。随手记页开始写新便签时正文区仍有青色焦点框，未改，待用户定。
 本轮新坑：无
 
 ## Claude 发布到正式 5178（wb-20261027-660，2026-10-27，回读通过）
