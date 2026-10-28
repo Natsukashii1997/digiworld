@@ -1,6 +1,6 @@
 /* New note capabilities inherit the existing notes-v16 / floating-notes design. */
-/* 主标题用手札体粗，和正文区分（用户 2026-10-28）；没装这款字体时回到系统字体。 */
-.notes-v16 .sn-title{margin:0;padding:0;color:var(--text);font:700 var(--fs-section)/1.35 "Hannotate SC",var(--sans);letter-spacing:.04em;text-align:center;overflow-wrap:anywhere}
+/* 主标题用翩翩体粗，和正文区分（用户 2026-10-28 第二轮选定，原手札体粗）；没装这款字体时回到系统字体。 */
+.notes-v16 .sn-title{margin:0;padding:0;color:var(--text);font:700 var(--fs-section)/1.35 "HanziPen SC",var(--sans);letter-spacing:.04em;text-align:center;overflow-wrap:anywhere}
 .notes-v16 input.sn-title-input{box-sizing:border-box;width:100%;min-width:0;min-height:32px;height:32px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;font-weight:700;text-align:center}
 .notes-v16 input.sn-title-input{margin-bottom:calc(4px - var(--s-5))}
 .notes-v16.fn-panel input.sn-title-input{margin-bottom:-4px}
