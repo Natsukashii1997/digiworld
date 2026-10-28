@@ -37,6 +37,18 @@
 测试：`vite build` 到草稿目录通过，产物清单与 apple-touch-icon 指向新图、标签页仍为 `digivice-192.png`；全量 `npm test` 未跑（只改静态图标与清单路径）。
 本轮新坑：Safari「添加到程序坞」的网页应用不能改包内文件后重签（-10410），换图标只能贴自定义图标或让 Safari 重建；提升：已提升为全局 G-15（agent-kit `011a196`）。
 
+## Claude 发布到正式 5178（wb-20261028-667，2026-10-28，回读通过）
+
+用户原话：“提交并发布”。功能提交 `7fd2048`（随手记页向悬浮窗对齐 + Safari 翩翩体兜底）。`main` 上 666 之后另有图标提交 `60856de`、`3e1680b`（其 CURRENT 一节写明未发布），不在本次授权内，所以没有直接发 `7fd2048`：用临时索引在 `38e0618` 上只叠加 `7fd2048` 的改动，生成发布提交 `bc87500`（未挂任何分支，`main` 不动）。脚本 `work/adopt667/adopt.py`（由 adopt666 只改目录、新旧版本名、提交号与临时 plist 名）。
+- 候选：451 个文件；和 666 比依赖零变化，服务端只多 `server/system-font.mjs` 与 `server/http.mjs` 的字体路由，前端为 `src/NotesV16.jsx`、`notes-types.css`、`notes-v16.css`、`floating-notes.css` 与产物；不含图标与 manifest。
+- 复核：`bc87500` 干净副本（先 `vite build`，链上 `../wiki-local`）全量 1560 条中 1538 过；失败 22 条 = 与 665 清单逐条相同的 21 条 + `reverse-ai-process`「停止清理忽略TERM的孙进程」（假 AI 进程挂住约 50 分钟，手动结束测试进程后跑完，同 657 记录）。浏览器 `notes-v16-browser` 第 24 行、`web-draft-browser` 第 51 行失败，与 `82897f0` 干净副本相同（原有）；干净副本里没有工作区那条设置页超时。
+- prepare / switch / verify：切换前 pid 69275、revision 986、便签 16、收藏 15（revision 140）、项目 50；备份到 `work/adopt667/private-adoption-backup/`；一次 bootout + 一次 bootstrap，新 pid 22839；数据、主库指针与快照 SHA、扫描根、项目数不变；451 个程序文件、10 个静态资源逐字节一致；`server.stderr.log` 未写入（仍是 10-16）。
+- 悬浮窗：`launchctl kickstart -k` 重启，进程 69356 → 22889（原生程序未换）。
+- 实看（非 GET 全拦，`work/adopt667/look.mjs`）：`/fonts/hanzipen-sc-bold.ttf` 200、`font/ttf`、缓存 30 天；随手记页 1440 标题行 3 颗新建胶囊、无新建格、分类标签不换行、无标题便签首段 400（首行加粗）、无横向滚动；悬浮窗 368 主标题字体栈含 `"WB HanziPen"`、首段 400；无脚本错误。页面加载时的 `POST /api/rule-templates/installs`、`POST /api/project-status/inspect` 被拦，与前几轮相同。Safari「数码世界」里是否显示翩翩体待用户实看。
+- 回滚：plist 指回 `releases/wb-20261028-666`，一次 bootout + bootstrap，再重启悬浮窗；不需要恢复 data。未推送。
+测试：见上「复核」与「实看」。
+本轮新坑：无
+
 ## Claude 随手记页向悬浮窗质感对齐（样稿 3）+ Safari 翩翩体兜底（2026-10-28）
 
 用户反馈：“在数码世界里的随手记就没有优化么？主标题字体也没改，这个页面深度审核优化下，和悬浮窗页面质感对齐”；看样稿后：“胶囊应该和新建窗口在一起，我建议放到随手记那一行的右边。然后下面一整行是分类标签，标签样式重新做”；选定样稿 3（`work/notes-align-v1/`）。
