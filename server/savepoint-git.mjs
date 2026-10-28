@@ -52,6 +52,16 @@ const COMMON = [
   "log.showSignature=false",
 ];
 // Only internal exact command shapes cross the process boundary. No shell, no user command API.
+// 未推送提交数（存档点与项目空间共用）：没有上游或读取失败时返回 null，界面显示“—”，不当成 0。
+export async function unpushedCount(run) {
+  try {
+    const n = Number((await run(["rev-list", "--count", "@{upstream}..HEAD"])).trim());
+    return Number.isSafeInteger(n) && n >= 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
 export function savepointGitArgs(args) {
   const n = (s) => /^\d{1,6}$/.test(s),
     pathTail = (i) => args.length > i && args.slice(i).every(safePath);

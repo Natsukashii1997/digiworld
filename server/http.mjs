@@ -66,6 +66,9 @@ import { FULL_BACKUP_LIMITS, FULL_BACKUP_LIMIT_MESSAGE } from "../src/full-backu
 import { createBackupRecords } from "./backup-records.mjs";
 import { createStorageStatus } from "./storage-status.mjs";
 import { createProjectActivity } from "./project-activity.mjs";
+import { createProjectsSpace } from "./projects-space.mjs";
+import { createCardReader, readRoster, DEFAULT_ROSTER_PATH } from "./project-roster.mjs";
+import { createSkillUsage } from "./skill-usage.mjs";
 import { createKnowledgeTrends } from "./knowledge-trends.mjs";
 import { createCalendar, createCalendarHelper } from "./calendar.mjs";
 import { createCapabilityUsage, capabilityUseOutcome } from "./capability-usage.mjs";
@@ -281,6 +284,21 @@ export async function startServer({
   const rawKnowledgeFiles = createKnowledgeFileDispatch(adapters.knowledgeFiles || createKnowledgeFiles(), feishuFiles);
   const knowledgeFiles = createPolicyKnowledgeFiles(repository,rawKnowledgeFiles);
   const knowledgeAccess=createKnowledgeAccess(repository,{files:knowledgeFiles,clock,limits:adapters.knowledgeAccessLimits});
+  // 项目空间第二版：名册路径、项目卡读取可由测试注入（合成名册、合成项目卡），默认读数字分身名册与 vault 能力授权的 Vault。
+  // 实战（第 2 批）：开关默认关，这一版不接设置页；会话目录、技能目录可由测试注入合成目录。
+  const skillUsage = createSkillUsage({
+    directory: repository.directory,
+    clock: clock || Date.now,
+    roster: () => readRoster(adapters.projectsSpace?.rosterPath || DEFAULT_ROSTER_PATH),
+    ...adapters.skillUsage,
+  });
+  const projectsSpace = createProjectsSpace(repository, {
+    clock,
+    github: projectGithub,
+    skillUsage,
+    readCard: createCardReader(repository, { settings: capabilities.settings, files: knowledgeFiles }),
+    ...adapters.projectsSpace,
+  });
   const feishuConnections = createFeishuConnections(repository, {
     provider: feishuFiles,
     clock,
@@ -721,6 +739,14 @@ export async function startServer({
             200,
             await projectStatus[statusAction](await body(request)),
           );
+        if (url.pathname === "/api/projects-space" && request.method === "GET")
+          return send(response, 200, await projectsSpace.inspect(url.searchParams.get("refresh") === "1" ? { refresh: true } : {}));
+        if (url.pathname === "/api/projects-space/skill-usage" && request.method === "GET")
+          return send(response, 200, await skillUsage.read());
+        if (url.pathname === "/api/projects-space/skill-usage/refresh" && request.method === "POST")
+          return send(response, 200, await skillUsage.refresh(await body(request)));
+        if (url.pathname === "/api/projects-space/pin" && request.method === "POST")
+          return send(response, 200, await projectsSpace.pin(await body(request)));
         if (url.pathname === "/api/project-github/panel" && request.method === "POST")
           return send(response, 200, await projectGithub.panel(await body(request)));
         const briefAction = url.pathname.match(

@@ -207,7 +207,27 @@ export function parseIssues(stdout) {
       author: text(r.author?.login, 100),
       createdAt: when(r.createdAt),
       updatedAt: when(r.updatedAt),
+      // 项目空间第二版：标签只取名字，本地按 ready-for-agent 等计数（不用 --label 过滤，白名单不放宽）。
+      labels: (Array.isArray(r.labels) ? r.labels : [])
+        .map((l) => text(l?.name, 50))
+        .filter(Boolean)
+        .slice(0, 10),
     }));
+}
+
+// 开着的 issue 按分流标签拆分；状态不是 ok 时不当成 0。
+export const TRIAGE_LABELS = { agent: "ready-for-agent", human: "ready-for-human", triage: "needs-triage" };
+export function issueBreakdown(issues) {
+  if (issues?.state !== "ok") return null;
+  const items = issues.items || [];
+  const count = (label) => items.filter((i) => i.labels?.includes(label)).length;
+  return {
+    open: items.length,
+    truncated: issues.truncated === true,
+    agent: count(TRIAGE_LABELS.agent),
+    human: count(TRIAGE_LABELS.human),
+    triage: count(TRIAGE_LABELS.triage),
+  };
 }
 
 function runStatus(status, conclusion) {
@@ -245,7 +265,7 @@ export function ciSummary(runs) {
 
 const PR_FIELDS = "number,title,url,isDraft,author,createdAt,updatedAt";
 const MERGED_FIELDS = "number,title,url,author,mergedAt";
-const ISSUE_FIELDS = "number,title,url,author,createdAt,updatedAt";
+const ISSUE_FIELDS = "number,title,url,author,createdAt,updatedAt,labels";
 const RUN_FIELDS = "databaseId,workflowName,status,conclusion,createdAt,updatedAt,url";
 
 export async function fetchGithubPanel(gh, repoKey) {

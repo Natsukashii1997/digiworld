@@ -29,6 +29,7 @@ import {
   parseCommits,
   DEFAULT_IGNORE,
   safePath,
+  unpushedCount,
 } from "./savepoint-git.mjs";
 const HASH = /^[a-f0-9]{40}$/,
   UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
@@ -394,12 +395,8 @@ export function createSavepoints(
         total = Number(
           (await run(ctx.root, ["rev-list", "--count", "HEAD"])).trim(),
         );
-        try {
-          ahead = Number(
-            (
-              await run(ctx.root, ["rev-list", "--count", "@{upstream}..HEAD"])
-            ).trim(),
-          );
+        ahead = await unpushedCount((args) => run(ctx.root, args));
+        if (ahead !== null) try {
           local = new Set(
             (await run(ctx.root, ["rev-list", "@{upstream}..HEAD"]))
               .trim()

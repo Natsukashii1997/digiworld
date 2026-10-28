@@ -136,6 +136,85 @@ export function withOutline(parsed, text) {
   return outline ? { ...parsed, state: "outline", outline } : parsed;
 }
 
+// 项目空间第二版：CURRENT 顶节（新记录写在最上面）——标题、日期、作者与顶节里写的下一步。
+// 跳过只放协作状态表的那一节；日期与作者先看标题，再看标题前的说明行（如“更新：2026-10-23”）。
+// 头表的“唯一下一步”与“更新时间”单独给出，供下一步取数与过期判断用。不解释其余正文。
+const AUTHOR = /(Claude|Codex|Hermes|常浩)/;
+const DATE = /(20\d\d)[-./年](\d{1,2})[-./月](\d{1,2})/;
+const STAMP = /\b[a-z]{2}-(20\d\d)(\d\d)(\d\d)-\d+/i;
+function dateOf(value) {
+  const m = String(value || "").match(DATE) || String(value || "").match(STAMP);
+  if (!m) return "";
+  const [y, mo, d] = [m[1], m[2].padStart(2, "0"), m[3].padStart(2, "0")];
+  return Number(mo) >= 1 && Number(mo) <= 12 && Number(d) >= 1 && Number(d) <= 31 ? `${y}-${mo}-${d}` : "";
+}
+function cleanTitle(raw) {
+  let title = raw.replace(/^\s*20\d\d[-./]\d{1,2}[-./]\d{1,2}\s*[·・|｜:：\-—]?\s*/, "");
+  title = title.replace(/^(Claude|Codex|Hermes)\s*[：:·]?\s*/, "");
+  // 末尾括注：去掉其中的日期与作者两段；剩下的太长就整段不要。
+  title = title.replace(/[（(]([^（）()]*)[）)]\s*$/, (_, inner) => {
+    const rest = inner.split(/[，,、；;]/).map((s) => s.trim())
+      .filter((s) => s && !DATE.test(s) && !AUTHOR.test(s));
+    const kept = rest.join("，");
+    return kept && kept.length <= 30 ? `（${kept}）` : "";
+  });
+  return title.trim();
+}
+const NEXT_LINE = /^\s*(?:[-*+]\s+)?(?:\*\*|__)?(?:唯一)?下一步(?:\*\*|__)?\s*[：:]\s*(.+)$/;
+export function parseCurrentTop(text) {
+  const lines = String(text).split(/\r?\n/);
+  const table = parseCurrentStatus(text);
+  let tableDate = "";
+  for (const line of lines) {
+    if (!/^\s*\|/.test(line)) continue;
+    const row = cells(line);
+    if (row.length >= 2 && plain(row[0]) === "更新时间") {
+      tableDate = dateOf(row[1]);
+      break;
+    }
+  }
+  const tableNext = table.fields.next ? { text: table.fields.next, date: tableDate } : null;
+  let fence = false, at = -1;
+  const preamble = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (FENCE.test(lines[i])) { fence = !fence; continue; }
+    if (fence) continue;
+    if (/^##\s+\S/.test(lines[i])) {
+      // 协作状态一节（或只放表格的一节）不算顶节。
+      if (/^##\s+(协作状态|状态表)\s*$/.test(lines[i])) continue;
+      const body = [];
+      for (const l of lines.slice(i + 1)) {
+        if (/^#{1,2}\s/.test(l)) break;
+        if (l.trim()) body.push(l);
+      }
+      if (body.length && body.every((l) => /^\s*\|/.test(l))) continue;
+      at = i;
+      break;
+    }
+    if (at < 0) preamble.push(lines[i]);
+  }
+  if (at < 0) return { top: null, tableNext };
+  const heading = plain(unlink(lines[at].replace(/^##\s+/, "").replace(/\s+#+\s*$/, "")));
+  const section = [];
+  fence = false;
+  for (const l of lines.slice(at + 1)) {
+    if (FENCE.test(l)) { fence = !fence; continue; }
+    if (!fence && /^#{1,2}\s/.test(l)) break;
+    if (!fence) section.push(l);
+  }
+  const head = preamble.join("\n");
+  const nextLine = section.map((l) => l.match(NEXT_LINE)?.[1]).find(Boolean);
+  return {
+    top: {
+      title: cut(cleanTitle(heading) || heading, OUTLINE_TITLE_LIMIT),
+      date: dateOf(heading) || dateOf(head),
+      by: heading.match(AUTHOR)?.[1] || "",
+      next: nextLine ? cut(plain(unlink(nextLine)), OUTLINE_SUMMARY_LIMIT) : "",
+    },
+    tableNext,
+  };
+}
+
 // 只在截断读取时允许末尾出现被截断的多字节字符；其余任何非 UTF-8 字节都拒绝。
 export function decodeCurrentHead(buffer, truncated) {
   const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false });
