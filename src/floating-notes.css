@@ -11,7 +11,13 @@
 .desk .fn-panel.is-hidden { opacity: 0; transform: scale(.92); pointer-events: none; }
 /* 顶栏用户 2026-10-28 选 B：手写刊头（翩翩体，与便签主标题同款）+ 淡黄渐变，去掉分隔线。 */
 .fn-hd { display: flex; align-items: center; gap: var(--s-2); height: 58px; padding: 0 var(--s-2) 0 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--yellow) 5%, transparent), transparent); cursor: grab; }
-.fn-hd svg.px { width: 14px; height: 14px; color: var(--yellow); shape-rendering: crispEdges; }
+/* 用户 2026-10-28：图标换成用户给的希望徽章，光晕 3.2s 慢呼吸；减少动态效果时只留静态光晕。 */
+.fn-badge { width: 24px; height: 24px; flex: none; animation: fn-badge-breathe 3.2s ease-in-out infinite; }
+@keyframes fn-badge-breathe {
+  0%, 100% { filter: drop-shadow(0 0 1px color-mix(in srgb, var(--yellow) 45%, transparent)) drop-shadow(0 0 3px color-mix(in srgb, var(--orange) 15%, transparent)); }
+  50% { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--yellow) 85%, transparent)) drop-shadow(0 0 9px color-mix(in srgb, var(--orange) 45%, transparent)); }
+}
+@media (prefers-reduced-motion: reduce) { .fn-badge { animation: none; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--yellow) 70%, transparent)) drop-shadow(0 0 6px color-mix(in srgb, var(--orange) 35%, transparent)); } }
 .fn-hd h3 { margin: 0; font: 700 var(--fs-section)/1 "HanziPen SC", var(--sans); letter-spacing: .06em; }
 .fn-hd .n { align-self: flex-start; margin-top: 17px; font: 500 var(--fs-label) var(--mono); color: var(--muted); letter-spacing: .04em; }
 .fn-hd .fn-icon { color: var(--muted); }

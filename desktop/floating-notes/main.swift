@@ -11,7 +11,9 @@ final class NotesPanel:NSPanel { override var canBecomeKey:Bool {true};override 
 final class HeaderDragView:NSView {
     override func acceptsFirstMouse(for event:NSEvent?)->Bool {true}
     override func hitTest(_ point:NSPoint)->NSView? {point.y>=bounds.height-52 && point.x<bounds.width-92 ? self:nil}
-    override func mouseDown(with event:NSEvent){window?.performDrag(with:event)}
+    weak var web:WKWebView?
+    // 用户 2026-10-28：拖动条挡住了网页，点顶栏空白退不出编辑；拖动前先给顶栏补一次 pointerdown，按外部点击处理。
+    override func mouseDown(with event:NSEvent){web?.evaluateJavaScript("document.querySelector('.fn-hd')?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");window?.performDrag(with:event)}
 }
 final class BallView:NSView {
     weak var owner:FloatingApp?
@@ -79,7 +81,7 @@ final class FloatingApp:NSObject,NSApplicationDelegate,WKNavigationDelegate,WKUI
         if #available(macOS 13.0,*){panel.collectionBehavior.insert(.canJoinAllApplications)}
         let configuration=WKWebViewConfiguration();configuration.websiteDataStore = .nonPersistent();configuration.userContentController.addScriptMessageHandler(self,contentWorld:.page,name:"floatingNotes")
         web=WKWebView(frame:panel.contentView!.bounds,configuration:configuration);web.autoresizingMask=[.width,.height];web.navigationDelegate=self;web.uiDelegate=self;web.underPageBackgroundColor = .clear
-        let container=NSView(frame:panel.contentView!.bounds);container.addSubview(web);let drag=HeaderDragView(frame:container.bounds);drag.autoresizingMask=[.width,.height];container.addSubview(drag);panel.contentView=container
+        let container=NSView(frame:panel.contentView!.bounds);container.addSubview(web);let drag=HeaderDragView(frame:container.bounds);drag.web=web;drag.autoresizingMask=[.width,.height];container.addSubview(drag);panel.contentView=container
         guide=NSPanel(contentRect:.zero,styleMask:[.borderless,.nonactivatingPanel],backing:.buffered,defer:false);guide.isOpaque=false;guide.backgroundColor=color(0xffd166,0.7);guide.level = .floating;guide.ignoresMouseEvents=true;guide.hasShadow=true;guide.collectionBehavior=[.canJoinAllSpaces,.ignoresCycle]
         buildMainMenu();buildMenu()
         restoreBall();ball.orderFrontRegardless();loadPage()
