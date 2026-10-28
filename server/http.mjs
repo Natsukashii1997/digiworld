@@ -38,6 +38,7 @@ import { createProjectBrief } from "./project-brief.mjs";
 import { applyProjectCatalog, excludedProject, reconcileProjectCatalog } from "./project-catalog.mjs";
 import { inspectProjectLocation } from "./project-scan.mjs";
 import { createSkillSources } from "./skill-sources.mjs";
+import { hanziPenBold } from "./system-font.mjs";
 import { createSkillSourceUpdates } from "./skill-source-updates.mjs";
 import { inspectAgentInventory } from "./agent-inventory.mjs";
 import { createAgentContents, readAgentContents } from "./agent-contents.mjs";
@@ -1094,6 +1095,12 @@ export async function startServer({
       if (!["GET", "HEAD"].includes(request.method))
         throw failure("方法不支持", 405);
       const pathname = decodeURIComponent(url.pathname);
+      if (pathname === "/fonts/hanzipen-sc-bold.ttf") {
+        const font = await hanziPenBold();
+        if (!font) throw failure("本机没有翩翩体", 404);
+        response.writeHead(200, { "content-type": "font/ttf", "cache-control": "max-age=2592000" });
+        return response.end(request.method === "HEAD" ? undefined : font);
+      }
       if (pathname !== "/" && !/^\/assets\/[a-zA-Z0-9._-]+$/.test(pathname))
         throw failure("文件不存在", 404);
       const file = join(

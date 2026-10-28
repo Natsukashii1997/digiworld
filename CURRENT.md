@@ -37,6 +37,16 @@
 测试：`vite build` 到草稿目录通过，产物清单与 apple-touch-icon 指向新图、标签页仍为 `digivice-192.png`；全量 `npm test` 未跑（只改静态图标与清单路径）。
 本轮新坑：Safari「添加到程序坞」的网页应用不能改包内文件后重签（-10410），换图标只能贴自定义图标或让 Safari 重建；提升：已提升为全局 G-15（agent-kit `011a196`）。
 
+## Claude 随手记页向悬浮窗质感对齐（样稿 3）+ Safari 翩翩体兜底（2026-10-28）
+
+用户反馈：“在数码世界里的随手记就没有优化么？主标题字体也没改，这个页面深度审核优化下，和悬浮窗页面质感对齐”；看样稿后：“胶囊应该和新建窗口在一起，我建议放到随手记那一行的右边。然后下面一整行是分类标签，标签样式重新做”；选定样稿 3（`work/notes-align-v1/`）。
+- 主标题没变的原因：「数码世界」是 Safari 网页应用，Safari 不让网页用翩翩体这类按需下载的系统字体（Chromium 与原生悬浮窗可以）。新增 `server/system-font.mjs`：从 `/System/Library/AssetsV2/…/Hanzipen.ttc` 拆出「HanziPenSC-W5」单款，只在内存里，不落盘、不进仓库；`server/http.mjs` 加 `GET /fonts/hanzipen-sc-bold.ttf`（`font/ttf`，缓存 30 天，找不到 404）。`src/notes-types.css` 加 `@font-face "WB HanziPen"`，主标题与悬浮窗顶栏字体栈改为 `"HanziPen SC","WB HanziPen",var(--sans)`，系统字体可用时不下载。
+- `src/NotesV16.jsx`：三颗新建胶囊改由 `PageHeading` 的 `action` 放到标题行右边；新建格只在编辑新便签时出现；删去提示行与不再用的 `Plus`。
+- `src/notes-types.css`：胶囊按类型着色（同悬浮窗），放进标题区后 `container-type:normal`（原尺寸容器会把宽度算成 0）；`.sn-page` 套悬浮窗同款深蓝面板；分类标签改一整行分段条，类型 4 个与状态 6 个之间竖线分组，窄屏条内横滑；无标题便签只加粗第一行（页与悬浮窗一致）；删去不再用的 `sn-pad-row / sn-pad-hint / sn-pad-key` 等样式（`src/notes-v16.css` 同删）。
+- `tests/notes-v16-browser.mjs`：「保留原版空白输入卡」断言按用户新决定改为不编辑时无新建格、标题行有 3 颗胶囊。
+测试：design-tokens / digital-world-ui / notes-types 单元 23/23；`vite build`；浏览器 notes-types / notes-quick-create / floating-notes / home-notes-floating / floating-notes-sync / audit-ui-preservation / audit-a 通过；`notes-v16-browser` 第 24 行失败、`web-draft-browser` 第 51 行偶发失败，两处在 `82897f0` 干净副本上同样出现（原有问题）；`web-draft-browser` 第 7 行设置页超时来自工作区 651 未提交的设置改动，不在本提交。隔离实拍（`work/notes-align-v1/landed.mjs`）页 1440 / 390、悬浮窗 368 阅读态与新建态无横向滚动、无脚本错误；字体路由隔离验证 200、装了翩翩体时页面不请求兜底字体、强制加载成功（Chromium）。Safari 里是否显示翩翩体待发布后实看。
+本轮新坑：无
+
 ## Claude 发布到正式 5178（wb-20261028-666，2026-10-28，回读通过）
 
 用户原话：“提交并发布”。发布提交 `82897f0`（便签主标题翩翩体粗再加 .5px 描边，占位保持常规）；`git archive` 从提交导出，651 未提交改动没带进去。脚本 `work/adopt666/adopt.py`（由 adopt665 只改目录、新旧版本名、提交号与临时 plist 名）。

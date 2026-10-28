@@ -1,6 +1,8 @@
 /* New note capabilities inherit the existing notes-v16 / floating-notes design. */
+/* Safari 网页应用不让网页用按需下载的翩翩体，由本机服务提供单款兜底（server/system-font.mjs）；装了这款字体的窗口直接用系统里的，不会下载。 */
+@font-face{font-family:"WB HanziPen";font-weight:700;font-display:swap;src:url(/fonts/hanzipen-sc-bold.ttf) format("truetype")}
 /* 主标题用翩翩体粗，和正文区分（用户 2026-10-28 第二轮选定，原手札体粗）；没装这款字体时回到系统字体。翩翩体粗笔画偏细，再加 .5px 描边（同悬浮窗顶栏做法，用户 2026-10-28）。 */
-.notes-v16 .sn-title{margin:0;padding:0;color:var(--text);font:700 var(--fs-section)/1.35 "HanziPen SC",var(--sans);letter-spacing:.04em;-webkit-text-stroke:.5px currentColor;text-align:center;overflow-wrap:anywhere}
+.notes-v16 .sn-title{margin:0;padding:0;color:var(--text);font:700 var(--fs-section)/1.35 "HanziPen SC","WB HanziPen",var(--sans);letter-spacing:.04em;-webkit-text-stroke:.5px currentColor;text-align:center;overflow-wrap:anywhere}
 .notes-v16 input.sn-title-input{box-sizing:border-box;width:100%;min-width:0;min-height:32px;height:32px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;font-weight:700;text-align:center}
 .notes-v16 input.sn-title-input{margin-bottom:calc(4px - var(--s-5))}
 .notes-v16.fn-panel input.sn-title-input{margin-bottom:-4px}
@@ -63,10 +65,6 @@
 .notes-v16 .sn-type-tile:hover:not(:disabled){border-color:color-mix(in srgb,var(--tc) 60%,transparent);background:color-mix(in srgb,var(--tc) 8%,var(--panel));color:var(--text)}
 .notes-v16 .sn-type-tile:disabled{opacity:.5;cursor:default}
 .notes-v16 .sn-type-tile:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-.notes-v16 .sn-pad-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);container:sn-pad-row/inline-size}
-.notes-v16 .sn-pad-row .sn-pad-hint{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.notes-v16 .sn-pad-row .sn-pad-key{flex:none;white-space:nowrap}
-.notes-v16 .sn-pad-hint small{margin-left:var(--s-2);font-size:var(--fs-small);color:var(--faint)}
 /* 入口行窄于 380px（窄屏、两栏、悬浮窗）时按钮变紧凑；超长时省略，不撑出页面。 */
 .notes-v16 .sn-type-tile{overflow:hidden;text-overflow:ellipsis}
 @container sn-tiles (max-width:380px){.notes-v16 .sn-type-tile{justify-content:center;gap:6px;padding:0 var(--s-2);font-size:var(--fs-caption)}}
@@ -78,7 +76,25 @@
 .notes-v16.fn-panel .sn-type-tile:hover:not(:disabled){background:none}
 .notes-v16.fn-panel .sn-type-tile:hover:not(:disabled)::before{border-color:color-mix(in srgb,var(--tc) 60%,transparent);background:color-mix(in srgb,var(--tc) 16%,transparent)}
 .notes-v16.fn-panel .sn-type-tile svg{width:14px;height:14px}
-@container sn-pad-row (max-width:440px){.notes-v16 .sn-pad-hint small{display:none}}
 /* 入口区本身不再可点，悬停不亮边框，光标恢复默认。 */
-.notes-v16 .sn-new .sn-pad:not(.editing){cursor:default}
-.notes-v16 .sn-new .sn-pad:not(.editing):hover{border-color:var(--line-3);color:var(--muted)}
+
+/* 用户 2026-10-28 选样稿 3：随手记页向悬浮窗质感对齐。 */
+/* 新建胶囊在标题「随手记」一行右边，按类型着色，同悬浮窗；放进标题区后不再做尺寸容器，否则宽度会算成 0。 */
+.notes-v16 .page-heading .page-heading-action{flex:none;align-self:center;margin-left:auto}
+.notes-v16 .page-heading-action .sn-type-tiles{container-type:normal;gap:var(--s-2)}
+.notes-v16 .page-heading-action .sn-type-tile{flex:0 0 auto;justify-content:center;min-height:40px;padding:0 var(--s-4);border:1px solid color-mix(in srgb,var(--tc) 30%,transparent);border-radius:var(--r-pill);background:color-mix(in srgb,var(--tc) 9%,transparent);color:var(--text)}
+.notes-v16 .page-heading-action .sn-type-tile:hover:not(:disabled){border-color:color-mix(in srgb,var(--tc) 60%,transparent);background:color-mix(in srgb,var(--tc) 16%,transparent)}
+/* 筛选和便签墙放进与悬浮窗同款的深蓝面板 */
+.notes-v16 .sn-page{padding:var(--s-6);border:1px solid var(--line-2);border-radius:var(--r-floating);background:var(--m-panel);box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 6%,transparent),0 30px 60px -20px color-mix(in srgb,#000 85%,transparent),0 0 0 .5px color-mix(in srgb,#000 60%,transparent)}
+/* 分类标签：一整行分段条，类型 4 个 | 状态 6 个，中间竖线分组；窄屏在条内横滑 */
+.notes-v16 .sn-filter{flex-wrap:nowrap;gap:2px;padding:4px;border:1px solid var(--line-2);border-radius:var(--r-s);background:color-mix(in srgb,var(--bg) 45%,transparent);overflow-x:auto;scrollbar-width:none}
+.notes-v16 .sn-filter::-webkit-scrollbar{display:none}
+.notes-v16 .sn-filter button{flex:1 0 auto;justify-content:center;min-height:36px;padding:0 var(--s-3);border:0;border-radius:var(--r-xs);background:none;color:var(--text-2);white-space:nowrap}
+.notes-v16 .sn-filter button:hover{background:color-mix(in srgb,var(--text-hi) 5%,transparent);color:var(--text)}
+.notes-v16 .sn-filter button.on{background:color-mix(in srgb,var(--cyan) 13%,transparent);color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--cyan) 45%,transparent)}
+.notes-v16 .sn-filter button:nth-child(5){position:relative;margin-left:calc(var(--s-2) + 1px)}
+.notes-v16 .sn-filter button:nth-child(5)::before{content:"";position:absolute;left:calc(-1 * var(--s-1) - 2px);top:9px;bottom:9px;width:1px;background:var(--line-2)}
+/* 无标题便签只加粗第一行，不再整段加粗（随手记页与悬浮窗一致） */
+.notes-v16 .sn-body>p:first-child,.notes-v16.fn-panel .sn-body>p:first-child{font-weight:400}
+.notes-v16 .sn-body>p:first-child::first-line,.notes-v16.fn-panel .sn-body>p:first-child::first-line{font-weight:700}
+@media (max-width:640px){.notes-v16 .sn-page{padding:var(--s-3)}.notes-v16 .page-heading .page-heading-action{width:100%;margin-left:0}.notes-v16 .page-heading-action .sn-type-tiles{width:100%}.notes-v16 .page-heading-action .sn-type-tile{flex:1 1 0;padding:0 var(--s-2)}}
