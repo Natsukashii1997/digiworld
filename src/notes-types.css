@@ -1,11 +1,11 @@
 /* New note capabilities inherit the existing notes-v16 / floating-notes design. */
-/* 主标题用翩翩体粗，和正文区分（用户 2026-10-28 第二轮选定，原手札体粗）；没装这款字体时回到系统字体。 */
-.notes-v16 .sn-title{margin:0;padding:0;color:var(--text);font:700 var(--fs-section)/1.35 "HanziPen SC",var(--sans);letter-spacing:.04em;text-align:center;overflow-wrap:anywhere}
+/* 主标题用翩翩体粗，和正文区分（用户 2026-10-28 第二轮选定，原手札体粗）；没装这款字体时回到系统字体。翩翩体粗笔画偏细，再加 .5px 描边（同悬浮窗顶栏做法，用户 2026-10-28）。 */
+.notes-v16 .sn-title{margin:0;padding:0;color:var(--text);font:700 var(--fs-section)/1.35 "HanziPen SC",var(--sans);letter-spacing:.04em;-webkit-text-stroke:.5px currentColor;text-align:center;overflow-wrap:anywhere}
 .notes-v16 input.sn-title-input{box-sizing:border-box;width:100%;min-width:0;min-height:32px;height:32px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;font-weight:700;text-align:center}
 .notes-v16 input.sn-title-input{margin-bottom:calc(4px - var(--s-5))}
 .notes-v16.fn-panel input.sn-title-input{margin-bottom:-4px}
 .notes-v16 .sn-cell.editing{position:relative;z-index:2}
-.notes-v16 input.sn-title-input::placeholder{color:var(--muted);font-weight:400}
+.notes-v16 input.sn-title-input::placeholder{color:var(--muted);font-weight:400;-webkit-text-stroke:0}
 .notes-v16 input.sn-title-input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .notes-v16 .sn:has(>.sn-title) .sn-body>p:first-child,.notes-v16 .sn-editor-host.has-title .sn-body>p:first-child{font-weight:400}
 .notes-v16 .sn-new .sn-pad{position:relative}
