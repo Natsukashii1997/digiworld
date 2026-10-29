@@ -37,7 +37,7 @@ import { Pixel } from "./pixel.jsx";
 import { uid, now, current } from "./store.js";
 import { copy, download } from "./Assets.jsx";
 import { ReverseWorkbench } from "./ReverseEngineering.jsx";
-import {ReverseV16} from './ReverseV16.jsx';
+import {ReverseHatch} from './ReverseHatch.jsx';
 import { HistoryArchive } from "./HistoryArchive.jsx";
 import "./reverse-v14.css";
 import "./settings-v14.css";
@@ -191,7 +191,7 @@ export function HistoryPage(props) {
   );
 }
 
-export function References(props) {return <ReverseV16 {...props}/>;}
+export function References(props) {return <ReverseHatch {...props}/>;}
 function LegacyReferences({ state, save, notify }) {
   const [modal, setModal] = useState(false),
     [title, setTitle] = useState(""),

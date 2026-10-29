@@ -35,3 +35,13 @@ test('逆向标题和来源不绕过当前任务包的敏感信息过滤',()=>{
  s.reverseRecords=[{id:'r1',type:'TXT',title:'公开参照',material:{text:'公开正文',url:'https://example.com/public'}}];
  assert.equal(searchWorkspace(s,'example.com/public').reverse.length,1);
 });
+
+test('逆向也查八格正文（#28），过滤凭据，已删记录不出现',()=>{
+ const s=seed(),hatch=(known,miss='')=>({version:1,rounds:[],slots:Object.fromEntries(['use','shape','data','flow','ui','edge','write','check'].map(id=>[id,{known:'',miss:'',at:'2026-10-29T00:00:00.000Z'}].map((v,i)=>i?{...v,...(id==='data'?{known,miss}:{})}:v)))});
+ s.reverseRecords=[{id:'r1',type:'TXT',title:'迁移研究',material:{text:'',url:''},hatch:hatch('产物是 migration-packages','字段格式 token: abcd1234efgh5678')},
+  {id:'r2',type:'TXT',title:'回收',material:{text:'',url:''},hatch:hatch('回收独有八格词'),deletedAt:'2026-01-01'}];
+ const hits=searchWorkspace(s,'migration-packages').reverse;
+ assert.equal(hits.length,1);assert.equal(hits[0].item.id,'r1');assert.equal(hits[0].where,'八格');
+ assert.equal(searchWorkspace(s,'abcd1234').reverse.length,0);
+ assert.equal(searchWorkspace(s,'回收独有八格词').reverse.length,0);
+});

@@ -1,5 +1,5 @@
 import {enterNew175,replace175,visible175} from "./notes-editor-helpers175.mjs";
-import {openLegacyInput,openReferenceTools} from './reverse-v16-helpers.mjs';
+import {openReferenceTools} from './reverse-v16-helpers.mjs';
 import {openManualRelay} from "./agents-v16-helpers.mjs";
 import { fixture } from "./fixture.mjs";
 const app = await fixture();
