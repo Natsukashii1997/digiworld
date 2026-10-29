@@ -6,7 +6,7 @@ import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 import { homedir } from "node:os";
-import { join, basename, resolve } from "node:path";
+import { join, basename, dirname, resolve } from "node:path";
 import { failure } from "./repository.mjs";
 
 const DAY = 86400000;
@@ -29,6 +29,26 @@ export function skillName(raw) {
   const name = at >= 0 ? value.slice(at + 1) : value;
   const plugin = at >= 0 ? value.slice(0, at) : "";
   return NAME.test(name) ? { name, plugin: NAME.test(plugin) ? plugin : "" } : null;
+}
+
+// 会话目录在某个 Git worktree 里时，找出主仓库目录：往上找 .git，是文件且 gitdir 指向 <主仓库>/.git/worktrees/<名字>。
+// 只读 .git 文件，不起 git 进程；不是 worktree、目录已删或读不到时返回 null。
+export async function worktreeMain(cwd, filesystem = fs) {
+  if (typeof cwd !== "string" || !cwd.startsWith("/")) return null;
+  for (let dir = resolve(cwd), depth = 0; depth < 40; depth++) {
+    try {
+      const dot = join(dir, ".git");
+      const info = await filesystem.stat(dot);
+      if (!info.isFile()) return null;
+      const m = /^gitdir:\s*(.+?)\s*$/m.exec(await filesystem.readFile(dot, "utf8"));
+      const gitdir = m && resolve(dir, m[1]);
+      return gitdir && /\/\.git\/worktrees\/[^/]+$/.test(gitdir) ? dirname(dirname(dirname(gitdir))) : null;
+    } catch {}
+    const up = dirname(dir);
+    if (up === dir) return null;
+    dir = up;
+  }
+  return null;
 }
 
 // 会话目录归到名册项目：在项目目录里（含仓库内 worktree）；或路径里某一段就是仓库名（外置 worktree）。
@@ -101,6 +121,11 @@ export function createSkillUsage({
   },
 } = {}) {
   const cachePath = join(directory, "skill-usage.json");
+  // 外置 worktree（如 work-desk-ui-bitmap）归到主仓库所在的项目；同一目录只查一次。
+  async function ownerOf(cwd, projects, seen) {
+    if (!seen.has(cwd)) seen.set(cwd, worktreeMain(cwd, filesystem).then((main) => (main && projectOf(main, projects)) || projectOf(cwd, projects)));
+    return seen.get(cwd);
+  }
   let running = null;
 
   async function recentFiles(root, recursive) {
@@ -150,6 +175,7 @@ export function createSkillUsage({
       if (sessions) sessions.add(session);
     };
     let files = 0;
+    const seen = new Map();
     for (const file of await recentFiles(claudeRoot, false)) {
       files++;
       for await (const line of lines(file)) {
@@ -158,7 +184,7 @@ export function createSkillUsage({
         try { record = JSON.parse(line); } catch { continue; }
         const day = dayOf(record);
         if (!day || day < sinceDay) continue;
-        const id = projectOf(record.cwd, projects);
+        const id = await ownerOf(record.cwd, projects, seen);
         if (!id) continue;
         for (const s of claudeSkillsInLine(record))
           bump(result[id].skills, s.name, s.plugin || installed.get(s.name) || "", day, file, result[id].sessions);
@@ -172,7 +198,7 @@ export function createSkillUsage({
         // 第一行是会话元数据，只取会话目录；归不到名册项目的会话不再往下读。
         if (first) {
           first = false;
-          try { id = projectOf(JSON.parse(line)?.payload?.cwd, projects); } catch {}
+          try { id = await ownerOf(JSON.parse(line)?.payload?.cwd, projects, seen); } catch {}
           if (!id) break;
           continue;
         }
