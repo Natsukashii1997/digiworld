@@ -1,5 +1,5 @@
 /* 逆向工程孵蛋 3C（issue #28）：样式取自 docs/design/ui-v19/build/reverse-3C-孵蛋.html，类名前缀 rh-。
-   控件至少 44px，焦点用 outline；动效在第 4 批，这里没有过渡。 */
+   控件至少 44px，焦点用 outline；动效（#30）按帧在脚本里换样式，这里没有过渡。 */
 .rh { --sh: 150px; --sg: 10px; }
 .rh .bar { display: flex; align-items: center; gap: 18px; margin-bottom: 14px; }
 .rh .bar h1 { margin: 0; font: 800 var(--fs-section) var(--sans); white-space: nowrap; color: var(--text); }
@@ -29,7 +29,6 @@
 .rh-src h2 { margin: 0; font: 800 var(--fs-title) var(--sans); color: var(--text); }
 .rh-src code { overflow-wrap: anywhere; font: 500 var(--fs-small) var(--mono); color: var(--muted); }
 .rh-src .sep { color: var(--line-3); }
-.rh-src .why { flex-basis: 100%; color: var(--text-2); }
 .rh-kind { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: var(--r-xs); background: var(--hw-pit); box-shadow: inset 0 0 0 1px var(--line-2); font: 600 var(--fs-micro) var(--mono); letter-spacing: .08em; color: var(--text-2); }
 
 /* 舞台：左四格 · 孵化器 · 右四格 */
@@ -165,3 +164,25 @@
 .rh-lb { display: block; margin-top: 8px; color: var(--muted); font-size: var(--fs-micro); }
 .rh-draft { max-height: 320px; margin: 4px 0 12px; padding: 10px 12px; overflow: auto; border-radius: var(--r-1); background: var(--hw-pit); box-shadow: inset 0 0 0 1px var(--line); font: var(--fs-meta) / 1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 .rh-dlg-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* 动效（#30）：放回结论时格子按帧亮起——等着的先暗，轮到的那一帧描一圈液晶绿；不做过渡，逐帧换样式 */
+.rh-slot.is-wait { opacity: .45; }
+.rh-slot.is-lit { box-shadow: inset 0 0 0 2px var(--lcd); background: var(--panel-2); }
+/* 来源条「好在哪里」：点一下就地改 */
+.rh-src .why { margin-left: auto; min-height: 44px; padding: 0; border: 0; background: none; color: var(--text-2); font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.rh-src .why.add { color: var(--orange-2); }
+.rh-src .why:disabled { cursor: default; }
+.rh-why { display: flex; flex-basis: 100%; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.rh-why input { flex: 1 1 220px; min-width: 0; min-height: 44px; box-sizing: border-box; }
+.rh-why .text-btn { min-width: 44px; min-height: 44px; }
+/* 每轮的八格小条：类名直接用快照的 f / h / e（全局 .empty 是空状态框，不能用） */
+.rh-hist li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; }
+.rh-cells { display: inline-flex; align-items: center; gap: 8px; }
+.rh-cells .strip { display: grid; grid-template-columns: repeat(8, 8px); gap: 2px; }
+.rh-cells .strip i { height: 8px; border-radius: 1px; background: var(--line-2); }
+.rh-cells .strip i.f { background: var(--lcd); }
+.rh-cells .strip i.h { background: linear-gradient(90deg, var(--yellow) 50%, var(--line-2) 50%); }
+.rh-cells b { min-width: 34px; color: var(--text-2); font-weight: 600; text-align: right; }
+/* 未分格：最近一次放回时分不进格的段落 */
+.rh-loose { display: grid; gap: 6px; margin: 8px 0; }
+.rh-loose h4 { margin: 0; font: 600 var(--fs-meta) var(--sans); color: var(--muted); }

@@ -10,7 +10,7 @@ import {
   validateReplicaDraft,
   currentVerification,
 } from "../src/reverse-recipe.js";
-import {SLOT_IDS,HATCH_LIMITS} from '../src/reverse-hatch.js';
+import {SLOT_IDS,HATCH_LIMITS,UNPLACED_TAIL} from '../src/reverse-hatch.js';
 const fail = (message) => {
   throw Object.assign(new Error("数据校验失败：" + message), { status: 400 });
 };
@@ -212,7 +212,7 @@ const HEX64 = /^[a-f0-9]{64}$/;
 export function validateHatch(r) {
   if (r.hatch !== undefined) {
     const h = r.hatch;
-    keys(h, ['version','slots','rounds']); if (h.version !== 1) fail('八格版本无效');
+    keys(h, ['version','slots','rounds','unplaced']); if (h.version !== 1) fail('八格版本无效');
     keys(h.slots, SLOT_IDS); if (SLOT_IDS.some((k) => !h.slots[k])) fail('八格不完整');
     for (const k of SLOT_IDS) {
       const s = h.slots[k]; keys(s, ['known','miss','edited','at']);
@@ -221,25 +221,31 @@ export function validateHatch(r) {
     }
     list(h.rounds, HATCH_LIMITS.rounds, '轮次无效或过多');
     h.rounds.forEach((x, i) => {
-      keys(x, ['n','at','by','asked','status','backAt','packHash']);
+      keys(x, ['n','at','by','asked','status','backAt','packHash','cells']);
       if (x.n !== i + 1) fail('轮次序号不连续'); date(x.at);
       if (!['codex','claude'].includes(x.by)) fail('轮次执行者无效');
       list(x.asked, SLOT_IDS.length, '轮次格子无效');
       if (x.asked.some((k) => !SLOT_IDS.includes(k)) || new Set(x.asked).size !== x.asked.length) fail('轮次格子无效');
       if (!HEX64.test(x.packHash || '')) fail('轮次追问包摘要无效');
-      if (x.status === 'back') date(x.backAt); else if (x.status !== 'sent' || x.backAt !== undefined) fail('轮次状态无效');
+      if (x.status === 'back') date(x.backAt); else if (x.status !== 'sent' || x.backAt !== undefined || x.cells !== undefined) fail('轮次状态无效');
+      if (x.cells !== undefined && !new RegExp(`^[fhe]{${SLOT_IDS.length}}$`).test(x.cells)) fail('轮次八格快照无效');
     });
+    if (h.unplaced !== undefined) {
+      keys(h.unplaced, ['at','items']); date(h.unplaced.at);
+      list(h.unplaced.items, HATCH_LIMITS.unplaced, '分不进格的段落过多'); if (!h.unplaced.items.length) fail('分不进格的段落为空');
+      for (const u of h.unplaced.items) { keys(u, ['label','text']); text(u.label, HATCH_LIMITS.label, '分不进格的段落标题过长'); text(u.text, HATCH_LIMITS.unplacedText + UNPLACED_TAIL.length, '分不进格的段落过长'); if (!u.text.trim()) fail('分不进格的段落为空'); }
+    }
   }
   if (r.hatchSkills !== undefined) {
     list(r.hatchSkills, HATCH_LIMITS.skills, '孵化回执数量超限');
     for (const p of r.hatchSkills) { keys(p, ['assetId','versionId','at','slotsHash']); id(p.assetId); id(p.versionId); date(p.at); if (!HEX64.test(p.slotsHash || '')) fail('孵化回执无效'); }
   }
 }
-// 轮次只追加；既有轮次唯一可变的是 sent → back 并补 backAt。逐字段比较，不受键顺序影响。
+// 轮次只追加；既有轮次唯一可变的是 sent → back 并补 backAt 与八格快照 cells。逐字段比较，不受键顺序影响。
 function sameRound(old, next) {
   const fields = new Set([...Object.keys(old), ...Object.keys(next)]);
   const changed = [...fields].filter((k) => !same(old[k], next[k]));
-  return !changed.length || (old.status === 'sent' && next.status === 'back' && changed.every((k) => k === 'status' || k === 'backAt'));
+  return !changed.length || (old.status === 'sent' && next.status === 'back' && changed.every((k) => ['status','backAt','cells'].includes(k)));
 }
 export function validateReverseHistory(previous, next, { allowReverseService = false, allowReverseImport = false, allowReverseSkill = false } = {}) {
   if (!previous) return; // 显式首次初始化只核历史自身；普通保存才核新增确认当前绑定。

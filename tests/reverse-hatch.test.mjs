@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createSpecimen } from '../src/reverse-recipe.js';
-import { SLOTS, SLOT_IDS, slotState, hatchScore, initialHatch, hatchOf, buildHatchPack, buildOrganizePack, parseHatchReply, applyHatchReply, editSlot, appendHatchRound, packHashOf, legacyRounds, generateHatchSkill, hatchTitleOf, hatchSlotsText } from '../src/reverse-hatch.js';
+import { SLOTS, SLOT_IDS, slotState, hatchScore, initialHatch, hatchOf, buildHatchPack, buildOrganizePack, parseHatchReply, applyHatchReply, editSlot, appendHatchRound, packHashOf, legacyRounds, cellsOf, generateHatchSkill, hatchTitleOf, hatchSlotsText } from '../src/reverse-hatch.js';
 import { validateReverseRecords } from '../server/schema.mjs';
 import { validateReverseHistory } from '../server/reverse-schema.mjs';
 
@@ -162,7 +162,7 @@ test('放回结论：预览列出变化；手改过的格子默认不覆盖，�
   assert.deepEqual(pv.kept.map((k) => k.id), ['data']);
   assert.deepEqual(pv.hatch.slots.data, r.hatch.slots.data, '手改的格子不被覆盖');
   assert.deepEqual(pv.hatch.slots.flow, { known: '三步', miss: '', at });
-  assert.deepEqual(pv.hatch.rounds.at(-1), { ...r.hatch.rounds.at(-1), status: 'back', backAt: at });
+  assert.deepEqual(pv.hatch.rounds.at(-1), { ...r.hatch.rounds.at(-1), status: 'back', backAt: at, cells: 'feffeeee' }, '放回时记下这一轮的八格快照');
   const forced = applyHatchReply(r, parsed, { at, overwrite: ['data'] });
   assert.deepEqual(forced.hatch.slots.data, { known: 'Agent 给的数据', miss: '字段？', at }, '覆盖后去掉手改标记');
   validateReverseRecords([{ ...r, hatch: pv.hatch }]);
@@ -280,4 +280,47 @@ test('孵化成 Skill：名字可改且实时进原文；空名、超长名拒�
   const text = hatchSlotsText(r);
   assert.equal(hatchSlotsText({ ...r, hatch: { ...hatchOf(r), rounds: [{ n: 1 }] } }), text, '轮次不影响');
   assert.notEqual(hatchSlotsText(leaked), text);
+  assert.notEqual(hatchSlotsText({ ...r, why: '一步到位' }), text, '改了好在哪里也算新状态');
+  assert.match(generateHatchSkill({ ...r, why: '一步到位' }).content, /## 用途\n[^\n]+\n好在哪里：一步到位\n/, '写在用途下方');
+});
+
+test('分不进格的段落：只存最近一次放回的，截断超长、清掉没有的；校验形状；轮次快照只能在放回时写', () => {
+  const r = fixtureBin(), at = '2026-10-29T03:00:00.000Z';
+  const first = applyHatchReply(r, parseHatchReply('开头一段\n\n## 用途\n已知：x\n缺：无\n\n## 其他\n' + 'y'.repeat(6000)), { at });
+  assert.equal(first.hatch.unplaced.at, at);
+  assert.deepEqual(first.hatch.unplaced.items.map((u) => u.label), ['开头', '其他']);
+  assert.match(first.hatch.unplaced.items[1].text, /…（超出部分未保存）$/);
+  validateReverseRecords([{ ...r, hatch: first.hatch }]);
+  const next = applyHatchReply({ ...r, hatch: first.hatch }, parseHatchReply('## 结构\n已知：三栏\n缺：无'), { at });
+  assert.equal(next.hatch.unplaced, undefined, '这次没有就清掉');
+  assert.throws(() => validateReverseRecords([{ ...r, hatch: { ...first.hatch, unplaced: { at, items: [] } } }]), /为空/);
+  assert.throws(() => validateReverseRecords([{ ...r, hatch: { ...first.hatch, unplaced: { at, items: [{ label: 'x', text: 'y', extra: 1 }] } } }]));
+  assert.equal(cellsOf(initialHatch(r).slots), 'feeeeeee');
+  // 快照：sent 轮次不能带；已放回的快照不能再改
+  const sent = { ...r, hatch: appendHatchRound(r, { by: 'codex', packHash: sha('p'), at }) };
+  assert.throws(() => validateReverseRecords([{ ...sent, hatch: { ...sent.hatch, rounds: [{ ...sent.hatch.rounds[0], cells: 'ffffffff' }] } }]), /轮次状态无效/);
+  const back = { ...sent, hatch: applyHatchReply(sent, parseHatchReply('## 结构\n已知：三栏\n缺：无'), { at }).hatch };
+  validateReverseHistory(state(sent), state(back));
+  const moved = { ...back, hatch: { ...back.hatch, rounds: [{ ...back.hatch.rounds[0], cells: 'ffffffff' }] } };
+  assert.throws(() => validateReverseHistory(state(back), state(moved)), /轮次只能追加/);
+});
+
+test('按八格整理：只有分不进格的段落时也能生成，只整理不取证', () => {
+  const r = fixtureBin();
+  assert.equal(buildOrganizePack(r), '', '什么都没有时为空');
+  r.hatch = applyHatchReply(r, parseHatchReply('## 其他\n顺带发现：有个隐藏开关'), { at: '2026-10-29T03:00:00.000Z' }).hatch;
+  const pack = buildOrganizePack(r);
+  assert.match(pack, /只整理下面的段落，不重新取证/);
+  assert.match(pack, /## 上次放回时分不进格的段落\n### 其他\n顺带发现：有个隐藏开关/);
+  assert.doesNotMatch(pack, /## 结论/);
+});
+
+test('分不进格超过 20 段：多出的并进最后一段并注明，不悄悄丢掉', () => {
+  const r = fixtureBin();
+  const raw = Array.from({ length: 23 }, (_, i) => `## 杂项${i + 1}\n内容${i + 1}`).join('\n\n');
+  const h = applyHatchReply(r, parseHatchReply(raw), { at: '2026-10-29T03:00:00.000Z' }).hatch;
+  assert.equal(h.unplaced.items.length, 20);
+  assert.equal(h.unplaced.items[19].label, '其余 4 段（合并）');
+  assert.match(h.unplaced.items[19].text, /【杂项20】\n内容20[\s\S]*【杂项23】\n内容23/);
+  validateReverseRecords([{ ...r, hatch: h }]);
 });

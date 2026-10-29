@@ -12,7 +12,8 @@ export async function copyText(text, from = motionOrigin()) {
   flyData(from);
 }
 
-export function flyData(from = motionOrigin()) {
+// tone：数据点换色（孵化用紫色 violet）；不给就是青橙交替。
+export function flyData(from = motionOrigin(), { tone } = {}) {
   const bits = [], animations = [];
   let done = false, release;
   const caught = () => {
@@ -41,7 +42,7 @@ export function flyData(from = motionOrigin()) {
     release = trackDecoration(stop);
     for (let i = 0; i < 6; i++) {
       const bit = document.createElement('i');
-      bit.className = `data-bit${i % 2 ? ' alt' : ''}`;
+      bit.className = `data-bit${tone ? ' ' + tone : i % 2 ? ' alt' : ''}`;
       bit.setAttribute('aria-hidden', 'true');
       document.body.append(bit); bits.push(bit);
       const x0 = a.left + a.width / 2 + (i - 3) * 6, y0 = a.top + 8;
