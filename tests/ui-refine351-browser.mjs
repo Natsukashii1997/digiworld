@@ -249,7 +249,11 @@ try {
     for (const width of [1440, 390]) {
       const p = await open(collection, width); await p.goto(collection.url + '/#learning'); await p.locator('.collection-canvas').waitFor(); await p.waitForTimeout(300);
       await metrics(p, 'learning'); await shot(p, 'learning');
-      if (width === 390) await fade(p, '.collection-chips', 'P5-collection');
+      // #24：分组标签只排一行，放不下在轨道里横滑，右缘渐隐
+      if (width === 390 && !capture) {
+        const rail = await p.locator('.collection-filter').evaluate(track => { const row = track.querySelector('.filter-tabs-row'); return { overflow: row.scrollWidth > row.clientWidth + 1, fade: track.dataset.right, mask: getComputedStyle(row).maskImage }; });
+        assert.ok(rail.overflow, 'P5-collection synthetic row must overflow'); assert.equal(rail.fade, 'true', 'P5-collection'); assert.match(rail.mask, /linear-gradient/);
+      }
       await p.context().close();
     }
   } finally { await collection.close(); }

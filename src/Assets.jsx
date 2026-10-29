@@ -45,6 +45,7 @@ import {
   Button,
   Badge,
   Empty,
+  FilterTabs,
   PageHeading,
   Dialog,
   Cover,
@@ -356,8 +357,9 @@ export function Assets({
         }
       />
       <div className="asset-toolbar">
-        <div className="segmented" role="group" aria-label="资产类型">
-          {[
+        <FilterTabs
+          label="资产类型"
+          items={[
             ["all", "全部"],
             ["Prompt", "Prompts"],
             ["Skill", "Skills"],
@@ -365,20 +367,10 @@ export function Assets({
             ["Rule", "规则"],
             ["Scroll", "焚决"],
             ["Design", "设计"],
-          ].map(([id, name]) => (
-            <button
-              key={id}
-              aria-pressed={activeFilter === id}
-              className={activeFilter === id ? "active" : ""}
-              onClick={() => { if (id === "Scroll") setTag(""); onFilter(id); }}
-            >
-              {name}
-              <span>
-                {typeCount[id] ?? assets.filter((a) => a.type === id).length}
-              </span>
-            </button>
-          ))}
-        </div>
+          ].map(([id, label]) => ({ id, label, count: typeCount[id] ?? assets.filter((a) => a.type === id).length }))}
+          value={activeFilter}
+          onChange={(id) => { if (id === "Scroll") setTag(""); onFilter(id); }}
+        />
         <div className="toolbar-right">
           {activeFilter !== "Scroll" && (tags.length > 0 || tag) && (
             <select

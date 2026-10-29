@@ -40,7 +40,7 @@ try{
  await p.getByRole('button',{name:'用别处的',exact:true}).click();
  await api('/notes/task-note',{id:'task-note',at,format:'md1',text:'- [ ] 合成待办',base:null});
  await p.evaluate(()=>window.dispatchEvent(new Event('focus')));await p.locator('[data-note-id="task-note"]').waitFor();
- await p.locator('.sn-filter button').filter({hasText:'待办'}).click();await p.locator('[data-note-id="task-note"] .sn-body').click();await replace175(p,'筛选中的未保存稿');
+ await p.locator('.filter-tabs button').filter({hasText:'待办'}).click();await p.locator('[data-note-id="task-note"] .sn-body').click();await replace175(p,'筛选中的未保存稿');
  await api('/notes/task-note',{id:'task-note',format:'md1',text:'已变成普通正文',base:{text:'- [ ] 合成待办',format:'md1'}});
  await p.evaluate(()=>window.dispatchEvent(new Event('focus')));await p.getByText('这条记录已被其他页面修改或删除，当前输入已保留。').waitFor();
  assert.match(await editor175(p).innerText(),/筛选中的未保存稿/);

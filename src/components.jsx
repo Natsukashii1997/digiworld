@@ -139,6 +139,34 @@ export function ScrollFade({ children, className = "" }) {
   }, []);
   return <div ref={root} className={`scroll-fade ${className}`} data-left={edges.left} data-right={edges.right}>{children}</div>;
 }
+// 筛选标签（issue #24，用户 2026-10-29 选样稿 A「分段底板」，并要求只排一行、放不下横滑）：资产仓库、个人收藏、随手记共用一套。
+// items 里相邻两项 group 不同就画一道分组线；children 接在行末（如收藏的「＋ 分组」，加 className="filter-tabs-add"）。
+export function FilterTabs({ label, items, value, onChange, disabled = false, className = "", children }) {
+  const row = useRef(null);
+  // 选中项（含从别处切换过来的）滚进可见范围
+  useEffect(() => {
+    const el = row.current, on = el?.querySelector('[aria-pressed="true"]');
+    if (!on) return;
+    const box = el.getBoundingClientRect(), tab = on.getBoundingClientRect();
+    const offset = tab.left < box.left ? tab.left - box.left : tab.right > box.right ? tab.right - box.right : 0;
+    if (offset) el.scrollLeft += offset;
+  }, [value]);
+  return (
+    <ScrollFade className={`filter-tabs ${className}`.trim()}>
+      <div ref={row} className="filter-tabs-row" role="group" aria-label={label}>
+        {items.map((item, i) => (
+          <React.Fragment key={item.id}>
+            {i > 0 && item.group !== items[i - 1].group && <i className="filter-tabs-sep" aria-hidden="true" />}
+            <button type="button" aria-pressed={value === item.id} disabled={disabled} title={item.title} onClick={() => onChange(item.id)}>
+              <span>{item.label}</span><b>{item.count}</b>
+            </button>
+          </React.Fragment>
+        ))}
+        {children}
+      </div>
+    </ScrollFade>
+  );
+}
 export function Badge({ children, tone = "" }) {
   return <span className={`badge ${tone}`}>{children}</span>;
 }

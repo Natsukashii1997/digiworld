@@ -210,7 +210,6 @@
   .page-assets .asset-toolbar { gap:var(--s-2); margin-bottom:var(--s-2); }
   .page-assets .collection-meta { margin:0 2px var(--s-3); }
   .page-assets .asset-heading-actions .inline-search { min-height:44px; height:44px; }
-  .page-assets .asset-toolbar .segmented button { padding-inline:var(--s-2); }
   .asset-form .type-picker { grid-template-columns:repeat(3,minmax(0,1fr)); }
 }
 /* 用户 2026-10-27：新建资产切类型时画框不动——高度固定为最高那档，内容少的类型下方留白、按钮贴底；滚动条位置常驻，内宽不随出没变化。 */

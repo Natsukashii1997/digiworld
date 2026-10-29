@@ -31,13 +31,7 @@
   padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--line-2); border-radius: var(--r-l) var(--r-l) 0 0;
   background: color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter: blur(10px);
 }
-.collection-module .collection-scroll { flex: 1; min-width: 0; }
-.collection-module .collection-chips { display: flex; align-items: center; gap: var(--s-2); min-width: 0; flex: 1; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; padding: var(--s-1) 2px var(--s-2); }
-.collection-module .collection-chip { font-size: var(--fs-small); padding: 0 var(--s-3); }
-.collection-module .collection-chip > span { max-width: 10em; overflow: hidden; text-overflow: ellipsis; }
-.collection-module .collection-chip b { font-family: var(--mono); font-size: var(--fs-label); color: var(--muted); }
-.collection-module .collection-chip[aria-pressed="true"] b { color: var(--cyan); }
-.collection-module .collection-add-group { border-style: dashed; background: transparent; box-shadow: none; color: var(--muted); }
+.collection-module .collection-filter { flex: 0 1 auto; margin-right: auto; }
 .collection-module .collection-search { position: relative; flex: 0 1 300px; min-width: 120px; }
 .collection-module .collection-search > svg { position: absolute; left: var(--s-3); top: 15px; color: var(--muted); pointer-events: none; }
 .collection-module .collection-search input { display: block; width: 100%; min-height: 44px; padding: 0 var(--s-3) 0 36px; border-radius: var(--r-xs); border: 1px solid var(--line-3); background: var(--bg); color: var(--text); font-size: var(--fs-caption); box-shadow: var(--collection-field-shadow); }
@@ -135,15 +129,6 @@
 .collection-module .collection-pair-label input { width: 100%; min-height: 44px; border: 1px solid var(--line-3); border-radius: var(--r-xs); background: var(--bg); color: var(--text); padding: var(--s-2); font-family: var(--mono); }
 .collection-module .collection-danger-zone { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); padding-top: var(--s-4); margin-top: var(--s-2); border-top: 1px solid var(--line-2); }
 .collection-module .collection-danger-zone p { margin: 0; font-size: var(--fs-meta); color: var(--muted); }
-.collection-module .collection-agent-intro { color: var(--text-2); font-size: var(--fs-caption); line-height: 1.7; margin: 0 0 var(--s-3); }
-.collection-module .collection-tools { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.collection-module .collection-tools span { border: 1px solid var(--line-2); border-radius: 3px; font: var(--fs-label)/1.7 var(--mono); color: var(--cyan-2); padding: 0 var(--s-1); }
-.collection-module .collection-agent-row { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4) 0; border-bottom: 1px solid var(--line-2); }
-.collection-module .collection-agent-row:last-child { border-bottom: 0; }
-.collection-module .collection-agent-portrait { display: flex; align-items: flex-end; justify-content: center; width: 56px; height: 56px; flex-shrink: 0; border: 1px solid var(--line-3); border-radius: var(--r-xs); background: var(--bg); overflow: hidden; }
-.collection-module .collection-agent-name { min-width: 0; flex: 1; }
-.collection-module .collection-agent-name strong { display: block; font-size: var(--fs-body); }
-.collection-module .collection-agent-name small { display: block; font-size: var(--fs-small); color: var(--muted); }
 .collection-module .collection-notice { margin: var(--s-3) 0 0; font-size: var(--fs-small); line-height: 1.7; color: var(--muted); overflow-wrap: anywhere; }
 .collection-module .collection-notice.is-error { color: var(--red); }
 .collection-module .collection-loading { min-height: 132px; display: flex; align-items: center; justify-content: center; color: var(--cyan); }
@@ -190,7 +175,7 @@
   .collection-module .collection-toolbar { flex-wrap: wrap; padding: var(--s-2) var(--s-3); row-gap: var(--s-2); }
   .collection-module .collection-search { order: 1; flex: 1 1 0; min-width: 0; }
   .collection-module .collection-toolbar-tools { order: 2; flex: 0 0 auto; }
-  .collection-module .collection-scroll { order: 3; flex: 1 1 100%; width: 100%; }
+  .collection-module .collection-filter { order: 3; flex: 1 1 100%; width: 100%; }
   .collection-module .collection-tool { width: 44px; padding: 0; gap: 0; }
   .collection-module .collection-tool > span { display: none; }
   .collection-module .collection-overlay { padding: var(--s-3); }
@@ -199,8 +184,6 @@
   .collection-module .collection-media-stage { padding: 40px var(--s-3) var(--s-2); }
   .collection-module .collection-reader-info { padding: var(--s-4); }
   .collection-module .collection-dialog-heading, .collection-module .collection-dialog-body { padding: var(--s-3); }
-  .collection-module .collection-agent-row { flex-wrap: wrap; gap: var(--s-2); }
-  .collection-module .collection-agent-row > button { margin-left: auto; }
   .collection-module .collection-setup { max-height: 92vh; }
 }
 @media(prefers-reduced-motion:reduce) {
