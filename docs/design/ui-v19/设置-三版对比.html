@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>设置 · 三版对比</title>
+<!-- 模板：由 build/make.py 生成各页的"三版对比"。三版都是能操作的 1440 页面（iframe 按窗口缩放）。 -->
+<style>
+body { margin: 0; background: #070b16; color: #e9eeff; font: 14px/1.5 -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif; }
+header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 20px; background: #0a1020; border-bottom: 1px solid rgba(140, 178, 255, 0.15); }
+header h1 { margin: 0 8px 0 0; font-size: 15px; }
+.tabs { display: flex; gap: 6px; }
+.tabs button { height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(140, 178, 255, 0.2); background: transparent; color: #b4bfda; font: 600 13px inherit; cursor: pointer; }
+.tabs button.on { background: #ff8a24; color: #1f0f00; border-color: transparent; }
+.note { margin-left: auto; color: #8b98b8; font-size: 12px; }
+.views { display: grid; gap: 16px; padding: 16px 20px; }
+.views.all { grid-template-columns: repeat(3, 1fr); }
+.views.one { grid-template-columns: 1fr; }
+.view { display: none; min-width: 0; }
+.views.all .view, .views.one .view.on { display: block; }
+.view h2 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: #b4bfda; }
+.view h2 b { margin-right: 8px; color: #e9eeff; }
+.frame { position: relative; overflow: hidden; border-radius: 10px; background: #070b16; box-shadow: 0 0 0 1px rgba(140, 178, 255, 0.15); }
+.frame iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: #070b16; }
+</style>
+</head>
+<body>
+<header>
+  <h1>设置 · 三版对比</h1>
+  <div class="tabs"><button data-v="all" class="on">并排</button><button data-v="1">一 · 开关表</button><button data-v="2">二 · 后盖面板</button><button data-v="3">三 · 开机自检</button></div>
+  <span class="note">二、三能操作：拨开关（先预览再确认）、下载恢复包、展开危险区、改目录与阈值；三还能重新自检。只在界面上变，不写数据。</span>
+</header>
+<div class="views all"><section class="view" data-v="1"><h2><b>一 · 开关表</b>现版原样：左栏五个分区 + 右边授权表（装进 v16 外壳；静态快照，只抓到首个分区）</h2><div class="frame"><iframe src="设置-1-开关表.html" title="一 · 开关表"></iframe></div></section><section class="view" data-v="2"><h2><b>二 · 后盖面板</b>一页看全，像翻开机器背面：顶上三个读数（授权 / 备份 / REV），授权闸两列开关排，存档卡，旋钮，危险区单独红边</h2><div class="frame"><iframe src="设置-2-后盖面板.html" title="二 · 后盖面板"></iframe></div></section><section class="view" data-v="3"><h2><b>三 · 开机自检</b>先报哪里不对：开页逐行跑出自检结果，有问题的排最上；点一行就在原地展开它的控制，处理完标记翻成 ✓</h2><div class="frame"><iframe src="设置-3-开机自检.html" title="三 · 开机自检"></iframe></div></section></div>
+<script>
+const views = document.querySelector(".views");
+function fit() {
+  for (const f of document.querySelectorAll(".frame")) {
+    const s = Math.min(1, f.clientWidth / 1440);
+    f.style.height = Math.round(900 * s) + "px";
+    f.querySelector("iframe").style.transform = `scale(${s})`;
+  }
+}
+document.querySelector(".tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  const v = b.dataset.v;
+  views.className = "views " + (v === "all" ? "all" : "one");
+  document.querySelectorAll(".view").forEach((x) => x.classList.toggle("on", x.dataset.v === v));
+  requestAnimationFrame(fit);
+});
+addEventListener("resize", fit);
+addEventListener("load", fit);
+fit();
+</script>
+</body>
+</html>

@@ -7,6 +7,7 @@ import { mkdir, readFile, writeFile, rm, stat, readdir } from "node:fs/promises"
 import { join } from "node:path";
 import { unzipSync, strFromU8 } from "fflate";
 import { fixture } from "./fixture.mjs";
+import { openSettingsDrawer } from "./settings-entry.mjs";
 import { seed } from "../src/store.js";
 const { chromium } = createRequire(import.meta.url)(
   process.env.PLAYWRIGHT_MODULE ||
@@ -43,10 +44,10 @@ try {
   page.setDefaultTimeout(10000);
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${app.url}/#settings`);
-  await page.getByRole("radio",{name:"数据与备份",exact:true}).click();
+  await openSettingsDrawer(page,"数据与备份");
   await page.getByText("最近完整备份 / 恢复",{exact:true}).waitFor();
   await page.getByText(/历史快照保持原样；已撤销页面的记录不会导入当前主库/).waitFor();
-  await button(page, "导出可合并数据 JSON").waitFor();
+  await button(page.getByRole("dialog", { name: "数据与备份" }), "导出可合并数据 JSON").waitFor();
   const exportButton = button(page, "下载恢复包 ZIP");
   await atLeast44(exportButton, "下载恢复包 ZIP");
   const [download] = await Promise.all([page.waitForEvent("download"), exportButton.click()]);
@@ -102,7 +103,7 @@ try {
   const mobile = await (await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" })).newPage();
   mobile.on("pageerror", (e) => errors.push(e.message));
   await mobile.goto(`${app.url}/#settings`);
-  await mobile.getByRole("radio",{name:"数据与备份",exact:true}).click();
+  await openSettingsDrawer(mobile,"数据与备份");
   await mobile.getByText("最近完整备份 / 恢复",{exact:true}).waitFor();
   const over = await mobile.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   assert.ok(over <= 0, `390 settings 横向溢出 ${over}px`);
