@@ -24,7 +24,7 @@ const isMonday = (d) => new Date(d + "T00:00:00").getDay() === 1;
 const TRACES = ["M0 18H34l10 10H86l8-8h46", "M0 46h12l6 6v54l6 6h34", "M140 52h-22l-8 8v52", "M58 0v14", "M88 0v20", "M112 120V96l8-8h20", "M0 118h70l6-6h26"];
 const VIAS = [[34, 18], [94, 20], [18, 52], [110, 60], [76, 112], [112, 96]];
 
-// 液晶数：滚动到位（useCountUp 按帧跳），始终补足两位。
+// 液晶数：滚动到位（useCountUp 按帧跳），始终补足两位。点阵按原尺寸画（px 取整数），不用 CSS 缩放，像素才不会忽粗忽细。
 function Count({ value, run, px = 3 }) {
   const shown = useCountUp(String(value), run);
   return <LcdText text={pad2(shown)} px={px} label={String(value)} boot />;
@@ -76,7 +76,7 @@ function ReadCell({ label, value, tone = "", note, run }) {
   return (
     <div className={tone}>
       <small>{label}</small>
-      {value == null ? <b className="dash">—</b> : <span className={`lcd ${tone}`}><Count value={(value)} run={run} px={3} /></span>}
+      {value == null ? <b className="dash">—</b> : <span className={`lcd ${tone}`}><Count value={(value)} run={run} px={4} /></span>}
       <em>{note}</em>
     </div>
   );
@@ -161,12 +161,12 @@ function Chart({ item, days }) {
   );
 }
 
-function Field({ item, usage, open, onToggle, onSettings }) {
+function Field({ item, usage, scanning, open, onToggle, onSettings }) {
   if (usage !== "ok")
     return (
       <section className="g7-sec g7-field">
-        <h3>实战<span className="sum">读取会话里的技能使用：{usage === "empty" ? "还没有统计" : usage === "error" ? "读取失败" : "未开启"}</span>
-          <span className="grow" /><button type="button" className="g5-link" onClick={onSettings}>去设置</button></h3>
+        <h3>实战<span className="sum">读取会话里的技能使用：{usage === "empty" ? (scanning ? "统计中…（会话记录较多，统计完自动换上）" : "还没有统计") : usage === "error" ? "读取失败 · 点刷新重试" : "未开启"}</span>
+          {usage === "off" && <><span className="grow" /><button type="button" className="g5-link" onClick={onSettings}>去设置</button></>}</h3>
       </section>
     );
   const s = item.skills;
@@ -256,6 +256,21 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
   const items = data?.items || [];
   const item = items.find((i) => i.id === current) || items[0] || null;
   const skillsOn = data?.skillUsage?.state === "ok";
+  // 实战在后台统计时，隔几秒看一眼统计有没有更新，更新了重读一次（最多看 5 分钟）。
+  const scanning = !!data?.skillUsage?.scanning, scannedAt = data?.skillUsage?.at;
+  useEffect(() => {
+    if (!scanning) return;
+    let n = 0;
+    const id = setInterval(async () => {
+      if (++n > 75) return clearInterval(id);
+      try {
+        const u = await request("/projects-space/skill-usage");
+        if (u.state === "ok" && u.at !== scannedAt) { clearInterval(id); if (live.current) void load(); }
+      } catch {}
+    }, 4000);
+    return () => clearInterval(id);
+  }, [scanning, scannedAt, load]);
+
   // 世界总览点项目跳过来时，选中对应的那盘。
   useEffect(() => {
     if (!projectJump?.id || !items.length) return;
@@ -379,7 +394,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
               <Reads item={item} skillsOn={skillsOn} run={`${item.id}-${run}`} />
               <Now item={item} run={run} reduced={reduced} />
               <Chart item={item} days={data.days} />
-              <Field item={item} usage={data.skillUsage?.state} open={open} onToggle={() => setOpen((v) => !v)} onSettings={goSettings} />
+              <Field item={item} usage={data.skillUsage?.state} scanning={!!data.skillUsage?.scanning} open={open} onToggle={() => setOpen((v) => !v)} onSettings={goSettings} />
             </section>
           )}
         </div>

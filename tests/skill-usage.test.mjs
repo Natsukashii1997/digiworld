@@ -94,7 +94,7 @@ test("开关关着：read 只回未开启，refresh 拒绝；全程不碰会话�
     const spy = new Proxy(fs, { get: (t, k) => typeof t[k] === "function" ? (...a) => { touched.push([k, String(a[0])]); return t[k](...a); } : t[k] });
     let opened = 0;
     const usage = createSkillUsage({
-      directory: f.data, clock: () => NOW, roster: f.roster, filesystem: spy,
+      directory: f.data, clock: () => NOW, enabled: async () => false, roster: f.roster, filesystem: spy,
       lines: () => { opened++; return [][Symbol.iterator](); },
       home: f.home, claudeRoot: f.claudeRoot, codexRoot: f.codexRoot, skillDirs: f.skills,
     });
@@ -103,6 +103,20 @@ test("开关关着：read 只回未开启，refresh 拒绝；全程不碰会话�
     assert.deepEqual(touched, []);
     assert.equal(opened, 0);
     await assert.rejects(readFile(join(f.data, "skill-usage.json")), { code: "ENOENT" });
+  } finally {
+    await rm(f.base, { recursive: true, force: true });
+  }
+});
+
+test("正式入口默认打开实战；模块本身默认关（测试里起的服务不碰真实会话目录）", async () => {
+  const entry = await readFile(new URL("../server/index.mjs", import.meta.url), "utf8");
+  assert.match(entry, /skillUsage: \{ enabled: async \(\) => true \}/);
+  const f = await sessionsFixture();
+  try {
+    await mkdir(f.data);
+    const usage = createSkillUsage({ directory: f.data, clock: () => NOW, roster: f.roster,
+      home: f.home, claudeRoot: f.claudeRoot, codexRoot: f.codexRoot, skillDirs: f.skills });
+    assert.deepEqual(await usage.read(), { state: "off" });
   } finally {
     await rm(f.base, { recursive: true, force: true });
   }
