@@ -53,6 +53,18 @@ async function currentMetadata(root, path, filesystem) {
   }
 }
 
+// 当前 HEAD 可达提交的提交时刻（项目活动与项目空间共用）。
+// 避免 --since 遇非单调提交时刻时提前停止遍历；只输出时刻，不输出正文。
+export async function commitTimes(run) {
+  const output = await run(["log","--no-show-signature","--no-patch","--format=%cI","--max-count=100001"]);
+  const times = output.split(/\r?\n/).filter(Boolean);
+  if (times.length > 100000 || times.some((at) => !Number.isFinite(Date.parse(at))))
+    throw failure("Git 活动输出无效或超过查询上限");
+  return times;
+}
+export const localDateKey = key;
+export const localDay = day;
+
 export function createProjectActivity(repository, {
   clock = Date.now, filesystem = fs, resolveRoot = resolveProjectRoot, runGit = gitRunner,
 } = {}) {
@@ -79,12 +91,7 @@ export function createProjectActivity(repository, {
             const top = (await run(["rev-parse","--show-toplevel"])).trim();
             if (top !== resolved.canonical)
               throw failure("Git 仓库根目录与登记项目不符");
-            // 避免 --since 遇非单调提交时刻时提前停止遍历；只输出时刻，不输出正文。
-            const output = await run(["log","--no-show-signature","--no-patch","--format=%cI","--max-count=100001"]);
-            const times = output.split(/\r?\n/).filter(Boolean);
-            if (times.length > 100000 || times.some((at) => !Number.isFinite(Date.parse(at))))
-              throw failure("Git 活动输出无效或超过查询上限");
-            for (const at of times) {
+            for (const at of await commitTimes(run)) {
               const instant = new Date(at), row = index.get(key(instant));
               if (row && instant >= start && instant < finish && instant <= now) row.git++;
             }

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+// 项目空间第二版后，旧项目页（接力口令、收件、装备）只在地址带 ?projects-v16 时挂上；本回归守的是旧组件，断言不变。
 import {chromium} from 'playwright';
 import {fixture183,routes183} from './projects-v16-fixture.mjs';
 const app=await fixture183(),browser=await chromium.launch(),page=await browser.newPage({permissions:['clipboard-read','clipboard-write'],reducedMotion:'reduce'});
@@ -7,7 +8,7 @@ await routes183(page,app);let calls=0,hold=false,release,held=false;
 await page.route('**/api/project-status/inspect',async route=>{calls++;const payload=structuredClone({items:app.data.items});if(hold){hold=false;held=true;await new Promise(r=>release=r);}await route.fulfill({json:payload});});
 const card=page.getByRole('article',{name:'项目状态卡：个人 AI 工作台',exact:true});
 try{
- await page.goto(app.url+'/#home');await page.locator('.nav').getByRole('button',{name:/^项目空间/}).click();await page.getByRole('tab',{name:/个人 AI 工作台/}).click();await card.locator('.pj-give').waitFor();
+ await page.goto(app.url+'/?projects-v16#home');await page.locator('.nav').getByRole('button',{name:/^项目空间/}).click();await page.getByRole('tab',{name:/个人 AI 工作台/}).click();await card.locator('.pj-give').waitFor();
  // 换卡带即重读：回到这盘时屏上是新下一步。
  const first=calls;app.data.items[0].current.fields.next='继续之前的新下一步';await page.getByRole('tab',{name:/银饰作品集/}).click();await page.getByRole('tab',{name:/个人 AI 工作台/}).click();await card.getByText('继续之前的新下一步',{exact:true}).waitFor();assert.ok(calls>first);
  await page.evaluate(()=>{window.writes=0;navigator.clipboard.writeText=async()=>{window.writes++;};});await card.getByLabel('复制后打开',{exact:false}).uncheck();

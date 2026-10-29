@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+// 项目空间第二版后，旧项目页（接力口令、收件、装备）只在地址带 ?projects-v16 时挂上；本回归守的是旧组件，断言不变。
 import {mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {chromium} from 'playwright';
@@ -6,7 +7,7 @@ import {fixture183,routes183} from './projects-v16-fixture.mjs';
 import {geometry,axe,motion} from './ui-v14-checks.mjs';
 const output=process.env.GUIJI_TEST_RESULTS||'test-results/projects183';await mkdir(output,{recursive:true});
 const b=await chromium.launch(),errors=[];
-async function open(app,width=1440,options={}){const c=await b.newContext({viewport:{width,height:1000},timezoneId:'Asia/Shanghai',reducedMotion:'reduce',permissions:['clipboard-read','clipboard-write']}),p=await c.newPage();p.setDefaultTimeout(10000);p.on('pageerror',e=>errors.push(e.message));await p.route('**/*',r=>{assert.equal(new URL(r.request().url()).origin,new URL(app.url).origin);return r.continue();});await routes183(p,app,options);await p.goto(app.url+'/#projects');await p.locator('.pj-screen,.pj-vacant').first().waitFor();return p;}
+async function open(app,width=1440,options={}){const c=await b.newContext({viewport:{width,height:1000},timezoneId:'Asia/Shanghai',reducedMotion:'reduce',permissions:['clipboard-read','clipboard-write']}),p=await c.newPage();p.setDefaultTimeout(10000);p.on('pageerror',e=>errors.push(e.message));await p.route('**/*',r=>{assert.equal(new URL(r.request().url()).origin,new URL(app.url).origin);return r.continue();});await routes183(p,app,options);await p.goto(app.url+'/?projects-v16#projects');await p.locator('.pj-screen,.pj-vacant').first().waitFor();return p;}
 const card=(p,name)=>p.getByRole('article',{name:`项目状态卡：${name}`,exact:true});
 const tab=(p,name)=>p.getByRole('tab',{name:new RegExp(name)});
 const give=(p,name)=>p.getByRole('button',{name:`复制口令，交给 ${name}`,exact:true});

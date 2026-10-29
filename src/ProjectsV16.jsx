@@ -309,7 +309,7 @@ function ReadStats({ item, readable, outline, readFailed, desk, savepointDays, s
 }
 // 交接条与对话框：一段口令 → 选交给谁 → 复制，一个动作完成（用户 2026-10-24）。
 // 复制前照旧重读项目状态与工作台核对；不一致不复制，页面换成最新内容后再点一次。
-function ProjectLaunch({ item, state, collection, agent, onAgent, openApp, onOpenApp, adoptState, notify, refreshProjectStatus, statusReading, readFailed, sourceKey, speaker, children }) {
+export function ProjectLaunch({ item, state, collection, agent, onAgent, openApp, onOpenApp, adoptState, notify, refreshProjectStatus, statusReading, readFailed, sourceKey, speaker, children }) {
   const reduced = useReducedMotion();
   const [open, setOpen] = useState(false),
     [error, setError] = useState(""),

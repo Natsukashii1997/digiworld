@@ -1,4 +1,5 @@
 // v14e 项目空间：以现有合成仓库与 gh 桩验证呈现、交互、异常与窄屏。
+// 项目空间第二版后，旧项目页（接力口令、收件、装备）只在地址带 ?projects-v16 时挂上；本回归守的是旧组件，断言不变。
 // 本轮统一通过隔离 runner 注入未显式设置的本机集成适配器，见交接125。
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -20,7 +21,7 @@ async function open(width, motion = "reduce") {
   const page = await context.newPage();
   page.setDefaultTimeout(10000);
   page.on("pageerror", e => errors.push(e.message));
-  await page.goto(`${app.url}/#projects`);
+  await page.goto(`${app.url}/?projects-v16#projects`);
   await page.locator("main h1").waitFor();
   return page;
 }

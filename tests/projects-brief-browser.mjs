@@ -1,4 +1,5 @@
 // 项目空间第二批：GitHub 面板（只读 gh + 缓存 + 未知回退）与世界总览“今日项目简报”（规则生成、标为已读、一键开工）。
+// 项目空间第二版后，旧项目页（接力口令、收件、装备）只在地址带 ?projects-v16 时挂上；本回归守的是旧组件，断言不变。
 // 合成 Git 仓库在临时目录现建；gh 用本地桩脚本（见 project-brief-fixture.mjs），不调用真实 GitHub。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
@@ -45,7 +46,7 @@ async function open(width, route = "home", height = 1000) {
   const page = await context.newPage();
   page.setDefaultTimeout(10000);
   page.on("pageerror", (e) => errors.push(`${width} ${e.message}`));
-  await page.goto(`${app.url}/#${route}`);
+  await page.goto(`${app.url}/?projects-v16#${route}`);
   await page.locator("main h1").first().waitFor();
   return page;
 }
@@ -99,7 +100,7 @@ try {
   });
   await page.locator('.hx-mod-d').getByText("还没有在推进的项目", { exact: false }).waitFor();
   assert.equal(await page.getByRole('button', {name:'今日项目简报'}).count(),0);
-  await page.goto(`${app.url}/#projects`);
+  await page.goto(`${app.url}/?projects-v16#projects`);
   await page.getByRole("region", { name: "在推进项目" }).getByText("在推进 · 0").waitFor();
   assert.deepEqual(requests, []);
   assert.deepEqual(await app.gh.calls(), []);
@@ -137,7 +138,7 @@ try {
   ok("GitHub 面板显示打开的 PR、最近合并、Issue 与默认分支 CI，无权限显示未知，无远程不查询");
 
   // 3. 世界总览“今日项目简报”：每个在推进项目一段话。
-  await page.goto(`${app.url}/#home`);
+  await page.goto(`${app.url}/?projects-v16#home`);
   await openBrief(page);
   const card = briefCard(page);
   const collabBrief = brief(page, "协同项目");
@@ -240,7 +241,7 @@ try {
 
   // 9. gh 未登录：刷新后如实显示“未知”，不弹错误、不要求登录。
   await app.gh.mode("auth");
-  await page.goto(`${app.url}/#projects`);
+  await page.goto(`${app.url}/?projects-v16#projects`);
   await statusCard(page, "协同项目").waitFor();
   await button(page.getByRole("region",{name:"在推进项目"}),"刷新").click();await button(statusCard(page,"协同项目"),"详情").click();
   const unknown = page.getByRole("dialog",{name:"协同项目",exact:true}).getByLabel("GitHub");
@@ -251,7 +252,7 @@ try {
     /请.{0,6}登录|gh auth login/,
   );
   await unknown.screenshot({ path: join(output, "projects-brief-github-unknown.png") });
-  await page.keyboard.press("Escape");await page.goto(`${app.url}/#home`);
+  await page.keyboard.press("Escape");await page.goto(`${app.url}/?projects-v16#home`);
   await openBrief(page);
   await button(briefCard(page), "刷新简报").click();
   await brief(page, "协同项目")
@@ -269,7 +270,7 @@ try {
   await atLeast44(button(briefCard(narrow), "刷新简报"), "390 刷新简报");
   await axe(narrow, "home-brief-390");
   await briefCard(narrow).screenshot({ path: join(output, "projects-brief-home-390.png") });
-  await app.gh.mode("ok");await narrow.goto(`${app.url}/#projects`);await button(narrow.getByRole("region",{name:"在推进项目"}),"刷新").click();
+  await app.gh.mode("ok");await narrow.goto(`${app.url}/?projects-v16#projects`);await button(narrow.getByRole("region",{name:"在推进项目"}),"刷新").click();
   await atLeast44(button(narrow.getByRole("region",{name:"在推进项目"}),"刷新"),"390 刷新 GitHub");await button(statusCard(narrow,"协同项目"),"详情").click();
   const ng=narrow.getByRole("dialog",{name:"协同项目",exact:true}).getByLabel("GitHub");await ng.waitFor();await atLeast44(ng.getByRole("link",{name:"#7 状态卡返修"}),"390 PR 链接");
   await noOverflow(narrow, "390 项目空间");
