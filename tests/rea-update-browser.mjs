@@ -18,7 +18,7 @@ try{
    const state=seed();state.reverseRecords=[];state.assets=[];await app.repository.write(state,{initialize:true});
    context=await browser.newContext({viewport:{width,height:1000},reducedMotion:'reduce'});const p=await context.newPage();p.setDefaultTimeout(10000);p.on('pageerror',e=>errors.push(e.message));
    await p.route('**/*',r=>{assert.equal(new URL(r.request().url()).origin,new URL(app.url).origin);return r.continue();});
-   await p.goto(app.url+'/#references');await button(p,'检查更新').waitFor();assert.equal(fake.control.network,0);
+   await p.goto(app.url+'/#settings');await button(p,'检查更新').waitFor();assert.equal(fake.control.network,0);
    fake.control.mode=mode;await button(p,'检查更新').click();
    if(['network','syncing'].includes(mode)){await p.getByRole('dialog',{name:'REA 更新预演'}).waitFor();await p.getByText(mode==='network'?'合成网络不可达':'发布同步中：npm尚无同版本',{exact:true}).waitFor();assert.equal(fake.control.yes,0);await shot(p,'update-'+mode+'-'+width);await geometry(p);continue;}
    await button(p,'一键更新').waitFor();await button(p,'一键更新').click();const dialog=p.getByRole('dialog',{name:'REA 更新预演'});await dialog.waitFor();
