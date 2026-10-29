@@ -11,6 +11,7 @@ import { ModelCapabilityUI } from "./ModelCapabilityUI.jsx";
 import { DaemonCapabilityUI } from "./DaemonCapabilityUI.jsx";
 import { AiHotSettings, useAiHot } from "./LifePages.jsx";
 import { AgentTargets } from "./AgentTargets.jsx";
+import { ReaUpdate } from "./ReaUpdate.jsx";
 import "./agents-v16.css";
 import { ProjectSettings } from "./ProjectSettings.jsx";
 import { SourcePolicy } from "./KnowledgeV16.jsx";
@@ -234,6 +235,10 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
           <Button secondary disabled={!storage?.finderAvailable} onClick={async () => { try { await request("/storage/reveal", {}); notify("已请求访达显示数据目录"); } catch (e) { notify(e.message, "error"); } }}>在访达中显示</Button>
           <span className="st-grow" />
           <Button secondary className="st-danger" onClick={() => setPanel({ type: "storage" })}>从完整备份恢复…</Button>
+        </div>
+        <div className="st-extra">
+          <span className="st-lbl">工具</span>
+          <ReaUpdate />
         </div>
         <footer className={`st-post-foot ${tally.bad ? "has-bad" : tally.warn ? "has-warn" : "clear"}`}>
           {TALLY.map(([k, label]) => (

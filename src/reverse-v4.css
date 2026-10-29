@@ -87,28 +87,28 @@
   .page-references.v16 .orig-shots { grid-template-columns: minmax(0, 1fr); }
 }
 /* REA 装备读数：对象本身是一块小屏，所以用液晶 */
-.page-references.v16 .gear {
+:is(.page-references.v16, .settings-v16) .gear {
   display: flex; align-items: center; gap: var(--s-3);
   padding: 6px 6px 6px 6px; border-radius: var(--r-l);
   background: var(--m-panel); box-shadow: var(--m-panel-edge);
 }
-.page-references.v16 .gear-scr {
+:is(.page-references.v16, .settings-v16) .gear-scr {
   display: grid; justify-items: center; min-width: 64px; padding: 6px 10px;
   border-radius: var(--r-s); background: var(--lcd-screen); color: var(--lcd-ink);
   font-family: var(--mono); line-height: 1.1;
 }
-.page-references.v16 .gear-scr .en { font-size: var(--fs-label); letter-spacing: .18em; opacity: .75; }
-.page-references.v16 .gear-scr b { font-size: var(--fs-title); letter-spacing: .04em; }
-.page-references.v16 .gear-txt { display: grid; gap: 2px; }
-.page-references.v16 .gear-state { font-size: var(--fs-body); font-weight: 700; }
-.page-references.v16 .gear-state.ok { color: var(--lcd); }
-.page-references.v16 .gear-state.new { color: var(--orange); }
-.page-references.v16 .gear-txt small { color: var(--muted); font-size: var(--fs-meta); font-family: var(--mono); }
-.page-references.v16 .gear-btn {
+:is(.page-references.v16, .settings-v16) .gear-scr .en { font-size: var(--fs-label); letter-spacing: .18em; opacity: .75; }
+:is(.page-references.v16, .settings-v16) .gear-scr b { font-size: var(--fs-title); letter-spacing: .04em; }
+:is(.page-references.v16, .settings-v16) .gear-txt { display: grid; gap: 2px; }
+:is(.page-references.v16, .settings-v16) .gear-state { font-size: var(--fs-body); font-weight: 700; }
+:is(.page-references.v16, .settings-v16) .gear-state.ok { color: var(--lcd); }
+:is(.page-references.v16, .settings-v16) .gear-state.new { color: var(--orange); }
+:is(.page-references.v16, .settings-v16) .gear-txt small { color: var(--muted); font-size: var(--fs-meta); font-family: var(--mono); }
+:is(.page-references.v16, .settings-v16) .gear-btn {
   min-height: 44px; padding: 0 14px; border-radius: var(--r); border: 1px solid var(--line-2);
   background: transparent; color: var(--text); font: inherit; font-size: var(--fs-meta); cursor: pointer; white-space: nowrap;
 }
-.page-references.v16 .gear-btn.on { border-color: var(--orange); color: var(--orange); box-shadow: 0 0 14px -4px var(--orange); }
+:is(.page-references.v16, .settings-v16) .gear-btn.on { border-color: var(--orange); color: var(--orange); box-shadow: 0 0 14px -4px var(--orange); }
 
 
 /* 更新预演抽屉 */
@@ -160,8 +160,8 @@
 .page-references.v16 .reverse-history,.page-references.v16 .reverse-secondary { margin-top:var(--s-4); color:var(--muted); font-size:var(--fs-meta); min-width:0; }
 .page-references.v16 summary { cursor:pointer; min-height:44px; padding:var(--s-3) 0; }
 .page-references.v16 .reverse-secondary small { display:block; white-space:pre-wrap; overflow-wrap:anywhere; }
-.page-references.v16 .gear-txt { min-width:0; max-width:220px; }
-.page-references.v16 .gear-txt small { overflow-wrap:anywhere; }
+:is(.page-references.v16, .settings-v16) .gear-txt { min-width:0; max-width:220px; }
+:is(.page-references.v16, .settings-v16) .gear-txt small { overflow-wrap:anywhere; }
 .reverse-input-v4 fieldset { min-width:0; border:1px solid var(--line); border-radius:var(--r); padding:var(--s-3); }
 .reverse-input-v4 .rea-methods { display:flex; flex-wrap:wrap; gap:var(--s-4); }
 .reverse-input-v4 .rea-methods label { display:flex; align-items:center; min-height:44px; }

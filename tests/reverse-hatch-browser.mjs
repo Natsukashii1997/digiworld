@@ -1,5 +1,5 @@
 // 逆向工程孵蛋 3C 页面（#28）：切标本、勾格子、复制写轮次、放回结论预览与确认、手改不被覆盖、旧结论未分格、
-// 投入 / 存 Skill / 删除恢复照旧、REA 入口仍在、1440/390/320 无溢出、控件 44px、axe。仅合成隔离库，不读 data/。
+// 投入 / 存 Skill / 删除恢复照旧、REA 读数已挪进设置（本页不再出现）、1440/390/320 无溢出、控件 44px、axe。仅合成隔离库，不读 data/。
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -50,7 +50,8 @@ const slotState = (p, id) => p.locator(`.rh-slot[data-slot="${id}"]`).getAttribu
     await p.locator(".rh-src").getByText("第 2 轮 · 10/16 · Codex · 部分").waitFor();
     await p.locator(".rh-hist").getByText("第 1 轮 · 10/15 · Codex · 部分 · 目标已改").waitFor();
     await p.locator(".rh-legacy").getByText("旧结论 · 未分格").waitFor();
-    await button(p, "检查更新").waitFor();
+    assert.equal(await p.getByRole("group", { name: "REA取证工具" }).count(), 0, "REA 读数已挪进设置");
+    assert.equal(await button(p, "检查更新").count(), 0);
     await p.screenshot({ path: "test-results/reverse-hatch-1440.png" });
     await checks(p, "1440");
 

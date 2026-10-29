@@ -56,7 +56,7 @@ try {
       context = await browser.newContext({ viewport: { width, height: 1000 }, reducedMotion: 'reduce' });
       const p = await context.newPage(); p.setDefaultTimeout(8000); p.on('pageerror', e => errors.push(e.message));
       await p.route('**/*', r => { assert.equal(new URL(r.request().url()).origin, new URL(app.url).origin); return r.continue(); });
-      await p.goto(app.url + '/#references');
+      await p.goto(app.url + '/#settings');
       await p.getByRole('group', { name: 'REA取证工具' }).waitFor();
       assert.equal((await request(app, '/reverse/update')).state, 'idle', '旧网络失败不能恢复成结果未知');
       await button(p, '检查更新').waitFor();
@@ -64,7 +64,7 @@ try {
       await shot(p, 'recovered-' + width);
       await p.reload(); await button(p, '检查更新').waitFor();
       assert.equal(await p.getByRole('dialog', { name: 'REA 更新预演' }).count(), 0);
-      await navigate(p, '世界总览'); await navigate(p, '逆向工程');
+      await navigate(p, '世界总览'); await navigate(p, '设置');
       await button(p, '检查更新').waitFor();
       assert.equal(await p.getByRole('dialog', { name: 'REA 更新预演' }).count(), 0);
       assert.equal(await fs.readFile(app.file, 'utf8'), app.original);
@@ -94,7 +94,7 @@ try {
     context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
     const p = await context.newPage(); p.setDefaultTimeout(8000); p.on('pageerror', e => errors.push(e.message));
     await p.route('**/*', r => { assert.equal(new URL(r.request().url()).origin, new URL(app.url).origin); return r.continue(); });
-    await p.goto(app.url + '/#references'); const dialog = p.getByRole('dialog', { name: 'REA 更新预演' }); await dialog.waitFor();
+    await p.goto(app.url + '/#settings'); const dialog = p.getByRole('dialog', { name: 'REA 更新预演' }); await dialog.waitFor();
     assert.equal((await request(app, '/reverse/update')).state, 'unknown');
     const queryResponse = p.waitForResponse(r => r.url().endsWith('/api/reverse/update/query') && r.request().method() === 'POST');
     await button(dialog, '查询结果').click();

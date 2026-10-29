@@ -12,11 +12,10 @@ import { flyData } from "./data-flight.js";
 import { reducedMotion, scanReveal, trackDecoration } from "./scan-motion.js";
 import { LcdText, useCountUp } from "./v14.jsx";
 import { ReverseInput } from "./ReverseInput.jsx";
-import { ReaUpdate } from "./ReaUpdate.jsx";
 import { buildReplicaPack, currentSkill } from "./reverse-v4.js";
 import { deleteRecord, restoreRecord } from "./reverse.js";
 import { SLOTS, slotState, hatchScore, hatchOf, wantOf, targetOf, buildHatchPack, buildOrganizePack, parseHatchReply, applyHatchReply, editSlot, appendHatchRound, packHashOf, legacyRounds, generateHatchSkill, hatchSlotsText } from "./reverse-hatch.js";
-import "./reverse-v4.css"; // ReaUpdate、ReverseInput、存 Skill 预览的样式
+import "./reverse-v4.css"; // ReverseInput、存 Skill 预览的样式
 import "./reverse-hatch.css";
 
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -434,11 +433,10 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
         <History record={record} rounds={rounds} />
       </> : <div className="rh-empty"><h2>投入第一件参照物</h2><p>写下想弄懂什么，八格里缺的部分写成追问包，交给 Codex 或 Claude Code 去拆。</p><Button onClick={() => setDrawer("input")}><Plus size={16} />投入参照物</Button></div>}
 
-      {/* REA 版本维护第 5 批挪进设置；在那之前暂放页尾，入口不能消失 */}
-      <section className="rh-foot" aria-label="工具">
-        <h3>工具</h3><ReaUpdate />
-        {record && <button className="text-btn" disabled={busy} onClick={removeRecord}><Trash2 size={14} />把「{record.title}」移入回收区</button>}
-      </section>
+      {/* REA 版本维护在设置页「工具」行 */}
+      {record && <section className="rh-foot" aria-label="标本管理">
+        <button className="text-btn" disabled={busy} onClick={removeRecord}><Trash2 size={14} />把「{record.title}」移入回收区</button>
+      </section>}
       <details className="rh-more" ref={toolsNode}>
         <summary>参考与回收</summary>
         <Button secondary onClick={() => setDrawer("reference")}>保存参考</Button>
