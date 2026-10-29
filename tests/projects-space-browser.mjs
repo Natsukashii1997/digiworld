@@ -1,5 +1,5 @@
 // 项目空间第二版（电路卡带 7E，issue #10）浏览器回归：选卡带、置顶上限、实战未开启、名册读不到、
-// 编号按名册、置顶冲突自动重读、读取中先画卡带、只有 Codex 点名、1440 / 390 无横向溢出、控件不小于 44px、axe 无违规、减少动态效果时不跑流光。合成仓库与合成名册（projects-space-fixture.mjs）。
+// 编号按名册、置顶冲突自动重读、读取中先画卡带、只有 Codex 点名、1440 / 390 无横向溢出、控件不小于 44px、axe 无违规、减少动态效果时不跑流光、档案头只留文字、卡带文字在走线淡出带里。合成仓库与合成名册（projects-space-fixture.mjs）。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import { mkdir, rm } from "node:fs/promises";
@@ -50,6 +50,17 @@ try {
     await screen.getByRole("heading", { name: /协同项目/ }).waitFor();
     assert.match(await screen.locator(".one").textContent(), /合成一句话/);
     assert.match(await screen.locator(".g7-head dl").textContent(), /合成目标.*合成不做/);
+    // 7G：档案头只留文字、左对齐；卡带文字落在走线淡出的那一带
+    const head = screen.locator(".g7-head");
+    assert.equal(await head.locator(".g5-mono").count(), 0, "档案头不放代号方块");
+    const [headBox, nameBox] = [await head.boundingBox(), await head.locator("h2").boundingBox()];
+    assert.ok(Math.abs(nameBox.x - headBox.x) <= 1, "档案头文字左对齐");
+    const fade = await page.locator('[data-ps-cart="collab"]').evaluate((c) => {
+      const b = c.querySelector(".board").getBoundingClientRect(), t = c.querySelector(".tx").getBoundingClientRect(), s = getComputedStyle(c.querySelector(".trace"));
+      return { mask: s.maskImage || s.webkitMaskImage, top: (t.top - b.top) / b.height, bottom: (t.bottom - b.top) / b.height };
+    });
+    assert.match(fade.mask, /linear-gradient/, "走线有渐隐遮罩");
+    assert.ok(fade.top >= 0.4 && fade.bottom <= 0.84, `卡带文字在走线淡出带里（${fade.top.toFixed(2)}–${fade.bottom.toFixed(2)}）`);
     assert.match(await page.locator('[data-ps-cart="collab"] .flag').textContent(), /待人工验收 1 张/);
     assert.match(await screen.locator("[data-ps-next]").textContent(), /#3 修窄屏/, "下一步取 ready-for-agent 编号最小的");
     // 实战默认开启：第一次在后台统计（合成会话目录为空），统计完页面自己换上

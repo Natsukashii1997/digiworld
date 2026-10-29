@@ -308,7 +308,6 @@ function Head({ item, pinBusy, onPin, onDetail }) {
   const hue = projectHue(item), doc = item.doc || {};
   return (
     <div className="g7-head">
-      <span className="g5-mono" style={{ "--hue": hue.hue }}><Mono code={hue.code} /></span>
       <div className="id">
         <h2>{item.name}<small>{hue.sub}</small></h2>
         <p className="one">{doc.state === "ok" && doc.one ? doc.one : item.path}</p>

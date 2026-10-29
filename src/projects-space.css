@@ -26,9 +26,8 @@
 .g5-carts { padding-top: 6px; }
 .ps-loading, .ps-roster-error { grid-column: 1 / -1; padding: 18px 0; font-size: var(--fs-caption); color: var(--muted); }
 .ps-roster-error { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; color: var(--yellow); }
-.g7-docnote { grid-column: 2 / -1; margin-top: 10px; font-size: var(--fs-meta); color: var(--faint); }
+.g7-docnote { grid-column: 1 / -1; margin-top: 10px; font-size: var(--fs-meta); color: var(--faint); }
 @media (max-width: 760px) {
-  .g7-docnote { grid-column: 1 / -1; }
   .g5 .bar { flex-wrap: wrap; gap: 6px 14px; }
   .g5 .bar h1 .en { display: none; }
   .g5 .counts { order: 3; width: 100%; }
@@ -106,14 +105,13 @@
 
 
 /* ================= 第七版档案屏：整宽分段 ================= */
-.g7-head { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; column-gap: 16px; align-items: start; }
-.g7-head .g5-mono { width: 52px; height: 52px; padding: 6px; }
+.g7-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: start; }
 .g7-head h2 { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; font: 800 var(--fs-display-s)/1.2 var(--sans); }
 .g7-head h2 small { font: 500 var(--fs-small) var(--mono); color: var(--faint); }
 .g7-head .one { overflow-wrap: anywhere; margin-top: 6px; font-size: var(--fs-body); line-height: 1.6; color: var(--text-2); }
 .g7-head .acts { display: flex; gap: 8px; }
 .g7-head .acts a.btn { display: inline-flex; align-items: center; color: var(--cyan); text-decoration: none; }
-.g7-head dl { grid-column: 2 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 36px; margin-top: 14px; }
+.g7-head dl { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 36px; margin-top: 14px; }
 .g7-head dl div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; font-size: var(--fs-caption); line-height: 1.65; }
 .g7-head dt { color: var(--faint); white-space: nowrap; }
 .g7-head dd { color: var(--text-2); }
@@ -146,8 +144,7 @@
 @media (max-width: 760px) {
   .g5-carts { gap: 10px; padding-top: 8px; padding-bottom: 18px; }  /* 手机：留出选中上浮和三角的位置 */
   .g5-screen { margin-top: 6px; }
-  .g7-head { grid-template-columns: 40px minmax(0, 1fr); column-gap: 12px; }
-  .g7-head .g5-mono { width: 40px; height: 40px; padding: 4px; }
+  .g7-head { grid-template-columns: minmax(0, 1fr); }
   .g7-head h2 { font-size: var(--fs-section); }
   .g7-head .acts { grid-column: 1 / -1; grid-row: 3; margin-top: 12px; }
   .g7-head dl { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); margin-top: 12px; }
@@ -178,12 +175,15 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hue) 30%, transparent); }
 .pcb .board::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255, 255, 255, 0.08) 0 24%, transparent 24%); pointer-events: none; }
 .pcb .trace { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.24; }
+/* 7G：走线（含过孔、流光）到文字那一带渐隐到一成，文字下方再浮现，字不再压在线上 */
+.pcb .trace { -webkit-mask-image: linear-gradient(180deg, #000 0 40%, rgba(0, 0, 0, 0.1) 52%, rgba(0, 0, 0, 0.1) 82%, rgba(0, 0, 0, 0.7) 100%);
+  mask-image: linear-gradient(180deg, #000 0 40%, rgba(0, 0, 0, 0.1) 52%, rgba(0, 0, 0, 0.1) 82%, rgba(0, 0, 0, 0.7) 100%); }
 .pcb .chip { position: relative; isolation: isolate; display: grid; place-items: center; width: 54px; height: 44px; border-radius: 3px; background: var(--hw-pit); box-shadow: 0 0 0 1px color-mix(in srgb, var(--hue) 55%, transparent), 0 0 16px -4px var(--hue); }
 .pcb .chip::before, .pcb .chip::after { content: ""; position: absolute; top: 7px; bottom: 7px; width: 4px; background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--hue) 50%, var(--text-2)) 0 2px, transparent 2px 5px); }
 .pcb .chip::before { left: -4px; }
 .pcb .chip::after { right: -4px; }
 .pcb .chip .g5-mono { width: 40px; height: 32px; padding: 0; background: none; box-shadow: none; }
-.pcb .tx { position: relative; display: grid; gap: 3px; margin-top: 12px; }
+.pcb .tx { position: relative; display: grid; gap: 3px; margin-top: 12px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
 .pcb .tx .nm { color: #fff; }
 .pcb .tx .sub { color: color-mix(in srgb, var(--hue) 45%, var(--text-hi)); }
 .pcb .no { position: absolute; top: 10px; right: 10px; font: 600 var(--fs-label) var(--mono); color: var(--hue); opacity: 0.8; }
