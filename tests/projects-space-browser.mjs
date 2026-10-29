@@ -56,6 +56,7 @@ try {
     await screen.locator(".g7-field").filter({ hasText: "近 30 天没有调用技能的会话" }).waitFor({ timeout: 15000 });
     assert.equal(await page.locator(".cnt .lcd.violet [role=img]").getAttribute("aria-label"), "0", "实战开启时页头技能数是读数");
     assert.equal(await page.locator(".projects-space .lcd svg > g:first-child").evaluateAll((gs) => gs.filter((g) => getComputedStyle(g).display !== "none").length), 0, "液晶数不画不亮像素的暗格");
+    assert.equal(await page.locator(".projects-space .lcd svg g.on").count(), 0, "液晶数不用逐格渐亮（Safari 里会停在半透明）");
     assert.deepEqual(await page.locator(".projects-space .lcd svg").evaluateAll((ss) => [...new Set(ss.map((s) => s.getBoundingClientRect().height))].sort()), [21, 28], "点阵按整数倍原尺寸画，不缩放");
     assert.match(await page.locator(".cnt").nth(1).locator("small").textContent(), /有项目读不到/, "有项目 GitHub 读不到时合计注明");
     ok("卡带按名册排、默认选第一盘；档案头摘要、要注意的事、下一步取数、实战默认开启；液晶数无暗格、不缩放");

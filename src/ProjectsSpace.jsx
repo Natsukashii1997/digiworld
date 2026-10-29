@@ -25,9 +25,10 @@ const TRACES = ["M0 18H34l10 10H86l8-8h46", "M0 46h12l6 6v54l6 6h34", "M140 52h-
 const VIAS = [[34, 18], [94, 20], [18, 52], [110, 60], [76, 112], [112, 96]];
 
 // 液晶数：滚动到位（useCountUp 按帧跳），始终补足两位。点阵按原尺寸画（px 取整数），不用 CSS 缩放，像素才不会忽粗忽细。
+// 不用逐格渐亮（boot）：Safari 里新点亮的格子动画结束后不重绘，会停在半透明。
 function Count({ value, run, px = 3 }) {
   const shown = useCountUp(String(value), run);
-  return <LcdText text={pad2(shown)} px={px} label={String(value)} boot />;
+  return <LcdText text={pad2(shown)} px={px} label={String(value)} />;
 }
 
 function Mono({ code }) {
