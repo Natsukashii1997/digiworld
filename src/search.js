@@ -3,6 +3,7 @@
 import { current } from "./store.js";
 import {entryName, liveEntries} from './scrolls.js';
 import {buildReplicaPack} from './reverse-v4.js';
+import {SLOTS} from './reverse-hatch.js';
 import {filterRelayText} from './relay-prompt.js';
 
 export const GROUP_LIMIT = 20;
@@ -133,11 +134,11 @@ export function searchWorkspace(state, query) {
     return hits.map(hit=>({...hit,scrollId:scroll.id,entryId:hit.item.id,source:scroll.name}));
   });
   const reverse = (state.reverseRecords || []).filter(r=>!r.deletedAt).flatMap(item=>{
-    const pack=buildReplicaPack(item);
-    if(!pack)return [];
+    const pack=buildReplicaPack(item),slots=item.hatch?SLOTS.map(s=>[item.hatch.slots[s.id]?.known,item.hatch.slots[s.id]?.miss].filter(Boolean).join('\n')).filter(Boolean).join('\n'):'';
+    if(!pack&&!slots)return [];
     const source=filterRelayText(item.material?.target?.path || item.material?.target?.url || item.material?.url || '本机材料').text;
     const title=filterRelayText(item.title).text;
-    const hits=searchPlain([item],words,r=>[field('标题',title),field('来源',source),field('当前任务包',pack,true)]);
+    const hits=searchPlain([item],words,r=>[field('标题',title),field('来源',source),...(slots?[field('八格',filterRelayText(slots).text,true)]:[]),...(pack?[field('当前任务包',pack,true)]:[])]);
     return hits.map(hit=>({...hit,item:{id:item.id,title},source}));
   });
   return { words, assets, archived, notes, references, projects, scrolls, reverse };

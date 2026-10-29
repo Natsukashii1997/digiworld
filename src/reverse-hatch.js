@@ -66,6 +66,7 @@ export function buildHatchPack(record, { asked = [] } = {}) {
       : ["## 这一轮", "先做一次完整取证，八格都要回答。"]),
     "", "## 做法与边界",
     software ? "- 用你本机已注册的 rea MCP 取证；只读分析，不修改目标、不登录、不提交表单。" : "- 只依据上面的参照物和素材分析，不访问未列出的账号或私人资料。",
+    ...(["failed", "blocked"].includes(legacyRounds(record).at(-1)?.status) && !hatch.rounds.length ? ["- 上一轮没拿到结论：先确认目标能打开、是要分析的那一页，再取证。"] : []),
     "- 结论写清证据或依据；没把握的写进「缺」，不要猜。",
     "- 只分析，不修改任何项目文件。",
     "", ...ANSWER_FORMAT,

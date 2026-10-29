@@ -50,7 +50,7 @@ export function ReverseInput({state,save,notify,onClose,onCreated,referenceOnly=
           <div className="re-drop" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();upload([...e.dataTransfer.files]);}}><label>拖入本机截图<input type="file" aria-label="参照截图" accept="image/png,image/jpeg,image/webp" multiple disabled={busy} onChange={e=>upload([...e.target.files])}/></label><small>单张不超过8 MB · 只存本机</small>
             {media.map((m,i)=><p key={m.path}>截图 {i+1} · {m.size} 字节 <button type="button" className="text-btn" disabled={busy} onClick={()=>setMedia(media.filter(x=>x.path!==m.path))}>移除引用</button></p>)}</div></>}
       </>}
-      <label>你看重的点<textarea maxLength={500} value={why} onChange={e=>setWhy(e.target.value)} disabled={busy}/></label>
+      <label>好在哪里（选填）<textarea maxLength={500} value={why} onChange={e=>setWhy(e.target.value)} disabled={busy}/></label>
       {error&&<p className="inline-error" role="alert">{error}</p>}
       <Button type="submit" disabled={busy}>{busy?'正在保存…':referenceOnly?'保存参考':'投入参照物'}</Button>
     </form>
