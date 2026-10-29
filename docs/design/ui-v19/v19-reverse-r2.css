@@ -1,0 +1,27 @@
+/* 逆向工程第二轮三版的共用部分：页头、标本切换。按钮、提示、种类小牌沿用 v19-reverse.css。 */
+.rv2 .bar { margin-bottom: 14px; }
+.rv2-switch { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; scrollbar-width: none; }
+.rv2-switch::-webkit-scrollbar { display: none; }
+.rv2-sw { display: grid; gap: 2px; flex: none; min-width: 168px; max-width: 260px; min-height: 52px; padding: 8px 14px; border: 0; border-radius: 8px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.rv2-sw b { font: 700 13.5px var(--sans); }
+.rv2-sw small { overflow: hidden; font: 500 11.5px var(--mono); color: var(--faint); white-space: nowrap; text-overflow: ellipsis; }
+.rv2-sw:hover { background: var(--panel-2); }
+.rv2-sw.on { background: var(--panel-2); box-shadow: inset 0 0 0 1px var(--orange), inset 0 -2px 0 var(--orange); }
+.rv2-sw.add { background: transparent; box-shadow: none; outline: 1px dashed var(--line-3); outline-offset: -1px; }
+.rv2-sw.add b { color: var(--orange-2); }
+.rv2 .eyebrow { font: 600 10.5px var(--mono); letter-spacing: 0.16em; color: var(--muted); }
+.rv2 .eyebrow b { color: var(--cyan); font-weight: 600; }
+.rv2 .lcd.violet { color: var(--violet); }
+.rv2 .lcd.cyan { color: var(--cyan); }
+.rv2 .lcd.dim { color: var(--muted); }
+.rv2 .lcd.orange { color: var(--orange-2); }
+.rv2-cells { display: flex; flex-wrap: wrap; gap: 3px; }
+.rv2-cells i { width: 10px; height: 14px; border-radius: 1px; background: rgba(140, 178, 255, 0.1); }
+.rv2-cells i.o { background: var(--lcd); box-shadow: 0 0 5px rgba(166, 227, 110, 0.55); }
+.rv2-cells i.p { background: var(--violet); box-shadow: 0 0 5px rgba(168, 145, 255, 0.55); }
+.rv2-cells i.u { background: #1a2238; box-shadow: inset 0 0 0 1px rgba(140, 178, 255, 0.16); }
+.rv2-cells i.q { background: var(--orange); box-shadow: 0 0 6px rgba(255, 138, 36, 0.7); }
+@media (max-width: 760px) {
+  .rv2-switch { margin: 0 -16px 14px; padding: 0 16px; }
+  .rv2-sw { min-width: 150px; }
+}

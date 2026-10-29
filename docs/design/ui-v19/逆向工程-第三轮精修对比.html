@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>逆向工程 · 第三轮精修对比</title>
+<!-- 模板：由 build/make.py 生成各页的"三版对比"。三版都是能操作的 1440 页面（iframe 按窗口缩放）。 -->
+<style>
+body { margin: 0; background: #070b16; color: #e9eeff; font: 14px/1.5 -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif; }
+header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 20px; background: #0a1020; border-bottom: 1px solid rgba(140, 178, 255, 0.15); }
+header h1 { margin: 0 8px 0 0; font-size: 15px; }
+.tabs { display: flex; gap: 6px; }
+.tabs button { height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(140, 178, 255, 0.2); background: transparent; color: #b4bfda; font: 600 13px inherit; cursor: pointer; }
+.tabs button.on { background: #ff8a24; color: #1f0f00; border-color: transparent; }
+.note { margin-left: auto; color: #8b98b8; font-size: 12px; }
+.views { display: grid; gap: 16px; padding: 16px 20px; }
+.views.all { grid-template-columns: repeat(2, 1fr); }
+.views.one { grid-template-columns: 1fr; }
+.view { display: none; min-width: 0; }
+.views.all .view, .views.one .view.on { display: block; }
+.view h2 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: #b4bfda; }
+.view h2 b { margin-right: 8px; color: #e9eeff; }
+.frame { position: relative; overflow: hidden; border-radius: 10px; background: #070b16; box-shadow: 0 0 0 1px rgba(140, 178, 255, 0.15); }
+.frame iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: #070b16; }
+</style>
+</head>
+<body>
+<header>
+  <h1>逆向工程 · 第三轮精修</h1>
+  <div class="tabs"><button data-v="all" class="on">并排</button><button data-v="1">2A · 透视图</button><button data-v="2">3A · 透视图精修</button><button data-v="3">2C · 孵蛋</button><button data-v="4">3C · 孵蛋精修</button></div>
+  <span class="note">上排 2A → 3A，下排 2C → 3C。都能点，不写数据。</span>
+</header>
+<div class="views all"><section class="view" data-v="1"><h2><b>2A · 透视图</b>主角是参照物本身：拆到哪了、哪里还黑着。看到的部件亮绿，推断的紫虚线，9 个未知是雾点；点雾点放进下一轮追问</h2><div class="frame"><iframe src="逆向工程-2A-透视图.html" loading="lazy"></iframe></div></section><section class="view" data-v="2"><h2><b>3A · 透视图精修</b>按归属分区（迁移 / 交接 / 没归属），雾点落在所属区；透视光扫过才亮；第 1 / 2 轮可切换；检查器列出这一区还黑着的</h2><div class="frame"><iframe src="逆向工程-3A-透视图精修.html" loading="lazy"></iframe></div></section><section class="view" data-v="3"><h2><b>2C · 孵蛋</b>主角是产出：一份正在孵的 Skill（数码蛋），八个格子哪格填上了、哪格还空；空格一键写成追问包，蛋随格子裂开</h2><div class="frame"><iframe src="逆向工程-2C-孵蛋.html" loading="lazy"></iframe></div></section><section class="view" data-v="4"><h2><b>3C · 孵蛋精修</b>八格与孵化器两侧八个接口灯一一对齐；哪格填上蛋的哪一侧裂开；格子写明会写进 Skill 的原文；孵化前预览 Skill 草稿</h2><div class="frame"><iframe src="逆向工程-3C-孵蛋精修.html" loading="lazy"></iframe></div></section></div>
+<script>
+const views = document.querySelector(".views");
+function fit() {
+  for (const f of document.querySelectorAll(".frame")) {
+    const s = Math.min(1, f.clientWidth / 1440);
+    f.style.height = Math.round(900 * s) + "px";
+    f.querySelector("iframe").style.transform = `scale(${s})`;
+  }
+}
+document.querySelector(".tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  const v = b.dataset.v;
+  views.className = "views " + (v === "all" ? "all" : "one");
+  document.querySelectorAll(".view").forEach((x) => x.classList.toggle("on", x.dataset.v === v));
+  requestAnimationFrame(fit);
+});
+addEventListener("resize", fit);
+addEventListener("load", fit);
+fit();
+</script>
+</body>
+</html>

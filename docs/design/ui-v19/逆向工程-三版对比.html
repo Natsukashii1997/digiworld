@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>逆向工程 · 三版对比</title>
+<!-- 模板：由 build/make.py 生成各页的"三版对比"。三版都是能操作的 1440 页面（iframe 按窗口缩放）。 -->
+<style>
+body { margin: 0; background: #070b16; color: #e9eeff; font: 14px/1.5 -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif; }
+header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 16px; height: 52px; padding: 0 20px; background: #0a1020; border-bottom: 1px solid rgba(140, 178, 255, 0.15); }
+header h1 { margin: 0 8px 0 0; font-size: 15px; }
+.tabs { display: flex; gap: 6px; }
+.tabs button { height: 32px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(140, 178, 255, 0.2); background: transparent; color: #b4bfda; font: 600 13px inherit; cursor: pointer; }
+.tabs button.on { background: #ff8a24; color: #1f0f00; border-color: transparent; }
+.note { margin-left: auto; color: #8b98b8; font-size: 12px; }
+.views { display: grid; gap: 16px; padding: 16px 20px; }
+.views.all { grid-template-columns: repeat(3, 1fr); }
+.views.one { grid-template-columns: 1fr; }
+.view { display: none; min-width: 0; }
+.views.all .view, .views.one .view.on { display: block; }
+.view h2 { margin: 0 0 8px; font-size: 13px; font-weight: 500; color: #b4bfda; }
+.view h2 b { margin-right: 8px; color: #e9eeff; }
+.frame { position: relative; overflow: hidden; border-radius: 10px; background: #070b16; box-shadow: 0 0 0 1px rgba(140, 178, 255, 0.15); }
+.frame iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; background: #070b16; }
+</style>
+</head>
+<body>
+<header>
+  <h1>逆向工程 · 三版对比</h1>
+  <div class="tabs"><button data-v="all" class="on">并排</button><button data-v="1">一 · 工单台</button><button data-v="2">二 · 孵化流水</button><button data-v="3">三 · 解剖屏</button></div>
+  <span class="note">三版内容相同（投入 · 交出 · 收成），只是组织方式不同。都能点：复制任务包、放回结论、存成 Skill、投入参照物；不写数据。</span>
+</header>
+<div class="views all"><section class="view" data-v="1"><h2><b>一 · 工单台</b>左边拆解单列表（按进度筛），右边一张拆解单：投入 → 交出 → 收成三段竖轨，走到哪一段，那一段的编号就亮</h2><div class="frame"><iframe src="逆向工程-1-工单台.html" loading="lazy"></iframe></div></section><section class="view" data-v="2"><h2><b>二 · 孵化流水</b>三列：待交出（整蛋）/ 已交出（裂缝）/ 已收成（破壳），一张卡片就是一张拆解单，卡片上直接操作；点开从右边抽屉看全</h2><div class="frame"><iframe src="逆向工程-2-孵化流水.html" loading="lazy"></iframe></div></section><section class="view" data-v="3"><h2><b>三 · 解剖屏</b>上排标本条选一件，下面一块屏左右并排：参照物 → 任务包 → 收成，管道按进度亮；收成格是一个等着装 Skill 的空槽</h2><div class="frame"><iframe src="逆向工程-3-解剖屏.html" loading="lazy"></iframe></div></section></div>
+<script>
+const views = document.querySelector(".views");
+function fit() {
+  for (const f of document.querySelectorAll(".frame")) {
+    const s = Math.min(1, f.clientWidth / 1440);
+    f.style.height = Math.round(900 * s) + "px";
+    f.querySelector("iframe").style.transform = `scale(${s})`;
+  }
+}
+document.querySelector(".tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  const v = b.dataset.v;
+  views.className = "views " + (v === "all" ? "all" : "one");
+  document.querySelectorAll(".view").forEach((x) => x.classList.toggle("on", x.dataset.v === v));
+  requestAnimationFrame(fit);
+});
+addEventListener("resize", fit);
+addEventListener("load", fit);
+fit();
+</script>
+</body>
+</html>
