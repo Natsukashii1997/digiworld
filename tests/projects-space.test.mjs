@@ -167,12 +167,15 @@ test("项目卡摘要：取「是什么 / 目标 / 不做」三段，去掉 fron
   assert.deepEqual(cardSummary("# 乙\n\n只有一段话。\n"), { one: "只有一段话。", goal: "", not: "" });
 });
 
-test("项目卡读取：跟着已连接的 Vault 知识源只读，不看写入开关；没连不读文件，待确认、读不到如实说明", async () => {
+test("项目卡读取：跟着已连接的 Vault 知识源只读，不看写入开关；没连 Obsidian 来源不读文件，待确认、读不到如实说明", async () => {
   let reads = 0;
   const files = { current: async (source, path) => { reads++; return { document: { content: `# x\n\n## 是什么\n\n${source.id}:${path}\n` } }; } };
   const repoOf = (sources) => ({ read: async () => ({ connections: { knowledgeSources: sources } }) });
   const none = createCardReader(repoOf([{ id: "f1", kind: "feishu", root: "feishu://space/1" }]), { files });
   assert.deepEqual(await none("10 项目/甲.md"), { state: "off" });
+  assert.equal(reads, 0);
+  const plain = createCardReader(repoOf([{ id: "m1", kind: "markdown", root: "/笔记" }]), { files });
+  assert.deepEqual(await plain("10 项目/甲.md"), { state: "off" }, "普通 Markdown 目录不算 Vault");
   assert.equal(reads, 0);
   const on = createCardReader(repoOf([{ id: "m1", kind: "markdown", root: "/笔记" }, { id: "v1", kind: "obsidian", root: "/Vault 库" }]), { files });
   const card = await on("10 项目/甲.md");

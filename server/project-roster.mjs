@@ -120,7 +120,7 @@ export function createCardReader(repository, { files }) {
     } catch {
       return { state: "error", message: "Vault 知识源读不到" };
     }
-    if (!source) return { state: "off" };
+    if (source?.kind !== "obsidian") return { state: "off" };  // 只认 Obsidian：链接要能在 Obsidian 里打开
     const url = `obsidian://open?vault=${encodeURIComponent(basename(source.root))}&file=${encodeURIComponent(card.replace(/\.md$/, ""))}`;
     try {
       const { document } = await files.current(source, card);
