@@ -30,7 +30,8 @@ export function assetDeleteBlockers(state, assetId, ruleInstallItems = [], publi
     }
   }
   for (const record of state.reverseRecords || []) {
-    if (record.forge?.assetId === assetId || record.savedSkill?.assetId === assetId || record.packSkills?.some(p=>p.assetId===assetId) || record.hatchSkills?.some(p=>p.assetId===assetId) || record.imports?.some(item => item.assetId === assetId))
+    // 逆向记录产出的 Skill 删除只是归档，可重新孵化，不挡；只挡作为输入引用的资产。
+    if (record.imports?.some(item => item.assetId === assetId))
       add("reverse", `逆向记录：${record.title}`, record.id, true);
   }
   for (const candidate of state.revisionCandidates || []) {

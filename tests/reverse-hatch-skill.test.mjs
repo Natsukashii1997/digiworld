@@ -26,7 +26,7 @@ async function edit(repository, id, value) {
 }
 const start = async (svc, repository, title) => svc.hatchPreview({ recordId: (await repository.read()).reverseRecords[0].id, expectedRevision: (await repository.read()).revision, title });
 
-test('预览 → 确认 → 回读：写固定版本 Skill、来源 reverse、回执带 slotsHash；去向与删除保护认得出', async () => {
+test('预览 → 确认 → 回读：写固定版本 Skill、来源 reverse、回执带 slotsHash；去向认得出、产出可删', async () => {
   const r = specimen();
   await repo([r], async (repository) => {
     const svc = createReverseSkillV4({ repository }), before = await repository.read();
@@ -45,7 +45,7 @@ test('预览 → 确认 → 回读：写固定版本 Skill、来源 reverse、�
     assert.equal(done.saved.slotsHash, p.slotsHash); assert.equal(done.current, true); assert.equal(done.versionNo, 1);
     assert.deepEqual((await svc.hatchQuery({ recordId: r.id })).saved, done.saved, '回读');
     assert.deepEqual(captureRouteIndex(state).routes('reverse', r.id).map((x) => [x.to, x.assetId]), [['asset', asset.id]], '只算一次去向');
-    assert.ok(assetDeleteBlockers(state, asset.id).some((b) => b.kind === 'reverse'));
+    assert.ok(!assetDeleteBlockers(state, asset.id).some((b) => b.kind === 'reverse'), '孵出的 Skill 不挡删除');
   });
 });
 

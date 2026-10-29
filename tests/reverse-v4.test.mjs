@@ -35,7 +35,7 @@ test('v4包与Skill逐层过滤凭据，source.json保持有效JSON',()=>{
  assert.match(pack,/不可信输入/);
 });
 async function repo(records,fn){const dir=await mkdtemp(join(tmpdir(),'reverse-v4-'));const repository=await openRepository(dir);try{const input=seed();input.reverseRecords=records;await repository.write(input,{initialize:true});await fn(repository,dir);}finally{await repository.close();await rm(dir,{recursive:true,force:true});}}
-test('无配方/无复刻/无评分也可预览存固定Skill；双击幂等、查询回读、删除保护',async()=>{
+test('无配方/无复刻/无评分也可预览存固定Skill；双击幂等、查询回读、产出可删',async()=>{
  const r=createSpecimen({text:'合成参照文本'});
  await repo([r],async repository=>{
   const svc=createReverseSkillV4({repository}),initial=await repository.read(),assets=initial.assets.length;
@@ -44,7 +44,7 @@ test('无配方/无复刻/无评分也可预览存固定Skill；双击幂等、�
   const [a,b]=await Promise.all([svc.confirm({recordId:r.id,token:preview.token}),svc.confirm({recordId:r.id,token:preview.token})]);
   assert.equal(a.saved.assetId,b.saved.assetId);assert.equal((await repository.read()).assets.length,assets+1);
   assert.deepEqual((await svc.query({recordId:r.id})).saved,a.saved);
-  const state=await repository.read();assert.ok(assetDeleteBlockers(state,a.saved.assetId).some(x=>x.kind==='reverse'));
+  const state=await repository.read();assert.ok(!assetDeleteBlockers(state,a.saved.assetId).some(x=>x.kind==='reverse'));
   state.reverseRecords[0].savedSkill.packHash='c'.repeat(64);await assert.rejects(repository.write(state),/固定|存Skill/);
  });
 });
