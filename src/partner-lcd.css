@@ -67,6 +67,10 @@
   background: var(--orange);
   box-shadow: 0 0 8px var(--orange);
 }
+.data-bit.violet {
+  background: var(--violet);
+  box-shadow: 0 0 8px var(--violet);
+}
 @media (prefers-reduced-motion: reduce) {
   .partner-screen {
     transition: none;

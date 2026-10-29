@@ -1,11 +1,15 @@
 // 逆向工程孵蛋 3C（issue #28）：标本条 + 孵化器 + 八格。把一件参照物一点点照亮，拆出一份 Skill。
 // 工作台不自己取证：缺的格子写成追问包复制给原生 Agent，结论粘回来先预览拆格、确认后写入并回读。
 // 冻结的 REA 运行、AI 执行器、内嵌 Codex 会话、网站预检不再从这页进入，代码留在 ReverseV16；旧的存 Skill、删除恢复照旧。
-// 孵化（#29）：什么时候都能孵，服务端预览 → 确认 → 写固定版本 Skill → 回读；同一八格状态复用已孵化的那一版。动效在第 4 批。
+// 孵化（#29）：什么时候都能孵，服务端预览 → 确认 → 写固定版本 Skill → 回读；同一八格状态复用已孵化的那一版。
+// 动效（#30）按帧、有因果：放回结论扫一遍、格子逐个亮、蛋逐侧裂；复制飞进伙伴屏；孵化裂满 → 抬壳 → 飞进伙伴屏。
+// 业务写入不等动画；减少动态效果时直接到位。
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Copy, Trash2, RotateCcw, ClipboardPaste } from "lucide-react";
 import { Button, Dialog, FilterTabs } from "./components.jsx";
 import { request } from "./api.js";
+import { flyData } from "./data-flight.js";
+import { reducedMotion, scanReveal, trackDecoration } from "./scan-motion.js";
 import { LcdText, useCountUp } from "./v14.jsx";
 import { ReverseInput } from "./ReverseInput.jsx";
 import { ReaUpdate } from "./ReaUpdate.jsx";
@@ -37,6 +41,7 @@ function Count({ value, run }) {
 
 // 像素蛋 22×26：第 i 格填上，就在它那一侧的对应高度裂一道（左四格裂左边，右四格裂右边），半格裂一半。
 const W = 22, H = 26, CELL = 8, BANDS = [8, 12, 17, 22];
+const ZIG = (x) => 11 + (x % 4 < 2 ? 0 : 1); // 孵化后蛋壳的锯齿缝
 const SPOTS = new Set(["8,9", "9,9", "8,10", "14,14", "15,14", "14,15", "6,19", "7,19", "12,22", "13,22", "16,20"]);
 const inside = (x, y) => { const t = (y - 15) / 11.5; if (Math.abs(t) > 1) return false; const rx = 9.6 * (y < 15 ? 0.78 + 0.22 * (1 - Math.abs(t)) : 1) * Math.sqrt(1 - t * t); return Math.abs(x + 0.5 - 11) <= rx; };
 function crackFor(i, part) {
@@ -45,24 +50,28 @@ function crackFor(i, part) {
   const path = [[x0, y0], [x0 + d, y0], [x0 + 2 * d, y0 - 1], [x0 + 3 * d, y0 - 1], [x0 + 4 * d, y0], [x0 + 5 * d, y0 + 1], [x0 + 6 * d, y0 + 1]];
   return path.slice(0, Math.ceil(path.length * part));
 }
-function Egg({ states }) {
+// 孵化后（hatched）：沿锯齿缝分开，上半壳按 lift（0–4 帧）往左上抬起，抬到一半冒出四颗光点。
+function Egg({ states, hatched = false, lift = 0 }) {
   const crack = new Set();
   states.forEach((st, i) => { if (st !== "empty") for (const [x, y] of crackFor(i, st === "full" ? 1 : 0.5)) crack.add(`${x},${y}`); });
   const cells = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (!inside(x, y)) continue;
     const edge = !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1), k = `${x},${y}`;
-    const fill = edge || crack.has(k) ? "var(--px-ink)" : SPOTS.has(k) ? "var(--px-egg-spot)" : "var(--px-egg)";
-    cells.push(<rect key={k} x={x * CELL} y={(y + 3) * CELL} width={CELL} height={CELL} fill={fill} />);
+    const top = hatched && y < ZIG(x), dy = top ? -lift : 0, dx = top ? -Math.round(lift / 2) : 0;
+    const seam = hatched && lift > 0 && (y === ZIG(x) || y === ZIG(x) - 1);
+    const fill = edge || seam || (!hatched && crack.has(k)) ? "var(--px-ink)" : SPOTS.has(k) ? "var(--px-egg-spot)" : "var(--px-egg)";
+    cells.push(<rect key={k} x={(x + dx) * CELL} y={(y + dy + 3) * CELL} width={CELL} height={CELL} fill={fill} />);
   }
+  if (hatched && lift > 2) for (const [x, y] of [[3, 5], [19, 6], [2, 13], [20, 12]]) cells.push(<rect key={`s${x},${y}`} x={x * CELL} y={y * CELL} width={CELL} height={CELL} fill="var(--lcd-ink)" />);
   return <svg className="egg" viewBox={`0 0 ${W * CELL} ${(H + 3) * CELL}`} width={W * CELL * 0.8} height={(H + 3) * CELL * 0.8} shapeRendering="crispEdges" aria-hidden="true">{cells}</svg>;
 }
 
-function Slot({ slot, index, value, asking, sent, round, busy, onAsk, onEdit }) {
+function Slot({ slot, index, value, asking, sent, round, busy, motion, onAsk, onEdit }) {
   const st = slotState(value);
   const label = sent ? `第 ${round} 轮在问` : STATE_TEXT[st];
   return (
-    <article className={`rh-slot st-${st}${sent ? " is-sent" : asking ? " is-ask" : ""}`} data-slot={slot.id} aria-label={`${slot.name} · ${label}`}>
+    <article className={`rh-slot st-${st}${sent ? " is-sent" : asking ? " is-ask" : ""}${motion ? " is-" + motion : ""}`} data-slot={slot.id} aria-label={`${slot.name} · ${label}`}>
       <div className="rh-sh"><span className="no">{pad2(index + 1)}</span><b>{slot.name}</b><span className="rh-st">{label}</span></div>
       <div className="rh-body">
         {st === "full" ? <><span className="lb">写进 Skill</span><p>{value.known}</p></>
@@ -77,6 +86,12 @@ function Slot({ slot, index, value, asking, sent, round, busy, onAsk, onEdit }) 
   );
 }
 
+// 每轮的八格小条：放回结论时存下的快照（旧流程的轮次没有快照，只显示文字）。
+function Cells({ cells }) {
+  const n = [...cells].filter((c) => c === "f").length, half = cells.includes("h");
+  return <span className="rh-cells" aria-label={`这一轮放回后 ${n}${half ? " 格加半格" : " 格"}填上`}><span className="strip" aria-hidden="true">{[...cells].map((c, i) => <i key={i} className={c} />)}</span><b>{n}{half ? "½" : ""} 格</b></span>;
+}
+
 // 孵化器下方：当前八格已孵化就显示 Skill 卡，否则是「现在就孵化」。
 function Born({ born, asset, score, onOpen }) {
   const version = asset.versions.find((v) => v.id === born.versionId);
@@ -89,18 +104,22 @@ function Born({ born, asset, score, onOpen }) {
   );
 }
 
-function Device({ hatch, score, rounds, asks, sentIds, nextRound, busy, born, bornAsset, onCopy, onReply, onHatch, onOpenSkill }) {
+function Device({ hatch, score, rounds, asks, sentIds, nextRound, busy, born, bornAsset, motion, screenRef, onCopy, onReply, onHatch, onOpenSkill }) {
   const states = SLOTS.map((s) => slotState(hatch.slots[s.id]));
+  // 动画中蛋按帧显示：放回结论时还没亮起的格子保持旧状态；孵化时先裂满再抬壳。
+  const shown = motion?.egg || states.map((st, i) => (motion?.wait?.includes(SLOTS[i].id) ? motion.from[i] : st));
+  const hatchedEgg = motion?.lift !== undefined || (!!born && !motion);
+  const hatchedNow = !!born && !(motion?.egg && motion.lift === undefined); // 裂纹帧还没抬壳时仍显示「孵化中」
   const filled = `${score.full}${score.half ? "½" : ""}`;
   const canCopy = asks.length > 0 || rounds.length === 0;
   return (
-    <div className="rh-dev">
+    <div className="rh-dev" data-lift={motion?.lift}>
       {SLOTS.map((s, i) => <i key={s.id} className={`rh-port ${i < 4 ? "l" : "r"} ${sentIds.has(s.id) ? "is-sent" : "st-" + states[i]}`} style={{ top: 75 + (i % 4) * 160 }} aria-hidden="true" />)}
-      <div className="top"><span className="eyebrow"><b>SKILL</b> 孵化器</span><span className="eyebrow">{born ? "HATCHED" : "INCUBATING"}</span></div>
-      <div className="rh-screen"><div className="readout"><span>{born ? "已孵化" : "孵化中"}</span><span>{filled} / 8</span></div><Egg states={states} /></div>
+      <div className="top"><span className="eyebrow"><b>SKILL</b> 孵化器</span><span className="eyebrow">{hatchedNow ? "HATCHED" : "INCUBATING"}</span></div>
+      <div className="rh-screen" ref={screenRef}><div className="readout"><span>{hatchedNow ? "已孵化" : "孵化中"}</span><span>{filled} / 8</span></div><Egg states={shown} hatched={hatchedEgg} lift={motion?.lift ?? (hatchedEgg ? 4 : 0)} /></div>
       <div className="rh-count"><span className="lcd"><Count value={score.full} run={filled} /></span><small>格填上{score.half ? ` · ${score.half} 格半` : ""} · {score.empty} 格空</small></div>
       <ol className="rh-hist" aria-label="每轮">
-        {rounds.length ? rounds.slice(-3).map((x) => <li key={x.n}>{roundText(x)}</li>) : <li>还没交出过</li>}
+        {rounds.length ? rounds.slice(-3).map((x) => <li key={x.n}><span>{roundText(x)}</span>{x.cells && <Cells cells={x.cells} />}</li>) : <li>还没交出过</li>}
       </ol>
       <div className="rh-acts">
         <span className="lbl">{asks.length ? <>把勾上的 <b>{asks.length} 格</b>写成第 {nextRound} 轮追问包</> : rounds.length ? "勾上要问的格子" : `第 ${nextRound} 轮先做一次完整取证`}</span>
@@ -116,21 +135,26 @@ function Device({ hatch, score, rounds, asks, sentIds, nextRound, busy, born, bo
   );
 }
 
-// 旧版本的结论没有分格：只读列出，并能复制「按八格整理」任务包（只整理，不重新取证）。
+// 未分格：旧版本没有分格的结论（只读），和最近一次放回时分不进格的段落；都能复制「按八格整理」任务包（只整理，不重新取证）。
 function Legacy({ record, busy, onOrganize, onSkill }) {
   const versions = record.packVersions || [];
   const v = versions.find((x) => x.id === record.activePackVersionId) || versions.at(-1);
   const result = v?.result, canSkill = record.type && buildReplicaPack(record), saved = record.savedSkill || record.forge;
-  if (!result && !canSkill && !saved) return null;
+  const loose = record.hatch?.unplaced;
+  if (!result && !canSkill && !saved && !loose) return null;
   return (
     <section className="rh-legacy" aria-labelledby="rh-legacy-title">
-      <h3 id="rh-legacy-title">{result ? "旧结论 · 未分格" : "任务包 · 旧流程"}{v && <small>{md(v.at)} · {WHO[v.executor] || v.executor} · 未经复刻验证</small>}</h3>
+      <h3 id="rh-legacy-title">{result ? "旧结论 · 未分格" : loose ? "未分格" : "任务包 · 旧流程"}{v && <small>{md(v.at)} · {WHO[v.executor] || v.executor} · 未经复刻验证</small>}</h3>
+      {loose && <div className="rh-loose">
+        <h4>最近一次放回 · {md(loose.at)} · 分不进格的 {loose.items.length} 段</h4>
+        {loose.items.map((u, i) => <details key={i}><summary>{u.label}</summary><pre>{u.text}</pre></details>)}
+      </div>}
       {result && <>
         {result.conclusions.length ? <ul>{result.conclusions.map((c, i) => <li key={i}><span className={`mark${c.mark === "推断" ? " inferred" : ""}`}>{c.mark}</span>{c.text}</li>)}</ul> : <p>这一轮没有形成有证据的结论。</p>}
         {!!result.unknowns.length && <><h4>未知</h4><ul>{result.unknowns.map((u) => <li key={u.id}>{u.text}</li>)}</ul></>}
       </>}
       <div className="rh-legacy-acts">
-        {result && <Button disabled={busy} onClick={onOrganize}><Copy size={16} />复制「让 Agent 按八格整理」</Button>}
+        {(result || loose) && <Button disabled={busy} onClick={onOrganize}><Copy size={16} />复制「让 Agent 按八格整理」</Button>}
         {(canSkill || saved) && <button type="button" className="text-act" disabled={busy} onClick={onSkill}>{currentSkill(record) ? "查看已存 Skill" : "存成 Skill"}</button>}
       </div>
     </section>
@@ -188,10 +212,10 @@ function ReplyDialog({ record, busy, error, onClose, onConfirm }) {
         {preview.changes.length ? <ul>{preview.changes.map((c) => <li key={c.id}><b>{name(c.id)}</b> {STATE_TEXT[c.from.state]} → {STATE_TEXT[c.to.state]}{c.to.known && <p>已知：{c.to.known}</p>}{c.to.miss && <p>缺：{c.to.miss}</p>}</li>)}</ul> : <p>没有格子会变。</p>}
         {!!preview.kept.length && <><h3>你改过，默认不覆盖</h3><ul>{preview.kept.map((k) => <li key={k.id}><label><input type="checkbox" checked={false} onChange={() => toggle(k.id)} disabled={busy} />用回答覆盖「{name(k.id)}」</label><p>回答里写的：{k.to.known || "（无已知）"}{k.to.miss ? ` · 缺：${k.to.miss}` : ""}</p></li>)}</ul></>}
         {!!overwrite.length && <p>会覆盖你改过的：{overwrite.map(name).join("、")} <button type="button" className="text-btn" onClick={() => { setOverwrite([]); setPreview(applyHatchReply(record, parsed, { overwrite: [] })); }}>撤回</button></p>}
-        {!!preview.unplaced.length && <><h3>分不进格（不会写入）</h3>{preview.unplaced.map((u, i) => <details key={i}><summary>{u.label}</summary><pre>{u.text}</pre></details>)}</>}
+        {!!preview.unplaced.length && <><h3>分不进格（存进「未分格」，不进八格）</h3>{preview.unplaced.map((u, i) => <details key={i}><summary>{u.label}</summary><pre>{u.text}</pre></details>)}</>}
         {!!preview.missing.length && <p>回答里没有写：{preview.missing.map(name).join("、")}（这几格不变）</p>}
         {!!preview.redactions && <p>已隐去 {preview.redactions} 处疑似凭据。</p>}
-        <Button disabled={busy || (!preview.changes.length && hatchOf(record).rounds.at(-1)?.status !== "sent")} onClick={() => onConfirm(parsed, overwrite)}>确认写入</Button>
+        <Button disabled={busy || (!preview.changes.length && !preview.unplaced.length && !hatchOf(record).unplaced && hatchOf(record).rounds.at(-1)?.status !== "sent")} onClick={() => onConfirm(parsed, overwrite)}>确认写入</Button>
       </div>}
       {(problem || error) && <p className="inline-error" role="alert">{problem || error}</p>}
     </Dialog>
@@ -243,6 +267,8 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [askMap, setAskMap] = useState({});
   const [reply, setReply] = useState(false), [editing, setEditing] = useState(null), [preview, setPreview] = useState(null), [saved, setSaved] = useState(null);
   const [hatching, setHatching] = useState(null), [slotsHash, setSlotsHash] = useState({ text: "", hash: "" });
+  const [motion, setMotion] = useState(null), [why, setWhy] = useState(null);
+  const stopMotion = useRef(() => {}), screen = useRef(null), whyBase = useRef("");
   const lock = useRef(false), stage = useRef(null), toolsNode = useRef(null), referenceNodes = useRef(new Map()), jumped = useRef(null);
   const record = rows.find((r) => r.id === selected) || rows[0];
   const hatch = record ? hatchOf(record) : null, score = hatch ? hatchScore(hatch) : null;
@@ -260,7 +286,20 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
   const bornAsset = born && state.assets.find((a) => a.id === born.assetId);
   const lastHatch = record?.hatchSkills?.at(-1), lastAsset = lastHatch && state.assets.find((a) => a.id === lastHatch.assetId && !a.archived);
 
-  useEffect(() => { setError(""); setPreview(null); setSaved(null); setHatching(null); }, [record?.id]);
+  useEffect(() => { setError(""); setPreview(null); setSaved(null); setHatching(null); setWhy(null); stopMotion.current(); }, [record?.id]);
+  useEffect(() => () => stopMotion.current(), []);
+  // 按帧播放：frames 逐帧换上，最后一帧后回到真实状态。纯装饰；减少动态效果时不播。
+  function play(frames, ms, done) {
+    stopMotion.current();
+    if (reducedMotion() || !frames.length) { done?.(); return; }
+    // 被打断（切标本、卸载、又开一段）只收尾，不接着做 done，免得数据点从别的标本飞出。
+    let i = 0, timer, ended = false;
+    const stop = (finished = false) => { if (ended) return; ended = true; clearTimeout(timer); release(); setMotion(null); if (finished) done?.(); };
+    const release = trackDecoration(() => stop());
+    stopMotion.current = () => stop();
+    const tick = () => { setMotion(frames[i]); timer = setTimeout(++i < frames.length ? tick : () => stop(true), ms); };
+    tick();
+  }
   useEffect(() => {
     if (!reverseJump || jumped.current === reverseJump.key) return;
     jumped.current = reverseJump.key;
@@ -276,15 +315,18 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
 
   async function guarded(action) { if (lock.current) return; lock.current = true; setBusy(true); setError(""); try { await action(); } catch (e) { setError(e.message); } finally { lock.current = false; setBusy(false); } }
   async function refresh() { const next = await request("/workspace"); adoptState(next); return next; }
-  // 读最新、改这一条记录的 hatch、带 revision 写入；保存失败由 save 提示，原数据不变。
-  // 预览或编辑时看到的八格（seen）和最新的不一样，就不写，免得写进去的和你确认的不同。
-  async function writeHatch(change, seen) {
+  // 读最新、改这一条记录、带 revision 写入；保存失败由 save 提示，原数据不变。
+  async function writeRecord(change) {
     const latest = await refresh(), cur = latest.reverseRecords.find((r) => r.id === record.id && !r.deletedAt);
     if (!cur) throw Error("这件参照物已删除，请刷新后再试");
-    if (seen && JSON.stringify(hatchOf(cur)) !== JSON.stringify(seen)) throw Error("八格刚被别处改过，没有写入。请关掉重新预览。");
     const next = change(cur);
-    return save({ ...latest, reverseRecords: latest.reverseRecords.map((r) => (r.id === cur.id ? { ...r, hatch: next } : r)) }, { base: latest });
+    return save({ ...latest, reverseRecords: latest.reverseRecords.map((r) => (r.id === cur.id ? next : r)) }, { base: latest });
   }
+  // 预览或编辑时看到的八格（seen）和最新的不一样，就不写，免得写进去的和你确认的不同。
+  const writeHatch = (change, seen) => writeRecord((cur) => {
+    if (seen && JSON.stringify(hatchOf(cur)) !== JSON.stringify(seen)) throw Error("八格刚被别处改过，没有写入。请关掉重新预览。");
+    return { ...cur, hatch: change(cur) };
+  });
   const toggleAsk = (id) => setAskMap((m) => ({ ...m, [record.id]: asks.includes(id) ? asks.filter((x) => x !== id) : [...asks, id] }));
   const copy = (by) => guarded(async () => {
     const text = pack, n = rounds.length + 1, who = WHO[by];
@@ -295,12 +337,20 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
     try { const packHash = await packHashOf(text); ok = await writeHatch((cur) => appendHatchRound(cur, { by, asked: asks, packHash })); } catch (e) { throw unrecorded(e.message); }
     if (!ok) throw unrecorded();
     setAskMap((m) => ({ ...m, [record.id]: [] }));
+    flyData();
     notify(`第 ${n} 轮追问包已复制。去 ${who} 里粘贴，只复制，不自动发送。`);
   });
   const putBack = (parsed, overwrite) => guarded(async () => {
     let result;
+    const from = SLOTS.map((s) => slotState(hatch.slots[s.id]));
     if (!(await writeHatch((cur) => (result = applyHatchReply(cur, parsed, { overwrite })).hatch, hatch))) return;
     setReply(false);
+    // 扫描线刷一遍，变了的格子按顺序亮起，蛋的对应一侧跟着裂。
+    const changed = result.changes.map((c) => c.id);
+    scanReveal(stage.current, { duration: 440, kind: "success", reveal: false, success: true });
+    if (changed.length) {
+      play([{ from, wait: changed }, ...changed.map((id, k) => ({ from, wait: changed.slice(k + 1), lit: id }))], 180);
+    }
     notify(`结论已放回：${result.changes.length} 格有变化${result.kept.length ? `，${result.kept.length} 格你改过没覆盖` : ""}，已回读。`);
   });
   const saveSlot = (id, value) => guarded(async () => { if (await writeHatch((cur) => editSlot(cur, id, value), hatch)) { setEditing(null); notify("这一格已保存并回读"); } });
@@ -326,12 +376,19 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
       if (!result?.saved) throw Error(`孵化结果没确认（${e.message}）。预览还在，可以再点「确认孵化」，不会重复写入。`);
     }
     adoptState(result.state); setHatching(null);
+    // 裂纹长满 → 上半壳分四帧抬起 → 紫色数据点飞进伙伴屏。
+    const all = SLOTS.map(() => "full"), half = SLOTS.map((s, i) => (i < 4 ? "full" : slotState(hatch.slots[s.id])));
+    play([{ egg: half }, { egg: all }, ...[1, 2, 3, 4].map((lift) => ({ egg: all, lift }))], 120, () => flyData(screen.current, { tone: "violet" }));
     notify(`孵出来了：Skill「${result.title}」，固定版本 v${result.versionNo} 已回读。`);
+  });
+  const saveWhy = (value) => guarded(async () => {
+    if (await writeRecord((cur) => { if ((cur.why || "") !== whyBase.current) throw Error("「好在哪里」刚被别处改过，没有写入。请取消后重新打开。"); return { ...cur, why: value.trim() }; })) { setWhy(null); notify("「好在哪里」已保存并回读"); }
   });
   const removeRecord = () => guarded(async () => { const latest = await refresh(); await save({ ...latest, reverseRecords: deleteRecord(latest.reverseRecords, record.id) }, { base: latest }); });
   const restore = (id) => guarded(async () => { const latest = await refresh(); await save({ ...latest, reverseRecords: restoreRecord(latest.reverseRecords, id) }, { base: latest }); });
 
-  const slotProps = (s, i) => ({ slot: s, index: i, value: hatch.slots[s.id], asking: asks.includes(s.id), sent: sentIds.has(s.id), round: rounds.length, busy, onAsk: () => toggleAsk(s.id), onEdit: () => setEditing(s.id) });
+  const slotMotion = (id) => (motion?.lit === id ? "lit" : motion?.wait?.includes(id) ? "wait" : "");
+  const slotProps = (s, i) => ({ slot: s, index: i, value: hatch.slots[s.id], asking: asks.includes(s.id), sent: sentIds.has(s.id), round: rounds.length, busy, motion: slotMotion(s.id), onAsk: () => toggleAsk(s.id), onEdit: () => setEditing(s.id) });
   const lastRound = rounds.at(-1);
   return (
     <div className="rh">
@@ -356,11 +413,17 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
           {targetOf(record) && <code>{targetOf(record)}</code>}
           <span className="sep" aria-hidden="true">|</span>
           <span>{lastRound ? roundText(lastRound) : "还没交出过"}</span>
-          {record.why && <span className="why">好在哪里：{record.why}</span>}
+          {why !== null
+            ? <form className="rh-why" onSubmit={(e) => { e.preventDefault(); saveWhy(why); }}>
+              <input aria-label="好在哪里（选填）" value={why} maxLength={500} autoFocus disabled={busy} placeholder="我觉得它好在哪里" onChange={(e) => setWhy(e.target.value)} onKeyDown={(e) => e.key === "Escape" && setWhy(null)} />
+              <button type="submit" className="text-btn" disabled={busy}>保存</button>
+              <button type="button" className="text-btn" disabled={busy} onClick={() => setWhy(null)}>取消</button>
+            </form>
+            : <button type="button" className={`why${record.why ? "" : " add"}`} disabled={busy} onClick={() => { whyBase.current = record.why || ""; setWhy(record.why || ""); }}>{record.why ? `好在哪里：${record.why}` : "＋ 好在哪里（选填）"}</button>}
         </div>
         <div className="rh-stage" ref={stage} tabIndex={-1} aria-label={`${record.title} · 八格与孵化器`}>
           <div className="rh-col l">{SLOTS.slice(0, 4).map((s, i) => <Slot key={s.id} {...slotProps(s, i)} />)}</div>
-          <Device hatch={hatch} score={score} rounds={rounds} asks={asks} sentIds={sentIds} nextRound={rounds.length + 1} busy={busy} born={born} bornAsset={bornAsset} onCopy={copy} onReply={() => { setError(""); setReply(true); }} onHatch={hatchPreview} onOpenSkill={onSelect} />
+          <Device hatch={hatch} score={score} rounds={rounds} asks={asks} sentIds={sentIds} nextRound={rounds.length + 1} busy={busy} born={born} bornAsset={bornAsset} motion={motion} screenRef={screen} onCopy={copy} onReply={() => { setError(""); setReply(true); }} onHatch={hatchPreview} onOpenSkill={onSelect} />
           <div className="rh-col r">{SLOTS.slice(4).map((s, i) => <Slot key={s.id} {...slotProps(s, i + 4)} />)}</div>
         </div>
         {error && !reply && !editing && !hatching && <p className="inline-error" role="alert">{error}</p>}
