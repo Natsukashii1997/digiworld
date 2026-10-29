@@ -316,13 +316,13 @@ function Head({ item, pinBusy, onPin, onDetail }) {
         <button type="button" className="btn" aria-pressed={item.pinned} disabled={pinBusy || !item.projectId}
           title={item.projectId ? "" : "还没在设置里扫描登记，不能置顶"} onClick={onPin}>{item.pinned ? "已置顶" : "置顶"}</button>
         {doc.url ? <a className="btn" href={doc.url} title={`Vault · ${item.card}`}>项目卡 ↗</a>
-          : <span className="btn off" title={doc.message || "Vault 读取未开启"}>项目卡 ↗</span>}
+          : <span className="btn off" title={doc.message || "没连 Vault 知识源"}>项目卡 ↗</span>}
         <button type="button" className="btn" disabled={!item.projectId} title={item.path} onClick={onDetail}>详情</button>
       </div>
       {doc.state === "ok" ? (
         <dl><div><dt>目标</dt><dd>{doc.goal || "项目卡没写"}</dd></div><div><dt>不做</dt><dd>{doc.not || "项目卡没写"}</dd></div></dl>
       ) : (
-        <p className="g7-docnote">{doc.state === "off" ? "项目卡：Vault 读取未开启，只显示本机路径" : doc.message || "项目卡读不到"}</p>
+        <p className="g7-docnote">{doc.state === "off" ? "项目卡：没连 Vault 知识源，只显示本机路径" : doc.message || "项目卡读不到"}</p>
       )}
     </div>
   );

@@ -167,21 +167,27 @@ test("项目卡摘要：取「是什么 / 目标 / 不做」三段，去掉 fron
   assert.deepEqual(cardSummary("# 乙\n\n只有一段话。\n"), { one: "只有一段话。", goal: "", not: "" });
 });
 
-test("项目卡读取：vault 没开不读文件；开了按授权的知识源读并给出 Obsidian 链接", async () => {
+test("项目卡读取：跟着已连接的 Vault 知识源只读，不看写入开关；没连 Obsidian 来源不读文件，待确认、读不到如实说明", async () => {
   let reads = 0;
   const files = { current: async (source, path) => { reads++; return { document: { content: `# x\n\n## 是什么\n\n${source.id}:${path}\n` } }; } };
-  const repo = { read: async () => ({ connections: { knowledgeSources: [{ id: "v1", kind: "local", root: "/Vault 库" }] } }) };
-  const off = createCardReader(repo, { settings: { get: async () => ({ enabled: false, options: {} }) }, files });
-  assert.deepEqual(await off("10 项目/甲.md"), { state: "off" });
+  const repoOf = (sources) => ({ read: async () => ({ connections: { knowledgeSources: sources } }) });
+  const none = createCardReader(repoOf([{ id: "f1", kind: "feishu", root: "feishu://space/1" }]), { files });
+  assert.deepEqual(await none("10 项目/甲.md"), { state: "off" });
   assert.equal(reads, 0);
-  const on = createCardReader(repo, { settings: { get: async () => ({ enabled: true, options: { sourceId: "v1" } }) }, files });
+  const plain = createCardReader(repoOf([{ id: "m1", kind: "markdown", root: "/笔记" }]), { files });
+  assert.deepEqual(await plain("10 项目/甲.md"), { state: "off" }, "普通 Markdown 目录不算 Vault");
+  assert.equal(reads, 0);
+  const on = createCardReader(repoOf([{ id: "m1", kind: "markdown", root: "/笔记" }, { id: "v1", kind: "obsidian", root: "/Vault 库" }]), { files });
   const card = await on("10 项目/甲.md");
   assert.equal(card.state, "ok");
-  assert.equal(card.one, "v1:10 项目/甲.md");
+  assert.equal(card.one, "v1:10 项目/甲.md", "优先取 Obsidian 来源");
   assert.equal(card.url, "obsidian://open?vault=Vault%20%E5%BA%93&file=10%20%E9%A1%B9%E7%9B%AE%2F%E7%94%B2");
   assert.deepEqual(await on(""), { state: "absent", message: "名册里没写项目卡" });
-  const gone = createCardReader(repo, { settings: { get: async () => ({ enabled: true, options: { sourceId: "v2" } }) }, files });
-  assert.equal((await gone("a.md")).state, "error");
+  const refuse = (code) => ({ current: async () => { throw Object.assign(new Error("x"), { code }); } });
+  const pending = createCardReader(repoOf([{ id: "v1", kind: "obsidian", root: "/Vault 库" }]), { files: refuse("KNOWLEDGE_ROOT_IDENTITY_CHANGED") });
+  assert.deepEqual(await pending("a.md"), { state: "error", url: "obsidian://open?vault=Vault%20%E5%BA%93&file=a", message: "Vault 知识源要在设置里重新确认" });
+  const missing = createCardReader(repoOf([{ id: "v1", kind: "obsidian", root: "/Vault 库" }]), { files: refuse("ENOENT") });
+  assert.equal((await missing("a.md")).message, "项目卡读不到");
 });
 
 test("代表色与代号：登记过的按表，没登记的按名字取两字母、按 id 稳定取色", () => {
