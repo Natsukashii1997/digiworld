@@ -66,7 +66,8 @@ test('旧记录没有 hatch 也能读：校验通过、起点只有用途一格�
   assert.equal(hatchOf(untyped).slots.use.known, '一段原文');
 });
 
-test('三条合成记录推出的每轮与样稿一致', () => {
+// 与样稿的差异：样稿把炉子第 1 轮写成「阻断」，那是结论正文里的说法；旧字段只能推出「部分」+ 目标已改（retargeted）。
+test('三条合成记录推出的每轮：轮数、日期、谁、观察/推断/未知与样稿一致，状态按旧字段推出', () => {
   const f = legacyRounds(furnace());
   assert.deepEqual(f.map((r) => [r.n, r.at.slice(5, 10), r.by, r.obs, r.infer, r.unknown]), [[1, '10-15', 'codex', 2, 1, 4], [2, '10-16', 'codex', 7, 1, 9]]);
   assert.deepEqual(f.map((r) => [r.status, r.target, r.retargeted]), [['partial', 'https://app.example.test/community', true], ['partial', 'https://app.example.test/agents', false]]);
@@ -84,7 +85,7 @@ test('追问包：已知、只问勾上的格子、八格回答格式、过滤�
   r.why = '交接很顺 password: hunter2hunter2';
   r.hatch = editSlot(r, 'data', { known: '产物：migration-packages、context-packs', miss: '包的格式和字段' }, '2026-10-29T01:00:00.000Z');
   const pack = buildHatchPack(r, { asked: ['flow', 'data'] });
-  assert.match(pack, /^# 拆解任务 · 第 1 轮：Agent迁移和上下文接力功能/);
+  assert.match(pack, /^# 拆解任务 · 第 3 轮：Agent迁移和上下文接力功能/, '接着旧记录的两轮往下数');
   assert.ok(pack.includes('参照物：https://app.example.test/agents'));
   assert.ok(pack.includes('- 数据：产物：migration-packages、context-packs'));
   assert.ok(pack.indexOf('1. 数据：包的格式和字段') < pack.indexOf('2. 流程：这一格还空着'), '按八格顺序列问题');
@@ -94,7 +95,8 @@ test('追问包：已知、只问勾上的格子、八格回答格式、过滤�
   assert.ok(!pack.includes('hunter2'));
   assert.match(buildHatchPack(r), /先做一次完整取证/);
   r.hatch = appendHatchRound(r, { by: 'codex', asked: ['data'], packHash: sha(pack) });
-  assert.match(buildHatchPack(r), /第 2 轮/);
+  assert.match(buildHatchPack(r), /第 4 轮/);
+  assert.match(buildHatchPack(fixtureBin()), /第 1 轮/);
   const text = createSpecimen({ type: 'TXT', text: '原文段落', why: '节奏' });
   const tp = buildHatchPack(text);
   assert.ok(tp.includes('## 素材\n原文段落') && !tp.includes('rea MCP'));
@@ -130,6 +132,12 @@ test('八格回答：全对、乱序、缺节、多出的节、空节、重复�
   const fenced = parseHatchReply('```markdown\n## 结构\n已知：两支\n多行续写\n缺：无\n```');
   assert.deepEqual(fenced.slots.shape, { known: '两支\n多行续写', miss: '' });
   assert.deepEqual(fenced.unplaced, []);
+
+  const code = parseHatchReply('## 流程\n已知：先导出\n```bash\n# 导出命令\n缺：这行是代码\n```\n缺：谁来导入？');
+  assert.deepEqual(code.slots.flow, { known: '先导出\n```bash\n# 导出命令\n缺：这行是代码\n```', miss: '谁来导入？' }, '代码块里的 # 和「缺：」都是正文');
+
+  const dotted = parseHatchReply(reply([['界面', '三栏', '无。'], ['验收', '暂无。', '怎么验？']]));
+  assert.deepEqual(dotted.slots, { ui: { known: '三栏', miss: '' }, check: { known: '', miss: '怎么验？' } }, '带句号的「无。」也算空');
 });
 
 test('八格回答：超长截到 2000 字、多出部分进分不进格；凭据过滤；整份超限拒绝', () => {
@@ -196,6 +204,11 @@ test('轮次只追加：可加新轮、sent → back；不可改写、删除、�
   reject(two, (h) => { h.rounds.pop(); });
   reject(two, (h) => { h.rounds[0].backAt = '2026-10-29T09:00:00.000Z'; });
   reject(back, (h) => { h.rounds[0].status = 'sent'; delete h.rounds[0].backAt; });
+  const reordered = structuredClone(back); reordered.hatch.rounds[0] = Object.fromEntries(Object.entries(back.hatch.rounds[0]).reverse());
+  validateReverseHistory(state(back), state(reordered));
+  const sentReordered = structuredClone(one); const r0 = sentReordered.hatch.rounds[0];
+  sentReordered.hatch.rounds[0] = { backAt: '2026-10-29T02:00:00.000Z', status: 'back', packHash: r0.packHash, asked: r0.asked, by: r0.by, at: r0.at, n: r0.n };
+  validateReverseHistory(state(one), state(sentReordered), {});
   assert.throws(() => validateReverseHistory(state(two), state({ ...two, hatch: undefined })), /轮次只能追加/);
   let many = r;
   for (let i = 0; i < 50; i++) many = { ...many, hatch: appendHatchRound(many, { by: 'codex', packHash }) };

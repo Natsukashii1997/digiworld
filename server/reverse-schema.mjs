@@ -208,6 +208,7 @@ export function validateRecipeRecord(r) {
   }
 }
 // 孵蛋 3C：八格与每轮（hatch）、孵化回执（hatchSkills）。旧记录没有这两个字段时按空处理。
+const HEX64 = /^[a-f0-9]{64}$/;
 export function validateHatch(r) {
   if (r.hatch !== undefined) {
     const h = r.hatch;
@@ -218,27 +219,27 @@ export function validateHatch(r) {
       text(s.known, HATCH_LIMITS.text, '格子已知过长或含控制字符'); text(s.miss, HATCH_LIMITS.text, '格子缺过长或含控制字符'); date(s.at);
       if (s.edited !== undefined && s.edited !== true) fail('格子手改标记无效');
     }
-    list(h.rounds, HATCH_LIMITS.rounds, '轮次过多');
+    list(h.rounds, HATCH_LIMITS.rounds, '轮次无效或过多');
     h.rounds.forEach((x, i) => {
       keys(x, ['n','at','by','asked','status','backAt','packHash']);
       if (x.n !== i + 1) fail('轮次序号不连续'); date(x.at);
       if (!['codex','claude'].includes(x.by)) fail('轮次执行者无效');
       list(x.asked, SLOT_IDS.length, '轮次格子无效');
       if (x.asked.some((k) => !SLOT_IDS.includes(k)) || new Set(x.asked).size !== x.asked.length) fail('轮次格子无效');
-      if (!/^[a-f0-9]{64}$/.test(x.packHash || '')) fail('轮次追问包摘要无效');
+      if (!HEX64.test(x.packHash || '')) fail('轮次追问包摘要无效');
       if (x.status === 'back') date(x.backAt); else if (x.status !== 'sent' || x.backAt !== undefined) fail('轮次状态无效');
     });
   }
   if (r.hatchSkills !== undefined) {
-    list(r.hatchSkills, 2000, '孵化回执数量超限');
-    for (const p of r.hatchSkills) { keys(p, ['assetId','versionId','at','slotsHash']); id(p.assetId); id(p.versionId); date(p.at); if (!/^[a-f0-9]{64}$/.test(p.slotsHash || '')) fail('孵化回执无效'); }
+    list(r.hatchSkills, HATCH_LIMITS.skills, '孵化回执数量超限');
+    for (const p of r.hatchSkills) { keys(p, ['assetId','versionId','at','slotsHash']); id(p.assetId); id(p.versionId); date(p.at); if (!HEX64.test(p.slotsHash || '')) fail('孵化回执无效'); }
   }
 }
-// 轮次只追加；既有轮次唯一可变的是 sent → back 并补 backAt。
+// 轮次只追加；既有轮次唯一可变的是 sent → back 并补 backAt。逐字段比较，不受键顺序影响。
 function sameRound(old, next) {
-  if (same(old, next)) return true;
-  const { status, backAt, ...rest } = next || {}, { status: was, ...base } = old;
-  return was === 'sent' && old.backAt === undefined && status === 'back' && same(base, rest);
+  const fields = new Set([...Object.keys(old), ...Object.keys(next)]);
+  const changed = [...fields].filter((k) => !same(old[k], next[k]));
+  return !changed.length || (old.status === 'sent' && next.status === 'back' && changed.every((k) => k === 'status' || k === 'backAt'));
 }
 export function validateReverseHistory(previous, next, { allowReverseService = false, allowReverseImport = false, allowReverseSkill = false } = {}) {
   if (!previous) return; // 显式首次初始化只核历史自身；普通保存才核新增确认当前绑定。
