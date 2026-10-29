@@ -174,6 +174,50 @@ try {
     await codexOnly.close();
   }
 
+  // ---- 样稿 7F：分节标题、热力条、实战排行榜（前三 + 第 4–10 名对齐 + 其余在右下） ----
+  {
+    const skills = Array.from({ length: 15 }, (_, i) => ({ name: `skill-${String(i + 1).padStart(2, "0")}`, src: "合成", n: 15 - i, last: "2026-10-27" }));
+    const board = await spaceFixture({
+      staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
+      space: { skillUsage: {
+        read: async () => ({ state: "ok", at: new Date().toISOString(), projects: { collab: { skills, calls: 120, sessions: 9, codex: [{ name: "tdd", n: 3 }] } } }),
+        refresh: async () => ({ state: "ok" }),
+      } },
+    });
+    for (const width of [1440, 390]) {
+      const context = await browser.newContext({ viewport: { width, height: 900 } });
+      const page = await context.newPage();
+      page.on("pageerror", (e) => errors.push(e.message));
+      await page.goto(board.url + "/#projects");
+      const screen = page.locator("#ps-screen");
+      await screen.locator(".ps-podium").waitFor();
+      assert.deepEqual(await screen.locator(".ps-sec-h > b").allTextContents(), ["现在", "下一步", "近 30 天提交", "实战"]);
+      assert.equal(await screen.locator(".ps-heat i").count(), 30, "热力条一格一天");
+      assert.equal(await screen.locator(".ps-heat i.today").count(), 1);
+      assert.deepEqual(await screen.locator(".ps-podium .nm").allTextContents(), ["skill-01", "skill-02", "skill-03"]);
+      assert.equal(await screen.locator(".ps-podium .r1 .mvp").count(), 1, "第 1 名有 MVP 角标");
+      assert.deepEqual(await screen.locator(".ps-rank .no").allTextContents(), ["04", "05", "06", "07", "08", "09", "10"]);
+      const more = screen.locator(".ps-board-foot .g5-more");
+      assert.equal(await more.textContent(), "其余 5 个 ▾", "其余在通栏分隔线下");
+      assert.match(await screen.locator(".ps-board-foot .g7-codex").textContent(), /tdd ×3.*仅参考/);
+      if (width === 1440) {
+        const [pod, rank] = await Promise.all([screen.locator(".ps-podium").boundingBox(), screen.locator(".ps-rank").boundingBox()]);
+        assert.ok(Math.abs(pod.y - rank.y) <= 1 && Math.abs(pod.y + pod.height - (rank.y + rank.height)) <= 1, "右侧 7 行与领奖台上下对齐");
+      }
+      await more.click();
+      assert.equal(await screen.locator(".ps-rank li").count(), 12, "展开后列出其余");
+      await noOverflow(page, `排行榜 ${width}`);
+      await bigEnough(page, `排行榜 ${width}`);
+      if (width === 1440) {
+        const axe = await new AxeBuilder({ page }).include(".projects-space").analyze();
+        assert.deepEqual(axe.violations.map((v) => v.id), []);
+      }
+      await context.close();
+    }
+    await board.close();
+    ok("分节标题四节、热力条 30 格、前三领奖台 + 第 4–10 名对齐、其余在右下且能展开；1440 / 390 无溢出、44px、axe 无违规");
+  }
+
   // ---- 名册读不到：卡带架位置只给原因和去设置 ----
   {
     await rm(app.rosterPath);
