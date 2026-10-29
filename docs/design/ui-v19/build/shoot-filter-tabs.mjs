@@ -1,6 +1,7 @@
 // 筛选标签样稿截图（issue #24）：合成数据起正式页面，注入 filter-tabs.css，按 1440 / 390 拍改前和 A / B / C。
 // 每张查页面横向溢出、筛选行是否藏了项、控件小于 44px、筛选区 axe。只用 tests/ 的合成夹具，不碰真实数据。
 // 用法（项目根目录，先 npx vite build）：node docs/design/ui-v19/build/shoot-filter-tabs.mjs
+// 落代码后（选定 A）：FT_AFTER=1 只拍「改后」，不注入样稿样式。
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { chromium } from "playwright";
@@ -30,11 +31,11 @@ const ids = (await app.api("/notes")).notes.map((n) => n.id);
 await app.api("/desk-workspace", { workspace: { ...desk, groups: [...desk.groups, ...groups], noteGroupMap: Object.fromEntries(ids.map((id, i) => [id, i < 6 ? groups[[2, 2, 2, 1, 2, 2][i]].id : "loose"])) }, expectedRevision: desk.revision }, "PUT");
 
 const PAGES = [
-  { id: "assets", label: "资产仓库", row: ".asset-toolbar > .segmented" },
-  { id: "learning", label: "个人收藏", row: ".collection-chips" },
-  { id: "notes", label: "随手记", row: ".sn-filter" },
+  { id: "assets", label: "资产仓库", row: ".asset-toolbar > :is(.segmented, .filter-tabs)" },
+  { id: "learning", label: "个人收藏", row: ":is(.collection-chips, .collection-filter)" },
+  { id: "notes", label: "随手记", row: ".notes-v16 :is(.sn-filter, .filter-tabs)" },
 ];
-const VARIANTS = { before: "改前", a: "A分段底板", b: "B独立按键", c: "C下划线" };
+const VARIANTS = process.env.FT_AFTER ? { after: "改后" } : { before: "改前", a: "A分段底板", b: "B独立按键", c: "C下划线" };
 const browser = await chromium.launch();
 const problems = [], report = [];
 for (const width of [1440, 390]) {
@@ -47,14 +48,14 @@ for (const width of [1440, 390]) {
       await page.route("**/*", (route) => (new URL(route.request().url()).origin === app.url ? route.continue() : route.abort()));
       await page.goto(`${app.url}/#${p.id}`);
       await page.locator(p.row).waitFor();
-      if (v !== "before") {
+      if (!["before", "after"].includes(v)) {
         await page.addStyleTag({ path: css });
         await page.evaluate((x) => (document.documentElement.dataset.ft = x), v);
       }
       await page.waitForTimeout(400);
       const m = await page.evaluate((sel) => {
         const row = document.querySelector(sel), r = (el) => el.getBoundingClientRect();
-        const items = [...row.querySelectorAll(":scope > button")];
+        const items = [...row.querySelectorAll(":scope > button, :scope > .filter-tabs-row > button")];
         const heading = r(document.querySelector(".page-heading")), main = r(document.querySelector("#main-content"));
         const box = r(row.closest(".collection-toolbar, .asset-toolbar, .sn-page") || row);
         return {

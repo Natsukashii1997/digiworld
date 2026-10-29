@@ -1,6 +1,5 @@
 import { flyData } from '../../../data-flight.js';
 import { motionOrigin } from '../../../scan-motion.js';
-import { copyText } from '../../../data-flight.js';
 import { request, session } from '../../../api.js';
 import {createCollectionImport} from '../../../collection-import.js';
 import type { Note } from '../types/xiaohongshu';
@@ -68,12 +67,6 @@ export const openRecycleFolder = (id?:string) => call(id?`/recycle/${encodeURICo
 export async function openBrowserExtensionSetup() { const info=await getLocalSetupInfo(); return {ok:true,path:info.extension.path,message:'插件文件夹已准备好，请在 Chrome 扩展页加载并完成配对'}; }
 export async function pairExtension() { return call('/extension/pair',{}); }
 export async function revokeExtension() { return call('/extension/revoke',{}); }
-export async function connectLocalAgent(client:AgentClient) {
-  const info=await getLocalSetupInfo();
-  const configuration={mcpServers:{'digital-world-collection':{command:info.agent.nodePath,args:[info.agent.serverPath],env:{COLLECTION_DATA_DIRECTORY:info.agent.dataDirectory}}}};
-  await copyText(JSON.stringify(configuration,null,2));
-  return {ok:true,message:`${client==='codex'?'Codex':'Claude Code'} 收藏 MCP 配置已复制；尚未写入该客户端配置`};
-}
 export function formatNumber(value:number):string {return value>=10000 ? (value/10000).toFixed(1)+'w' : value>=1000 ? (value/1000).toFixed(1)+'k' : String(value);}
 export function formatDate(value:Date):string {const days=Math.floor((Date.now()-value.getTime())/86400000);return days===0?'今天':days===1?'昨天':days<7?`${days}天前`:`${value.getMonth()+1}月${value.getDate()}日`;}
 

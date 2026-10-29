@@ -73,17 +73,17 @@ try{
  if(!before){
   const chip=await open(390);
   try{
-   await chip.page.locator('.collection-chips .collection-chip').filter({hasText:groups[0].name}).click();await chip.page.waitForTimeout(400);
+   await chip.page.locator('.collection-filter button').filter({hasText:groups[0].name}).click();await chip.page.waitForTimeout(400);
    const entry=await chip.page.evaluate(ids=>({toolbarBottom:document.querySelector('.collection-toolbar').getBoundingClientRect().bottom,firstCardTop:Math.min(...[...document.querySelectorAll('.collection-card-position')].filter(n=>ids.includes(n.dataset.noteId)).map(n=>n.getBoundingClientRect().top)),height:innerHeight}),ids.slice(0,8));
    assert(entry.firstCardTop>=entry.toolbarBottom&&entry.firstCardTop<entry.height-212,'group chip reveals the first card row below the sticky toolbar');
    await chip.page.getByLabel('搜索收藏').fill('目标');
-   await chip.page.locator('.collection-chips .collection-chip').filter({hasText:groups[0].name}).click();await chip.page.waitForTimeout(400);
+   await chip.page.locator('.collection-filter button').filter({hasText:groups[0].name}).click();await chip.page.waitForTimeout(400);
    const search=await chip.page.evaluate(ids=>({toolbarBottom:document.querySelector('.collection-toolbar').getBoundingClientRect().bottom,firstCardTop:Math.min(...[...document.querySelectorAll('.collection-card-position')].filter(n=>ids.includes(n.dataset.noteId)).map(n=>n.getBoundingClientRect().top)),height:innerHeight}),ids.slice(0,7));
    records.push({name:'chip-search',width:390,...search});
    assert(search.firstCardTop>=search.toolbarBottom&&search.firstCardTop<search.height-212,'search chip reveals the first visible card even if the original first card is filtered out');
    assert.equal(await chip.page.locator('.collection-card-category').count(),7,'filtered search keeps card labels');
    await chip.page.getByLabel('搜索收藏').fill('');
-   await chip.page.locator('.collection-chips .collection-chip').filter({hasText:groups[3].name}).click();await chip.page.waitForTimeout(400);
+   await chip.page.locator('.collection-filter button').filter({hasText:groups[3].name}).click();await chip.page.waitForTimeout(400);
    const empty=await chip.page.locator(`[data-empty-group-id="${groups[3].id}"]`).evaluate(n=>({top:n.getBoundingClientRect().top,bottom:n.getBoundingClientRect().bottom,toolbarBottom:document.querySelector('.collection-toolbar').getBoundingClientRect().bottom,height:innerHeight}));
    assert(empty.top>=empty.toolbarBottom&&empty.bottom<=empty.height,'empty group chip reveals its drop frame');
    records.push({name:'chip-scroll',width:390,entry,empty});

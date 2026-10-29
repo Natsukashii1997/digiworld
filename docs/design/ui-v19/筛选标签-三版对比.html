@@ -38,7 +38,8 @@
   .ftc-shots img { display: block; width: 100%; border-radius: 8px; border: 1px solid var(--line); }
   .ftc-shots figcaption { margin-bottom: 4px; font-size: 12px; color: var(--muted); }
   .ftc-v { display: none; }
-  html:not([data-ft]) .ftc-v[data-v="before"], html[data-ft="a"] .ftc-v[data-v="a"], html[data-ft="b"] .ftc-v[data-v="b"], html[data-ft="c"] .ftc-v[data-v="c"] { display: block; }
+  html:not([data-ft]) .ftc-v[data-v="before"], html[data-ft="a"] .ftc-v[data-v="a"], html[data-ft="b"] .ftc-v[data-v="b"], html[data-ft="c"] .ftc-v[data-v="c"], html[data-after] .ftc-v[data-v="after"] { display: block; }
+  html[data-after] .ftc-v[data-v="before"], html[data-after] .ftc-live, html[data-after] .ftc-live-h { display: none; }
   @media (max-width: 900px) { .ftc-shots { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -46,7 +47,7 @@
 <div class="ftc-bar">
   <h1>筛选标签 · 三版对比</h1>
   <nav aria-label="版本">
-    <button data-to="before">改前</button><button data-to="a" class="on">A 分段底板</button><button data-to="b">B 独立按键</button><button data-to="c">C 下划线标签页</button>
+    <button data-to="before">改前</button><button data-to="a" class="on">A 分段底板</button><button data-to="b">B 独立按键</button><button data-to="c">C 下划线标签页</button><button data-to="after">改后（已落代码）</button>
   </nav>
 </div>
 <main class="ftc">
@@ -84,7 +85,12 @@
     <p>好处：最轻、最省高度，页面层级最清楚。代价：窄屏要横滑才看到后几项（随手记藏 6 项、资产和收藏各藏 3 项）；可点的范围不如前两版显眼。</p>
   </section>
 
-  <h3>能点的规格件（点一下看选中、悬停看反馈；改前就是三页原样式）</h3>
+  <section class="ftc-v" data-v="after">
+    <h2>改后（已落代码）</h2>
+    <p>常浩 10-29 选 A，并要求：不分行，放不下就在轨道里横滑；收藏工具栏删掉 Agent 按钮。落地为共用基础件 <code>FilterTabs</code>（<code>src/components.jsx</code> + <code>src/base.css</code>）：三页同一套 44px 分段底板，只排一行，放不下时边缘渐隐、可横滑，选中项自动滚进可见范围；随手记分组竖线、收藏「＋ 分组」虚线空槽保留。</p>
+  </section>
+
+  <h3 class="ftc-live-h">能点的规格件（点一下看选中、悬停看反馈；改前就是三页原样式）</h3>
   <div class="ftc-live">
     <div><small>资产仓库</small><div class="page-assets"><div class="asset-toolbar"><div class="segmented" role="group" aria-label="资产类型（样稿）">
       <button aria-pressed="true" class="active">全部<span>8</span></button><button aria-pressed="false">Prompts<span>5</span></button><button aria-pressed="false">Skills<span>0</span></button><button aria-pressed="false">工作流<span>0</span></button><button aria-pressed="false">规则<span>1</span></button><button aria-pressed="false">焚决<span>1</span></button><button aria-pressed="false">设计<span>1</span></button>
@@ -99,7 +105,7 @@
 
   <h3>正式页面截图（合成数据；左 1440，右 390）</h3>
   <script>
-    const PAGES = ["资产仓库", "个人收藏", "随手记"], NAMES = { before: "改前", a: "A分段底板", b: "B独立按键", c: "C下划线" };
+    const PAGES = ["资产仓库", "个人收藏", "随手记"], NAMES = { before: "改前", a: "A分段底板", b: "B独立按键", c: "C下划线", after: "改后" };
     for (const [v, n] of Object.entries(NAMES)) {
       const shot = (p, w) => `<figure><figcaption>${p} · ${w}</figcaption><img loading="lazy" alt="${p} ${n} ${w}" src="shots/${encodeURIComponent(`筛选标签-${p}-${n}-${w}.png`)}"></figure>`;
       document.write(`<div class="ftc-v" data-v="${v}"><div class="ftc-shots"><div>${PAGES.map((p) => shot(p, 1440)).join("")}</div><div>${PAGES.map((p) => shot(p, 390)).join("")}</div></div></div>`);
@@ -108,12 +114,14 @@
 </main>
 <script>
   const set = (v) => {
-    if (v === "before") delete document.documentElement.dataset.ft; else document.documentElement.dataset.ft = v;
+    const root = document.documentElement;
+    if (v === "after") root.dataset.after = ""; else delete root.dataset.after;
+    if (v === "before" || v === "after") delete root.dataset.ft; else root.dataset.ft = v;
     document.querySelectorAll(".ftc-bar nav button").forEach((b) => b.classList.toggle("on", b.dataset.to === v));
     history.replaceState(null, "", "#" + v);
   };
   document.querySelector(".ftc-bar nav").addEventListener("click", (e) => e.target.dataset.to && set(e.target.dataset.to));
-  set(["before", "a", "b", "c"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "a");
+  set(["before", "a", "b", "c", "after"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "after");
   // 规格件可以点：每行单选（「＋ 分组」不参与）
   document.querySelectorAll(".ftc-live [role=group]").forEach((row) => row.addEventListener("click", (e) => {
     const btn = e.target.closest("button"); if (!btn || btn.hasAttribute("data-add")) return;

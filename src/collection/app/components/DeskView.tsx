@@ -13,9 +13,8 @@ import { RouteBadges } from '../../../HatchPanel.jsx';
 import { memo, useCallback, useContext, useState, useEffect, useRef, useMemo, type DragEvent, type MouseEvent } from 'react';
 import { motion, AnimatePresence, styleOf } from '../../motion';
 import { useDialogFocus } from '../../useDialogFocus';
-import { PageHeading, ScrollFade } from '../../../components.jsx';
-import { AgentSprite, useReducedMotion } from '../../../v14.jsx';
-import { characterOf } from '../../../characters.js';
+import { FilterTabs, PageHeading } from '../../../components.jsx';
+import { useReducedMotion } from '../../../v14.jsx';
 import {
   X,
   Heart,
@@ -28,7 +27,6 @@ import {
   Egg,
   Search,
   Puzzle,
-  Bot,
   ExternalLink,
   Play,
 } from 'lucide-react';
@@ -57,7 +55,7 @@ import {
   organizeRecycle,
   openRecycleFolder,
 } from '../lib/xhs-client';
-import type { AgentClient, LocalServiceHealth, LocalSetupInfo } from '../lib/xhs-client';
+import type { LocalServiceHealth, LocalSetupInfo } from '../lib/xhs-client';
 import {
   acceptsExternalNoteDrag,
   parseDraggedCardInput,
@@ -610,28 +608,19 @@ const DeskCard = memo(function DeskCard({
   );
 });
 
-type SetupPanel = 'extension' | 'agent';
 
 function SetupDialog({
-  panel,
   info,
   loading,
   message,
-  connectingClient,
-  connectedClients,
   onClose,
   onOpenExtension,
-  onConnectAgent,
 }: {
-  panel: SetupPanel;
   info: LocalSetupInfo | null;
   loading: boolean;
   message: string;
-  connectingClient: AgentClient | null;
-  connectedClients: Set<AgentClient>;
   onClose: () => void;
   onOpenExtension: () => void;
-  onConnectAgent: (client: AgentClient) => void;
 }) {
   const dialogRef = useDialogFocus(onClose);
   const [pairingToken,setPairingToken]=useState('');
@@ -640,15 +629,15 @@ function SetupDialog({
   return (
     <motion.div className="collection-overlay collection-setup-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
-      <motion.div ref={dialogRef} className="collection-setup" role="dialog" aria-modal="true" aria-label={panel === 'extension' ? '浏览器插件' : '连接 Agent'} tabIndex={-1}
+      <motion.div ref={dialogRef} className="collection-setup" role="dialog" aria-modal="true" aria-label="浏览器插件" tabIndex={-1}
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-        <header className="collection-dialog-heading"><div><span className="collection-eyebrow">{panel === 'extension' ? 'EXTENSION' : 'MCP · READ ONLY'}</span><h2>{panel === 'extension' ? '浏览器插件' : '让 Agent 读你的收藏'}</h2></div>
+        <header className="collection-dialog-heading"><div><span className="collection-eyebrow">EXTENSION</span><h2>浏览器插件</h2></div>
           <button type="button" className="collection-key collection-icon" onClick={onClose} aria-label="关闭"><X size={16}/></button>
         </header>
         <div className="collection-dialog-body">
           <ReadReveal pending={loading} ready={!!info}/>
           {loading ? <div className="collection-loading" role="status" aria-label="读取本地配置"><Reading label="读取本地配置"/></div>
-            : panel === 'extension' ? <>
+            : <>
               <div className="collection-setup-state" role="status"><span className="collection-state-dot"/>{info ? (info.extension.available ? '插件文件夹已就绪' : '未找到插件文件夹') : '插件状态未读取'}{info?.extension.version && <span>v{info.extension.version}</span>}</div>
               <div className="collection-step"><span className="collection-step-number">1</span><div><h3>安装插件</h3><p>在 Chrome 扩展页开启开发者模式，加载下面这个文件夹。已安装则点插件的重新加载，再刷新抖音或小红书网页。</p>
                 <p className="collection-path" title={info?.extension.path}>{info?.extension.path || '路径未读取'}</p>
@@ -662,17 +651,6 @@ function SetupDialog({
               <div className="collection-step"><span className="collection-step-number">3</span><div><h3>在小红书或抖音点「收藏」</h3><p>打开作品后，点“直接收藏”保存原内容；点“收藏并添加Get笔记”，会在本机保存完成后交给GET整理。结果在同卡“Get笔记解析”查看，直接收藏按钮也可拖到画布。</p></div></div>
               <div className="collection-danger-zone"><p>不想再让这个浏览器收录？</p><button type="button" className="collection-key collection-danger collection-revoke" onClick={async () => {try {await revokeExtension();setPairingToken('');setPairError('配对已撤销');setPairFailed(false);} catch(error) {setPairError(error instanceof Error ? error.message : '撤销失败');setPairFailed(true);}}}>撤销插件配对</button></div>
               {pairError && <p className={`collection-notice${pairFailed ? ' is-error' : ''}`} role={pairFailed ? 'alert' : 'status'}>{pairError}</p>}
-            </> : <>
-              <p className="collection-agent-intro">复制配置后，粘贴进该 Agent 的 MCP 设置。它只能搜索和阅读收藏，不能修改或删除。</p>
-              <div className="collection-tools"><span>search_saved_notes</span><span>read_saved_note</span></div>
-              {([['claude', 'Claude Code'], ['codex', 'Codex']] as const).map(([client, label]) => {
-                const detected = info?.agent.clients[client].available, copied = connectedClients.has(client), copying = connectingClient === client;
-                return <div className="collection-agent-row" key={client}><div className="collection-agent-portrait"><AgentSprite agent={client} mode="body" fit={52}/></div><div className="collection-agent-name"><strong>{label}</strong><small>{characterOf(client)?.name}</small></div>
-                  <button type="button" className="collection-key" onClick={() => onConnectAgent(client)} disabled={!detected || copying}>
-                    {copying ? <Reading mini label="处理收藏操作"/> : copied ? <Check size={14}/> : <Bot size={14}/>}{copying ? '准备中' : copied ? '已复制' : detected ? '复制配置' : '不可用'}
-                  </button>
-                </div>;
-              })}
             </>}
           {message && <p className="collection-notice" role="status">{message}</p>}
         </div>
@@ -701,7 +679,6 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
   const savedRevisionRef=useRef(0);
   const [recoverableDraft,setRecoverableDraft]=useState<DeskDraft|null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const categoryRailRef = useRef<HTMLDivElement | null>(null);
   const [expanded, setExpanded] = useState<Note | null>(null);
   const consumedJump=useRef<string|null>(null);
   const [jumpMessage,setJumpMessage]=useState('');
@@ -760,7 +737,7 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
     if(arrivalTimer.current !== null)window.clearTimeout(arrivalTimer.current);
     arrivalTimer.current=window.setTimeout(() => {setNewArrivalIds(new Set());arrivalTimer.current=null;},600);
   }, [notes,deskReady,state.isLoading]);
-  const [setupPanel, setSetupPanel] = useState<SetupPanel | null>(null);
+  const [setupOpen, setSetupOpen] = useState(false);
   const [localDeleteBusy,setLocalDeleteBusy]=useState(false);
   const [localDeleteFeedback,setLocalDeleteFeedback]=useState({message:'',error:false});
   const localDeleteInFlight=useRef(false);
@@ -772,15 +749,13 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
   const [setupInfo, setSetupInfo] = useState<LocalSetupInfo | null>(null);
   const [setupLoading, setSetupLoading] = useState(false);
   const [setupMessage, setSetupMessage] = useState('');
-  const [connectingClient, setConnectingClient] = useState<AgentClient | null>(null);
-  const [connectedClients, setConnectedClients] = useState<Set<AgentClient>>(() => new Set());
 
   const loadLocalStatus = async () => {
     setServiceHealth(await getLocalServiceHealth());
   };
 
-  const openSetupPanel = async (panel: SetupPanel) => {
-    setSetupPanel(panel);
+  const openSetup = async () => {
+    setSetupOpen(true);
     setSetupMessage('');
     setSetupLoading(true);
     try {
@@ -799,20 +774,6 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
       setSetupMessage(result.message);
     } catch (error) {
       setSetupMessage(error instanceof Error ? error.message : '没有打开插件配置');
-    }
-  };
-
-  const handleConnectAgent = async (client: AgentClient) => {
-    setConnectingClient(client);
-    setSetupMessage('');
-    try {
-      const result = await connectLocalAgent(client);
-      setConnectedClients((current) => new Set(current).add(client));
-      setSetupMessage(result.message);
-    } catch (error) {
-      setSetupMessage(error instanceof Error ? error.message : 'Agent 连接失败');
-    } finally {
-      setConnectingClient(null);
     }
   };
 
@@ -924,17 +885,6 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
 
   useEffect(() => {
     setSelectedNoteIds(new Set());
-  }, [activeCategory]);
-
-  useEffect(() => {
-    const rail = categoryRailRef.current;
-    const selected = rail?.querySelector<HTMLElement>('[aria-pressed="true"]');
-    if (!rail || !selected) return;
-    const viewport = rail.getBoundingClientRect();
-    const chip = selected.getBoundingClientRect();
-    const offset = chip.left < viewport.left ? chip.left - viewport.left
-      : chip.right > viewport.right ? chip.right - viewport.right : 0;
-    if (offset) rail.scrollLeft += offset;
   }, [activeCategory]);
 
   const groupNameById = useMemo(
@@ -1279,7 +1229,7 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
   return (
     <>
     <PageHeading page="learning" help={<button type="button" className="page-help" aria-label="这页怎么用" onClick={() => setHelpOpen(true)}>?</button>}
-      action={<button type="button" className="collection-key collection-primary" disabled={localDeleteBusy} onClick={() => void openSetupPanel('extension')}><Puzzle size={16}/>插件</button>}/>
+      action={<button type="button" className="collection-key collection-primary" disabled={localDeleteBusy} onClick={() => void openSetup()}><Puzzle size={16}/>插件</button>}/>
     {helpOpen && <CollectionHelp onClose={() => setHelpOpen(false)}/>}
     <div
       className="collection-desk"
@@ -1391,18 +1341,16 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
       </AnimatePresence>
 
       <header className="collection-toolbar">
-        <ScrollFade className="collection-scroll"><div ref={categoryRailRef} className="collection-chips" role="group" aria-label="收藏分组">
-          <button type="button" className="collection-key collection-chip" aria-pressed={!activeCategory} disabled={localDeleteBusy} onClick={() => setActiveCategory(null)}>全部 <b>{notes.length}</b></button>
-          {labels.map(group => <button type="button" key={group.groupId} className="collection-key collection-chip" aria-pressed={activeCategory === group.groupId} disabled={localDeleteBusy}
-            onClick={() => {setActiveCategory(current => current === group.groupId ? null : group.groupId);scrollToGroup(group.groupId);}} title={group.name}><span>{group.name}</span><b>{group.noteCount}</b></button>)}
-          <button type="button" className="collection-key collection-chip collection-add-group" aria-label="新建分组" disabled={!deskReady || localDeleteBusy || !!undoBusyId} onClick={handleCreateGroup}><Plus size={14}/>分组</button>
-        </div></ScrollFade>
+        <FilterTabs className="collection-filter" label="收藏分组" disabled={localDeleteBusy} value={activeCategory ?? ''}
+          items={[{ id: '', label: '全部', count: notes.length }, ...labels.map(group => ({ id: group.groupId, label: group.name, count: group.noteCount, title: group.name }))]}
+          onChange={(id: string) => {if (!id) {setActiveCategory(null);return;}setActiveCategory(current => current === id ? null : id);scrollToGroup(id);}}>
+          <button type="button" className="filter-tabs-add" aria-label="新建分组" disabled={!deskReady || localDeleteBusy || !!undoBusyId} onClick={handleCreateGroup}><Plus size={14}/>分组</button>
+        </FilterTabs>
         <div className="collection-search"><Search size={14}/><input disabled={localDeleteBusy} value={searchQuery} onChange={event => {setSearchQuery(event.target.value);setActiveCategory(null);}}
           onKeyDown={event => {if(event.key === 'Escape')setSearchQuery('');}} placeholder={`搜索 ${notes.length} 条收藏`} aria-label="搜索收藏"/>
           {hasActiveSearch && <span className="collection-search-count" role="status">找到 {visibleNotes.length} 条</span>}
         </div>
         <div className="collection-toolbar-tools">
-          <button type="button" className="collection-key collection-tool" disabled={localDeleteBusy} title="Agent" aria-label="Agent" onClick={() => void openSetupPanel('agent')}><Bot size={16}/><span>Agent</span></button>
           <button ref={localDeleteButton} type="button" className={`collection-key collection-tool collection-recycle-entry${selectedNoteIds.size ? " collection-danger" : ""}`} disabled={localDeleteBusy || localDeleteBlocked} aria-label="本地删除" aria-busy={localDeleteBusy} onClick={() => void handleLocalDelete()} title={localDeleteBlocked ? '分组保存或当前收藏操作完成后可用' : '本地删除'}>{localDeleteBusy ? <Reading mini label="处理本地删除"/> : <Trash2 size={16}/>}<span>本地删除</span></button>
         </div>
       </header>
@@ -1414,17 +1362,13 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
       {localDeleteFeedback.message && <p className="collection-local-delete-feedback" role={localDeleteFeedback.error?'alert':'status'}>{localDeleteFeedback.message}</p>}
 
       <AnimatePresence>
-        {setupPanel && (
+        {setupOpen && (
           <SetupDialog
-            panel={setupPanel}
             info={setupInfo}
             loading={setupLoading}
             message={setupMessage}
-            connectingClient={connectingClient}
-            connectedClients={connectedClients}
-            onClose={() => setSetupPanel(null)}
+            onClose={() => setSetupOpen(false)}
             onOpenExtension={() => void handleOpenExtensionSetup()}
-            onConnectAgent={(client) => void handleConnectAgent(client)}
           />
         )}
       </AnimatePresence>
@@ -1450,7 +1394,7 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
         {(state.isLoading||(!deskReady&&!deskError))&&!state.error && <div className="collection-loading"><Reading label="读取收藏画布"/></div>}
         {isEmpty && !state.isLoading && !state.error && <div className="collection-empty">
           <div className="collection-empty-frames" aria-hidden="true"><i/><i/></div><h2>暂无收藏</h2><p>在小红书或抖音作品上点收藏，就会落到这里</p>
-          <button type="button" className="collection-key" onClick={() => void openSetupPanel('extension')}>配置插件</button>
+          <button type="button" className="collection-key" onClick={() => void openSetup()}>配置插件</button>
         </div>}
         {state.error && <div className="collection-error collection-load-error" role="alert">{state.error}</div>}
         {hasNoSearchResults && <div className="collection-empty"><div className="collection-empty-frames" aria-hidden="true"><i/><i/></div><h2>没找到「{searchQuery.trim()}」</h2><p>试试作者、标签或图片里的字</p><button type="button" className="collection-key" onClick={() => setSearchQuery('')}>清除搜索</button></div>}

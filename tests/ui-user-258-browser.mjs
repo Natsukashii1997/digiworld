@@ -64,7 +64,7 @@ try {
         return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, cy: (r.top + r.bottom) / 2 };
       };
       return {
-        types: rect(".asset-toolbar > .segmented"),
+        types: rect(".asset-toolbar > .filter-tabs"),
         search: rect(".asset-heading-actions .inline-search"),
         create: rect(".asset-heading-actions button"),
         options: rect(".asset-toolbar > .toolbar-right"),
@@ -79,8 +79,8 @@ try {
     assert.ok(geometry.overflow <= 0, `${width} 页面横向溢出 ${geometry.overflow}px`);
     assert.match(await page.locator(".collection-meta").innerText(), /当前结果/);
     await helpRing(page, ".page-assets .page-help", "资产仓库 · 这页怎么用");
-    await page.locator(".asset-toolbar .segmented button").filter({ hasText: "Skills" }).click();
-    assert.equal(await page.locator(".asset-toolbar .segmented button[aria-pressed=true]").innerText().then(text => text.includes("Skills")), true);
+    await page.locator(".asset-toolbar .filter-tabs button").filter({ hasText: "Skills" }).click();
+    assert.equal(await page.locator(".asset-toolbar .filter-tabs button[aria-pressed=true]").innerText().then(text => text.includes("Skills")), true);
     await page.getByLabel("排序方式").selectOption("name");
     assert.equal(await page.locator(".asset-grid").count(), 1);
     assert.equal(await page.getByRole("group", { name: "视图模式" }).count(), 0);

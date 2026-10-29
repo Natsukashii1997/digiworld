@@ -7,16 +7,6 @@
    实现必须加上（简报第 6 节）。
    ========================================================================== */
 .notes-v16 .sn-page { display: grid; gap: var(--s-5); margin-top: var(--s-5); }
-.notes-v16 .sn-filter { display: flex; gap: var(--s-2); flex-wrap: wrap; }
-.notes-v16 .sn-filter button {
-  display: inline-flex; align-items: center; gap: var(--s-2);
-  min-height: 44px; padding: 0 var(--s-4);
-  border: 1px solid var(--line-2); border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--bg) 60%, transparent); color: var(--text-2); font-size: var(--fs-caption);
-}
-.notes-v16 .sn-filter button b { font: 600 var(--fs-small) var(--mono); color: var(--muted); }
-.notes-v16 .sn-filter button.on { border-color: var(--cyan); color: var(--text); background: color-mix(in srgb, var(--cyan) 8%, transparent); }
-.notes-v16 .sn-filter button.on b { color: var(--cyan); }
 
 /* 墙：三列手排（实现用真正的瀑布流）；编辑中的空白便签横跨两列 */
 .notes-v16 .sn-wall { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); align-items: start; }

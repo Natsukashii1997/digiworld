@@ -249,7 +249,8 @@ try {
     for (const width of [1440, 390]) {
       const p = await open(collection, width); await p.goto(collection.url + '/#learning'); await p.locator('.collection-canvas').waitFor(); await p.waitForTimeout(300);
       await metrics(p, 'learning'); await shot(p, 'learning');
-      if (width === 390) await fade(p, '.collection-chips', 'P5-collection');
+      // #24：分组标签放不下就折行，不再横滑
+      if (width === 390 && !capture) assert.equal(await p.locator('.collection-filter').evaluate(row => row.scrollWidth > row.clientWidth + 1), false, 'P5-collection 分组标签全部可见');
       await p.context().close();
     }
   } finally { await collection.close(); }
