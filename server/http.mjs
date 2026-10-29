@@ -740,7 +740,7 @@ export async function startServer({
             await projectStatus[statusAction](await body(request)),
           );
         if (url.pathname === "/api/projects-space" && request.method === "GET")
-          return send(response, 200, await projectsSpace.inspect(url.searchParams.get("refresh") === "1" ? { refresh: true } : {}));
+          return send(response, 200, await projectsSpace.inspect(url.searchParams.get("refresh") === "1" ? { refresh: true } : url.searchParams.get("roster") === "1" ? { roster: true } : {}));
         if (url.pathname === "/api/projects-space/skill-usage" && request.method === "GET")
           return send(response, 200, await skillUsage.read());
         if (url.pathname === "/api/projects-space/skill-usage/refresh" && request.method === "POST")

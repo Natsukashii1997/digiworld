@@ -9,7 +9,7 @@ import { seed } from "../src/store.js";
 import { stringify, parse } from "../src/serialization.js";
 import { buildProjects } from "./project-status-fixture.mjs";
 
-export async function spaceFixture({ roster, gh, staticRoot, skillUsage } = {}) {
+export async function spaceFixture({ roster, gh, staticRoot, skillUsage, space } = {}) {
   const dir = await realpath(await mkdtemp(join(tmpdir(), "projects-space-")));
   const paths = await buildProjects(dir);
   const outside = join(dir, "没扫描的项目");
@@ -51,6 +51,7 @@ export async function spaceFixture({ roster, gh, staticRoot, skillUsage } = {}) 
       projectsSpace: {
         rosterPath,
         readCard: async (card) => (card ? { state: "ok", one: "合成一句话", goal: "合成目标", not: "合成不做", url: "obsidian://x" } : { state: "absent" }),
+        ...space,
       },
     },
   });

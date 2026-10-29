@@ -44,14 +44,15 @@ function Trace() {
   );
 }
 
-function Cart({ item, index, on, pressed, skillsOn, onSelect, onKeyDown }) {
-  const hue = projectHue(item);
-  const issues = item.github?.state === "ok" ? pad2(item.github.issues.open) : item.github?.state === "none" ? "—" : "?";
-  const skills = skillsOn && item.skills ? pad2(item.skills.skills.length) : "—";
+function Cart({ item, on, pressed, skillsOn, onSelect, onKeyDown }) {
+  const hue = projectHue(item), wait = item.pending;
+  const issues = wait ? "··" : item.github?.state === "ok" ? pad2(item.github.issues.open) : item.github?.state === "none" ? "—" : "?";
+  const skills = wait ? "··" : skillsOn && item.skills ? pad2(item.skills.skills.length) : "—";
+  const flag = wait ? { text: "读取中…" } : item.attention;
   return (
     <button type="button" role="tab" id={`ps-tab-${item.id}`} aria-controls="ps-screen" aria-selected={on} tabIndex={on ? 0 : -1}
-      className={`g5-cart cart-x pcb${pressed ? " press" : ""}`} data-ps-cart={item.id} style={{ "--hue": hue.hue }}
-      aria-label={`${item.name}：${item.attention.text}`} onClick={() => onSelect(item.id)} onKeyDown={onKeyDown}>
+      className={`g5-cart cart-x pcb${pressed ? " press" : ""}${wait ? " wait" : ""}`} data-ps-cart={item.id} style={{ "--hue": hue.hue }}
+      aria-label={`${item.name}：${flag.text}`} onClick={() => onSelect(item.id)} onKeyDown={onKeyDown}>
       <span className="board">
         <Trace />
         <span className="chip"><span className="g5-mono"><Mono code={hue.code} /></span></span>
@@ -59,11 +60,11 @@ function Cart({ item, index, on, pressed, skillsOn, onSelect, onKeyDown }) {
           <span className="nm"><b title={item.name}>{item.name}</b>{item.pinned && <i className="pin" data-ps-pin title="已置顶" />}</span>
           <span className="sub">{hue.sub || item.path}</span>
         </span>
-        <span className="no">{pad2(index + 1)}</span>
+        <span className="no">{pad2(item.no)}</span>
       </span>
       <span className="cshell">
         <i className={`led pwr${item.lit ? " on" : ""}`} title={item.lit ? "近 7 天有提交" : "近 7 天没有提交"} />
-        <span className="flag"><span className={item.attention.warn ? "warn" : ""}>{item.attention.text}</span></span>
+        <span className="flag"><span className={flag.warn ? "warn" : ""}>{flag.text}</span></span>
         <span className="reads"><span>ISSUE <b>{issues}</b></span><span className="sk">技能 <b>{skills}</b></span></span>
       </span>
       <span className="pins" aria-hidden="true" />
@@ -119,7 +120,7 @@ function Typed({ text, run, reduced }) {
 
 function Now({ item, run, reduced }) {
   const now = item.now, next = item.next;
-  const src = !now ? "" : now.src === "CURRENT" ? [now.date, now.by].filter(Boolean).join(" · ") : `${now.date} · 最近提交（没有 CURRENT）`;
+  const src = !now ? "" : now.src === "CURRENT" ? [now.date, now.by].filter(Boolean).join(" · ") : `${now.date} · 最近提交（${now.why || "没有 CURRENT"}）`;
   return (
     <div className="g7-now">
       <div>
@@ -169,8 +170,9 @@ function Field({ item, usage, open, onToggle, onSettings }) {
       </section>
     );
   const s = item.skills;
+  const codex = !!s?.codex?.length && <p className="g7-codex"><b>Codex 点名</b>{s.codex.map((c) => `${c.name} ×${c.n}`).join(" · ")}<span>仅参考</span></p>;
   if (!s?.skills.length)
-    return <section className="g7-sec g7-field"><h3>实战<span className="sum">近 30 天没有调用技能的会话</span></h3></section>;
+    return <section className="g7-sec g7-field"><h3>实战<span className="sum">近 30 天没有调用技能的会话</span></h3>{codex}</section>;
   const rows = open ? s.skills : s.skills.slice(0, FOLD);
   return (
     <section className="g7-sec g7-field">
@@ -189,7 +191,7 @@ function Field({ item, usage, open, onToggle, onSettings }) {
         ))}
       </ul>
       {s.skills.length > FOLD && <button type="button" className="g5-more" aria-expanded={open} onClick={onToggle}>{open ? "收起" : `其余 ${s.skills.length - FOLD} 个 ▾`}</button>}
-      {!!s.codex?.length && <p className="g7-codex"><b>Codex 点名</b>{s.codex.map((c) => `${c.name} ×${c.n}`).join(" · ")}<span>仅参考</span></p>}
+      {codex}
     </section>
   );
 }
@@ -227,14 +229,18 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
   const [open, setOpen] = useState(false), [receipt, setReceipt] = useState(""), [pinBusy, setPinBusy] = useState(false);
   const [detail, setDetail] = useState(false), [launch, setLaunch] = useState(false);
   const [collection, setCollection] = useState({ notes: [], state: "loading" }), [agent, setAgent] = useState("claude"), [openApp, setOpenApp] = useState(true);
-  const screen = useRef(null), live = useRef(true);
+  const screen = useRef(null), live = useRef(true), full = useRef(false);
   useEffect(() => () => { live.current = false; }, []);
 
   const load = useCallback(async (refresh = false) => {
     setLoading(true);
     try {
+      // 第一次进来先只读名册把卡带画出来，完整读数到了再替换。
+      if (!full.current && !refresh)
+        void request("/projects-space?roster=1").then((v) => { if (live.current && !full.current) setData(v); }, () => {});
       const value = await request(refresh ? "/projects-space?refresh=1" : "/projects-space");
       if (!live.current) return null;
+      full.current = true;
       setData(value);
       setError("");
       return value;
@@ -255,7 +261,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
     if (!projectJump?.id || !items.length) return;
     const hit = items.find((i) => i.projectId === projectJump.id);
     if (hit) setCurrent(hit.id);
-  }, [projectJump?.key, projectJump?.id, items.length]);
+  }, [projectJump?.key, projectJump?.id, items.length, data?.pending]);
 
   // 档案屏扫描线：换卡带时自上而下刷一遍（按帧），之后藏起来。
   useLayoutEffect(() => {
@@ -296,8 +302,8 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
     if (want && items.filter((i) => i.pinned).length >= (data.pinLimit || 3)) { setReceipt(`置顶最多 ${data.pinLimit || 3} 个：先取消一个再置顶`); return; }
     setPinBusy(true);
     try {
-      const workspace = await request("/workspace");
-      const r = await request("/projects-space/pin", { id: item.id, pinned: want, revision: workspace.revision });
+      // 用页面读数时的主库版本：其间主库变了就由服务端拒绝，不拿新版本盖过去。
+      const r = await request("/projects-space/pin", { id: item.id, pinned: want, revision: data.revision });
       adoptState(await request("/workspace"));
       const fresh = await load();
       if (!live.current) return;
@@ -308,7 +314,9 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
       requestAnimationFrame(() => blink(document.querySelector(`[data-ps-cart="${CSS.escape(item.id)}"] [data-ps-pin]`)));
       void refreshProjectStatus();
     } catch (e) {
-      if (live.current) setReceipt(e.message);
+      if (!live.current) return;
+      setReceipt(e.status === 409 ? `${e.message}（已重新读取，请核对后再点）` : e.message);
+      if (e.status === 409) void load();
     } finally {
       if (live.current) setPinBusy(false);
     }
@@ -342,7 +350,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
         <h1>项目空间<span className="en">PROJECTS</span></h1>
         <div className="counts">
           <span className="cnt"><span className="lcd"><Count value={(totals?.projects ?? 0)} run={data?.at} px={3} /></span><small>项目</small></span>
-          <span className="cnt"><span className="lcd cyan">{totals ? <Count value={(totals.issues)} run={data?.at} px={3} /> : <b className="dash">—</b>}</span><small>开着的 issue</small></span>
+          <span className="cnt"><span className="lcd cyan">{totals ? <Count value={(totals.issues)} run={data?.at} px={3} /> : <b className="dash">—</b>}</span><small>{totals?.issuesPartial ? "开着的 issue · 有项目读不到" : "开着的 issue"}</small></span>
           <span className="cnt"><span className="lcd violet">{totals?.skillCalls != null ? <Count value={(totals.skillCalls)} run={data?.at} px={3} /> : <b className="dash">—</b>}</span><small>近 30 天技能调用</small></span>
         </div>
         <span className="grow" />
@@ -359,12 +367,12 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
         <div className="g5-stage">
           <section className="g5-rack" aria-label="项目图鉴">
             <div className="g5-carts" role="tablist" aria-label="选择项目">
-              {items.map((p, k) => <Cart key={p.id} item={p} index={k} on={p.id === item?.id} pressed={pressed === p.id}
+              {items.map((p) => <Cart key={p.id} item={p} on={p.id === item?.id} pressed={pressed === p.id}
                 skillsOn={skillsOn} onSelect={select} onKeyDown={onCartKey} />)}
-              {!data && loading && <p className="ps-loading">读取名册中…</p>}
             </div>
+            {(data?.pending || (!data && loading)) && <p className="ps-loading" role="status">{data ? "读取各项目读数中…" : "读取名册中…"}</p>}
           </section>
-          {item && (
+          {item && !item.pending && (
             <section className="g5-screen" id="ps-screen" ref={screen} role="tabpanel" aria-labelledby={`ps-tab-${item.id}`} aria-live="polite">
               <span className="scan" aria-hidden="true" />
               <Head item={item} pinBusy={pinBusy} onPin={pin} onDetail={() => setDetail(true)} />
@@ -378,7 +386,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
       )}
 
       <footer className="g5-foot">
-        <button type="button" className="g5-link" disabled={!item} onClick={openLaunch}>复制接手口令</button>
+        <button type="button" className="g5-link" disabled={!item || item.pending} onClick={openLaunch}>复制接手口令</button>
         <span className="grow" />
         <span className="g5-receipt" role="status">{receipt}</span>
       </footer>

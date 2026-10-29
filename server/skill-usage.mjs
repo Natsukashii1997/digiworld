@@ -35,7 +35,9 @@ export function skillName(raw) {
 export function projectOf(cwd, projects) {
   if (typeof cwd !== "string" || !cwd.startsWith("/")) return null;
   const path = resolve(cwd);
-  const inside = projects.find((p) => path === p.path || path.startsWith(p.path + "/"));
+  // 名册里目录嵌套时归到最深的那个。
+  const inside = projects.filter((p) => path === p.path || path.startsWith(p.path + "/"))
+    .sort((a, b) => b.path.length - a.path.length)[0];
   if (inside) return inside.id;
   const parts = path.split("/");
   return projects.find((p) => parts.includes(basename(p.path)))?.id || null;

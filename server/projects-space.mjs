@@ -141,11 +141,12 @@ export function createProjectsSpace(repository, {
     };
   }
 
-  async function inspectEntry(entry, connections, days, refresh, usage) {
+  async function inspectEntry(entry, no, connections, days, refresh, usage) {
     const dir = await directoryState(entry.path);
     const match = matchProject(entry, connections?.projects, dir.real);
     const item = {
       id: entry.id,
+      no,
       name: entry.name,
       path: displayPath(entry.path),
       card: entry.card,
@@ -157,14 +158,14 @@ export function createProjectsSpace(repository, {
       readCard(entry.card).catch(() => ({ state: "error", message: "项目卡读不到" })),
       githubFacts(match?.repoKey || entry.github, refresh),
     ]);
-    let git = { state: "unknown" }, current = null;
+    let git = { state: "unknown" }, current = null, file = null;
     if (item.dir === "ok") {
       const resolved = await resolveRoot(match, connections);
       if (resolved.error) {
         item.dir = "error";
         item.message = resolved.error;
       } else {
-        const file = await readCurrentFile(resolved.canonical, resolved.path);
+        file = await readCurrentFile(resolved.canonical, resolved.path);
         current = file.state === "read" ? parseCurrentTop(file.text) : null;
         git = await gitFacts(resolved.canonical, days);
       }
@@ -180,7 +181,8 @@ export function createProjectsSpace(repository, {
       now: current?.top
         ? { src: "CURRENT", title: current.top.title, date: current.top.date, by: current.top.by }
         : git.subject
-          ? { src: "commit", title: git.subject, date: lastCommitAt.slice(0, 10), by: "" }
+          ? { src: "commit", title: git.subject, date: lastCommitAt.slice(0, 10), by: "",
+              why: file?.state === "read" ? "CURRENT 没有可读的顶节" : file?.state === "absent" ? "没有 CURRENT" : "CURRENT 读不到" }
           : null,
       next: pickNext({ issues: raw, top: current?.top, tableNext: current?.tableNext, lastCommitAt }),
       commits: git.state === "ok" ? commitSummary(git.counts, days) : { state: git.state === "none" ? "none" : "error", ...(git.message ? { message: git.message } : {}) },
@@ -192,8 +194,9 @@ export function createProjectsSpace(repository, {
 
   return {
     async inspect(input = {}) {
-      exactKeys(input, ["refresh"]);
+      exactKeys(input, ["refresh", "roster"]);
       if (input.refresh !== undefined && typeof input.refresh !== "boolean") throw failure("刷新参数必须是布尔值");
+      if (input.roster !== undefined && input.roster !== true) throw failure("名册参数只能是 true");
       const now = new Date(clock());
       const days = Array.from({ length: 30 }, (_, i) => localDateKey(localDay(now, i - 29)));
       const roster = await readRoster(rosterPath);
@@ -201,11 +204,18 @@ export function createProjectsSpace(repository, {
       const base = { at: now.toISOString(), revision: state?.revision ?? null, pinLimit: PIN_LIMIT, days };
       if (roster.state !== "ok")
         return { ...base, roster: { state: "error", path: roster.path, message: roster.message }, totals: null, items: [] };
+      const order = (x) => (x.pinned ? 0 : 1);
+      // 只要名册：页面先按名册画出卡带，读数随后到（置顶按主库里的登记路径先排，和完整读取一致）。
+      if (input.roster) {
+        const items = roster.projects.map((p, i) => ({ id: p.id, no: i + 1, name: p.name, path: displayPath(p.path),
+          pinned: matchProject(p, state?.connections?.projects)?.active === true, pending: true }));
+        items.sort((a, b) => order(a) - order(b));
+        return { ...base, roster: { state: "ok", path: roster.path, skipped: roster.skipped }, pending: true, items };
+      }
       const usage = await skillUsage.read().catch(() => ({ state: "error" }));
       const items = await Promise.all(
-        roster.projects.map((p) => inspectEntry(p, state?.connections, days, input.refresh === true, usage)),
+        roster.projects.map((p, i) => inspectEntry(p, i + 1, state?.connections, days, input.refresh === true, usage)),
       );
-      const order = (x) => (x.pinned ? 0 : 1);
       items.sort((a, b) => order(a) - order(b));
       const known = items.filter((i) => i.github.state === "ok");
       return {
@@ -251,7 +261,7 @@ export function createProjectsSpace(repository, {
       const after = await repository.read();
       const saved = matchProject(entry, after?.connections?.projects, dir.real);
       const pinned = saved?.active === true;
-      if (pinned !== input.pinned) throw failure("置顶结果回读不一致，请刷新后再看", 500);
+      if (!saved || pinned !== input.pinned) throw failure("置顶结果回读不一致，请刷新后再看", 500);
       return { id: entry.id, projectId: saved.id, pinned, revision: after.revision };
     },
   };

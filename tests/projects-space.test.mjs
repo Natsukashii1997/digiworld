@@ -2,7 +2,7 @@
 // 只用合成名册、合成 CURRENT、合成项目卡与注入的 gh 桩；不读真实名册、Vault、~/.claude、~/.codex 与 data/。
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseCurrentTop } from "../server/project-status.mjs";
@@ -208,6 +208,8 @@ test("GET /api/projects-space：按名册列项目，读数、现在 / 下一步
     // 没有 CURRENT：现在取最近提交；30 天前的唯一提交不算进图
     assert.equal(by.bare.now.src, "commit");
     assert.equal(by.bare.now.title, "init");
+    assert.equal(by.bare.now.why, "没有 CURRENT");
+    assert.deepEqual(s.items.map((i) => i.no), [1, 2, 3, 4, 5, 6], "编号按名册顺序");
     assert.equal(by.bare.commits.total, 0);
     assert.equal(by.bare.lit, false);
     assert.equal(by.bare.github.state, "none");
@@ -290,6 +292,41 @@ test("POST /api/projects-space/pin：置顶带版本检查、最多 3 个、写�
     const s = (await app.call("/projects-space")).body;
     assert.deepEqual(s.items.slice(0, 3).map((i) => i.id).sort(), ["collab", "docs", "leaky"]);
     assert.equal(s.totals.pinned, 3);
+    const no = Object.fromEntries(s.items.map((i) => [i.id, i.no]));
+    assert.deepEqual(no, { collab: 1, bare: 2, leaky: 3, docs: 4, gone: 5, outside: 6 }, "置顶换了顺序，名册编号不变");
+    const quick = (await app.call("/projects-space?roster=1")).body;
+    assert.deepEqual(quick.items.slice(0, 3).map((i) => i.id).sort(), ["collab", "docs", "leaky"], "只读名册时置顶也排在前面");
+  } finally {
+    await app.close();
+  }
+});
+
+test("GET /api/projects-space?roster=1：只读名册先画卡带，不碰 gh 与项目目录", async () => {
+  const app = await spaceFixture();
+  try {
+    const before = app.calls.length;
+    const r = await app.call("/projects-space?roster=1");
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.body.pending, true);
+    assert.equal(r.body.roster.state, "ok");
+    assert.deepEqual(r.body.items.map((i) => [i.id, i.no, i.pending]), [
+      ["collab", 1, true], ["bare", 2, true], ["leaky", 3, true], ["docs", 4, true], ["gone", 5, true], ["outside", 6, true],
+    ]);
+    assert.equal(r.body.items[0].github, undefined);
+    assert.equal(app.calls.length, before, "只读名册时不调 gh");
+  } finally {
+    await app.close();
+  }
+});
+
+test("现在取最近提交时，如实说明是没有 CURRENT 还是顶节读不出", async () => {
+  const app = await spaceFixture();
+  try {
+    await writeFile(join(app.paths.leaky, "CURRENT.md"), "# 合成\n\n| 项 | 值 |\n|---|---|\n| a | 1 |\n");
+    const by = Object.fromEntries((await app.call("/projects-space")).body.items.map((i) => [i.id, i]));
+    assert.equal(by.leaky.now.src, "commit");
+    assert.equal(by.leaky.now.why, "CURRENT 没有可读的顶节");
+    assert.equal(by.bare.now.why, "没有 CURRENT");
   } finally {
     await app.close();
   }

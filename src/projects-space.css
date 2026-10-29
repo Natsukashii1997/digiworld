@@ -70,6 +70,7 @@
 .g5-cart .flag span { overflow: hidden; text-overflow: ellipsis; }
 .g5-cart .flag .warn { color: var(--yellow); }
 .g5-cart .flag .info { color: var(--text-2); }
+.g5-cart.wait .reads b, .g5-cart.wait .flag { opacity: 0.4; }
 .g5-cart.press { animation: g5-press 0.24s steps(3) 1; }
 @keyframes g5-press { 0% { transform: translateY(0); } 50% { transform: translateY(2px); } 100% { transform: translateY(0); } }
 

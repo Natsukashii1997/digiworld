@@ -27,6 +27,9 @@ test("会话目录归属：项目目录、仓库内 worktree、外置 worktree �
   assert.equal(projectOf("/Users/u/.codex/worktrees/ab12/work-desk/src", projects), "nm");
   assert.equal(projectOf("/w/work-desk-ui-bitmap", projects), null, "名字相近的另一目录不算");
   assert.equal(projectOf("relative/path", projects), null);
+  const nested = [{ id: "outer", path: "/w/work" }, { id: "inner", path: "/w/work/agent-kit" }];
+  assert.equal(projectOf("/w/work/agent-kit/src", nested), "inner", "目录嵌套时归到最深的那个");
+  assert.equal(projectOf("/w/work/other", nested), "outer");
 });
 
 test("Claude 记录：Skill 工具调用与用户斜杠命令计数，内置命令不算", () => {

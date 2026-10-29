@@ -1,5 +1,5 @@
 // 项目空间第二版（电路卡带 7E，issue #10）浏览器回归：选卡带、置顶上限、实战未开启、名册读不到、
-// 1440 / 390 无横向溢出、控件不小于 44px、axe 无违规、减少动态效果时不跑流光。合成仓库与合成名册（projects-space-fixture.mjs）。
+// 编号按名册、置顶冲突自动重读、读取中先画卡带、只有 Codex 点名、1440 / 390 无横向溢出、控件不小于 44px、axe 无违规、减少动态效果时不跑流光。合成仓库与合成名册（projects-space-fixture.mjs）。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import { mkdir, rm } from "node:fs/promises";
@@ -54,6 +54,7 @@ try {
     assert.match(await screen.locator("[data-ps-next]").textContent(), /#3 修窄屏/, "下一步取 ready-for-agent 编号最小的");
     assert.match(await screen.locator(".g7-field").textContent(), /未开启/);
     assert.equal(await page.locator(".cnt .lcd.violet .dash").textContent(), "—", "实战未开启时页头技能数显示 —");
+    assert.match(await page.locator(".cnt").nth(1).locator("small").textContent(), /有项目读不到/, "有项目 GitHub 读不到时合计注明");
     ok("卡带按名册排、默认选第一盘；档案头摘要、要注意的事、下一步取数、实战未开启");
 
     await page.locator('[data-ps-cart="gone"]').click();
@@ -77,7 +78,23 @@ try {
     assert.deepEqual(order.slice(0, 3).sort(), ["bare", "docs", "leaky"]);
     const ws = (await app.call("/workspace")).body;
     assert.equal(ws.connections.projects.filter((p) => p.active).length, 3);
-    ok("置顶写进主库（回读一致）、排到最前；第 4 个提示先取消一个");
+    assert.deepEqual(await carts.evaluateAll((els) => Object.fromEntries(els.map((e) => [e.dataset.psCart, e.querySelector(".no").textContent]))),
+      { collab: "01", bare: "02", leaky: "03", docs: "04", gone: "05", outside: "06" }, "置顶换了顺序，编号仍按名册");
+    ok("置顶写进主库（回读一致）、排到最前、编号不变；第 4 个提示先取消一个");
+
+    // 页面读数之后主库被别处改过：按页面那一版提交会被拒绝，并自动重读
+    const rev = (await app.call("/workspace")).body.revision;
+    assert.equal((await app.call("/projects-space/pin", { id: "bare", pinned: false, revision: rev })).status, 200);
+    await page.locator('[data-ps-cart="docs"]').click();
+    await screen.getByRole("button", { name: "已置顶" }).click();
+    await page.locator(".g5-receipt").filter({ hasText: "已重新读取" }).waitFor();
+    await page.locator('[data-ps-cart="bare"] [data-ps-pin]').waitFor({ state: "detached" });
+    const after = (await app.call("/workspace")).body.connections.projects.filter((p) => p.active).length;
+    assert.equal(after, 2, "冲突的那次没有写进主库");
+    const expected = errors.findIndex((e) => /status of 409/.test(e));
+    assert.ok(expected >= 0, "浏览器记下了那次 409");
+    errors.splice(expected, 1);
+    ok("主库在页面读数后变了：置顶被拒绝、自动重读、不覆盖");
 
     await noOverflow(page, "1440");
     await bigEnough(page, "1440");
@@ -110,6 +127,47 @@ try {
     assert.equal(await page.locator("#ps-screen .caret").count(), 0, "下一步直接显示，不逐字");
     ok("减少动态效果时没有流光、不逐字");
     await context.close();
+  }
+
+  // ---- 读取中：先按名册画出卡带，读数格暗着 ----
+  {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    let release;
+    const gate = new Promise((r) => { release = r; });
+    await page.route((u) => u.pathname === "/api/projects-space" && !u.search.includes("roster"), async (route) => { await gate; await route.continue(); });
+    await page.goto(app.url + "/#projects");
+    await page.locator("[data-ps-cart].wait").first().waitFor();
+    assert.equal(await page.locator("[data-ps-cart].wait").count(), 6);
+    assert.match(await page.locator(".ps-loading").textContent(), /读取各项目读数中/);
+    assert.equal(await page.locator("#ps-screen").count(), 0, "读数没到时不出档案屏");
+    release();
+    await page.locator("#ps-screen").waitFor();
+    assert.equal(await page.locator("[data-ps-cart].wait").count(), 0);
+    ok("读取中先按名册画出卡带、读数格暗着，读数到了再换上");
+    await context.close();
+  }
+
+  // ---- 实战开着、只有 Codex 点名：「仅参考」那一行照样显示 ----
+  {
+    const codexOnly = await spaceFixture({
+      staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
+      // 直接给项目空间一份合成统计（不经会话目录）
+      space: { skillUsage: {
+        read: async () => ({ state: "ok", at: new Date().toISOString(), projects: { collab: { skills: [], calls: 0, sessions: 0, codex: [{ name: "tdd", n: 2 }] } } }),
+        refresh: async () => ({ state: "ok" }),
+      } },
+    });
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    await page.goto(codexOnly.url + "/#projects");
+    const field = page.locator("#ps-screen .g7-field");
+    await field.waitFor();
+    assert.match(await field.textContent(), /没有调用技能/);
+    assert.match(await field.locator(".g7-codex").textContent(), /tdd ×2.*仅参考/);
+    ok("没有技能调用、只有 Codex 点名时，Codex 一行照样显示并标仅参考");
+    await context.close();
+    await codexOnly.close();
   }
 
   // ---- 名册读不到：卡带架位置只给原因和去设置 ----
