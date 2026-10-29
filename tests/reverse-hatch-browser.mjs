@@ -145,6 +145,73 @@ const slotState = (p, id) => p.locator(`.rh-slot[data-slot="${id}"]`).getAttribu
   } finally { await p.context().close(); await app.close(); }
 }
 
+// 孵化（#29）：预览改名、原文实时变 → 确认时写入结果不明先查询 → Skill 卡 → 资产仓库里能看到 → 点来源跳回标本
+{
+  const app = await reverseHatchFixture();
+  const p = await open(app, 1440);
+  try {
+    const assetsBefore = (await app.repository.read()).assets.length;
+    await button(p, "现在就孵化（存成 Skill）").click();
+    const dlg = p.getByRole("dialog", { name: "孵化 · 预览" });
+    await dlg.getByText("未经复刻验证", { exact: true }).waitFor();
+    const draft = dlg.getByTestId("hatch-draft");
+    assert.match(await draft.textContent(), /# Agent迁移和上下文接力功能 · 拆解[\s\S]*## 局限（还没弄清楚）/);
+    await dlg.getByLabel("名字").fill("迁移与交接 · 拆解");
+    assert.match(await draft.textContent(), /^---[\s\S]*# 迁移与交接 · 拆解\n/, "原文随名字实时变");
+    await dlg.getByLabel("名字").fill("");
+    await dlg.getByRole("alert").getByText("请填写 Skill 名字").waitFor();
+    assert.equal(await button(dlg, "确认孵化").isDisabled(), true);
+    await dlg.getByLabel("名字").fill("迁移与交接 · 拆解");
+    await p.screenshot({ path: "test-results/reverse-hatch-1440-孵化预览.png" });
+    await axe(p, "1440 孵化预览");
+    assert.equal((await app.repository.read()).assets.length, assetsBefore, "预览不写入");
+
+    // 服务端已写入，但回来的是 500：页面先查询，查到就当成功，不重复写
+    await p.route("**/api/reverse/hatch/confirm", async (route) => { await route.fetch(); await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "合成回包丢失" }) }); });
+    await button(dlg, "确认孵化").click();
+    await p.getByText(/孵出来了：Skill「迁移与交接 · 拆解」，固定版本 v1 已回读。/).waitFor();
+    await p.unroute("**/api/reverse/hatch/confirm");
+    const state = await app.repository.read(), r = state.reverseRecords.find((x) => x.id === "rv-furnace");
+    assert.equal(state.assets.length, assetsBefore + 1); assert.equal(r.hatchSkills.length, 1);
+    const asset = state.assets.find((a) => a.id === r.hatchSkills[0].assetId);
+    assert.deepEqual(asset.versions[0].hatchedFrom, { kind: "reverse", id: "rv-furnace" });
+    assert.match(asset.versions[0].content, /^# 迁移与交接 · 拆解$/m);
+    await p.locator(".rh-dev").getByText("HATCHED").waitFor();
+    await p.locator(".rh-born").getByText("固定版本 v1 · 空着的 5 格写在「局限」 · 未经复刻验证").waitFor();
+    await p.locator(".rh .counts .cnt").nth(1).locator('[aria-label="1"]').waitFor(); // 页头「已孵化」按标本计
+    await p.screenshot({ path: "test-results/reverse-hatch-1440-已孵化.png" });
+    await checks(p, "1440 已孵化");
+
+    // 同一八格再点孵化：直接用已孵化的那一版（卡片在，按钮不在）
+    assert.equal(await button(p, "现在就孵化（存成 Skill）").count(), 0);
+
+    // 资产仓库里能看到；点来源跳回标本（先切到别的标本，确认是跳回来的）
+    await p.locator(".rh-switch").getByRole("button", { name: /^全部/ }).click();
+    await p.locator(".rh-src h2").getByText("全部").waitFor();
+    await p.evaluate(() => { location.hash = "assets"; });
+    await p.getByText("迁移与交接 · 拆解").first().click();
+    const source = p.getByRole("button", { name: "从逆向工程孵化 · Agent迁移和上下文接力功能" });
+    assert.ok((await source.boundingBox()).height >= 44, "资产来源按钮 44px");
+    await source.click();
+    await p.locator(".rh-src h2").getByText("Agent迁移和上下文接力功能").waitFor();
+    assert.equal(await p.evaluate(() => location.hash), "#references");
+    await p.locator(".rh-born").waitFor();
+
+    // 八格变了：Skill 卡换回「现在就孵化」，再孵化是同一份资产的 v2
+    const outside = await app.repository.read();
+    outside.reverseRecords.find((x) => x.id === "rv-furnace").hatch.slots.check = { known: "能接力", miss: "", at: "2026-10-29T00:00:00.000Z" };
+    await app.repository.write(outside, { expectedRevision: outside.revision });
+    await p.reload(); await p.locator(".rh-src h2").getByText("Agent迁移和上下文接力功能").waitFor();
+    await button(p, "现在就孵化（存成 Skill）").click();
+    await p.getByRole("dialog", { name: "孵化 · 预览" }).getByText("固定版本 v2 · 写入后回读核对").waitFor();
+    await button(p.getByRole("dialog", { name: "孵化 · 预览" }), "确认孵化").click();
+    await p.getByText(/固定版本 v2 已回读/).waitFor();
+    const after = await app.repository.read();
+    assert.equal(after.assets.length, assetsBefore + 1);
+    assert.equal(after.assets.find((a) => a.id === asset.id).versions.length, 2);
+  } finally { await p.context().close(); await app.close(); }
+}
+
 // 投入作品 → 存成 Skill → 移入回收区 → 恢复（保留功能，改指新页面）
 {
   const app = await reverseHatchFixture({ empty: true });
@@ -195,10 +262,16 @@ for (const width of [390, 320]) {
   try {
     await p.screenshot({ path: `test-results/reverse-hatch-${width}.png`, fullPage: true });
     await checks(p, String(width));
+    // 孵化预览在窄屏也不溢出
+    await button(p, "现在就孵化（存成 Skill）").click();
+    await p.getByRole("dialog", { name: "孵化 · 预览" }).getByTestId("hatch-draft").waitFor();
+    await p.screenshot({ path: `test-results/reverse-hatch-${width}-孵化预览.png` });
+    assert.equal(await p.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, width + " 孵化预览横向溢出");
+    await axe(p, width + " 孵化预览");
   } finally { await p.context().close(); await app.close(); }
 }
 
 await browser.close();
-// 合成的写入失败（500）是有意制造的，只剔除这一条
+// 合成的写入失败与回包丢失（500）是有意制造的，只剔除这一条
 assert.deepEqual(errors.filter((e) => !e.includes("status of 500")), []);
-console.log("reverse-hatch 1440/390/320：切标本、勾格子、复制写轮次、手改、放回预览与确认、预览后被改不写入、复制后保存失败提示、按八格整理、剪贴板失败、投入/存 Skill/回收恢复、REA 入口、无溢出、44px、axe 通过；仅合成数据");
+console.log("reverse-hatch 1440/390/320：切标本、勾格子、复制写轮次、手改、放回预览与确认、预览后被改不写入、复制后保存失败提示、按八格整理、剪贴板失败、孵化（改名、结果不明先查询、Skill 卡、资产来源跳回、再孵化 v2）、投入/存 Skill/回收恢复、REA 入口、无溢出、44px、axe 通过；仅合成数据");

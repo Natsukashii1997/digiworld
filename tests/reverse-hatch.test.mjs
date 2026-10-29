@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createSpecimen } from '../src/reverse-recipe.js';
-import { SLOTS, SLOT_IDS, slotState, hatchScore, initialHatch, hatchOf, buildHatchPack, buildOrganizePack, parseHatchReply, applyHatchReply, editSlot, appendHatchRound, packHashOf, legacyRounds } from '../src/reverse-hatch.js';
+import { SLOTS, SLOT_IDS, slotState, hatchScore, initialHatch, hatchOf, buildHatchPack, buildOrganizePack, parseHatchReply, applyHatchReply, editSlot, appendHatchRound, packHashOf, legacyRounds, generateHatchSkill, hatchTitleOf, hatchSlotsText } from '../src/reverse-hatch.js';
 import { validateReverseRecords } from '../server/schema.mjs';
 import { validateReverseHistory } from '../server/reverse-schema.mjs';
 
@@ -238,4 +238,46 @@ test('手改一格：只能改八格之一，存为 edited 并清洗长度与控
   assert.equal(r.hatch, undefined, '不改原记录');
   assert.throws(() => editSlot(r, 'nope', {}), /没有这一格/);
   validateReverseRecords([{ ...r, hatch: h }]);
+});
+
+test('孵化成 Skill：填上的写正文、半格写已知和缺、空格进局限；标未经复刻验证；附追问包与 source.json', async () => {
+  const { planSkillVersion } = await import('../src/skill-version.js');
+  const { inspectSkill } = await import('../src/skill-package.js');
+  const r = furnace();
+  r.hatch = applyHatchReply(r, parseHatchReply(reply([['结构', '三栏', '无'], ['数据', '会话列表', '同步频率'], ['验收', '能接力', '无']]))).hatch;
+  const v = generateHatchSkill(r);
+  assert.equal(v.title, hatchTitleOf(r));
+  assert.match(v.content, /^---\nname: reverse-hatch-[a-z0-9-]+\n/);
+  assert.match(v.content, /未经复刻验证/);
+  assert.match(v.content, /## 结构\n三栏/);
+  assert.match(v.content, /## 数据（只知道一半）\n已知：会话列表\n缺：同步频率/);
+  const limits = v.content.split('## 局限（还没弄清楚）')[1];
+  for (const name of ['流程', '界面', '边界', '写入与回滚']) assert.match(limits, new RegExp(`- ${name}：`));
+  assert.doesNotMatch(limits, /- 结构|- 验收/);
+  assert.match(v.content, /第 2 轮结论/, '轮次接着旧记录往下数');
+  assert.deepEqual(v.files.map((f) => f.path), ['SKILL.md', 'task-pack.md', 'source.json']);
+  const pack = v.files[1].data;
+  assert.match(pack, /不是哪一轮发出的原文/);
+  assert.match(pack, /最近一轮：第 2 轮（旧流程记录，没有 packHash）/);
+  assert.match(pack, /## 这一轮只回答这些格子/);
+  assert.doesNotMatch(pack.split('## 这一轮只回答这些格子')[1].split('## 做法')[0], /结构|验收/);
+  const source = JSON.parse(v.files[2].data);
+  assert.equal(source.recordId, r.id); assert.equal(source.validation, '未经复刻验证');
+  assert.deepEqual(source.hatch.slots.shape, r.hatch.slots.shape);
+  planSkillVersion(v); assert.ok(inspectSkill(v.files).name, 'SKILL.md 的 name 合规');
+});
+
+test('孵化成 Skill：名字可改且实时进原文；空名、超长名拒绝；凭据过滤；slotsHash 只随八格变', () => {
+  const r = fixtureBin();
+  assert.match(generateHatchSkill(r, { title: '  我的\n拆解 ' }).content, /^# 我的 拆解$/m);
+  assert.throws(() => generateHatchSkill(r, { title: '  ' }), /请填写 Skill 名字/);
+  assert.throws(() => generateHatchSkill(r, { title: 'x'.repeat(81) }), /最多 80 字/);
+  const fresh = generateHatchSkill(r);
+  assert.match(fresh.content, /还没交出过追问包/);
+  assert.equal(fresh.score.empty, 7);
+  const leaked = { ...r, hatch: editSlot(r, 'data', { known: '令牌 sk-ant-api03-' + 'a'.repeat(40) }) };
+  assert.doesNotMatch(generateHatchSkill(leaked).files.map((f) => f.data).join(''), /sk-ant-api03-a{40}/);
+  const text = hatchSlotsText(r);
+  assert.equal(hatchSlotsText({ ...r, hatch: { ...hatchOf(r), rounds: [{ n: 1 }] } }), text, '轮次不影响');
+  assert.notEqual(hatchSlotsText(leaked), text);
 });

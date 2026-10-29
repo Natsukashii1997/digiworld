@@ -540,6 +540,7 @@ export default function App() {
           onSelect={setSelected}
           onClose={() => setSelected(null)}
           onEdit={(a) => setEditing(a)}
+          onOpenReverse={(id) => navigate("references", { reverseId: id })}
         />
       )}
       {scroll && (

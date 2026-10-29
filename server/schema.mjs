@@ -527,11 +527,11 @@ export function validateState(state) {
         "installUrl",
       ]);
       id(v.id);
-      // 阶段 2：从随手记或收藏孵成的资产，在首个版本记来源条目；之后的版本不继承。
+      // 阶段 2：从随手记、收藏或逆向标本（#29）孵成的资产，在首个版本记来源条目；之后的版本不继承。
       if (v.hatchedFrom !== undefined) {
         if (v !== a.versions[0]) invalid("孵化来源只能在首个版本");
         keys(v.hatchedFrom, ["kind", "id"]);
-        if (!["note", "collection"].includes(v.hatchedFrom.kind)) invalid("孵化来源类型");
+        if (!["note", "collection", "reverse"].includes(v.hatchedFrom.kind)) invalid("孵化来源类型");
         id(v.hatchedFrom.id);
       }
       if (v.references !== undefined) {

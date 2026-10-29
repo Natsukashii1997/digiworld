@@ -53,7 +53,9 @@ test("孵化来源只在新建资产的首个版本；编辑与恢复都不继�
   validateState({ ...seed(), assets: [restore(edited, hatched.versions[0].id)] });
   const forged = { ...edited, versions: [edited.versions[0], { ...edited.versions[1], hatchedFrom: { kind: "note", id: "x" } }] };
   assert.throws(() => validateState({ ...seed(), assets: [forged] }), /孵化来源只能在首个版本/);
-  assert.throws(() => validateState({ ...seed(), assets: [makeAsset({ title: "t", type: "Rule", hatchedFrom: { kind: "reverse", id: "r" } })] }), /孵化来源类型/);
+  assert.throws(() => validateState({ ...seed(), assets: [makeAsset({ title: "t", type: "Rule", hatchedFrom: { kind: "scroll", id: "r" } })] }), /孵化来源类型/);
+  // 逆向标本孵化的 Skill（#29）也记来源
+  validateState({ ...seed(), assets: [makeAsset({ title: "t", type: "Skill", files: [{ path: "SKILL.md", text: true, data: "# t\n" }], hatchedFrom: { kind: "reverse", id: "r" } })] });
 });
 
 test("焚决条目来源可以是收藏 ID，但不能同时指向逆向记录", () => {
