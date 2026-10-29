@@ -4,7 +4,8 @@ import {fixture} from './fixture.mjs';
 import {seed} from '../src/store.js';
 import {createNoteDoc,storedEditorContent} from '../src/note-document.js';
 import {targetFixture} from './target-fixture.mjs';
-const openTarget=p=>p.getByRole('radio',{name:'资产交付目标',exact:true}).click();
+import {openSettingsDrawer} from './settings-entry.mjs';
+const openTarget=p=>openSettingsDrawer(p,'资产交付目标');
 const browser=await chromium.launch(),results=[];
 const editor=p=>p.getByRole('textbox',{name:'随手记内容',exact:true}),title=p=>p.getByRole('textbox',{name:'便签标题',exact:true});
 async function run(name,fn,{target=false}={}){

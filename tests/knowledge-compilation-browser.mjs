@@ -1,3 +1,4 @@
+import { openSettingsDrawer, openCapabilityMore, capabilitySwitch } from "./settings-entry.mjs";
 import { createRequire } from "node:module";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -234,7 +235,7 @@ try {
   );
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "设置", exact: true }).click();
-  await page.getByRole("radio",{name:"数据与备份",exact:true}).click();
+  await openSettingsDrawer(page, "数据与备份");
   const backup = (await app.call("/backup")).body;
   await page.getByLabel("导入备份文件", { exact: true }).setInputFiles({
     name: "backup.json",

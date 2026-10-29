@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>设置 · 二 · 后盖面板</title>
+<!-- 模板：由 build/make.py 填入侧栏（含伙伴屏）与正式只读读数（build/settings-live.json）后生成 ../设置-2-后盖面板.html。内容由 v19-settings.js 按数据画出。 -->
+<link rel="stylesheet" href="../ui-v18/common.css"><link rel="stylesheet" href="../../../src/partner-lcd.css"><link rel="stylesheet" href="v19.css"><link rel="stylesheet" href="v19-settings.css">
+</head>
+<body class="v19 st st2">
+<!--ASIDE-->
+<main data-settings="panel">
+<div class="top"><span class="crumb">数码世界 / <b>设置</b></span><span class="search">搜索工作台<kbd>⌘K</kbd></span></div>
+<div class="bar">
+  <h1>设置<span class="en">SETTINGS</span></h1>
+  <div class="reads">
+    <button class="read" data-jump="gate" title="跳到授权闸"><small>授权已开</small><span class="lcd" data-st-lcd data-st-count="on"></span></button>
+    <button class="read bad" data-jump="card" data-st-backup-read title="跳到存档卡"><small>完整备份</small><b data-st-backup-text>从未</b><i class="led"></i></button>
+    <button class="read" data-jump="card" title="跳到存档卡"><small>主库 REV</small><span class="lcd" data-st-lcd data-text="<!--REV-->"></span></button>
+  </div>
+  <span class="grow"></span>
+  <span class="readat">读取于 <!--READ--></span>
+</div>
+<p class="st-rule"><i class="led on"></i>默认关闭；开启前先预览，每次外部写入仍单独确认。</p>
+<div class="cover" data-st-root></div>
+</main>
+<aside class="st-sheet" data-st-sheet hidden aria-label="预览开启"></aside>
+<div class="st-toast" data-st-toast role="status" hidden></div>
+<script type="application/json" id="settings-data"><!--JSON--></script>
+<script src="../ui-v18/page.js"></script>
+<script src="v19-settings.js" defer></script>
+</body>
+</html>

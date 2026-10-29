@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>设置 · 三 · 开机自检</title>
+<!-- 模板：由 build/make.py 填入侧栏（含伙伴屏）与正式只读读数（build/settings-live.json）后生成 ../设置-3-开机自检.html。自检行由 v19-settings.js 按数据画出。 -->
+<link rel="stylesheet" href="../ui-v18/common.css"><link rel="stylesheet" href="../../../src/partner-lcd.css"><link rel="stylesheet" href="v19.css"><link rel="stylesheet" href="v19-settings.css">
+</head>
+<body class="v19 st st3">
+<!--ASIDE-->
+<main data-settings="post">
+<div class="top"><span class="crumb">数码世界 / <b>设置</b></span><span class="search">搜索工作台<kbd>⌘K</kbd></span></div>
+<div class="bar">
+  <h1>设置<span class="en">SELF-TEST</span></h1>
+  <span class="grow"></span>
+  <span class="readat">读取于 <!--READ--> · REV <!--REV--></span>
+  <button class="act" data-st-rerun>重新自检</button>
+</div>
+<section class="post" aria-label="开机自检">
+  <header class="post-head"><span>POST · 数码世界 · REV <!--REV--></span><span data-st-progress>自检中…</span></header>
+  <ol class="post-lines" data-st-root></ol>
+  <footer class="post-foot" data-st-foot>
+    <span class="tally bad"><span class="lcd" data-st-lcd data-st-tally="bad"></span><small>要处理</small></span>
+    <span class="tally warn"><span class="lcd" data-st-lcd data-st-tally="warn"></span><small>要看一眼</small></span>
+    <span class="tally ok"><span class="lcd" data-st-lcd data-st-tally="ok"></span><small>正常</small></span>
+    <span class="grow"></span>
+    <span class="verdict" data-st-verdict></span>
+  </footer>
+</section>
+<p class="st-rule"><i class="led on"></i>默认关闭；开启前先预览，每次外部写入仍单独确认。点一行就在原地展开它的控制，同时只展开一行。</p>
+</main>
+<aside class="st-sheet" data-st-sheet hidden aria-label="预览开启"></aside>
+<div class="st-toast" data-st-toast role="status" hidden></div>
+<script type="application/json" id="settings-data"><!--JSON--></script>
+<script src="../ui-v18/page.js"></script>
+<script src="v19-settings.js" defer></script>
+</body>
+</html>

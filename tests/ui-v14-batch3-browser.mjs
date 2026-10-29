@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { fixture } from "./fixture.mjs";
 import { batch3Data, batch3Stub, batch3Routes } from "./ui-v14-batch3-fixture.mjs";
 import {  axe, motion } from "./ui-v14-checks.mjs";
+import { openSettingsDrawer, openCapabilityMore, capabilitySwitch } from "./settings-entry.mjs";
 const { chromium } = createRequire(import.meta.url)(
   process.env.PLAYWRIGHT_MODULE ||
     "/Users/nat/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright",
@@ -195,17 +196,14 @@ try {
           );
         }
         if (route === "settings") {
-          for (const [category, entry] of [
-            ["资讯", "配置网络访问"],
-            ["学习书架", "配置学习书架"],
-            ["授权与安全", "配置模型连接"],
+          // v19：网络访问开关直开抽屉；模型开关先进授权预览，再「管理凭据…」
+          for (const [cap, entry] of [
+            ["aihot", "配置网络访问"],
+            ["model", "配置模型连接"],
           ]) {
-            await p
-              .getByRole("radiogroup", { name: "设置分类" })
-              .getByRole("radio", { name: category, exact: true })
-              .click();
-            await geometry(p, roots[route], category);
-            await button(p, entry).click();
+            await geometry(p, roots[route], entry);
+            if (cap === "model") await openCapabilityMore(p, cap);
+            else await capabilitySwitch(p, cap).click();
             assert.equal(await p.getByRole("dialog").count(), 1);
             if (entry === "配置网络访问")
               await button(p, "允许访问 aihot.news 公开接口").waitFor();
@@ -215,7 +213,7 @@ try {
             await p.keyboard.press("Escape");
             assert.equal(await p.getByRole("dialog").count(), 0);
             assert.equal(
-              await button(p, entry).evaluate((e) => document.activeElement === e),
+              await capabilitySwitch(p, cap).evaluate((e) => document.activeElement === e),
               true,
               "抽屉关闭焦点回归",
             );

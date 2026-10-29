@@ -10,6 +10,19 @@ import { download } from "./Assets.jsx";
 import { createFullBackupRecovery } from "./full-backup-recovery.js";
 import { FULL_BACKUP_LIMITS, FULL_BACKUP_LIMIT_MESSAGE } from "./full-backup-contract.js";
 
+// 设置页自检行与本面板共用的两段请求：生成并下载恢复包 / 可合并数据。提示照旧由调用方给。
+export async function downloadFullBackup() {
+  const result = await request("/full-backup/download", {}, "POST", true, {binaryResponse:true});
+  download(result.filename, result.bytes, "application/zip");
+  return result;
+}
+export const fullBackupNotice = (result) => `恢复包已生成并校验 ${result.fileCount} 个文件，已发起下载；请确认 ZIP 文件已保存`;
+export async function exportMergeJson() {
+  const backup = await request("/backup");
+  download("数码世界-备份.json", stringify(backup, 2), "application/json");
+}
+export const MERGE_JSON_NOTICE = "可合并数据已生成并发起下载，请确认 JSON 文件已保存";
+
 export function StoragePanel({ state, adoptState, notify, compact = false }) {
   const [directory, setDirectory] = useState(""),
     [preview, setPreview] = useState(null),
@@ -62,13 +75,8 @@ export function StoragePanel({ state, adoptState, notify, compact = false }) {
             disabled={busy}
             onClick={async () => {
               try {
-                const backup = await request("/backup");
-                download(
-                  "数码世界-备份.json",
-                  stringify(backup, 2),
-                  "application/json",
-                );
-                notify("可合并数据已生成并发起下载，请确认 JSON 文件已保存");
+                await exportMergeJson();
+                notify(MERGE_JSON_NOTICE);
               } catch (e) {
                 setError(e.message);
               }
@@ -284,10 +292,9 @@ function FullBackup({ busy: outerBusy, notify, onCreated, compact = false, facts
             setBusy(true);
             setError("");
             try {
-              const result = await request("/full-backup/download", {}, "POST", true, {binaryResponse:true});
-              download(result.filename, result.bytes, "application/zip");
+              const result = await downloadFullBackup();
               await onCreated?.();
-              notify(`恢复包已生成并校验 ${result.fileCount} 个文件，已发起下载；请确认 ZIP 文件已保存`);
+              notify(fullBackupNotice(result));
             } catch (e) {
               setError(e.message);
             } finally {

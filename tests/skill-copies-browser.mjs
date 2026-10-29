@@ -6,6 +6,7 @@ import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { revise } from "../src/store.js";
 import { copyFixture } from "./copy-fixture.mjs";
+import { openSettingsDrawer } from "./settings-entry.mjs";
 const require = createRequire(import.meta.url);
 const { chromium } = require(
   process.env.PLAYWRIGHT_MODULE ||
@@ -208,7 +209,7 @@ try {
   await page.keyboard.press("Escape");
   await page.goto(app.url + "/#settings");
   await page.reload();
-  await page.getByRole("radio", {name:"资产交付目标",exact:true}).click();
+  await openSettingsDrawer(page, "资产交付目标");
   const linkedAssets = page.getByRole("region", {
     name: "隔离 Codex 的关联资产",
     exact: true,
@@ -253,7 +254,7 @@ try {
     await preview.scrollIntoViewIfNeeded();
     assert.equal(
       await page
-        .getByRole("dialog")
+        .getByRole("dialog", { name: "资产详情" })
         .evaluate((el) => el.scrollWidth > el.clientWidth),
       false,
       `preview drawer overflow ${width}`,
@@ -409,7 +410,7 @@ try {
   await panel.getByRole("alert").scrollIntoViewIfNeeded();
   assert.equal(
     await page
-      .getByRole("dialog")
+      .getByRole("dialog", { name: "资产详情" })
       .evaluate((el) => el.scrollWidth > el.clientWidth),
     false,
   );
@@ -451,7 +452,7 @@ try {
   await preview.scrollIntoViewIfNeeded();
   assert.equal(
     await page
-      .getByRole("dialog")
+      .getByRole("dialog", { name: "资产详情" })
       .evaluate((el) => el.scrollWidth > el.clientWidth),
     false,
   );

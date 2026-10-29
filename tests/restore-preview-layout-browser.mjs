@@ -6,6 +6,7 @@ import { mkdir, mkdtemp, writeFile, readFile, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fixture } from './fixture.mjs';
+import { openSettingsDrawer } from './settings-entry.mjs';
 import { seed } from '../src/store.js';
 import { packDirectory } from '../server/full-backup.mjs';
 
@@ -78,7 +79,7 @@ try {
     return route.continue();
   });
   await page.goto(app.url + '/#settings');
-  await page.getByRole('radio', { name: '数据与备份', exact: true }).click();
+  await openSettingsDrawer(page, '数据与备份');
   await page.getByLabel('选择完整备份文件').setInputFiles({ name: 'synthetic.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) });
   const dialog = page.getByRole('dialog', { name: '完整备份恢复预览' });
   await dialog.waitFor();

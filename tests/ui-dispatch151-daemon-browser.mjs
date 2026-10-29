@@ -1,4 +1,5 @@
 // 常驻UI专项：页面为随机端口临时主库；生产daemon service的文件/端口/launchctl全部内存DI。
+import {openCapabilityMore,capabilitySwitch} from './settings-entry.mjs';
 // 浏览器只请求本次app精确origin。零真实目录/5178连接/launchctl/Agent/钥匙串/API调用。
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
@@ -55,9 +56,9 @@ async function open(width,long){
    return r.fulfill({json:value});
   }catch(e){routeErrors.push(e.message);return r.fulfill({status:500,json:{error:'合成路由断言失败：'+e.message,unknownResult:true}});}
  });
- await p.goto(app.url+'/#settings');await button(p,'配置常驻服务').waitFor();return{p,s,origin};
+ await p.goto(app.url+'/#settings');await capabilitySwitch(p,'daemon').waitFor();return{p,s,origin};
 }
-async function drawer(p){await button(p,'配置常驻服务').click();const d=p.getByRole('dialog',{name:'配置常驻服务',exact:true});await d.getByText(/授权状态：/).waitFor();return d;}
+async function drawer(p){const d=await openCapabilityMore(p,'daemon');await d.getByText(/授权状态：/).waitFor();return d;}
 async function preview(d,p,s,kind){await button(d,kind==='install'?'预览安装常驻':'预览卸载常驻').click();await d.getByRole('region',{name:'本次操作预览',exact:true}).waitFor();return s.lastPlan;}
 async function confirm(d,p,label){const response=p.waitForResponse(r=>new URL(r.url()).pathname===PREFIX+'/apply');await button(d,'确认本次常驻变更').click();assert.equal((await response).ok(),true);await mainResult(d).getByText(label,{exact:true}).waitFor();}
 async function sameEventConfirm(d,p){
@@ -81,7 +82,7 @@ try{
   let d=await drawer(p);await d.getByText('授权状态：关闭',{exact:true}).waitFor();assert.equal(count(s,'/status'),1);assert(s.calls.every(c=>['/status','/history'].includes(c.path)),'默认关只读status及权限总表history；不自动inspect或宿主访问');
   assert.equal(f.counts.launch.length,0);assert.equal(f.counts.port.length,0);assert.deepEqual(f.memory.writes,[],'默认关不写合成plist/备份');
   for(const name of ['明确检查常驻状态','预览安装常驻','预览卸载常驻'])assert.equal(await button(d,name).isDisabled(),true);
-  await ui(p,`常驻默认关 ${width} long=${long}`);await p.keyboard.press('Escape');await d.waitFor({state:'detached'});assert.equal(await button(p,'配置常驻服务').evaluate(e=>e===document.activeElement),true,'Esc回焦唯一入口');
+  await ui(p,`常驻默认关 ${width} long=${long}`);await p.keyboard.press('Escape');await d.waitFor({state:'detached'});assert.equal(await capabilitySwitch(p,'daemon').evaluate(e=>e===document.activeElement),true,'Esc回焦唯一入口');
 
   f.enable();d=await drawer(p);await d.getByText('授权状态：已开启',{exact:true}).waitFor();assert.equal(f.counts.launch.length,0);assert.equal(f.counts.port.length,0,'开启后打开仍不检查宿主');
   await button(d,'明确检查常驻状态').click();await d.getByText('运行健康',{exact:true}).waitFor();await inspectRows(d,{'配置文件已安装':'否','用户服务已加载':'否','运行健康':'未知'});assert(f.counts.port.length>0);assert(f.counts.launch.length>0);assert.deepEqual(f.mutations(),[],'explicit inspect只print，无启停');
@@ -119,7 +120,7 @@ try{
   // 用户本人终端动作仅在合成状态中模拟，不派发任何真实启停命令。
   f.set({isLoaded:false,isOccupied:true});const stopped=await preview(d,p,s,'uninstall');assert.equal(stopped.loaded,false);await confirm(d,p,'写后回读一致');await button(history,'预览回滚常驻操作记录 '+stopped.operationId).waitFor();assert.equal(f.memory.text(f.plistPath),null);assert.equal(f.mutations().length,1);
   await button(history,'预览回滚常驻操作记录 '+stopped.operationId).click();await button(history,'确认回滚本次操作').waitFor();const restored=p.waitForResponse(r=>new URL(r.url()).pathname===PREFIX+'/rollback');await button(history,'确认回滚本次操作').click();assert.equal((await restored).ok(),true);await history.locator('.capability-result').getByText('回滚已回读',{exact:true}).waitFor();assert.equal(f.memory.text(f.plistPath),currentPlist);assert.equal(f.mutations().length,1);assert.equal(count(s,'/rollback'),2);
-  await ui(p,`常驻卸载/回滚 ${width} long=${long}`);await motion(p,'[role="dialog"]');await axe(p,'常驻运行中reduce');await p.keyboard.press('Escape');await d.waitFor({state:'detached'});assert.equal(await button(p,'配置常驻服务').evaluate(e=>e===document.activeElement),true,'全流程Esc回焦');
+  await ui(p,`常驻卸载/回滚 ${width} long=${long}`);await motion(p,'[role="dialog"]');await axe(p,'常驻运行中reduce');await p.keyboard.press('Escape');await d.waitFor({state:'detached'});assert.equal(await capabilitySwitch(p,'daemon').evaluate(e=>e===document.activeElement),true,'全流程Esc回焦');
   assertRequests(s,origin);assert(f.counts.port.every(port=>port===5178));assert(f.counts.launch.every(args=>['print','bootstrap'].includes(args[0])));assert.equal(f.counts.host,0);assert.deepEqual(routeErrors,[]);assert.deepEqual(forbidden,[]);
   await p.context().close();await app.close();app=null;
  }

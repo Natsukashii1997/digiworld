@@ -678,3 +678,63 @@ make_index("项目空间-剧场再优化.html", "项目空间 · 剧场的三版
 ], "三版共用：继续 / 看口令 / 只复制 / 换伙伴并成一个动作（选伙伴 + 复制口令交给 X，旁边'复制后打开 X'默认勾上）；活动改成整宽 30 天双轨（Git / CURRENT 各一行，格上写次数）；立绘与对话框等高对齐。")
 print("已生成：项目空间 剧场的三版再优化 + 对比页")
 
+
+
+# ---------------- 设置 ----------------
+def make_settings_v1():
+    """一 · 现版原样：隔离副本抓的渲染标记（build/settings-main.html，只含首个分区「授权与安全」）装进 v16 外壳，样式引用现版 src/ 的设置样式。"""
+    src = (V16 / "knowledge.html").read_text(encoding="utf-8")
+    s = shell16(src, "设置 · 一 · 开关表（现版原样）", "设置", "06", "设置")
+    main = (BUILD / "settings-main.html").read_text(encoding="utf-8")
+    s, n = re.subn(r"<main\b.*?</main>", lambda m: main, s, count=1, flags=re.S)
+    assert n == 1
+    links = "".join(f'<link rel="stylesheet" href="../../../src/{f}">' for f in SETTINGS_CSS)
+    s = s.replace("<style>body{margin:0}", links + "<style>body{margin:0}"
+                  + css_rules("src/base.css", "status-badge") + css_rules("src/base.css", "title-row") + css_rules("src/base.css", "page-help"), 1)
+    (OUT / "设置-1-开关表.html").write_text(s, encoding="utf-8")
+
+
+SETTINGS_CSS = ["capability-ui-core.css", "agents-v16.css", "settings-v16.css"]
+make_settings_v1()
+
+
+# ---------------- 设置 二 · 后盖面板 / 三 · 开机自检 ----------------
+# 读数来自 build/settings-live.json（10-24 只读 GET 正式 5178，来源写在文件的 _source 里）；内容由 v19-settings.js 按数据画出。
+def make_settings_v23():
+    parts = v18_parts("设置")
+    d = json.loads((BUILD / "settings-live.json").read_text(encoding="utf-8"))
+    common = {"<!--JSON-->": json.dumps(d, ensure_ascii=False).replace("</", "<\\/"), "<!--REV-->": str(d["revision"]), "<!--READ-->": d["readAt"]}
+    fill("settings-2-后盖面板.html", "设置-2-后盖面板.html", dict(parts, **common))
+    fill("settings-3-开机自检.html", "设置-3-开机自检.html", dict(parts, **common))
+
+
+make_settings_v23()
+make_index("设置-三版对比.html", "设置 · 三版对比", [
+    ("一 · 开关表", "现版原样：左栏五个分区 + 右边授权表（装进 v16 外壳；静态快照，只抓到首个分区）", "设置-1-开关表.html"),
+    ("二 · 后盖面板", "一页看全，像翻开机器背面：顶上三个读数（授权 / 备份 / REV），授权闸两列开关排，存档卡，旋钮，危险区单独红边", "设置-2-后盖面板.html"),
+    ("三 · 开机自检", "先报哪里不对：开页逐行跑出自检结果，有问题的排最上；点一行就在原地展开它的控制，处理完标记翻成 ✓", "设置-3-开机自检.html"),
+], "二、三能操作：拨开关（先预览再确认）、下载恢复包、展开危险区、改目录与阈值；三还能重新自检。只在界面上变，不写数据。")
+print("已生成：设置 ×3 + 对比页")
+
+
+# ---------------- 设置 · 三的简化三版（用户 10-24 选三的版式，要求展开后简单一点，或不展开直接操作） ----------------
+def make_settings_lite():
+    parts = v18_parts("设置")
+    d = json.loads((BUILD / "settings-live.json").read_text(encoding="utf-8"))
+    common = {"<!--JSON-->": json.dumps(d, ensure_ascii=False).replace("</", "<\\/"), "<!--REV-->": str(d["revision"]), "<!--READ-->": d["readAt"]}
+    for key, name, title, hint in [
+        ("flat", "设置-3-1-一行一控件.html", "设置 · 三 · 3-1 一行一控件", "每行右边就是它的操作，不用展开。"),
+        ("brief", "设置-3-2-简单展开.html", "设置 · 三 · 3-2 简单展开", "点一行展开，只有一句话和一两个按钮。"),
+        ("dock", "设置-3-3-右侧操作台.html", "设置 · 三 · 3-3 右侧操作台", "点左边一行，右边操作台换成它的操作。"),
+    ]:
+        fill("settings-3x-简化.html", name, dict(parts, **common, **{"<!--VARIANT-->": key, "<!--VTITLE-->": title, "<!--HINT-->": hint}))
+
+
+make_settings_lite()
+make_index("设置-三的优化.html", "设置 · 三的三版简化", [
+    ("三 · 原稿", "开机自检原稿：点一行展开整块控件（记忆卡、开关排、旋钮、危险区），留作对照", "设置-3-开机自检.html"),
+    ("3-1 · 一行一控件", "不展开：每行右端就是它的操作（下载 / 开关 / 知道了 / 调整）；写入与连接拆成三行各一个开关；数据与恢复收在清单底下一行", "设置-3-1-一行一控件.html"),
+    ("3-2 · 简单展开", "还是点开，但展开后只有一句话 + 一两个按钮；恢复放在备份那一行的最右边，红色", "设置-3-2-简单展开.html"),
+    ("3-3 · 右侧操作台", "不展开：左边自检清单只负责选，右边操作台常驻，默认选第一项有问题的", "设置-3-3-右侧操作台.html"),
+], "三版共用：自检逐行跑出、问题排最上、处理完标记按帧翻成 ✓、底部计数；开关先预览再确认；只在界面上变，不写数据。")
+print("已生成：设置 三的三版简化 + 对比页")

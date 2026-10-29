@@ -5,6 +5,7 @@ import { fixture } from "./fixture.mjs";
 import { seed } from "../src/store.js";
 import { geometry,axe,motion } from "./ui-v14-checks.mjs";
 import { batch3Routes } from "./ui-v14-batch3-fixture.mjs";
+import { openSettingsDrawer, openCapabilityMore, capabilitySwitch } from "./settings-entry.mjs";
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE ||
   "/Users/nat/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright");
 const NOW = "2026-10-04T02:00:00.000Z";
@@ -113,7 +114,7 @@ try {
         assert.match(await heat.locator(".sr-only").innerText(),/Git 未知/);
       }
       if(route === "settings") {
-        await page.getByRole("radio",{name:"数据与备份",exact:true}).click();
+        await openSettingsDrawer(page,"数据与备份");
         await page.getByText(/1,234,567 字节/).waitFor();
         await page.getByText(/另有 1 条未完成/).waitFor();
         const beforeFinder = finder.length;

@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 import { zipSync, strToU8, unzipSync, strFromU8 } from "fflate";
+import { openSettingsDrawer, openCapabilityMore, capabilitySwitch } from "./settings-entry.mjs";
 const require = createRequire(import.meta.url);
 const { chromium } = require(
   process.env.PLAYWRIGHT_MODULE ||
@@ -274,15 +275,15 @@ try {
   assert.equal(await page.getByRole("dialog").count(), 0);
   ok("全局搜索快捷键、详情跳转、Escape 关闭");
   await go("settings");
-  assert.equal(await page.getByRole("radio",{name:"授权与安全",exact:true}).getAttribute("aria-checked"),"true");
-  await page.getByRole("button",{name:"配置模型连接",exact:true}).click();
+  assert.equal(await page.locator("[data-line]").count(),10);
+  await openCapabilityMore(page,"model");
   assert.equal(await page.getByText("模型连接意向草稿",{exact:true}).count(),0);
   await page.getByRole("region",{name:"真实模型连接",exact:true}).waitFor();
   await page.reload();
-  await page.getByRole("button",{name:"配置模型连接",exact:true}).click();
+  await openCapabilityMore(page,"model");
   await page.getByRole("region",{name:"真实模型连接",exact:true}).waitFor();
   await page.getByRole("dialog").getByRole("button",{name:"关闭",exact:true}).click();
-  await page.getByRole("radiogroup",{name:"设置分类"}).getByRole("radio",{name:"数据与备份",exact:true}).click();
+  await openSettingsDrawer(page,"数据与备份");
   assert.equal(await page.getByRole("button", { name: "移除示例", exact: true }).count(), 0);
   const beforeHideDemos = await app.repository.read();
   await app.repository.write({ ...beforeHideDemos, assets: beforeHideDemos.assets.map(asset => asset.demo ? { ...asset, archived: true } : asset) });

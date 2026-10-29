@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { knowledge193Fixture } from "./knowledge-v16-fixture.mjs";
 import { geometry, axe } from "./ui-v14-checks.mjs";
+import { openSettingsDrawer } from "./settings-entry.mjs";
 const app = await knowledge193Fixture(),
   browser = await chromium.launch(),
   errors = [],
@@ -18,7 +19,7 @@ await p.route("**/*", (r) => {
 });
 try {
   await p.goto(app.url + "/#settings");
-  await p.getByRole("radio", { name: "知识与 MCP", exact: true }).click();
+  await openSettingsDrawer(p, "知识与 MCP");
   await p
     .getByRole("button", { name: "管理知识源 我的 Vault", exact: true })
     .click();
@@ -55,6 +56,8 @@ try {
     "失败保留草稿",
   );
   await p.keyboard.press("Escape");
+  // v19：知识源与个人说明都在「知识开放」抽屉里，关掉后从自检行重新打开
+  await openSettingsDrawer(p, "知识与 MCP");
   await p.getByRole("button", { name: "接入与授权", exact: true }).click();
   d = p.getByRole("dialog");
   await d.getByRole("checkbox", { name: /我确认允许本机 Agent/ }).check();
@@ -81,6 +84,7 @@ try {
   );
   await p.unroute("**/api/workspace");
   await p.keyboard.press("Escape");
+  await openSettingsDrawer(p, "知识与 MCP");
   await p
     .getByRole("button", { name: "管理知识源 我的 Vault", exact: true })
     .click();
@@ -107,7 +111,7 @@ try {
   await axe(p, "知识权限快捷入口");
   await p.keyboard.press("Escape");
   await p.reload();
-  await p.getByRole("radio", { name: "知识与 MCP", exact: true }).click();
+  await openSettingsDrawer(p, "知识与 MCP");
   await p
     .getByRole("button", { name: "管理知识源 我的 Vault", exact: true })
     .click();
