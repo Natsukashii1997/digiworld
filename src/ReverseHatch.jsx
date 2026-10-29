@@ -28,7 +28,7 @@ function allRounds(record, hatch) {
   const legacy = legacyRounds(record);
   return [...legacy, ...hatch.rounds.map((x) => ({ ...x, n: legacy.length + x.n, legacy: false }))];
 }
-const roundText = (x) => `第 ${x.n} 轮 · ${md(x.at)} · ${WHO[x.by] || x.by} · ${STATUS[x.status] || x.status}${x.retargeted ? " · 目标已改" : ""}`;
+const roundText = (x) => `第 ${x.n} 轮 · ${md(x.at)} · ${WHO[x.by] || x.by} · ${STATUS[x.status] || x.status}${x.error ? `（${x.error}）` : ""}${x.retargeted ? " · 目标已改" : ""}`;
 
 function Count({ value, run }) {
   const shown = useCountUp(String(value), run);
@@ -110,7 +110,7 @@ function Legacy({ record, busy, onOrganize, onSkill }) {
   if (!result && !canSkill && !saved) return null;
   return (
     <section className="rh-legacy" aria-labelledby="rh-legacy-title">
-      <h3 id="rh-legacy-title">旧结论 · 未分格{v && <small>{md(v.at)} · {WHO[v.executor] || v.executor} · 未经复刻验证</small>}</h3>
+      <h3 id="rh-legacy-title">{result ? "旧结论 · 未分格" : "任务包 · 旧流程"}{v && <small>{md(v.at)} · {WHO[v.executor] || v.executor} · 未经复刻验证</small>}</h3>
       {result && <>
         {result.conclusions.length ? <ul>{result.conclusions.map((c, i) => <li key={i}><span className={`mark${c.mark === "推断" ? " inferred" : ""}`}>{c.mark}</span>{c.text}</li>)}</ul> : <p>这一轮没有形成有证据的结论。</p>}
         {!!result.unknowns.length && <><h4>未知</h4><ul>{result.unknowns.map((u) => <li key={u.id}>{u.text}</li>)}</ul></>}
@@ -120,6 +120,25 @@ function Legacy({ record, busy, onOrganize, onSkill }) {
         {(canSkill || saved) && <button type="button" className="text-act" disabled={busy} onClick={onSkill}>{currentSkill(record) ? "查看已存 Skill" : "存成 Skill"}</button>}
       </div>
     </section>
+  );
+}
+
+function OriginalImage({ media, index }) {
+  const [url, setUrl] = useState(""), [error, setError] = useState("");
+  useEffect(() => { let live = true, objectUrl; request("/reverse/media/read", media).then((r) => { objectUrl = URL.createObjectURL(new Blob([r.data], { type: r.type })); if (live) setUrl(objectUrl); else URL.revokeObjectURL(objectUrl); }).catch((e) => live && setError(e.message)); return () => { live = false; if (objectUrl) URL.revokeObjectURL(objectUrl); }; }, [media.path]);
+  return error ? <p role="alert">截图 {index + 1} 读不到：{error}</p> : url ? <img src={url} alt={`参照截图 ${index + 1}`} /> : <p>读取截图 {index + 1}…</p>;
+}
+// 作品类参照物的原件：截图、正文、来源链接，只读。
+function Original({ record }) {
+  const media = record.referenceMedia || [];
+  if (record.material?.target || (!media.length && !record.material?.text && !record.material?.url)) return null;
+  return (
+    <details className="rh-more rh-orig">
+      <summary>原件（只读）</summary>
+      {!!media.length && <div className="rh-shots">{media.map((m, i) => <OriginalImage key={m.path} media={m} index={i} />)}</div>}
+      {record.material.text && <pre>{record.material.text}</pre>}
+      {record.material.url && <p><a href={record.material.url} target="_blank" rel="noreferrer">打开来源</a></p>}
+    </details>
   );
 }
 
@@ -210,9 +229,11 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
   async function guarded(action) { if (lock.current) return; lock.current = true; setBusy(true); setError(""); try { await action(); } catch (e) { setError(e.message); } finally { lock.current = false; setBusy(false); } }
   async function refresh() { const next = await request("/workspace"); adoptState(next); return next; }
   // 读最新、改这一条记录的 hatch、带 revision 写入；保存失败由 save 提示，原数据不变。
-  async function writeHatch(change) {
+  // 预览或编辑时看到的八格（seen）和最新的不一样，就不写，免得写进去的和你确认的不同。
+  async function writeHatch(change, seen) {
     const latest = await refresh(), cur = latest.reverseRecords.find((r) => r.id === record.id && !r.deletedAt);
     if (!cur) throw Error("这件参照物已删除，请刷新后再试");
+    if (seen && JSON.stringify(hatchOf(cur)) !== JSON.stringify(seen)) throw Error("八格刚被别处改过，没有写入。请关掉重新预览。");
     const next = change(cur);
     return save({ ...latest, reverseRecords: latest.reverseRecords.map((r) => (r.id === cur.id ? { ...r, hatch: next } : r)) }, { base: latest });
   }
@@ -220,18 +241,21 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
   const copy = (by) => guarded(async () => {
     const text = pack, n = rounds.length + 1, who = WHO[by];
     await navigator.clipboard.writeText(text);
-    const packHash = await packHashOf(text);
-    if (!(await writeHatch((cur) => appendHatchRound(cur, { by, asked: asks, packHash })))) throw Error(`第 ${n} 轮追问包已复制，但这一轮没记上。不用再复制，刷新后可以直接去 ${who} 里粘贴。`);
+    // 剪贴板已经写好；之后任何失败都要说明「已复制」，不让人再复制一次。
+    const unrecorded = (why) => Error(`第 ${n} 轮追问包已复制，但这一轮没记上${why ? `（${why}）` : ""}。不用再复制，可以直接去 ${who} 里粘贴。`);
+    let ok;
+    try { const packHash = await packHashOf(text); ok = await writeHatch((cur) => appendHatchRound(cur, { by, asked: asks, packHash })); } catch (e) { throw unrecorded(e.message); }
+    if (!ok) throw unrecorded();
     setAskMap((m) => ({ ...m, [record.id]: [] }));
     notify(`第 ${n} 轮追问包已复制。去 ${who} 里粘贴，只复制，不自动发送。`);
   });
   const putBack = (parsed, overwrite) => guarded(async () => {
     let result;
-    if (!(await writeHatch((cur) => (result = applyHatchReply(cur, parsed, { overwrite })).hatch))) return;
+    if (!(await writeHatch((cur) => (result = applyHatchReply(cur, parsed, { overwrite })).hatch, hatch))) return;
     setReply(false);
     notify(`结论已放回：${result.changes.length} 格有变化${result.kept.length ? `，${result.kept.length} 格你改过没覆盖` : ""}，已回读。`);
   });
-  const saveSlot = (id, value) => guarded(async () => { if (await writeHatch((cur) => editSlot(cur, id, value))) { setEditing(null); notify("这一格已保存并回读"); } });
+  const saveSlot = (id, value) => guarded(async () => { if (await writeHatch((cur) => editSlot(cur, id, value), hatch)) { setEditing(null); notify("这一格已保存并回读"); } });
   const organize = () => guarded(async () => { await navigator.clipboard.writeText(buildOrganizePack(record)); notify("「按八格整理」任务包已复制。拿回答后点「放回结论」。"); });
   async function skillPreview() { await guarded(async () => {
     const known = await request("/reverse/skill/query?recordId=" + record.id);
@@ -278,6 +302,7 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
         <details className="rh-pv"><summary>看追问包全文</summary><pre data-testid="hatch-pack">{pack}</pre></details>
         <Legacy record={record} busy={busy} onOrganize={organize} onSkill={skillPreview} />
         {!!(record.packSkills?.length || record.savedSkill) && <details className="rh-more"><summary>历史固定 Skill</summary>{[...(record.savedSkill ? [record.savedSkill] : []), ...(record.packSkills || [])].map((p) => <p key={p.assetId + p.at}><button className="text-btn" onClick={() => onSelect(state.assets.find((a) => a.id === p.assetId))}>打开固定 Skill · {new Date(p.at).toLocaleString("zh-CN")}</button></p>)}</details>}
+        <Original record={record} />
         <History record={record} rounds={rounds} />
       </> : <div className="rh-empty"><h2>投入第一件参照物</h2><p>写下想弄懂什么，八格里缺的部分写成追问包，交给 Codex 或 Claude Code 去拆。</p><Button onClick={() => setDrawer("input")}><Plus size={16} />投入参照物</Button></div>}
 

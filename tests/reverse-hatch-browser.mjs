@@ -101,6 +101,28 @@ const slotState = (p, id) => p.locator(`.rh-slot[data-slot="${id}"]`).getAttribu
     assert.ok(!JSON.stringify(r.hatch).includes("隐藏开关"));
     assert.match(await slotState(p, "ui"), /st-full/);
 
+    // 预览后八格被别处改过：不写入，提示重新预览
+    await button(p, "放回结论").click();
+    const drift = p.getByRole("dialog", { name: "放回结论" });
+    await drift.getByLabel("Agent 的回答").fill("## 边界\n已知：只能迁移自己的 Agent\n缺：无");
+    await button(drift, "拆格预览").click();
+    const outside = await app.repository.read();
+    outside.reverseRecords.find((x) => x.id === "rv-furnace").hatch.slots.check.known = "别处写的验收";
+    await app.repository.write(outside, { expectedRevision: outside.revision });
+    await button(drift, "确认写入").click();
+    await drift.getByRole("alert").getByText("八格刚被别处改过，没有写入。请关掉重新预览。").waitFor();
+    assert.equal((await rec(app, "rv-furnace")).hatch.slots.edge.known, "");
+    await drift.getByRole("button", { name: "关闭" }).click();
+
+    // 复制后保存失败：说明已复制，不要再复制
+    await p.route("**/api/workspace", (route) => (route.request().method() === "PUT" ? route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "合成写入失败" }) }) : route.continue()));
+    const roundsBefore = (await rec(app, "rv-furnace")).hatch.rounds.length;
+    await p.locator('.rh-slot[data-slot="edge"]').getByRole("button", { name: "放进追问" }).click();
+    await button(p, "复制给 Claude Code").click();
+    await p.getByRole("alert").getByText(/追问包已复制，但这一轮没记上.*不用再复制/).waitFor();
+    assert.equal((await rec(app, "rv-furnace")).hatch.rounds.length, roundsBefore);
+    await p.unroute("**/api/workspace");
+
     // 旧结论按八格整理：只复制
     await button(p, "复制「让 Agent 按八格整理」").click();
     await p.getByText("「按八格整理」任务包已复制。拿回答后点「放回结论」。").waitFor();
@@ -110,6 +132,7 @@ const slotState = (p, id) => p.locator(`.rh-slot[data-slot="${id}"]`).getAttribu
     await p.locator(".rh-switch").getByRole("button", { name: /^全部/ }).click();
     await p.locator(".rh-src").getByText("第 1 轮 · 10/15 · REA · 失败").waitFor();
     assert.equal(await p.locator(".rh-slot.st-full").count(), 1);
+    assert.ok((await p.getByTestId("hatch-pack").textContent()).includes("先确认目标能打开"), "上一轮失败时追问包先确认目标");
     assert.equal((await rec(app, "rv-community")).hatch, undefined, "只看不写");
 
     // 剪贴板失败：不写轮次
@@ -176,5 +199,6 @@ for (const width of [390, 320]) {
 }
 
 await browser.close();
-assert.deepEqual(errors, []);
-console.log("reverse-hatch 1440/390/320：切标本、勾格子、复制写轮次、手改、放回预览与确认、按八格整理、剪贴板失败、投入/存 Skill/回收恢复、REA 入口、无溢出、44px、axe 通过；仅合成数据");
+// 合成的写入失败（500）是有意制造的，只剔除这一条
+assert.deepEqual(errors.filter((e) => !e.includes("status of 500")), []);
+console.log("reverse-hatch 1440/390/320：切标本、勾格子、复制写轮次、手改、放回预览与确认、预览后被改不写入、复制后保存失败提示、按八格整理、剪贴板失败、投入/存 Skill/回收恢复、REA 入口、无溢出、44px、axe 通过；仅合成数据");
