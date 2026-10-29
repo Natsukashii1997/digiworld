@@ -16,7 +16,7 @@ import { stringify } from "../src/serialization.js";
 import {planSkillVersion} from "../src/skill-version.js";
 import { validateNightV2 } from "../src/night-v2-model.js";
 import { REVERSE_LIMITS } from "../src/reverse.js";
-import {validateRecipeRecord,validateReverseSettings,validateReverseHistory,validateForgeReferences} from './reverse-schema.mjs';
+import {validateRecipeRecord,validateReverseSettings,validateReverseHistory,validateForgeReferences,validateHatch} from './reverse-schema.mjs';
 import {
   validateKnowledgeTasks,
   validateKnowledgeHistory,
@@ -330,7 +330,7 @@ export function validateReverseRecords(records) {
       "imports",
       "stage",
       "copies",
-      "type", "recipe", "recipeReply", "referenceMedia", "replicas", "replicaDraft", "variations", "forge", "reaRuns", "savedSkill", "packVersions", "activePackVersionId", "packSkills",
+      "type", "recipe", "recipeReply", "referenceMedia", "replicas", "replicaDraft", "variations", "forge", "reaRuns", "savedSkill", "packVersions", "activePackVersionId", "packSkills", "hatch", "hatchSkills",
     ]);
     id(r.id);
     text(r.title, "逆向标题", REVERSE_LIMITS.title);
@@ -348,6 +348,7 @@ export function validateReverseRecords(records) {
     if (!r.material.text.trim() && !r.material.url && !r.referenceMedia?.length && r.material.target === undefined) invalid("逆向素材为空");
     if(r.type!==undefined)validateRecipeRecord(r);
     else if(['recipe','recipeReply','referenceMedia','replicas','replicaDraft','variations','forge','reaRuns','savedSkill','packVersions','activePackVersionId','packSkills'].some(k=>r[k]!==undefined))invalid('旧逆向记录不接受新字段');
+    validateHatch(r);
     text(r.why, "好在哪里", REVERSE_LIMITS.why);
     if (CONTROL.test(r.why)) invalid("好在哪里");
     text(r.pack, "拆解任务包", REVERSE_LIMITS.pack);
