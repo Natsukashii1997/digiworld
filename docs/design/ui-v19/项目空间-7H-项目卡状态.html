@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>项目空间 7H · 项目卡状态</title>
+<!-- 样稿（常浩 10-29：「这个项目卡的作用是什么？无法点击。」）：
+     方向 1 读项目卡改为跟着已连接的 Vault 知识源只读，不再挂在「写入 Obsidian Vault」开关下 → 多数时候是「读到项目卡」那一格；
+     方向 2 读不到时不放灰按钮，说明一行写清原因，能补救的给去设置的入口。两个方向可合用。
+     直接引用正式页的令牌与项目空间样式，下面只补本稿新增的规则；数据是合成的。 -->
+<link rel="stylesheet" href="../../../src/tokens.css">
+<link rel="stylesheet" href="../../../src/projects-space.css">
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .note { margin: 0 0 14px; font: 500 var(--fs-small) var(--mono); color: var(--faint); }
+  h2.part { margin: 34px 0 6px; font: 700 var(--fs-title) var(--sans); color: var(--text); }
+  .lead { margin: 0 0 12px; font: 400 var(--fs-small)/1.6 var(--sans); color: var(--muted); }
+  .tag { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 18px 0 8px; font: 600 var(--fs-label) var(--mono); letter-spacing: 0.08em; color: var(--faint); }
+  .tag b { color: var(--text-2); letter-spacing: 0; font-family: var(--sans); }
+  .g5-screen { margin-top: 0; }
+
+  /* 方向 2：读不到时说明一行 + 去设置的入口（不再放灰按钮） */
+  .g7-docnote.fix { display: flex; flex-wrap: wrap; align-items: center; gap: 0 14px; margin-top: 6px; }
+  .g7-docnote.fix a { display: inline-flex; align-items: center; min-height: 44px; font: 600 var(--fs-meta) var(--sans); color: var(--cyan); text-decoration: none; }
+  .g7-docnote.fix a:hover { color: var(--text); }
+
+  @media (max-width: 760px) {
+    body { padding: 12px 16px; } .g5-screen { margin: 0 -16px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap g5 projects-space">
+  <p class="note">样稿 7H · 档案头的「项目卡」 · 合成数据</p>
+
+  <h2 class="part">现状</h2>
+  <p class="lead">读项目卡挂在「写入 Obsidian Vault」开关下；开关关着时按钮是灰的，点不了，也看不出做什么用。</p>
+  <section class="g5-screen">
+    <div class="g7-head">
+      <div class="id"><h2>牛马之家<small>work-desk · 个人工作台</small></h2><p class="one">~/Documents/ChatGPT/个人/work/work-desk</p></div>
+      <div class="acts"><button type="button" class="btn" aria-pressed="true">已置顶</button><span class="btn off">项目卡 ↗</span><button type="button" class="btn">详情</button></div>
+      <p class="g7-docnote">项目卡：Vault 读取未开启，只显示本机路径</p>
+    </div>
+  </section>
+
+  <h2 class="part">方向 1 · 跟着 Vault 知识源只读</h2>
+  <p class="lead">只要设置里连着 Vault 知识源，就读项目卡，不用打开写入开关。读到后：一句话、目标、不做都来自卡；「项目卡 ↗」在 Obsidian 里打开这张卡。</p>
+  <p class="tag">读到项目卡</p>
+  <section class="g5-screen">
+    <div class="g7-head">
+      <div class="id"><h2>牛马之家<small>work-desk · 个人工作台</small></h2><p class="one">把每天要推进的事、要回的消息和要交的东西放到一张桌上，开工先看这里。</p></div>
+      <div class="acts"><button type="button" class="btn" aria-pressed="true">已置顶</button><a class="btn" href="#" title="在 Obsidian 打开：10 项目/牛马之家">项目卡 ↗</a><button type="button" class="btn">详情</button></div>
+      <dl><div><dt>目标</dt><dd>早上十分钟内知道今天先做哪三件事。</dd></div><div><dt>不做</dt><dd>不做团队协作，不替代日历和飞书。</dd></div></dl>
+    </div>
+  </section>
+
+  <h2 class="part">方向 2 · 读不到时不放灰按钮</h2>
+  <p class="lead">按钮只在读到项目卡时出现。读不到时，说明一行写清原因；能在设置里补救的，给一个去设置的入口（高 44px）。三种读不到的情况：</p>
+
+  <p class="tag">没连 Vault 知识源<b>→ 去设置连接</b></p>
+  <section class="g5-screen">
+    <div class="g7-head">
+      <div class="id"><h2>牛马之家<small>work-desk · 个人工作台</small></h2><p class="one">~/Documents/ChatGPT/个人/work/work-desk</p></div>
+      <div class="acts"><button type="button" class="btn" aria-pressed="true">已置顶</button><button type="button" class="btn">详情</button></div>
+      <p class="g7-docnote fix"><span>没连 Vault 知识源，读不到项目卡，先显示本机路径</span><a href="#">去设置连接 →</a></p>
+    </div>
+  </section>
+
+  <p class="tag">名册没写项目卡<b>→ 只说明</b></p>
+  <section class="g5-screen">
+    <div class="g7-head">
+      <div class="id"><h2>agent-kit<small>协作底座 · 全局坑</small></h2><p class="one">~/Documents/ChatGPT/个人/work/agent-kit</p></div>
+      <div class="acts"><button type="button" class="btn">置顶</button><button type="button" class="btn">详情</button></div>
+      <p class="g7-docnote fix"><span>这个项目在名册里没写项目卡（projects.json 的 card）</span></p>
+    </div>
+  </section>
+
+  <p class="tag">卡读不到（文件挪走或改名）<b>→ 仍能在 Obsidian 打开去找</b></p>
+  <section class="g5-screen">
+    <div class="g7-head">
+      <div class="id"><h2>数字分身<small>Hermes 中枢</small></h2><p class="one">~/Documents/ChatGPT/个人/work/digital-twin</p></div>
+      <div class="acts"><button type="button" class="btn">置顶</button><button type="button" class="btn">详情</button></div>
+      <p class="g7-docnote fix"><span>项目卡「10 项目/数字分身.md」读不到，可能挪走或改了名</span><a href="#">在 Obsidian 里找 ↗</a></p>
+    </div>
+  </section>
+</div>
+</body>
+</html>
