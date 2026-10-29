@@ -1,9 +1,9 @@
 // 项目空间第二版（issue #8）：项目只认数字分身名册 projects.json，只读。
-// 名册不复制进主库；每次读取都从文件现读。项目卡（Vault）只取三段摘要，经 vault 能力门禁与知识源访问策略。
+// 名册不复制进主库；每次读取都从文件现读。项目卡（Vault）只取三段摘要，跟着已连接的 Vault 知识源只读，经知识源访问策略。
 import fs from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, isAbsolute, normalize, basename } from "node:path";
-import { knowledgeSources } from "./knowledge-access-policy.mjs";
+import { selectedProfileSource } from "./knowledge-access-policy.mjs";
 
 export const DEFAULT_ROSTER_PATH = join(homedir(), "Documents/ChatGPT/个人/work/digital-twin/projects.json");
 const ROSTER_LIMIT = 256 * 1024;
@@ -109,31 +109,24 @@ export function cardSummary(markdown) {
   return out;
 }
 
-// 读项目卡：vault 能力没开、没有对应知识源、卡读不到，都如实返回状态，不抛错。
-export function createCardReader(repository, { settings, files }) {
-  async function source() {
-    const gate = await settings.get("vault");
-    if (!gate.enabled) return { state: "off" };
-    const state = await repository.read();
-    const found = knowledgeSources(state).find((s) => s.id === gate.options?.sourceId && s.kind !== "feishu");
-    return found ? { state: "ok", source: found } : { state: "error", message: "Vault 知识源已断开" };
-  }
+// 读项目卡：跟着已连接的 Vault 知识源只读（与个人说明同一个来源），不挂在「写入 Obsidian Vault」开关下。
+// 没连知识源、来源待重新确认、卡读不到，都如实返回状态，不抛错。
+export function createCardReader(repository, { files }) {
   return async function readCard(card) {
     if (!card) return { state: "absent", message: "名册里没写项目卡" };
-    let picked;
+    let source;
     try {
-      picked = await source();
+      source = selectedProfileSource(await repository.read());
     } catch {
-      return { state: "error", message: "Vault 授权读不到" };
+      return { state: "error", message: "Vault 知识源读不到" };
     }
-    if (picked.state !== "ok") return picked;
-    const vault = basename(picked.source.root);
-    const url = `obsidian://open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(card.replace(/\.md$/, ""))}`;
+    if (!source) return { state: "off" };
+    const url = `obsidian://open?vault=${encodeURIComponent(basename(source.root))}&file=${encodeURIComponent(card.replace(/\.md$/, ""))}`;
     try {
-      const { document } = await files.current(picked.source, card);
+      const { document } = await files.current(source, card);
       return { state: "ok", url, ...cardSummary(document.content) };
-    } catch {
-      return { state: "error", url, message: "项目卡读不到" };
+    } catch (error) {
+      return { state: "error", url, message: error?.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED" ? "Vault 知识源要在设置里重新确认" : "项目卡读不到" };
     }
   };
 }

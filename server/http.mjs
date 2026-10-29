@@ -284,7 +284,7 @@ export async function startServer({
   const rawKnowledgeFiles = createKnowledgeFileDispatch(adapters.knowledgeFiles || createKnowledgeFiles(), feishuFiles);
   const knowledgeFiles = createPolicyKnowledgeFiles(repository,rawKnowledgeFiles);
   const knowledgeAccess=createKnowledgeAccess(repository,{files:knowledgeFiles,clock,limits:adapters.knowledgeAccessLimits});
-  // 项目空间第二版：名册路径、项目卡读取可由测试注入（合成名册、合成项目卡），默认读数字分身名册与 vault 能力授权的 Vault。
+  // 项目空间第二版：名册路径、项目卡读取可由测试注入（合成名册、合成项目卡），默认读数字分身名册与已连接的 Vault 知识源。
   // 实战（第 2 批）：开关默认关，这一版不接设置页；会话目录、技能目录可由测试注入合成目录。
   const skillUsage = createSkillUsage({
     directory: repository.directory,
@@ -296,7 +296,7 @@ export async function startServer({
     clock,
     github: projectGithub,
     skillUsage,
-    readCard: createCardReader(repository, { settings: capabilities.settings, files: knowledgeFiles }),
+    readCard: createCardReader(repository, { files: knowledgeFiles }),
     ...adapters.projectsSpace,
   });
   const feishuConnections = createFeishuConnections(repository, {
