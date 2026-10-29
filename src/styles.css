@@ -2222,6 +2222,18 @@ details.scan-notice {
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+/* 逆向标本孵化的 Skill（#29）：来源可点，跳回标本 */
+.detail-facts .hatch-src {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--violet);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.detail-facts .hatch-src:disabled { color: var(--muted); cursor: default; }
 .detail-tabs {
   display: flex;
   gap: 4px;

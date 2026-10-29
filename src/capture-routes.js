@@ -1,7 +1,8 @@
 // 去向推导（阶段 2 主线串联）：一条捕获（随手记 note、收藏 collection、逆向记录 reverse）去了哪里，
 // 全部从“去处”一侧的引用推出，条目本身不存去向，避免两处说法不一致：
 // - 投递到项目：projectDesk 的收件；有带上它的「继续」留痕（不早于投递时间）即“已交代”。已交代 ≠ 已完成。
-// - 孵成资产：资产首个版本的 hatchedFrom；逆向记录沿用已有的 savedSkill。资产已归档则不算。
+// - 孵成资产：资产首个版本的 hatchedFrom（逆向标本孵化的 Skill 也记在这里，回执 hatchSkills 不另算，免得重复）；
+//   旧版逆向记录沿用已有的 savedSkill。资产已归档则不算。
 // - 收入焚决：随手记的 refined；收藏看未删除卷条目的 source.collectionId。
 // - 归档：随手记的 archivedAt；收藏库按条目 ID 存的 archived 表。
 // 一条可以有多个去向；没有任何去向即“待孵化”。

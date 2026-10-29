@@ -1137,11 +1137,16 @@ export function AssetDetail({
   ruleInstalls = { items: [], error: "", loaded: false },
   refreshRuleInstalls = () => {},
   versionBump = null,
+  onOpenReverse,
 }) {
   // 刚保存新版本（3 秒内打开）才播放一次轻量翻页
   const [bump] = useState(() => !!versionBump && Date.now() - versionBump.at < 3000);
   const v = current(asset),
     [tab, setTab] = useState("content");
+  // 从逆向标本孵化的 Skill（#29）：来源显示标本名，点一下跳回标本；标本已删除就只显示不可点。
+  const hatchedFrom = asset.versions[0]?.hatchedFrom;
+  const hatchedReverse = hatchedFrom?.kind === "reverse" && onOpenReverse
+    ? { id: hatchedFrom.id, record: (state.reverseRecords || []).find((r) => r.id === hatchedFrom.id && !r.deletedAt) } : null;
   const agentWritingRef = React.useRef(new Set());
   const agentBusy = (source, value) => { if (value) agentWritingRef.current.add(source); else agentWritingRef.current.delete(source); };
   const stage = stageOf(asset, state.assetActivity);
@@ -1365,7 +1370,7 @@ export function AssetDetail({
           {asset.type === "Skill" && <div><dt>形态</dt><dd>{isInstallSkill(v) ? <>安装地址 · <a href={v.installUrl} target="_blank" rel="noreferrer">{v.installUrl}</a></> : "自建 · ZIP 包"}</dd></div>}
           <div>
             <dt>来源</dt>
-            <dd>{v.source}</dd>
+            <dd>{hatchedReverse ? <button type="button" className="hatch-src" disabled={!hatchedReverse.record} onClick={() => onOpenReverse(hatchedReverse.id)}>从逆向工程孵化 · {hatchedReverse.record?.title || "标本已删除"}</button> : v.source}</dd>
           </div>
           <div>
             <dt>更新</dt>

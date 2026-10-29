@@ -1,8 +1,9 @@
 import { randomUUID, createHash } from 'node:crypto';
 import {currentPackVersion} from '../src/reverse-ai.js';
 import { buildReplicaPack, generateReplicaSkill, currentSkill } from '../src/reverse-v4.js';
-import { makeAsset } from '../src/store.js';
-import { materializeSkillVersion } from '../src/skill-version.js';
+import { makeAsset, revise } from '../src/store.js';
+import { generateHatchSkill, hatchSlotsText } from '../src/reverse-hatch.js';
+import { materializeSkillVersion, planSkillVersion } from '../src/skill-version.js';
 import { failure } from './repository.mjs';
 const hash = text => createHash('sha256').update(text).digest('hex');
 export function createReverseSkillV4({repository,readMedia,clock=Date.now}) {
@@ -50,5 +51,50 @@ export function createReverseSkillV4({repository,readMedia,clock=Date.now}) {
     });
     return query({recordId,packVersionId:p.packVersionId});
   }
-  return {preview,confirm,query,pack};
+  // 孵化（#29）：八格 → 固定版本 Skill。预览发 token，绑 revision 和八格摘要（slotsHash）；名字可改，确认时按名字重新生成。
+  // 同一八格状态已孵化过（资产还在、没归档）就复用那一版；八格变了再孵化，给同一份资产加新版本；资产已归档则另建。
+  const slotsHashOf = record => hash(hatchSlotsText(record));
+  const liveHatch = (state,record,slotsHash) => (record.hatchSkills||[]).some(p=>p.slotsHash===slotsHash&&state.assets.some(a=>a.id===p.assetId&&!a.archived));
+  const hatchPreviews=new Map();
+  async function hatchQuery({recordId,slotsHash}) {
+    const state=await repository.read(),record=recordOf(state,recordId),now=slotsHashOf(record),want=slotsHash||now;
+    const pointer=(record.hatchSkills||[]).findLast(p=>p.slotsHash===want&&state.assets.some(a=>a.id===p.assetId&&!a.archived))||(record.hatchSkills||[]).findLast(p=>p.slotsHash===want);
+    if(!pointer)return {saved:null,slotsHash:now,latest:(record.hatchSkills||[]).at(-1)||null};
+    const asset=state.assets.find(a=>a.id===pointer.assetId),version=asset?.versions.find(v=>v.id===pointer.versionId);
+    if(!version)throw failure('孵化出的 Skill 版本缺失，请保留记录并检查资产库',409);
+    let recorded;try{recorded=JSON.parse(version.files.find(f=>f.path==='source.json')?.data||'').slotsHash;}catch{recorded=null;}
+    if(recorded!==pointer.slotsHash)throw failure('孵化出的 Skill 内容与回执不一致',409);
+    return {saved:pointer,title:version.title,versionNo:asset.versions.indexOf(version)+1,archived:asset.archived,current:pointer.slotsHash===now,slotsHash:now,state};
+  }
+  async function hatchPreview({recordId,expectedRevision,title}) {
+    const state=await repository.read(),record=recordOf(state,recordId),slotsHash=slotsHashOf(record);
+    if(liveHatch(state,record,slotsHash))return hatchQuery({recordId});
+    if(state.revision!==expectedRevision)throw failure('记录已变化，请刷新再预览',409);
+    const value=generateHatchSkill(record,{title,slotsHash});
+    planSkillVersion(value);
+    const token=randomUUID();
+    for(const [key,v] of hatchPreviews)if(v.expires<clock())hatchPreviews.delete(key);
+    if(hatchPreviews.size>=100)throw failure('预览过多，请稍后重试',429);
+    hatchPreviews.set(token,{recordId,revision:state.revision,slotsHash,expires:clock()+300000});
+    return {token,recordId,revision:state.revision,slotsHash,title:value.title,content:value.content,score:value.score,files:value.files.map(f=>({path:f.path,bytes:Buffer.byteLength(f.data)}))};
+  }
+  async function hatchConfirm({recordId,token,title}) {
+    const p=hatchPreviews.get(token);
+    if(!p||p.recordId!==recordId)throw failure('预览已失效，请重新预览',409);
+    const existing=await hatchQuery({recordId,slotsHash:p.slotsHash});if(existing.saved&&!existing.archived)return existing;
+    if(p.expires<clock())throw failure('预览已失效，请重新预览',409);
+    await repository.updateReverseSkill(state=>{
+      const r=recordOf(state,recordId);
+      if(liveHatch(state,r,p.slotsHash))return state;
+      if(state.revision!==p.revision||slotsHashOf(r)!==p.slotsHash)throw failure('八格或记录已变化，请重新预览',409);
+      const {score:_score,...value}=generateHatchSkill(r,{title,slotsHash:p.slotsHash});planSkillVersion(value);
+      const prior=state.assets.find(a=>a.id===(r.hatchSkills||[]).at(-1)?.assetId&&!a.archived);
+      const asset=prior?revise(prior,value):makeAsset({...value,type:'Skill',hatchedFrom:{kind:'reverse',id:recordId}}),version=asset.versions.at(-1);
+      const receipt={assetId:asset.id,versionId:version.id,at:new Date(clock()).toISOString(),slotsHash:p.slotsHash};
+      return {...state,assets:prior?state.assets.map(a=>a.id===asset.id?asset:a):[...state.assets,asset],reverseRecords:state.reverseRecords.map(v=>v.id===recordId?{...v,hatchSkills:[...(v.hatchSkills||[]),receipt]}:v)};
+    });
+    // token 留到过期：结果不明时再点确认，直接回读已写入的那一版
+    return hatchQuery({recordId,slotsHash:p.slotsHash});
+  }
+  return {preview,confirm,query,pack,hatchPreview,hatchConfirm,hatchQuery};
 }

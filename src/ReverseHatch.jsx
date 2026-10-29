@@ -1,7 +1,7 @@
 // 逆向工程孵蛋 3C（issue #28）：标本条 + 孵化器 + 八格。把一件参照物一点点照亮，拆出一份 Skill。
 // 工作台不自己取证：缺的格子写成追问包复制给原生 Agent，结论粘回来先预览拆格、确认后写入并回读。
 // 冻结的 REA 运行、AI 执行器、内嵌 Codex 会话、网站预检不再从这页进入，代码留在 ReverseV16；旧的存 Skill、删除恢复照旧。
-// 动效在第 4 批，孵化在第 3 批；这一批只做静态与数据。
+// 孵化（#29）：什么时候都能孵，服务端预览 → 确认 → 写固定版本 Skill → 回读；同一八格状态复用已孵化的那一版。动效在第 4 批。
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Copy, Trash2, RotateCcw, ClipboardPaste } from "lucide-react";
 import { Button, Dialog, FilterTabs } from "./components.jsx";
@@ -11,7 +11,7 @@ import { ReverseInput } from "./ReverseInput.jsx";
 import { ReaUpdate } from "./ReaUpdate.jsx";
 import { buildReplicaPack, currentSkill } from "./reverse-v4.js";
 import { deleteRecord, restoreRecord } from "./reverse.js";
-import { SLOTS, slotState, hatchScore, hatchOf, wantOf, targetOf, buildHatchPack, buildOrganizePack, parseHatchReply, applyHatchReply, editSlot, appendHatchRound, packHashOf, legacyRounds } from "./reverse-hatch.js";
+import { SLOTS, slotState, hatchScore, hatchOf, wantOf, targetOf, buildHatchPack, buildOrganizePack, parseHatchReply, applyHatchReply, editSlot, appendHatchRound, packHashOf, legacyRounds, generateHatchSkill, hatchSlotsText } from "./reverse-hatch.js";
 import "./reverse-v4.css"; // ReaUpdate、ReverseInput、存 Skill 预览的样式
 import "./reverse-hatch.css";
 
@@ -77,15 +77,27 @@ function Slot({ slot, index, value, asking, sent, round, busy, onAsk, onEdit }) 
   );
 }
 
-function Device({ hatch, score, rounds, asks, sentIds, nextRound, busy, onCopy, onReply }) {
+// 孵化器下方：当前八格已孵化就显示 Skill 卡，否则是「现在就孵化」。
+function Born({ born, asset, score, onOpen }) {
+  const version = asset.versions.find((v) => v.id === born.versionId);
+  return (
+    <div className="rh-born" role="status">
+      <span className="chip">SKILL</span><b>{version?.title}</b>
+      <small>固定版本 v{asset.versions.indexOf(version) + 1} · {score.empty ? `空着的 ${score.empty} 格写在「局限」` : "八格都有结论"} · 未经复刻验证</small>
+      <button type="button" className="text-btn" onClick={() => onOpen(asset)}>在资产仓库打开 →</button>
+    </div>
+  );
+}
+
+function Device({ hatch, score, rounds, asks, sentIds, nextRound, busy, born, bornAsset, onCopy, onReply, onHatch, onOpenSkill }) {
   const states = SLOTS.map((s) => slotState(hatch.slots[s.id]));
   const filled = `${score.full}${score.half ? "½" : ""}`;
   const canCopy = asks.length > 0 || rounds.length === 0;
   return (
     <div className="rh-dev">
       {SLOTS.map((s, i) => <i key={s.id} className={`rh-port ${i < 4 ? "l" : "r"} ${sentIds.has(s.id) ? "is-sent" : "st-" + states[i]}`} style={{ top: 75 + (i % 4) * 160 }} aria-hidden="true" />)}
-      <div className="top"><span className="eyebrow"><b>SKILL</b> 孵化器</span><span className="eyebrow">INCUBATING</span></div>
-      <div className="rh-screen"><div className="readout"><span>孵化中</span><span>{filled} / 8</span></div><Egg states={states} /></div>
+      <div className="top"><span className="eyebrow"><b>SKILL</b> 孵化器</span><span className="eyebrow">{born ? "HATCHED" : "INCUBATING"}</span></div>
+      <div className="rh-screen"><div className="readout"><span>{born ? "已孵化" : "孵化中"}</span><span>{filled} / 8</span></div><Egg states={states} /></div>
       <div className="rh-count"><span className="lcd"><Count value={score.full} run={filled} /></span><small>格填上{score.half ? ` · ${score.half} 格半` : ""} · {score.empty} 格空</small></div>
       <ol className="rh-hist" aria-label="每轮">
         {rounds.length ? rounds.slice(-3).map((x) => <li key={x.n}>{roundText(x)}</li>) : <li>还没交出过</li>}
@@ -97,6 +109,8 @@ function Device({ hatch, score, rounds, asks, sentIds, nextRound, busy, onCopy, 
           <button type="button" className="rh-btn" disabled={busy || !canCopy} onClick={() => onCopy("claude")}><Copy aria-hidden="true" />复制给 Claude Code</button>
         </div>
         <button type="button" className="rh-btn" disabled={busy} onClick={onReply}><ClipboardPaste aria-hidden="true" />放回结论</button>
+        {born ? <Born born={born} asset={bornAsset} score={score} onOpen={onOpenSkill} />
+          : <button type="button" className="rh-btn rh-hatch" disabled={busy} onClick={onHatch}>现在就孵化（存成 Skill）</button>}
       </div>
     </div>
   );
@@ -184,6 +198,32 @@ function ReplyDialog({ record, busy, error, onClose, onConfirm }) {
   );
 }
 
+// 孵化预览：名字可改，Skill 原文随名字实时变（和服务端确认时用同一个函数生成）。
+function HatchDialog({ record, preview, version, busy, error, onClose, onConfirm }) {
+  const [name, setName] = useState(preview.title);
+  const draft = useMemo(() => { try { return { value: generateHatchSkill(record, { title: name }) }; } catch (e) { return { error: e.message }; } }, [record, name]);
+  const { full, half, empty } = preview.score;
+  return (
+    <Dialog title="孵化 · 预览" drawer recoverFocus onClose={() => !busy && onClose()}>
+      <label className="rh-field">名字<input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} disabled={busy} /></label>
+      <dl className="rh-facts">
+        <dt>已填</dt><dd>{full} 格{half ? ` + ${half} 格半` : ""}</dd>
+        <dt>局限</dt><dd>{empty ? `空着的 ${empty} 格写进「局限」` : "没有空格"}</dd>
+        <dt>版本</dt><dd>固定版本 v{version} · 写入后回读核对</dd>
+        <dt>验证</dt><dd className="warn">未经复刻验证</dd>
+      </dl>
+      <p>存进资产仓库，不安装到 Agent。附带 {preview.files.map((f) => f.path).join("、")}。</p>
+      <small className="rh-lb">会存进资产仓库的 Skill 原文</small>
+      {draft.value ? <pre className="rh-draft" data-testid="hatch-draft" tabIndex={0} aria-label="Skill 原文">{draft.value.content}</pre> : <p className="inline-error" role="alert">{draft.error}</p>}
+      {error && <p className="inline-error" role="alert">{error}</p>}
+      <div className="rh-dlg-acts">
+        <Button disabled={busy || !draft.value} onClick={() => onConfirm(name)}>确认孵化</Button>
+        <Button secondary disabled={busy} onClick={onClose}>先不孵，继续问</Button>
+      </div>
+    </Dialog>
+  );
+}
+
 function EditDialog({ slot, value, busy, error, onClose, onSave }) {
   const [known, setKnown] = useState(value?.known || ""), [miss, setMiss] = useState(value?.miss || "");
   return (
@@ -202,6 +242,7 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
   const [selected, setSelected] = useState(reverseJump?.id || null), [drawer, setDrawer] = useState(""), [help, setHelp] = useState(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [askMap, setAskMap] = useState({});
   const [reply, setReply] = useState(false), [editing, setEditing] = useState(null), [preview, setPreview] = useState(null), [saved, setSaved] = useState(null);
+  const [hatching, setHatching] = useState(null), [slotsHash, setSlotsHash] = useState({ text: "", hash: "" });
   const lock = useRef(false), stage = useRef(null), toolsNode = useRef(null), referenceNodes = useRef(new Map()), jumped = useRef(null);
   const record = rows.find((r) => r.id === selected) || rows[0];
   const hatch = record ? hatchOf(record) : null, score = hatch ? hatchScore(hatch) : null;
@@ -210,9 +251,16 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
   const askIds = record ? askMap[record.id] || SLOTS.filter((s) => slotState(hatch.slots[s.id]) !== "full" && !sentIds.has(s.id)).map((s) => s.id) : [];
   const asks = askIds.filter((id) => !sentIds.has(id) && slotState(hatch.slots[id]) !== "full");
   const pack = record ? buildHatchPack(record, { asked: asks }) : "";
-  const hatched = rows.reduce((n, r) => n + (r.hatchSkills?.length || 0), 0);
+  const hatched = rows.filter((r) => r.hatchSkills?.length).length; // 按标本计：一件标本只对应一份 Skill，再孵化是加新版本
+  // 当前八格有没有孵化过：用回执里的 slotsHash 对（sha256 是异步的，算好之前按没孵化显示）。
+  const slotsText = record ? hatchSlotsText(record) : "";
+  useEffect(() => { let live = true; if (slotsText) packHashOf(slotsText).then((hash) => live && setSlotsHash({ text: slotsText, hash })); return () => { live = false; }; }, [slotsText]);
+  // 回执指向的资产已归档，就当没孵化过，可以另孵一份。
+  const born = slotsHash.text === slotsText ? record?.hatchSkills?.findLast((p) => p.slotsHash === slotsHash.hash && state.assets.some((a) => a.id === p.assetId && !a.archived)) : null;
+  const bornAsset = born && state.assets.find((a) => a.id === born.assetId);
+  const lastHatch = record?.hatchSkills?.at(-1), lastAsset = lastHatch && state.assets.find((a) => a.id === lastHatch.assetId && !a.archived);
 
-  useEffect(() => { setError(""); setPreview(null); setSaved(null); }, [record?.id]);
+  useEffect(() => { setError(""); setPreview(null); setSaved(null); setHatching(null); }, [record?.id]);
   useEffect(() => {
     if (!reverseJump || jumped.current === reverseJump.key) return;
     jumped.current = reverseJump.key;
@@ -263,6 +311,23 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
     const latest = await refresh(), result = await request("/reverse/skill/preview", { recordId: record.id, expectedRevision: latest.revision });
     if (result.saved) setSaved(result); else setPreview(result);
   }); }
+  const hatchPreview = () => guarded(async () => {
+    const latest = await refresh(), result = await request("/reverse/hatch/preview", { recordId: record.id, expectedRevision: latest.revision });
+    if (result.saved) { if (result.state) adoptState(result.state); notify("这个八格状态已经孵化过，用的是那一版。"); return; }
+    setHatching(result);
+  });
+  // 写入结果不明（断线、超时、服务端出错）先查询：已写入就当成功；没写入就保留预览，再点确认不会重复写。
+  const hatchConfirm = (title) => guarded(async () => {
+    let result;
+    try { result = await request("/reverse/hatch/confirm", { recordId: record.id, token: hatching.token, title }); }
+    catch (e) {
+      if (e.status && e.status < 500 && !e.unknownResult) throw e;
+      result = await request(`/reverse/hatch/query?recordId=${encodeURIComponent(record.id)}&slotsHash=${hatching.slotsHash}`).catch(() => null);
+      if (!result?.saved) throw Error(`孵化结果没确认（${e.message}）。预览还在，可以再点「确认孵化」，不会重复写入。`);
+    }
+    adoptState(result.state); setHatching(null);
+    notify(`孵出来了：Skill「${result.title}」，固定版本 v${result.versionNo} 已回读。`);
+  });
   const removeRecord = () => guarded(async () => { const latest = await refresh(); await save({ ...latest, reverseRecords: deleteRecord(latest.reverseRecords, record.id) }, { base: latest }); });
   const restore = (id) => guarded(async () => { const latest = await refresh(); await save({ ...latest, reverseRecords: restoreRecord(latest.reverseRecords, id) }, { base: latest }); });
 
@@ -295,10 +360,10 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
         </div>
         <div className="rh-stage" ref={stage} tabIndex={-1} aria-label={`${record.title} · 八格与孵化器`}>
           <div className="rh-col l">{SLOTS.slice(0, 4).map((s, i) => <Slot key={s.id} {...slotProps(s, i)} />)}</div>
-          <Device hatch={hatch} score={score} rounds={rounds} asks={asks} sentIds={sentIds} nextRound={rounds.length + 1} busy={busy} onCopy={copy} onReply={() => { setError(""); setReply(true); }} />
+          <Device hatch={hatch} score={score} rounds={rounds} asks={asks} sentIds={sentIds} nextRound={rounds.length + 1} busy={busy} born={born} bornAsset={bornAsset} onCopy={copy} onReply={() => { setError(""); setReply(true); }} onHatch={hatchPreview} onOpenSkill={onSelect} />
           <div className="rh-col r">{SLOTS.slice(4).map((s, i) => <Slot key={s.id} {...slotProps(s, i + 4)} />)}</div>
         </div>
-        {error && !reply && !editing && <p className="inline-error" role="alert">{error}</p>}
+        {error && !reply && !editing && !hatching && <p className="inline-error" role="alert">{error}</p>}
         <details className="rh-pv"><summary>看追问包全文</summary><pre data-testid="hatch-pack">{pack}</pre></details>
         <Legacy record={record} busy={busy} onOrganize={organize} onSkill={skillPreview} />
         {!!(record.packSkills?.length || record.savedSkill) && <details className="rh-more"><summary>历史固定 Skill</summary>{[...(record.savedSkill ? [record.savedSkill] : []), ...(record.packSkills || [])].map((p) => <p key={p.assetId + p.at}><button className="text-btn" onClick={() => onSelect(state.assets.find((a) => a.id === p.assetId))}>打开固定 Skill · {new Date(p.at).toLocaleString("zh-CN")}</button></p>)}</details>}
@@ -320,6 +385,7 @@ export function ReverseHatch({ state, save, notify, adoptState, onSelect, revers
 
       {drawer && <ReverseInput state={state} save={save} notify={notify} onClose={() => setDrawer("")} onCreated={(id) => setSelected(id)} referenceOnly={drawer === "reference"} />}
       {reply && record && <ReplyDialog record={record} busy={busy} error={error} onClose={() => setReply(false)} onConfirm={putBack} />}
+      {hatching && record && <HatchDialog record={record} preview={hatching} version={lastAsset ? lastAsset.versions.length + 1 : 1} busy={busy} error={error} onClose={() => { setHatching(null); setError(""); }} onConfirm={hatchConfirm} />}
       {editing && record && <EditDialog slot={SLOTS.find((s) => s.id === editing)} value={hatch.slots[editing]} busy={busy} error={error} onClose={() => setEditing(null)} onSave={(v) => saveSlot(editing, v)} />}
       {help && <Dialog title="逆向工程" onClose={() => setHelp(false)}><p>把一件参照物一点点照亮，拆出一份 Skill。八格是用途、结构、数据、流程、界面、边界、写入与回滚、验收。</p><p>勾上缺的格子，复制追问包给 Codex 或 Claude Code（用它们本机已注册的 rea MCP 取证）；拿到按八格写的回答后点「放回结论」，先预览再写入。你手改过的格子，下一轮默认不覆盖。</p></Dialog>}
       {preview && <Dialog title="存成 Skill · 预览" drawer recoverFocus onClose={() => !busy && setPreview(null)}><h2>{preview.title}</h2><p>未经复刻验证 · {preview.files.length} 个文本文件 · {preview.mediaCount} 张图片。保存到资产仓库，不安装到 Agent。</p><pre className="reverse-skill-preview">{preview.content}</pre><ul>{preview.files.map((f) => <li key={f.path}>{f.path} · {f.bytes} 字节</li>)}</ul>{error && <p role="alert">{error}</p>}<Button disabled={busy} onClick={() => guarded(async () => { const result = await request("/reverse/skill/confirm", { recordId: preview.recordId, token: preview.token, packVersionId: preview.packVersionId }); if (!result.saved) throw Error("保存结果未确认，请先查询"); adoptState(result.state); setPreview(null); setSaved(result); notify("固定 Skill 已保存并回读"); })}>确认保存</Button><Button secondary disabled={busy} onClick={() => guarded(async () => { const result = await request("/reverse/skill/query?recordId=" + preview.recordId + (preview.packVersionId ? "&packVersionId=" + preview.packVersionId : "")); if (result.saved) { adoptState(result.state); setSaved(result); setPreview(null); } else setError("尚未保存；可核对后确认。"); })}>查询保存结果</Button></Dialog>}

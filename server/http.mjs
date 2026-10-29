@@ -547,6 +547,9 @@ export async function startServer({
         if(url.pathname==='/api/reverse/skill/preview'&&request.method==='POST')return send(response,200,await reverseSkillV4.preview(await body(request)));
         if(url.pathname==='/api/reverse/skill/confirm'&&request.method==='POST')return send(response,200,await reverseSkillV4.confirm(await body(request)));
         if(url.pathname==='/api/reverse/skill/query'&&request.method==='GET')return send(response,200,await reverseSkillV4.query(Object.fromEntries(url.searchParams)));
+        if(url.pathname==='/api/reverse/hatch/preview'&&request.method==='POST')return send(response,200,await reverseSkillV4.hatchPreview(await body(request)));
+        if(url.pathname==='/api/reverse/hatch/confirm'&&request.method==='POST')return send(response,200,await reverseSkillV4.hatchConfirm(await body(request)));
+        if(url.pathname==='/api/reverse/hatch/query'&&request.method==='GET')return send(response,200,await reverseSkillV4.hatchQuery(Object.fromEntries(url.searchParams)));
         if(url.pathname==='/api/reverse/update'&&request.method==='GET')return send(response,200,reaUpdater.read());
         if(url.pathname==='/api/reverse/update/check'&&request.method==='POST')return send(response,200,await reaUpdater.check());
         if(url.pathname==='/api/reverse/update/preview'&&request.method==='POST')return send(response,200,await reaUpdater.preview());
