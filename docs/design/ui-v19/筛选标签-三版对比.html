@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>筛选标签 · 三版对比</title>
+<!-- issue #24：资产仓库 / 个人收藏 / 随手记的筛选标签统一。上半是能点的规格件（真实类名 + 正式样式 + build/filter-tabs.css），
+     下半是正式页面注入同一份样式后的截图（build/shoot-filter-tabs.mjs，合成数据）。顶部切换改前 / A / B / C。 -->
+<link rel="stylesheet" href="../../../src/tokens.css">
+<link rel="stylesheet" href="../../../src/styles.css">
+<link rel="stylesheet" href="../../../src/base.css">
+<link rel="stylesheet" href="../../../src/collection.css">
+<link rel="stylesheet" href="../../../src/notes-v16.css">
+<link rel="stylesheet" href="../../../src/notes-types.css">
+<link rel="stylesheet" href="build/filter-tabs.css">
+<style>
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.6 var(--sans); }
+  .ftc-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 24px; background: var(--bg-2); border-bottom: 1px solid var(--line-2); }
+  .ftc-bar h1 { margin: 0; font-size: 15px; }
+  .ftc-bar nav { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ftc-bar nav button { min-height: 36px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--line-2); background: none; color: var(--text-2); font: 600 13px var(--sans); cursor: pointer; }
+  .ftc-bar nav button.on { background: var(--orange); color: var(--orange-ink); border-color: transparent; }
+  .ftc { max-width: 1320px; margin: 0 auto; padding: 24px; }
+  .ftc h2 { margin: 32px 0 8px; font-size: 18px; }
+  .ftc h3 { margin: 20px 0 8px; font-size: 13px; color: var(--muted); font-weight: 500; }
+  .ftc p, .ftc li { color: var(--text-2); }
+  .ftc table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ftc th, .ftc td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .ftc th { color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .ftc td.hit { color: var(--cyan-2); }
+  .ftc-scroll { overflow-x: auto; }
+  .ftc-live { display: grid; gap: 18px; padding: 20px; border: 1px solid var(--line-2); border-radius: var(--r-l); background: var(--panel); }
+  .ftc-live > div > small { display: block; margin-bottom: 6px; color: var(--muted); font-size: 12px; }
+  .ftc-live .asset-toolbar { display: flex; margin: 0; }
+  .ftc-live .collection-module .collection-toolbar { position: static; border-radius: var(--r-s); }
+  .ftc-live .notes-v16 .sn-page { margin: 0; padding: var(--s-4); }
+  .ftc-shots { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 16px; align-items: start; }
+  .ftc-shots figure { margin: 0 0 12px; }
+  .ftc-shots img { display: block; width: 100%; border-radius: 8px; border: 1px solid var(--line); }
+  .ftc-shots figcaption { margin-bottom: 4px; font-size: 12px; color: var(--muted); }
+  .ftc-v { display: none; }
+  html:not([data-ft]) .ftc-v[data-v="before"], html[data-ft="a"] .ftc-v[data-v="a"], html[data-ft="b"] .ftc-v[data-v="b"], html[data-ft="c"] .ftc-v[data-v="c"] { display: block; }
+  @media (max-width: 900px) { .ftc-shots { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="ftc-bar">
+  <h1>筛选标签 · 三版对比</h1>
+  <nav aria-label="版本">
+    <button data-to="before">改前</button><button data-to="a" class="on">A 分段底板</button><button data-to="b">B 独立按键</button><button data-to="c">C 下划线标签页</button>
+  </nav>
+</div>
+<main class="ftc">
+  <section>
+    <h2>现在三页各是一套</h2>
+    <div class="ftc-scroll"><table>
+      <tr><th></th><th>资产仓库</th><th>个人收藏</th><th>随手记</th></tr>
+      <tr><th>写法</th><td><code>.segmented</code>（styles.css）</td><td><code>.collection-chip</code>（collection.css）</td><td><code>.sn-filter</code>（notes-v16.css，又被 notes-types.css 覆盖一遍）</td></tr>
+      <tr><th>结构</th><td>一条底板里的分段</td><td>每项一颗独立描边键</td><td>一条底板里的分段，项被拉宽铺满</td></tr>
+      <tr><th>高度</th><td>44px</td><td>44px</td><td class="hit">36px，低于 44</td></tr>
+      <tr><th>圆角</th><td>底板 12px / 项 8px，写死</td><td>4px</td><td>底板 8px / 项 4px</td></tr>
+      <tr><th>字号</th><td>13px，写死</td><td>12px 加粗</td><td>继承正文</td></tr>
+      <tr><th>选中</th><td>深色块 + 投影，没有青色</td><td>青色描边 + 青色字</td><td>青色淡底 + 青色内描边</td></tr>
+      <tr><th>数字</th><td class="hit">选中变橙</td><td>选中变青</td><td>选中变青</td></tr>
+      <tr><th>分组</th><td>—</td><td>末尾虚线「＋ 分组」</td><td>第 5 项前一道竖线</td></tr>
+      <tr><th>放不下时</th><td>折行</td><td class="hit">横滑，窄屏藏起 3 项</td><td class="hit">横滑、不显示滚动条，窄屏藏起 6 项；窗口稍窄时宽屏也会被截</td></tr>
+    </table></div>
+    <p>同类筛选还有：知识库「按源筛选」<code>.kh-filter</code>、项目空间「项目来源筛选」<code>.pj-filter</code>、逆向「筛选」<code>.rail-filter</code>、资讯 <code>.news-tabs</code>、Agent 页 <code>.tabs</code>。这次先不动，选定后可以再排一单把它们接到同一个基础件上。</p>
+  </section>
+
+  <section class="ftc-v" data-v="before"><h2>改前</h2><p>三页各一套，见上表。</p></section>
+  <section class="ftc-v" data-v="a">
+    <h2>A 分段底板</h2>
+    <p>三页都是一条深色轨道，项之间不留缝；选中格亮一层青色液晶光，数字变亮青并微微发光。收藏的「＋ 分组」是轨道末尾的虚线空槽；随手记的竖线在轨道里。窄屏时轨道变宽、项均分折行，随手记在分组处换行，中间一道横线。</p>
+    <p>好处：最像一个整体控件，和改前的资产仓库最接近。代价：随手记 10 项在窄屏要 3 行。</p>
+  </section>
+  <section class="ftc-v" data-v="b">
+    <h2>B 独立按键</h2>
+    <p>每项一颗实体键（收藏现在那种按下会沉的键），选中键青色描边加外发光；数字放进小计数块，平时灰，选中变橙，与侧栏计数块同一套（10-27 定的「平时灰、选中变橙」）。收藏「＋ 分组」是虚线键；随手记两组之间留宽缝加竖线，窄屏在分组处换行。</p>
+    <p>好处：手感最实，最像机器按键。代价：最占地方——宽屏收藏的「＋ 分组」会被挤到第二行，窄屏随手记要 4 行。</p>
+  </section>
+  <section class="ftc-v" data-v="c">
+    <h2>C 下划线标签页</h2>
+    <p>不要底板也不要框，一条基线上排文字；选中项字变亮、下方一道发光的青色液晶线。收藏「＋ 分组」是行末一个灰色文字键；随手记的竖线保留。宽屏三页都一行放下；窄屏只占一行，横滑，右缘渐隐提示后面还有。</p>
+    <p>好处：最轻、最省高度，页面层级最清楚。代价：窄屏要横滑才看到后几项（随手记藏 6 项、资产和收藏各藏 3 项）；可点的范围不如前两版显眼。</p>
+  </section>
+
+  <h3>能点的规格件（点一下看选中、悬停看反馈；改前就是三页原样式）</h3>
+  <div class="ftc-live">
+    <div><small>资产仓库</small><div class="page-assets"><div class="asset-toolbar"><div class="segmented" role="group" aria-label="资产类型（样稿）">
+      <button aria-pressed="true" class="active">全部<span>8</span></button><button aria-pressed="false">Prompts<span>5</span></button><button aria-pressed="false">Skills<span>0</span></button><button aria-pressed="false">工作流<span>0</span></button><button aria-pressed="false">规则<span>1</span></button><button aria-pressed="false">焚决<span>1</span></button><button aria-pressed="false">设计<span>1</span></button>
+    </div></div></div></div>
+    <div><small>个人收藏</small><section class="collection-module"><header class="collection-toolbar"><div class="collection-scroll"><div class="collection-chips" role="group" aria-label="收藏分组（样稿）">
+      <button type="button" class="collection-key collection-chip" aria-pressed="true">全部 <b>15</b></button><button type="button" class="collection-key collection-chip" aria-pressed="false"><span>摄影</span><b>0</b></button><button type="button" class="collection-key collection-chip" aria-pressed="false"><span>调酒</span><b>1</b></button><button type="button" class="collection-key collection-chip" aria-pressed="false"><span>AI 学习</span><b>6</b></button><button type="button" class="collection-key collection-chip" aria-pressed="false"><span>做菜</span><b>0</b></button><button type="button" class="collection-key collection-chip" aria-pressed="false"><span>设计参考</span><b>0</b></button><button type="button" class="collection-key collection-chip collection-add-group" aria-label="新建分组" data-add>＋ 分组</button>
+    </div></div></header></section></div>
+    <div><small>随手记</small><div class="notes-v16"><div class="sn-page"><div class="sn-filter" role="group" aria-label="随手记筛选（样稿）">
+      <button class="on" aria-pressed="true">全部<b>17</b></button><button aria-pressed="false">普通<b>17</b></button><button aria-pressed="false">待办<b>1</b></button><button aria-pressed="false">时间轴<b>0</b></button><button aria-pressed="false">已炼<b>0</b></button><button aria-pressed="false">待孵化<b>16</b></button><button aria-pressed="false">已投递<b>1</b></button><button aria-pressed="false">已交代<b>0</b></button><button aria-pressed="false">已孵成<b>0</b></button><button aria-pressed="false">已归档<b>0</b></button>
+    </div></div></div></div>
+  </div>
+
+  <h3>正式页面截图（合成数据；左 1440，右 390）</h3>
+  <script>
+    const PAGES = ["资产仓库", "个人收藏", "随手记"], NAMES = { before: "改前", a: "A分段底板", b: "B独立按键", c: "C下划线" };
+    for (const [v, n] of Object.entries(NAMES)) {
+      const shot = (p, w) => `<figure><figcaption>${p} · ${w}</figcaption><img loading="lazy" alt="${p} ${n} ${w}" src="shots/${encodeURIComponent(`筛选标签-${p}-${n}-${w}.png`)}"></figure>`;
+      document.write(`<div class="ftc-v" data-v="${v}"><div class="ftc-shots"><div>${PAGES.map((p) => shot(p, 1440)).join("")}</div><div>${PAGES.map((p) => shot(p, 390)).join("")}</div></div></div>`);
+    }
+  </script>
+</main>
+<script>
+  const set = (v) => {
+    if (v === "before") delete document.documentElement.dataset.ft; else document.documentElement.dataset.ft = v;
+    document.querySelectorAll(".ftc-bar nav button").forEach((b) => b.classList.toggle("on", b.dataset.to === v));
+    history.replaceState(null, "", "#" + v);
+  };
+  document.querySelector(".ftc-bar nav").addEventListener("click", (e) => e.target.dataset.to && set(e.target.dataset.to));
+  set(["before", "a", "b", "c"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "a");
+  // 规格件可以点：每行单选（「＋ 分组」不参与）
+  document.querySelectorAll(".ftc-live [role=group]").forEach((row) => row.addEventListener("click", (e) => {
+    const btn = e.target.closest("button"); if (!btn || btn.hasAttribute("data-add")) return;
+    row.querySelectorAll("button:not([data-add])").forEach((b) => { const on = b === btn; b.setAttribute("aria-pressed", on); b.classList.toggle("on", on); b.classList.toggle("active", on); });
+  }));
+</script>
+</body>
+</html>
