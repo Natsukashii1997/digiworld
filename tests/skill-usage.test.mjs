@@ -7,7 +7,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm, realpath, utimes } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  createSkillUsage, skillName, projectOf, claudeSkillsInLine, codexSkillsInLine,
+  createSkillUsage, skillName, projectOf, worktreeMain, claudeSkillsInLine, codexSkillsInLine,
 } from "../server/skill-usage.mjs";
 
 const NOW = Date.parse("2026-10-29T12:00:00Z");
@@ -69,8 +69,14 @@ async function sessionsFixture() {
     { type: "assistant", cwd: dw, timestamp: iso(40), message: { role: "assistant", content: [{ type: "tool_use", name: "Skill", input: { skill: "tdd" } }] } },
     "坏行",
   ]));
+  // 外置 worktree：目录名和仓库名不同，靠 .git 文件里的 gitdir 找到主仓库 work-desk
+  const nmWt = join(work, "work-desk-ui-bitmap");
+  await mkdir(join(nm, ".git/worktrees/work-desk-ui-bitmap"), { recursive: true });
+  await mkdir(join(nmWt, "src"), { recursive: true });
+  await writeFile(join(nmWt, ".git"), `gitdir: ${join(nm, ".git/worktrees/work-desk-ui-bitmap")}\n`);
   await writeFile(join(claudeRoot, "-w-dw", "s2.jsonl"), jsonl([
     { type: "user", cwd: nm, timestamp: iso(3), message: { role: "user", content: "<command-name>/kb-note</command-name>" } },
+    { type: "user", cwd: join(nmWt, "src"), timestamp: iso(2), message: { role: "user", content: "<command-name>/kb-note</command-name>" } },
     { type: "user", cwd: "/somewhere/else", timestamp: iso(3), message: { role: "user", content: "<command-name>/grill-me</command-name>" } },
   ]));
   // 超过 30 天没改过的会话文件整个不读
@@ -83,7 +89,7 @@ async function sessionsFixture() {
     { timestamp: iso(1), type: "event_msg", payload: { type: "user_message", message: `请按 $to-spec 写 ${SECRET}` } },
   ]));
   const roster = async () => ({ state: "ok", projects: [{ id: "personal-ai-workbench", path: dw }, { id: "work-desk", path: nm }] });
-  return { base, home, claudeRoot, codexRoot, skills, roster, data: join(base, "data") };
+  return { base, home, claudeRoot, codexRoot, skills, roster, data: join(base, "data"), nm, nmWt };
 }
 
 test("开关关着：read 只回未开启，refresh 拒绝；全程不碰会话与技能目录", async () => {
@@ -142,7 +148,7 @@ test("开关开着：按项目统计次数、最近日期、会话数与来源�
     assert.equal(dw.calls, 3);
     assert.equal(dw.sessions, 1);
     assert.deepEqual(dw.codex, [{ name: "to-spec", n: 1, last: "2026-10-28" }]);
-    assert.deepEqual(nm.skills, [{ name: "kb-note", src: "自建", n: 1, last: "2026-10-26" }]);
+    assert.deepEqual(nm.skills, [{ name: "kb-note", src: "自建", n: 2, last: "2026-10-27" }], "外置 worktree 的会话也归到 work-desk");
     assert.equal(nm.sessions, 1);
 
     const raw = await readFile(join(f.data, "skill-usage.json"), "utf8");
@@ -155,6 +161,29 @@ test("开关开着：按项目统计次数、最近日期、会话数与来源�
       for (const s of p.skills) assert.deepEqual(Object.keys(s).sort(), ["last", "n", "name", "src"]);
     }
     assert.equal((await usage.read()).state, "ok");
+  } finally {
+    await rm(f.base, { recursive: true, force: true });
+  }
+});
+
+test("worktreeMain：外置 worktree 找到主仓库；主仓库本身、普通目录、不存在的目录都返回 null", async () => {
+  const f = await sessionsFixture();
+  try {
+    assert.equal(await worktreeMain(join(f.nmWt, "src")), f.nm);
+    assert.equal(await worktreeMain(f.nmWt), f.nm);
+    assert.equal(await worktreeMain(f.nm), null, "主仓库的 .git 是目录");
+    assert.equal(await worktreeMain(join(f.base, "不存在/子目录")), null);
+    assert.equal(await worktreeMain("relative/path"), null);
+    // gitdir 写相对路径也认
+    const rel = join(f.base, "rel-wt");
+    await mkdir(rel);
+    await writeFile(join(rel, ".git"), "gitdir: ../home/work/work-desk/.git/worktrees/rel-wt\n");
+    assert.equal(await worktreeMain(rel), f.nm);
+    // gitdir 不是 worktrees 形状（例如子模块）不算
+    const sub = join(f.base, "submodule");
+    await mkdir(sub);
+    await writeFile(join(sub, ".git"), "gitdir: ../home/work/work-desk/.git/modules/sub\n");
+    assert.equal(await worktreeMain(sub), null);
   } finally {
     await rm(f.base, { recursive: true, force: true });
   }
