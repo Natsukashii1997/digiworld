@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>项目空间 7F · 档案屏细节</title>
+<!-- 样稿（常浩 10-29 四条意见）：①分节标题要一眼看出是标题 ②近 30 天提交改热力图 ③实战改排行榜（前三领奖台 + 其余榜单）④现在 / 下一步信息更足。
+     直接引用正式页的令牌与项目空间样式，下面只补本稿新增的规则；数据是合成的。 -->
+<link rel="stylesheet" href="../../../src/tokens.css">
+<link rel="stylesheet" href="../../../src/projects-space.css">
+<style>
+  body { margin: 0; padding: 32px; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .note { margin: 0 0 14px; font: 500 var(--fs-small) var(--mono); color: var(--faint); }
+
+  /* ① 分节标题：序号芯片 + 中文标题 + 英文小字 + 延伸细线；每节一个代表色 */
+  .sec-h { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; }
+  .sec-h .idx { display: inline-grid; place-items: center; min-width: 26px; height: 20px; padding: 0 5px; border-radius: var(--r-1);
+    background: color-mix(in srgb, var(--k) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 45%, transparent);
+    font: 700 var(--fs-label) var(--mono); color: var(--k); }
+  .sec-h b { font: 700 var(--fs-title) var(--sans); letter-spacing: 0.02em; color: var(--text-hi, var(--text)); }
+  .sec-h .en { font: 600 var(--fs-label) var(--mono); letter-spacing: 0.16em; color: color-mix(in srgb, var(--k) 70%, var(--faint)); }
+  .sec-h .rule { flex: 1; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--k) 40%, transparent), var(--line) 30%, transparent); }
+  .sec-h .sum { font: 500 var(--fs-small) var(--sans); color: var(--muted); white-space: nowrap; }
+  .sec-h .sum b { font: 700 var(--fs-caption) var(--mono); letter-spacing: 0; color: var(--text); }
+  .k-now { --k: var(--text-2); } .k-next { --k: var(--orange-2); } .k-git { --k: var(--cyan); } .k-skill { --k: var(--violet); }
+  .blk { margin-top: 30px; padding-top: 24px; border-top: 1px solid var(--line); }
+
+  /* ④ 现在 / 下一步：正文与标题拉开层级，多给关键事实 */
+  .nn { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0 36px; }
+  .nn > div + div { padding-left: 36px; border-left: 1px solid var(--line); }
+  .now-ttl { margin: 0; font: 600 var(--fs-title)/1.5 var(--sans); color: var(--text); }
+  .meta { margin: 6px 0 14px; font: 500 var(--fs-small) var(--mono); color: var(--faint); }
+  .facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 14px; margin: 0; }
+  .facts dt { font: 600 var(--fs-small)/1.6 var(--sans); color: var(--muted); }
+  .facts dd { margin: 0; font: 400 var(--fs-caption)/1.6 var(--sans); color: var(--text-2); overflow-wrap: anywhere; }
+  .facts dd .ok { color: var(--lcd); } .facts dd code { font: 500 var(--fs-small) var(--mono); color: var(--text); }
+  .earlier { margin: 16px 0 0; padding: 12px 0 0; border-top: 1px dashed var(--line); list-style: none; }
+  .earlier li { display: flex; gap: 12px; padding: 3px 0; font: 400 var(--fs-small)/1.5 var(--sans); color: var(--muted); }
+  .earlier li time { flex: none; width: 40px; font: 500 var(--fs-small) var(--mono); color: var(--faint); }
+  .next-main { margin: 0; font: 600 var(--fs-title)/1.5 var(--sans); color: var(--orange-2); }
+  .next-why { margin: 6px 0 14px; font: 500 var(--fs-small) var(--mono); color: var(--faint); }
+  .todo { margin: 0; padding: 0; list-style: none; }
+  .todo li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font: 400 var(--fs-caption)/1.5 var(--sans); color: var(--text-2); }
+  .todo li .dot { flex: none; width: 6px; height: 6px; border-radius: 1px; background: var(--c, var(--faint)); }
+  .todo li .n { margin-left: auto; font: 700 var(--fs-caption) var(--mono); color: var(--c, var(--text)); }
+  .todo li.mute { color: var(--faint); }
+  .hint { margin: 12px 0 0; font: 400 var(--fs-small)/1.5 var(--sans); color: var(--faint); }
+
+  /* ② 近 30 天提交：横向热力条（一格一天，左旧右新），读数放在下面 */
+  .heat { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 6px; }
+  .heat i { position: relative; display: block; aspect-ratio: 3 / 4; border-radius: 4px; background: rgba(140, 178, 255, 0.07); }
+  .heat i.we { background: rgba(140, 178, 255, 0.04); }
+  .heat i.l1 { background: rgba(77, 227, 255, 0.22); } .heat i.l2 { background: rgba(77, 227, 255, 0.42); }
+  .heat i.l3 { background: rgba(77, 227, 255, 0.68); } .heat i.l4 { background: var(--cyan); box-shadow: 0 0 10px rgba(77, 227, 255, 0.45); }
+  .heat i.today { box-shadow: inset 0 0 0 2px var(--orange-2); }
+  .heat i.peak::after { content: attr(data-n); position: absolute; inset: 0; display: grid; place-items: center; font: 700 var(--fs-label) var(--mono); color: var(--bg); }
+  .heat-axis { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 6px; margin-top: 8px; font: 500 var(--fs-label) var(--mono); color: var(--faint); }
+  .heat-axis span { white-space: nowrap; overflow: visible; } .heat-axis span.td { justify-self: end; color: var(--orange-2); }
+  .heat-foot { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: start; gap: 0; margin-top: 20px; border-top: 1px solid var(--line); }
+  .stats { display: contents; }
+  .stats > div { padding: 16px 18px 2px 0; } .stats > div + div { padding-left: 18px; border-left: 1px solid var(--line); }
+  .stats small { display: block; font: 500 var(--fs-small) var(--sans); color: var(--muted); }
+  .stats strong { display: block; margin-top: 6px; font: 700 var(--fs-section)/1.2 var(--mono); color: var(--cyan); }
+  .stats strong span { font: 500 var(--fs-small) var(--sans); color: var(--muted); margin-left: 4px; }
+  .stats em { display: block; margin-top: 4px; font: normal 500 var(--fs-small) var(--sans); color: var(--faint); }
+  .legend { align-self: end; display: flex; align-items: center; gap: 4px; padding: 0 0 4px 18px; font: 500 var(--fs-label) var(--mono); color: var(--faint); }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; }
+  .legend .today-key { margin-left: 14px; box-shadow: inset 0 0 0 2px var(--orange-2); }
+
+  /* ③ 实战排行榜：左领奖台（前三），右榜单（第 4–10），其余折叠 */
+  .board { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr); align-items: stretch; gap: 0 28px; }
+  .podium { display: grid; align-content: start; gap: 10px; }
+  .p { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 4px 14px; padding: 14px 16px;
+    border: 1px solid color-mix(in srgb, var(--m) 35%, var(--line)); border-radius: var(--r-2);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--m) 12%, transparent), transparent 70%), var(--hw-pit); }
+  .p.r1 { --m: var(--yellow); padding: 20px 18px 18px; } .p.r2 { --m: #c9d4ea; } .p.r3 { --m: #e0a173; }
+  .p .medal { grid-row: span 2; display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--r-1); background: color-mix(in srgb, var(--m) 14%, transparent); }
+  .p .medal svg { display: block; image-rendering: pixelated; }
+  .p .nm { min-width: 0; font: 700 var(--fs-title) var(--mono); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p.r1 .nm { font-size: var(--fs-section); }
+  .p .src { font: 500 var(--fs-small) var(--sans); color: var(--muted); }
+  .p .cnt { grid-row: span 2; text-align: right; font: 700 var(--fs-section)/1 var(--mono); color: var(--m); }
+  .p.r1 .cnt { font-size: 28px; }
+  .p .cnt small { display: block; margin-top: 4px; font: 500 var(--fs-label) var(--sans); color: var(--muted); }
+  .p .bar { grid-column: 2 / -1; height: 4px; margin-top: 8px; border-radius: 2px; background: rgba(140, 178, 255, 0.08); }
+  .p .bar i { display: block; height: 100%; width: var(--w); border-radius: 2px; background: var(--m); }
+  .p .tag { position: absolute; top: -9px; left: 16px; padding: 0 7px; border-radius: 3px; background: var(--yellow); color: var(--bg); font: 800 var(--fs-label)/18px var(--mono); letter-spacing: 0.08em; }
+  /* 右侧 7 行均分左侧领奖台的高度：最后一条线和第 3 名卡片底边对齐 */
+  .rank { display: grid; grid-template-rows: repeat(7, minmax(44px, 1fr)); height: 100%; margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--line); }
+  .rank li { display: grid; grid-template-columns: 28px minmax(0, 1fr) 132px 48px 44px; align-items: center; gap: 12px; border-top: 1px solid var(--line); }
+  .rank .no { font: 700 var(--fs-caption) var(--mono); color: var(--faint); }
+  .rank .nm { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 600 var(--fs-caption) var(--mono); color: var(--text); }
+  .rank .nm small { margin-left: 8px; font: 500 var(--fs-small) var(--sans); color: var(--faint); }
+  .rank .pips { display: flex; gap: 2px; } .rank .pips i { flex: 1; height: 10px; border-radius: 1px; background: rgba(168, 145, 255, 0.12); } .rank .pips i.on { background: var(--violet); }
+  .rank .n { text-align: right; font: 700 var(--fs-caption) var(--mono); color: var(--text); } .rank .n small { font: 500 var(--fs-label) var(--sans); color: var(--muted); }
+  .rank .d { text-align: right; font: 500 var(--fs-small) var(--mono); color: var(--faint); }
+  .more { display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: 0; background: none; font: 600 var(--fs-small) var(--sans); color: var(--cyan); cursor: pointer; }
+  .board-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 4px; border-top: 1px dashed var(--line); }
+  .codex { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin: 0; font: 500 var(--fs-small) var(--mono); color: var(--muted); }
+  .codex b { font: 700 var(--fs-small) var(--sans); color: var(--text-2); } .codex span { color: var(--faint); }
+
+  @media (max-width: 760px) {
+    body { padding: 12px 0; } .g5-screen { margin: 0; }
+    .nn, .board, .heat-wrap { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+    .nn > div + div { padding: 22px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+    .heat { grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 4px; } .heat-axis { display: none; } /* 手机上两行，今天看橙框 */
+    .heat-foot { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stats > div:nth-child(3) { border-left: 0; padding-left: 0; } .stats > div { padding-bottom: 12px; } .legend { grid-column: 1 / -1; padding: 8px 0 0; }
+    .rank { height: auto; }
+    .rank li { grid-template-columns: 24px minmax(0, 1fr) 48px 44px; } .rank .pips { display: none; }
+    .sec-h .sum { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap g5 projects-space">
+  <p class="note">样稿 7F · 档案屏下半部分（档案头与读数条不变）· 合成数据</p>
+  <section class="g5-screen" style="padding-top: 26px">
+
+    <!-- ④ 现在 / 下一步 -->
+    <div class="nn">
+      <div>
+        <h3 class="sec-h k-now"><i class="idx">01</i><b>现在</b><span class="en">NOW</span><span class="rule"></span></h3>
+        <p class="now-ttl">首页改为 no-store，防 Safari 网页应用打开黑屏</p>
+        <p class="meta">10-28 · Claude · 取自 CURRENT 顶节</p>
+        <dl class="facts">
+          <dt>来由</dt><dd>数码世界每次打开黑屏，查明是 Safari 网页应用用了磁盘里的旧首页；牛马之家同样有风险。</dd>
+          <dt>测试</dt><dd><span class="ok">749 / 749 通过</span></dd>
+          <dt>发布</dt><dd><code>nm-20261028-224906</code> · 回读与冒烟通过</dd>
+          <dt>遗留</dt><dd>无</dd>
+        </dl>
+        <ul class="earlier" aria-label="之前几节">
+          <li><time>10-28</time>侧栏品牌标重新设计：40px、圆角、只留牛和文件夹</li>
+          <li><time>10-28</time>浏览器标签页图标也换成新图</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="sec-h k-next"><i class="idx">02</i><b>下一步</b><span class="en">NEXT</span><span class="rule"></span></h3>
+        <p class="next-main">推送 12 个本地提交</p>
+        <p class="next-why">CURRENT 顶节没写「下一步：」，遗留为「无」· 由读数推出</p>
+        <ul class="todo">
+          <li style="--c: var(--yellow)"><i class="dot"></i>未推送提交<span class="n">12</span></li>
+          <li class="mute"><i class="dot"></i>待合并 PR<span class="n">0</span></li>
+          <li class="mute"><i class="dot"></i>开着的 issue（含待分流）<span class="n">0</span></li>
+        </ul>
+        <p class="hint">在 CURRENT 顶节写一行「下一步：…」，这里会优先显示它。</p>
+      </div>
+    </div>
+
+    <!-- ② 近 30 天提交：热力图 -->
+    <section class="blk">
+      <h3 class="sec-h k-git"><i class="idx">03</i><b>近 30 天提交</b><span class="en">COMMITS</span><span class="rule"></span>
+        <span class="sum"><b>225</b> 次 · <b>15</b> 天有提交</span></h3>
+      <div class="heat" id="heat" role="img" aria-label="近 30 天每日提交热力图"></div>
+      <div class="heat-axis" id="axis" aria-hidden="true"></div>
+      <div class="heat-foot">
+        <div class="stats">
+          <div><small>最多的一天</small><strong>53<span>次</span></strong><em>10/21 周三</em></div>
+          <div><small>最长连续</small><strong>12<span>天</span></strong><em>10/13 – 10/24</em></div>
+          <div><small>本周</small><strong>24<span>次</span></strong><em>上周 152 次</em></div>
+          <div><small>有提交的日子平均</small><strong>15<span>次 / 天</span></strong><em>30 天里 15 天有提交</em></div>
+        </div>
+        <div class="legend">少 <i style="background: rgba(140,178,255,.07)"></i><i style="background: rgba(77,227,255,.22)"></i><i style="background: rgba(77,227,255,.42)"></i><i style="background: rgba(77,227,255,.68)"></i><i style="background: var(--cyan)"></i> 多<i class="today-key"></i> 今天</div>
+      </div>
+    </section>
+
+    <!-- ③ 实战排行榜 -->
+    <section class="blk">
+      <h3 class="sec-h k-skill"><i class="idx">04</i><b>实战</b><span class="en">SKILLS</span><span class="rule"></span>
+        <span class="sum"><b>15</b> 个技能 · <b class="v">48</b> 次调用 · <b>31</b> 个会话 · 近 30 天</span></h3>
+      <div class="board">
+        <div class="podium" aria-label="前三">
+          <div class="p r1"><span class="tag">MVP</span>
+            <span class="medal"><svg width="30" height="24" viewBox="0 0 10 8" fill="var(--yellow)" aria-hidden="true">
+              <rect x="0" y="1" width="1" height="1"/><rect x="9" y="1" width="1" height="1"/><rect x="4" y="0" width="2" height="1"/>
+              <rect x="0" y="2" width="1" height="4"/><rect x="9" y="2" width="1" height="4"/><rect x="1" y="3" width="1" height="3"/><rect x="8" y="3" width="1" height="3"/>
+              <rect x="2" y="4" width="1" height="2"/><rect x="7" y="4" width="1" height="2"/><rect x="4" y="1" width="2" height="5"/><rect x="3" y="3" width="1" height="3"/><rect x="6" y="3" width="1" height="3"/>
+              <rect x="0" y="6" width="10" height="2"/><rect x="4" y="6" width="2" height="1" fill="var(--bg)"/></svg></span>
+            <span class="nm">code-review</span><span class="cnt">9<small>次 · 10-29</small></span>
+            <span class="src">Matt Pocock</span><span class="bar"><i style="--w: 100%"></i></span></div>
+          <div class="p r2">
+            <span class="medal"><svg width="30" height="35" viewBox="0 0 12 14" fill="#c9d4ea" shape-rendering="crispEdges" role="img" aria-label="第 2 名"><rect x="1" y="0" width="2" height="1" opacity=".55"/><rect x="9" y="0" width="2" height="1" opacity=".55"/><rect x="2" y="1" width="2" height="1" opacity=".55"/><rect x="8" y="1" width="2" height="1" opacity=".55"/><rect x="3" y="2" width="2" height="1" opacity=".55"/><rect x="7" y="2" width="2" height="1" opacity=".55"/><rect x="4" y="3" width="2" height="1" opacity=".55"/><rect x="6" y="3" width="2" height="1" opacity=".55"/><rect x="3" y="4" width="6" height="1"/><rect x="2" y="5" width="8" height="1"/><rect x="1" y="6" width="10" height="1"/><rect x="1" y="7" width="10" height="1"/><rect x="1" y="8" width="10" height="1"/><rect x="1" y="9" width="10" height="1"/><rect x="1" y="10" width="10" height="1"/><rect x="1" y="11" width="10" height="1"/><rect x="2" y="12" width="8" height="1"/><rect x="3" y="13" width="6" height="1"/><rect x="5" y="6" width="1" height="1" fill="var(--bg)"/><rect x="6" y="6" width="1" height="1" fill="var(--bg)"/><rect x="4" y="7" width="1" height="1" fill="var(--bg)"/><rect x="7" y="7" width="1" height="1" fill="var(--bg)"/><rect x="7" y="8" width="1" height="1" fill="var(--bg)"/><rect x="6" y="9" width="1" height="1" fill="var(--bg)"/><rect x="5" y="10" width="1" height="1" fill="var(--bg)"/><rect x="4" y="11" width="1" height="1" fill="var(--bg)"/><rect x="5" y="11" width="1" height="1" fill="var(--bg)"/><rect x="6" y="11" width="1" height="1" fill="var(--bg)"/><rect x="7" y="11" width="1" height="1" fill="var(--bg)"/></svg></span>
+            <span class="nm">lark-doc</span><span class="cnt">8<small>次 · 10-26</small></span>
+            <span class="src">Matt Pocock</span><span class="bar"><i style="--w: 89%"></i></span></div>
+          <div class="p r3">
+            <span class="medal"><svg width="30" height="35" viewBox="0 0 12 14" fill="#e0a173" shape-rendering="crispEdges" role="img" aria-label="第 3 名"><rect x="1" y="0" width="2" height="1" opacity=".55"/><rect x="9" y="0" width="2" height="1" opacity=".55"/><rect x="2" y="1" width="2" height="1" opacity=".55"/><rect x="8" y="1" width="2" height="1" opacity=".55"/><rect x="3" y="2" width="2" height="1" opacity=".55"/><rect x="7" y="2" width="2" height="1" opacity=".55"/><rect x="4" y="3" width="2" height="1" opacity=".55"/><rect x="6" y="3" width="2" height="1" opacity=".55"/><rect x="3" y="4" width="6" height="1"/><rect x="2" y="5" width="8" height="1"/><rect x="1" y="6" width="10" height="1"/><rect x="1" y="7" width="10" height="1"/><rect x="1" y="8" width="10" height="1"/><rect x="1" y="9" width="10" height="1"/><rect x="1" y="10" width="10" height="1"/><rect x="1" y="11" width="10" height="1"/><rect x="2" y="12" width="8" height="1"/><rect x="3" y="13" width="6" height="1"/><rect x="4" y="6" width="1" height="1" fill="var(--bg)"/><rect x="5" y="6" width="1" height="1" fill="var(--bg)"/><rect x="6" y="6" width="1" height="1" fill="var(--bg)"/><rect x="7" y="7" width="1" height="1" fill="var(--bg)"/><rect x="5" y="8" width="1" height="1" fill="var(--bg)"/><rect x="6" y="8" width="1" height="1" fill="var(--bg)"/><rect x="7" y="9" width="1" height="1" fill="var(--bg)"/><rect x="7" y="10" width="1" height="1" fill="var(--bg)"/><rect x="4" y="11" width="1" height="1" fill="var(--bg)"/><rect x="5" y="11" width="1" height="1" fill="var(--bg)"/><rect x="6" y="11" width="1" height="1" fill="var(--bg)"/></svg></span>
+            <span class="nm">design-taste-frontend</span><span class="cnt">5<small>次 · 10-24</small></span>
+            <span class="src">taste-skill</span><span class="bar"><i style="--w: 56%"></i></span></div>
+        </div>
+        <div>
+          <ol class="rank" id="rank" start="4"></ol>
+        </div>
+      </div>
+      <div class="board-foot">
+        <p class="codex"><b>Codex 点名</b>project-starter ×10<span>仅参考</span></p>
+        <button type="button" class="more">其余 5 个 ▾</button>
+      </div>
+    </section>
+  </section>
+</div>
+<script>
+  // 热力条：一格一天（9/30 … 10/29），周六日底色更暗；轴上只标每周一和今天
+  const counts = [0,0,0,0,0,0,0,0,0,0,0,0,0,2,7,5,7,8,20,20,6,53,8,52,13,0,8,8,8,0];
+  const start = new Date(2026, 8, 30), peak = Math.max(...counts);
+  const lv = (n) => (!n ? "" : n <= 5 ? "l1" : n <= 10 ? "l2" : n <= 25 ? "l3" : "l4");
+  const day = (k) => { const d = new Date(start); d.setDate(d.getDate() + k); return d; };
+  document.getElementById("heat").innerHTML = counts.map((n, k) => {
+    const d = day(k), we = d.getDay() === 0 || d.getDay() === 6;
+    const cls = [lv(n) || (we ? "we" : ""), k === 29 ? "today" : "", n === peak ? "peak" : ""].join(" ").trim();
+    return `<i class="${cls}" title="${d.getMonth() + 1}/${d.getDate()}：${n} 次提交"${n === peak ? ` data-n="${n}"` : ""}></i>`;
+  }).join("");
+  document.getElementById("axis").innerHTML = counts.map((_, k) => {
+    const d = day(k);
+    return k === 29 ? `<span class="td">今天</span>` : d.getDay() === 1 ? `<span>${d.getMonth() + 1}/${d.getDate()}</span>` : "<span></span>";
+  }).join("");
+  // 榜单第 4–10
+  const rest = [["grilling", "Matt Pocock", 5, "10-27"], ["taste-skill", "taste-skill", 4, "10-23"], ["domain-modeling", "Matt Pocock", 3, "10-27"], ["frontend-design", "anthropic-skills", 3, "10-15"], ["grill-with-docs", "mattpocock-skills", 3, "10-27"], ["grill-me", "mattpocock-skills", 2, "10-23"], ["lark-base", "Matt Pocock", 1, "10-18"]];
+  document.getElementById("rank").innerHTML = rest.map(([nm, src, n, d], i) => `<li><span class="no">${String(i + 4).padStart(2, "0")}</span><span class="nm">${nm}<small>${src}</small></span><span class="pips">${Array.from({ length: 10 }, (_, k) => `<i class="${k < n ? "on" : ""}"></i>`).join("")}</span><span class="n">${n}<small> 次</small></span><span class="d">${d}</span></li>`).join("");
+</script>
+</body>
+</html>

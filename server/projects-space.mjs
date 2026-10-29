@@ -31,7 +31,8 @@ export function matchProject(entry, projects = [], realPath = null) {
 }
 
 // 下一步按简报 §4.2 的顺序取第一条；来自 CURRENT 且比最近提交早超过 3 天时标“可能过期”。
-export function pickNext({ issues, top, tableNext, lastCommitAt }) {
+// 都没写时（常浩 10-29 样稿 7F）：再取顶节“遗留”，仍没有就由读数推出——推送、合并 PR、分流 issue。
+export function pickNext({ issues, top, tableNext, lastCommitAt, unpushed = null, prs = null }) {
   const byLabel = (label) =>
     (issues?.state === "ok" ? issues.items : [])
       .filter((i) => i.labels?.includes(label))
@@ -45,8 +46,17 @@ export function pickNext({ issues, top, tableNext, lastCommitAt }) {
     ? { src: "top", text: top.next, date: top.date, from: "" }
     : tableNext?.text
       ? { src: "table", text: tableNext.text, date: tableNext.date, from: "CURRENT 头表" }
-      : null;
-  if (!fromCurrent) return { src: "none", text: "顶节没写下一步", from: "", stale: false };
+      : top?.leftover
+        ? { src: "leftover", text: top.leftover, date: top.date, from: "CURRENT 顶节「遗留」" }
+        : null;
+  if (!fromCurrent) {
+    const triage = (issues?.state === "ok" ? issues.items : []).filter((i) => i.labels?.includes(TRIAGE_LABELS.triage)).length;
+    const why = "顶节没写「下一步：」· 由读数推出";
+    if (unpushed > 0) return { src: "derived", text: `推送 ${unpushed} 个本地提交`, from: why, stale: false };
+    if (prs > 0) return { src: "derived", text: `合并 ${prs} 个待合并 PR`, from: why, stale: false };
+    if (triage) return { src: "derived", text: `分流 ${triage} 张待分流 issue`, from: why, stale: false };
+    return { src: "none", text: "顶节没写下一步", from: "", stale: false };
+  }
   const stale = !!(fromCurrent.date && lastCommitAt && dayGap(fromCurrent.date, lastCommitAt) > STALE_DAYS);
   const { date, ...rest } = fromCurrent;
   return { ...rest, ...(date ? { date } : {}), stale };
@@ -179,12 +189,13 @@ export function createProjectsSpace(repository, {
       lastCommitAt,
       lit: !!lastCommitAt && clock() - Date.parse(lastCommitAt) <= 7 * DAY,
       now: current?.top
-        ? { src: "CURRENT", title: current.top.title, date: current.top.date, by: current.top.by }
+        ? { src: "CURRENT", title: current.top.title, date: current.top.date, by: current.top.by, facts: current.top.facts, earlier: current.top.earlier }
         : git.subject
           ? { src: "commit", title: git.subject, date: lastCommitAt.slice(0, 10), by: "",
               why: file?.state === "read" ? "CURRENT 没有可读的顶节" : file?.state === "absent" ? "没有 CURRENT" : "CURRENT 读不到" }
           : null,
-      next: pickNext({ issues: raw, top: current?.top, tableNext: current?.tableNext, lastCommitAt }),
+      next: pickNext({ issues: raw, top: current?.top, tableNext: current?.tableNext, lastCommitAt,
+        unpushed: git.state === "ok" ? git.unpushed : null, prs: github.state === "ok" ? github.prs : null }),
       commits: git.state === "ok" ? commitSummary(git.counts, days) : { state: git.state === "none" ? "none" : "error", ...(git.message ? { message: git.message } : {}) },
       skills: usage.state === "ok" ? usage.projects?.[entry.id] || { skills: [], calls: 0, sessions: 0, codex: [] } : null,
     });

@@ -17,9 +17,7 @@ import "./projects-space.css";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 const STEP = { easing: "steps(1, end)" };
-const FOLD = 10, CELLS = 15;
 const md = (d) => (d ? `${+d.slice(5, 7)}/${+d.slice(8, 10)}` : "");
-const isMonday = (d) => new Date(d + "T00:00:00").getDay() === 1;
 // 走线画两层：底层常显（选中时发光），上层是选中那一刻跑一遍的电流（pathLength=100 方便按帧推进）
 const TRACES = ["M0 18H34l10 10H86l8-8h46", "M0 46h12l6 6v54l6 6h34", "M140 52h-22l-8 8v52", "M58 0v14", "M88 0v20", "M112 120V96l8-8h20", "M0 118h70l6-6h26"];
 const VIAS = [[34, 18], [94, 20], [18, 52], [110, 60], [76, 112], [112, 96]];
@@ -119,80 +117,189 @@ function Typed({ text, run, reduced }) {
   return <>{shown}{shown.length < text.length && <i className="caret" />}</>;
 }
 
+// 分节标题（样稿 7F）：序号芯片 + 中文标题 + 英文小字 + 细线；k 取每节的代表色。
+function SecH({ no, title, en, k, children }) {
+  return (
+    <h3 className={`ps-sec-h k-${k}`}>
+      <i className="idx" aria-hidden="true">{no}</i><b>{title}</b><span className="en" aria-hidden="true">{en}</span>
+      <span className="rule" aria-hidden="true" />{children}
+    </h3>
+  );
+}
+
 function Now({ item, run, reduced }) {
   const now = item.now, next = item.next;
-  const src = !now ? "" : now.src === "CURRENT" ? [now.date, now.by].filter(Boolean).join(" · ") : `${now.date} · 最近提交（${now.why || "没有 CURRENT"}）`;
+  const meta = !now ? "" : now.src === "CURRENT" ? [md(now.date), now.by, "取自 CURRENT 顶节"].filter(Boolean).join(" · ") : `${md(now.date)} · 最近提交（${now.why || "没有 CURRENT"}）`;
+  const gh = item.github, iss = gh.state === "ok" ? gh.issues : null;
+  // 下一步下面的小清单：三项读数，0 的置灰；读不到的写“—”。
+  const todo = [
+    ["未推送提交", item.unpushed, "warn"],
+    ["待合并 PR", gh.state === "ok" ? gh.prs : null, ""],
+    ["开着的 issue（含待分流）", iss ? iss.open : null, ""],
+  ];
+  const explicit = ["agent", "human", "top", "table"].includes(next.src);
   return (
-    <div className="g7-now">
+    <div className="ps-nn">
       <div>
-        <h3>现在</h3>
-        {now ? <><p className="ttl">{now.title}</p>{src && <p className="src">{src}</p>}</> : <p className="ttl none">{item.dir === "missing" ? "本机找不到目录" : "读不到 CURRENT 与提交"}</p>}
+        <SecH no="01" title="现在" en="NOW" k="now" />
+        {now ? (
+          <>
+            <p className="ps-now-ttl">{now.title}</p>
+            <p className="ps-meta">{meta}</p>
+            {!!now.facts?.length && (
+              <dl className="ps-facts">
+                {now.facts.map((f) => <React.Fragment key={f.k}><dt>{f.k}</dt><dd>{f.v}</dd></React.Fragment>)}
+              </dl>
+            )}
+            {!!now.earlier?.length && (
+              <ul className="ps-earlier" aria-label="之前几节">
+                {now.earlier.map((e) => <li key={e.title + e.date}><time>{md(e.date) || "—"}</time>{e.title}</li>)}
+              </ul>
+            )}
+          </>
+        ) : <p className="ps-now-ttl none">{item.dir === "missing" ? "本机找不到目录" : "读不到 CURRENT 与提交"}</p>}
       </div>
-      <div className={`nx${next.stale ? " warn" : ""}`}>
-        <h3>下一步{next.stale && <span className="tag">可能过期</span>}</h3>
-        <p className={next.src === "none" ? "none" : ""} data-ps-next>
+      <div className={next.stale ? "warn" : ""}>
+        <SecH no="02" title="下一步" en="NEXT" k="next">{next.stale && <span className="tag">可能过期</span>}</SecH>
+        <p className={`ps-next${next.src === "none" ? " none" : ""}`} data-ps-next>
           {next.url ? <a href={next.url} target="_blank" rel="noreferrer"><Typed text={next.text} run={run} reduced={reduced} /></a> : <Typed text={next.text} run={run} reduced={reduced} />}
         </p>
-        {next.from && <p className="src">{next.from}{next.stale && next.date ? ` · 停在 ${md(next.date)}` : ""}</p>}
+        {next.from && <p className="ps-meta">{next.from}{next.stale && next.date ? ` · 停在 ${md(next.date)}` : ""}</p>}
+        <ul className="ps-todo">
+          {todo.map(([label, n, tone]) => (
+            <li key={label} className={n ? tone : "mute"}><i className="dot" />{label}<span className="n">{n ?? "—"}</span></li>
+          ))}
+        </ul>
+        {!explicit && <p className="ps-hint">在 CURRENT 顶节写一行「下一步：…」，这里会优先显示它。</p>}
       </div>
     </div>
   );
 }
 
+// 近 30 天提交（样稿 7F）：横向热力条，一格一天；深浅按当期最多那天分四档。下方四个读数 + 图例。
+function heatLevel(n, max) {
+  if (!n) return "";
+  const r = n / max;
+  return r <= 0.25 ? "l1" : r <= 0.5 ? "l2" : r <= 0.75 ? "l3" : "l4";
+}
+function commitStats(xs, days) {
+  let best = { n: 0, from: -1, to: -1 }, run = 0;
+  xs.forEach((n, k) => {
+    run = n ? run + 1 : 0;
+    if (run > best.n) best = { n: run, from: k - run + 1, to: k };
+  });
+  const today = new Date(days[days.length - 1] + "T00:00:00");
+  const since = (today.getDay() + 6) % 7; // 本周已过几天（周一 = 0）
+  const sum = (a, b) => xs.slice(Math.max(0, a), Math.max(0, b)).reduce((t, n) => t + n, 0);
+  const end = xs.length;
+  return { streak: best, week: sum(end - 1 - since, end), lastWeek: sum(end - 8 - since, end - 1 - since) };
+}
+const WEEKDAY = "日一二三四五六";
 function Chart({ item, days }) {
   const c = item.commits;
   if (c.state !== "ok")
-    return <section className="g7-sec g7-chart"><h3>近 30 天提交<span className="sum">{c.state === "none" ? "不是 Git 仓库" : c.message || "读不到"}</span></h3></section>;
+    return <section className="g7-sec g7-chart"><SecH no="03" title="近 30 天提交" en="COMMITS" k="git"><span className="sum">{c.state === "none" ? "不是 Git 仓库" : c.message || "读不到"}</span></SecH></section>;
   const xs = c.days, max = Math.max(1, ...xs), peak = c.peak?.n ? days.indexOf(c.peak.date) : -1;
+  const st = commitStats(xs, days), last = xs.length - 1;
+  const dow = (k) => new Date(days[k] + "T00:00:00").getDay();
   return (
     <section className="g7-sec g7-chart">
-      <h3>近 30 天提交<span className="sum">{c.total ? <><b>{c.total}</b> 次 · {c.activeDays} 天 · 最多 {md(c.peak.date)} {c.peak.n} 次</> : "没有提交"}</span></h3>
-      <div className="plot" role="img" aria-label={`近 30 天每日提交数，共 ${c.total} 次`}>
+      <SecH no="03" title="近 30 天提交" en="COMMITS" k="git">
+        <span className="sum">{c.total ? <><b>{c.total}</b> 次 · <b>{c.activeDays}</b> 天有提交</> : "没有提交"}</span>
+      </SecH>
+      <div className="ps-heat" role="img" aria-label={`近 30 天每日提交热力图，共 ${c.total} 次`}>
         {xs.map((n, k) => (
-          <i key={days[k]} className={`${n ? "on" : ""}${isMonday(days[k]) ? " wk" : ""}${k === xs.length - 1 ? " today" : ""}`}
-            style={{ "--h": `${n ? Math.max(6, Math.round((n / max) * 100)) : 0}%` }} title={`${md(days[k])}：${n} 次提交`}>
-            {k === peak && <b>{n}</b>}
-          </i>
+          <i key={days[k]} title={`${md(days[k])}：${n} 次提交`} data-n={k === peak ? n : undefined}
+            className={[heatLevel(n, max) || ([0, 6].includes(dow(k)) ? "we" : ""), k === last ? "today" : "", k === peak ? "peak" : ""].filter(Boolean).join(" ") || undefined} />
         ))}
       </div>
-      <div className="axis" aria-hidden="true">
-        {xs.map((_, k) => <span key={days[k]}>{k === xs.length - 1 ? "今天" : k === 0 || isMonday(days[k]) ? md(days[k]) : ""}</span>)}
+      <div className="ps-heat-axis" aria-hidden="true">
+        {xs.map((_, k) => <span key={days[k]} className={k === last ? "td" : undefined}>{k === last ? "今天" : dow(k) === 1 && k < last - 1 ? md(days[k]) : ""}</span>)}
+      </div>
+      <div className="ps-heat-foot">
+        <div><small>最多的一天</small><strong>{c.peak?.n || 0}<span>次</span></strong><em>{c.peak?.n ? `${md(c.peak.date)} 周${WEEKDAY[dow(peak)]}` : "—"}</em></div>
+        <div><small>最长连续</small><strong>{st.streak.n}<span>天</span></strong><em>{st.streak.n ? `${md(days[st.streak.from])} – ${md(days[st.streak.to])}` : "—"}</em></div>
+        <div><small>本周</small><strong>{st.week}<span>次</span></strong><em>上周 {st.lastWeek} 次</em></div>
+        <div><small>有提交的日子平均</small><strong>{c.activeDays ? Math.round(c.total / c.activeDays) : 0}<span>次 / 天</span></strong><em>30 天里 {c.activeDays} 天有提交</em></div>
+        <div className="legend" aria-hidden="true">少<i className="l0" /><i className="l1" /><i className="l2" /><i className="l3" /><i className="l4" />多<i className="tk" />今天</div>
       </div>
     </section>
   );
 }
 
+// 实战排行榜的奖牌（样稿 7F）：第 1 名像素皇冠，第 2、3 名带 V 形绶带的奖牌，数字挖空。
+const MEDAL_DIGITS = { 2: [".##.", "#..#", "...#", "..#.", ".#..", "####"], 3: ["###.", "...#", ".##.", "...#", "...#", "###."] };
+const MEDAL_ROWS = { 4: [3, 8], 5: [2, 9], 12: [2, 9], 13: [3, 8] };
+function Medal({ rank }) {
+  if (rank === 1)
+    return (
+      <svg width="30" height="24" viewBox="0 0 10 8" fill="currentColor" shapeRendering="crispEdges" aria-hidden="true">
+        {[[0, 1, 1, 1], [9, 1, 1, 1], [4, 0, 2, 1], [0, 2, 1, 4], [9, 2, 1, 4], [1, 3, 1, 3], [8, 3, 1, 3], [2, 4, 1, 2], [7, 4, 1, 2], [4, 1, 2, 5], [3, 3, 1, 3], [6, 3, 1, 3], [0, 6, 10, 2]]
+          .map(([x, y, w, h]) => <rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} />)}
+        <rect x="4" y="6" width="2" height="1" fill="var(--bg)" />
+      </svg>
+    );
+  const cells = [];
+  for (let y = 0; y < 4; y++) cells.push(<rect key={`l${y}`} x={1 + y} y={y} width="2" height="1" opacity=".55" />, <rect key={`r${y}`} x={9 - y} y={y} width="2" height="1" opacity=".55" />);
+  for (let y = 4; y < 14; y++) { const [a, b] = MEDAL_ROWS[y] || [1, 10]; cells.push(<rect key={`c${y}`} x={a} y={y} width={b - a + 1} height="1" />); }
+  MEDAL_DIGITS[rank].forEach((row, dy) => [...row].forEach((ch, dx) => ch === "#" && cells.push(<rect key={`d${dx}-${dy}`} x={4 + dx} y={6 + dy} width="1" height="1" fill="var(--bg)" />)));
+  return <svg width="30" height="35" viewBox="0 0 12 14" fill="currentColor" shapeRendering="crispEdges" aria-hidden="true">{cells}</svg>;
+}
+
+const BOARD = 7; // 右侧榜单行数（第 4–10 名）
 function Field({ item, usage, scanning, open, onToggle, onSettings }) {
+  const s = item.skills;
+  const head = (sum) => <SecH no="04" title="实战" en="SKILLS" k="skill"><span className="sum">{sum}</span></SecH>;
   if (usage !== "ok")
     return (
       <section className="g7-sec g7-field">
-        <h3>实战<span className="sum">读取会话里的技能使用：{usage === "empty" ? (scanning ? "统计中…（会话记录较多，统计完自动换上）" : "还没有统计") : usage === "error" ? "读取失败 · 点刷新重试" : "未开启"}</span>
-          {usage === "off" && <><span className="grow" /><button type="button" className="g5-link" onClick={onSettings}>去设置</button></>}</h3>
+        <SecH no="04" title="实战" en="SKILLS" k="skill">
+          <span className="sum">读取会话里的技能使用：{usage === "empty" ? (scanning ? "统计中…（会话记录较多，统计完自动换上）" : "还没有统计") : usage === "error" ? "读取失败 · 点刷新重试" : "未开启"}</span>
+          {usage === "off" && <button type="button" className="g5-link" onClick={onSettings}>去设置</button>}
+        </SecH>
       </section>
     );
-  const s = item.skills;
   const codex = !!s?.codex?.length && <p className="g7-codex"><b>Codex 点名</b>{s.codex.map((c) => `${c.name} ×${c.n}`).join(" · ")}<span>仅参考</span></p>;
   if (!s?.skills.length)
-    return <section className="g7-sec g7-field"><h3>实战<span className="sum">近 30 天没有调用技能的会话</span></h3>{codex}</section>;
-  const rows = open ? s.skills : s.skills.slice(0, FOLD);
+    return <section className="g7-sec g7-field">{head("近 30 天没有调用技能的会话")}{codex && <div className="ps-board-foot">{codex}</div>}</section>;
+  const top = s.skills.slice(0, 3), rest = s.skills.slice(3), more = rest.length - BOARD;
+  const rows = open ? rest : rest.slice(0, BOARD), maxN = s.skills[0].n;
   return (
     <section className="g7-sec g7-field">
-      <h3>实战<span className="sum"><b>{s.skills.length}</b> 个技能 · <b className="v">{s.calls}</b> 次调用 · <b>{s.sessions}</b> 个会话 · 近 30 天</span></h3>
-      <ul className="g5-skills g7-skills">
-        {rows.map((x) => (
-          <li key={x.name}>
-            <span className="nm"><b>{x.name}</b><small>{x.src}</small></span>
-            <span className="pips" aria-hidden="true">
-              {Array.from({ length: CELLS }, (_, k) => <i key={k} className={k < x.n ? "on" : ""} />)}
-              {x.n > CELLS && <em>+{x.n - CELLS}</em>}
-            </span>
-            <span className="n">{x.n}<small> 次</small></span>
-            <span className="st"><span className="last">{x.last.slice(5)}</span></span>
-          </li>
-        ))}
-      </ul>
-      {s.skills.length > FOLD && <button type="button" className="g5-more" aria-expanded={open} onClick={onToggle}>{open ? "收起" : `其余 ${s.skills.length - FOLD} 个 ▾`}</button>}
-      {codex}
+      {head(<><b>{s.skills.length}</b> 个技能 · <b className="v">{s.calls}</b> 次调用 · <b>{s.sessions}</b> 个会话 · 近 30 天</>)}
+      <div className={`ps-board${rest.length ? "" : " solo"}`}>
+        <ol className="ps-podium" aria-label="调用最多的前三个技能">
+          {top.map((x, k) => (
+            <li key={x.name} className={`r${k + 1}`}>
+              {k === 0 && <span className="mvp" aria-hidden="true">MVP</span>}
+              <span className="medal" aria-label={`第 ${k + 1} 名`} role="img"><Medal rank={k + 1} /></span>
+              <span className="nm" title={x.name}>{x.name}</span>
+              <span className="cnt">{x.n}<small>次{x.last ? ` · ${x.last.slice(5)}` : ""}</small></span>
+              <span className="src">{x.src}</span>
+              <span className="bar" aria-hidden="true"><i style={{ width: `${Math.round((x.n / maxN) * 100)}%` }} /></span>
+            </li>
+          ))}
+        </ol>
+        {!!rest.length && (
+          <ol className={`ps-rank${rows.length >= BOARD ? " fill" : ""}`} start={4} style={{ "--rows": rows.length }}>
+            {rows.map((x, k) => (
+              <li key={x.name}>
+                <span className="no">{String(k + 4).padStart(2, "0")}</span>
+                <span className="nm" title={x.name}>{x.name}<small>{x.src}</small></span>
+                <span className="pips" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} className={i < Math.ceil((x.n / maxN) * 10) ? "on" : ""} />)}</span>
+                <span className="n">{x.n}<small> 次</small></span>
+                <span className="d">{x.last.slice(5)}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+      {(codex || more > 0) && (
+        <div className="ps-board-foot">
+          {codex || <span />}
+          {more > 0 && <button type="button" className="g5-more" aria-expanded={open} onClick={onToggle}>{open ? "收起" : `其余 ${more} 个 ▾`}</button>}
+        </div>
+      )}
     </section>
   );
 }
@@ -285,7 +392,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
     if (!run || reduced || !bar) return;
     const h = el.offsetHeight;
     bar.animate([...Array.from({ length: 11 }, (_, i) => ({ offset: i / 11, opacity: 1, transform: `translateY(${(i / 10) * h}px)`, ...STEP })), { opacity: 0, transform: `translateY(${h}px)` }], { duration: 440 });
-    el.querySelectorAll(".g5-skills .pips").forEach((row, k) =>
+    el.querySelectorAll(".ps-rank .pips").forEach((row, k) =>
       row.querySelectorAll("i.on").forEach((cell, i) => cell.animate([{ opacity: 0.12, ...STEP }, { opacity: 1 }], { duration: 1, delay: k * 40 + i * 30, fill: "backwards" })));
   }, [run]);
 

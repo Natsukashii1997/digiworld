@@ -161,6 +161,32 @@ function cleanTitle(raw) {
   return title.trim();
 }
 const NEXT_LINE = /^\s*(?:[-*+]\s+)?(?:\*\*|__)?(?:唯一)?下一步(?:\*\*|__)?\s*[：:]\s*(.+)$/;
+// 顶节里“- 键：值”的关键几行（项目空间“现在”用）：按下面的顺序各取第一条，最多 4 条；“★ 来由：”嵌在同一行时拆开算。
+const FACT_LINE = /^\s*[-*+]\s+(?:\*\*|__)?\s*([^：:*_`|]{1,12}?)\s*(?:\*\*|__)?\s*[：:]\s*(.+)$/;
+const FACT_KINDS = [/来由|原因|发现|背景|起因/, /做了什么|改动|改了|决定|实现/, /测试|复核|验证/, /发布|回读|上线/, /遗留|未验证|范围外/];
+const FACT_LIMIT = 90;
+function sectionFacts(section) {
+  const pairs = [];
+  for (const raw of section) {
+    for (const [n, part] of raw.split(/\s*★\s*/).entries()) {
+      const m = (n ? `- ${part}` : part).match(FACT_LINE);
+      if (m && !/^(唯一)?下一步$/.test(m[1].trim())) pairs.push([plain(m[1]).trim(), plain(unlink(m[2])).trim()]);
+    }
+  }
+  const facts = [];
+  for (const kind of FACT_KINDS) {
+    const hit = pairs.find(([k]) => kind.test(k));
+    if (hit && !facts.some((f) => f.k === hit[0])) facts.push({ k: hit[0], v: cut(hit[1], FACT_LIMIT) });
+    if (facts.length >= 4) break;
+  }
+  const left = pairs.find(([k]) => /^遗留/.test(k))?.[1] || "";
+  // 没有“来由”类的行时，用标题下第一段说明顶上。
+  if (!facts.some((f) => FACT_KINDS[0].test(f.k))) {
+    const lead = section.find((l) => l.trim() && !/^\s*([-*+|>]|\d+\.)/.test(l));
+    if (lead) facts.unshift({ k: "来由", v: cut(plain(unlink(lead)).trim(), FACT_LIMIT) });
+  }
+  return { facts: facts.slice(0, 4), leftover: !left.trim() || /^(无|没有|—|-)(?![\p{Script=Han}])/u.test(left.trim()) ? "" : cut(left, OUTLINE_SUMMARY_LIMIT) };
+}
 export function parseCurrentTop(text) {
   const lines = String(text).split(/\r?\n/);
   const table = parseCurrentStatus(text);
@@ -175,7 +201,7 @@ export function parseCurrentTop(text) {
   }
   const tableNext = table.fields.next ? { text: table.fields.next, date: tableDate } : null;
   let fence = false, at = -1;
-  const preamble = [];
+  const preamble = [], heads = [];
   for (let i = 0; i < lines.length; i++) {
     if (FENCE.test(lines[i])) { fence = !fence; continue; }
     if (fence) continue;
@@ -188,8 +214,10 @@ export function parseCurrentTop(text) {
         if (l.trim()) body.push(l);
       }
       if (body.length && body.every((l) => /^\s*\|/.test(l))) continue;
-      at = i;
-      break;
+      if (at < 0) at = i;
+      else heads.push(lines[i]);
+      if (heads.length >= 2) break;
+      continue;
     }
     if (at < 0) preamble.push(lines[i]);
   }
@@ -204,12 +232,21 @@ export function parseCurrentTop(text) {
   }
   const head = preamble.join("\n");
   const nextLine = section.map((l) => l.match(NEXT_LINE)?.[1]).find(Boolean);
+  const { facts, leftover } = sectionFacts(section);
+  // 顶节之后的两节：只给标题与日期。
+  const earlier = heads.map((l) => {
+    const h = plain(unlink(l.replace(/^##\s+/, "").replace(/\s+#+\s*$/, "")));
+    return { title: cut(cleanTitle(h) || h, OUTLINE_TITLE_LIMIT), date: dateOf(h) };
+  });
   return {
     top: {
       title: cut(cleanTitle(heading) || heading, OUTLINE_TITLE_LIMIT),
       date: dateOf(heading) || dateOf(head),
       by: heading.match(AUTHOR)?.[1] || "",
       next: nextLine ? cut(plain(unlink(nextLine)), OUTLINE_SUMMARY_LIMIT) : "",
+      facts,
+      leftover,
+      earlier,
     },
     tableNext,
   };

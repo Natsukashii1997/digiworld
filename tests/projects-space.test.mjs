@@ -33,7 +33,10 @@ const FORMATS = {
 };
 
 test("CURRENT 顶节：七种写法都取到标题、日期、作者与下一步", () => {
-  const r = Object.fromEntries(Object.entries(FORMATS).map(([k, v]) => [k, parseCurrentTop(v)]));
+  const all = Object.fromEntries(Object.entries(FORMATS).map(([k, v]) => [k, parseCurrentTop(v)]));
+  // 这条只看标题、日期、作者与下一步；关键行与前几节见下一条。
+  const base = (t) => t && { title: t.title, date: t.date, by: t.by, next: t.next };
+  const r = Object.fromEntries(Object.entries(all).map(([k, v]) => [k, { ...v, top: base(v.top) }]));
   // 括注去掉日期与作者两段，剩下的不长就留着。
   assert.deepEqual(r.parenthesized.top, { title: "首页改为 no-store（用户说「一并改」，已提交 533cb89）", date: "2026-10-28", by: "Claude", next: "" });
   assert.equal(r.parenthesized.tableNext, null);
@@ -45,6 +48,23 @@ test("CURRENT 顶节：七种写法都取到标题、日期、作者与下一步
   assert.deepEqual(r.tableOnly.tableNext, { text: "合入 12", date: "2026-09-30" });
   assert.deepEqual(r.plain, { top: null, tableNext: null });
   assert.deepEqual(r.fenced.top, { title: "修好登录", date: "2026-10-27", by: "Codex", next: "等用户验收" });
+});
+
+test("CURRENT 顶节：取关键几行（★ 来由拆开、键名原样）、遗留与之后两节标题", () => {
+  const text = `# 当前状态\n\n## 首页改 no-store（2026-10-28，Claude）\n\n- 时间：开工 22:50。★ 来由：打开黑屏，旧首页在磁盘里\n- 改了哪些文件：\`server/index.mjs\`\n- 测试：749 / 749 通过\n- 发布与回读：nm-1 回读通过\n- 遗留：截图没补\n- 下一步：等验收\n\n## 侧栏品牌标（2026-10-27，Claude）\n\n- 测试：x\n\n## 协作状态\n\n| a | b |\n\n## 更早一节（2026-10-20）\n\n## 再早一节（2026-10-19）\n`;
+  const top = parseCurrentTop(text).top;
+  assert.deepEqual(top.facts, [
+    { k: "来由", v: "打开黑屏，旧首页在磁盘里" }, { k: "改了哪些文件", v: "server/index.mjs" },
+    { k: "测试", v: "749 / 749 通过" }, { k: "发布与回读", v: "nm-1 回读通过" },
+  ]);
+  assert.equal(top.leftover, "截图没补");
+  assert.equal(top.next, "等验收", "下一步那行不算关键行");
+  assert.deepEqual(top.earlier, [{ title: "侧栏品牌标", date: "2026-10-27" }, { title: "更早一节", date: "2026-10-20" }], "跳过协作状态，只取两节");
+  // 遗留写“无”不算；没有来由类的行时用标题下第一段说明
+  const lead = parseCurrentTop("## 发布（2026-10-28）\n\n用户反映打开黑屏。\n\n- 测试：通过\n- 遗留：无。范围外：别的项目\n").top;
+  assert.equal(lead.leftover, "");
+  assert.deepEqual(lead.facts.map((f) => f.k), ["来由", "测试", "遗留"]);
+  assert.equal(lead.facts[0].v, "用户反映打开黑屏。");
 });
 
 // ---------- issue 标签拆分 ----------
@@ -88,6 +108,13 @@ test("下一步：ready-for-agent 编号最小 → ready-for-human → 顶节 �
   assert.equal(table.from, "CURRENT 头表");
   assert.equal(table.stale, true);
   assert.deepEqual(pickNext({ issues: { state: "unknown" } }), { src: "none", text: "顶节没写下一步", from: "", stale: false });
+  // 都没写：顶节遗留 → 由读数推出（推送 → 合并 PR → 分流 issue）
+  assert.deepEqual(pickNext({ top: { next: "", leftover: "截图没补", date: "2026-10-28" }, lastCommitAt: "2026-10-28T00:00:00Z" }),
+    { src: "leftover", text: "截图没补", from: "CURRENT 顶节「遗留」", date: "2026-10-28", stale: false });
+  const why = "顶节没写「下一步：」· 由读数推出";
+  assert.deepEqual(pickNext({ top: { next: "" }, unpushed: 12, prs: 1 }), { src: "derived", text: "推送 12 个本地提交", from: why, stale: false });
+  assert.equal(pickNext({ unpushed: 0, prs: 2 }).text, "合并 2 个待合并 PR");
+  assert.equal(pickNext({ unpushed: null, prs: 0, issues: { state: "ok", items: [{ number: 9, labels: ["needs-triage"] }] } }).text, "分流 1 张待分流 issue");
 });
 
 test("要注意的一件事按简报 §4.3 的优先级只取一条", () => {
