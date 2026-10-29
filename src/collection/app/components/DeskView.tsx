@@ -34,7 +34,6 @@ import { Note } from '../types/xiaohongshu';
 import { useNotes, useApp } from '../lib/store';
 import {
   formatNumber,
-  connectLocalAgent,
   deleteStoredNote,
   formatDate,
   getDeskWorkspace,
@@ -607,7 +606,6 @@ const DeskCard = memo(function DeskCard({
     </motion.div>
   );
 });
-
 
 function SetupDialog({
   info,
@@ -1636,6 +1634,6 @@ function CollectionHelp({onClose}: {onClose: () => void}) {
   const ref = useDialogFocus(onClose);
   return <div className="collection-overlay collection-setup-overlay" onMouseDown={event => {if(event.target === event.currentTarget)onClose();}}><div className="collection-setup" ref={ref} role="dialog" aria-modal="true" aria-label="收藏怎么用" tabIndex={-1}>
     <header className="collection-dialog-heading"><h2>收藏怎么用</h2><button className="collection-key collection-icon" aria-label="关闭" onClick={onClose}><X size={16}/></button></header>
-    <div className="collection-dialog-body collection-help-body"><p>收进来：安装并配对 Chrome 插件，在小红书或抖音作品上选“直接收藏”或“收藏并添加Get笔记”。后者先保存原内容，再将GET整理正文收回同卡解析栏。抖音需从“我的收藏”打开单条作品；可拖动插件按钮到画布，目前不批量同步整个收藏夹。</p><p>调酒自动进组：已有唯一名为“调酒”的分组时，新收藏中标题和文字证据明确的制作教程会自动进去。不确定的留在散卡区；本地规则不调用付费 AI。点提示或阅读器里的“撤销”可退回散卡，人工调整过的不会再被自动移动。</p><p>本地删除：整理已经删除的记录，并请求在访达打开本地文件夹。</p><p>Agent：只复制收藏的只读 MCP 配置。粘贴进该 Agent 设置后可搜索和阅读，不能修改或删除。</p></div>
+    <div className="collection-dialog-body collection-help-body"><p>收进来：安装并配对 Chrome 插件，在小红书或抖音作品上选“直接收藏”或“收藏并添加Get笔记”。后者先保存原内容，再将GET整理正文收回同卡解析栏。抖音需从“我的收藏”打开单条作品；可拖动插件按钮到画布，目前不批量同步整个收藏夹。</p><p>调酒自动进组：已有唯一名为“调酒”的分组时，新收藏中标题和文字证据明确的制作教程会自动进去。不确定的留在散卡区；本地规则不调用付费 AI。点提示或阅读器里的“撤销”可退回散卡，人工调整过的不会再被自动移动。</p><p>本地删除：整理已经删除的记录，并请求在访达打开本地文件夹。</p></div>
   </div></div>;
 }

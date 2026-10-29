@@ -185,3 +185,8 @@
 .filter-tabs-sep { flex: none; align-self: stretch; width: 1px; margin: var(--s-3) var(--s-1); background: var(--line-2); }
 /* 行末的「加一格」：虚线空槽 */
 .filter-tabs-row > .filter-tabs-add { margin-left: var(--s-1); color: var(--muted); outline: 1px dashed var(--line-3); outline-offset: -1px; }
+/* 窄屏轨道占满一行；放得下时各项均分，放不下照样横滑 */
+@media (max-width: 640px) {
+  .filter-tabs { width: 100%; }
+  .filter-tabs-row > button { flex: 1 0 auto; }
+}
