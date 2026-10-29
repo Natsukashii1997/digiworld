@@ -2,7 +2,7 @@
 // 只用合成名册、合成 CURRENT、合成项目卡与注入的 gh 桩；不读真实名册、Vault、~/.claude、~/.codex 与 data/。
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseCurrentTop } from "../server/project-status.mjs";
@@ -203,7 +203,7 @@ test("GET /api/projects-space：按名册列项目，读数、现在 / 下一步
     assert.equal(c.commits.total, 1);
     assert.equal(c.lit, true);
     assert.deepEqual(c.attention, { kind: "human", text: "待人工验收 1 张", warn: true });
-    assert.equal(c.skills, null);
+    assert.equal(c.skills, null, "实战默认开启，第一次读时还在后台统计");
 
     // 没有 CURRENT：现在取最近提交；30 天前的唯一提交不算进图
     assert.equal(by.bare.now.src, "commit");
@@ -234,6 +234,7 @@ test("GET /api/projects-space：按名册列项目，读数、现在 / 下一步
     assert.equal(s.totals.issues, 3);
     assert.equal(s.totals.issuesPartial, true);
     assert.equal(s.totals.skillCalls, null);
+    assert.deepEqual(s.skillUsage, { state: "empty", scanning: true });
     assert.ok(!app.calls.some((a) => a.includes("--label")), "不用 --label 过滤");
     assert.ok(app.calls.some((a) => a[0] === "issue" && a.at(-1).split(",").includes("labels")));
   } finally {
@@ -327,6 +328,43 @@ test("现在取最近提交时，如实说明是没有 CURRENT 还是顶节读�
     assert.equal(by.leaky.now.src, "commit");
     assert.equal(by.leaky.now.why, "CURRENT 没有可读的顶节");
     assert.equal(by.bare.now.why, "没有 CURRENT");
+  } finally {
+    await app.close();
+  }
+});
+
+test("实战默认开启：后台统计合成会话，统计完再读就有；点刷新后台重采", async () => {
+  const app = await spaceFixture();
+  const settled = async (was) => {
+    for (let i = 0; i < 100; i++) {
+      const u = (await app.call("/projects-space/skill-usage")).body;
+      if (u.state === "ok" && u.at !== was) return u;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    throw new Error("后台统计没完成");
+  };
+  try {
+    const dir = join(app.dir, "sessions/claude/-synthetic");
+    await mkdir(dir, { recursive: true });
+    const line = (skill) => JSON.stringify({ type: "assistant", cwd: app.paths.collab, timestamp: new Date().toISOString(),
+      message: { role: "assistant", content: [{ type: "tool_use", name: "Skill", input: { skill } }] } }) + "\n";
+    await writeFile(join(dir, "s1.jsonl"), line("tdd"));
+    const first = (await app.call("/projects-space")).body;
+    assert.deepEqual(first.skillUsage, { state: "empty", scanning: true }, "第一次读不等统计，直接返回");
+    const done = await settled();
+    const second = (await app.call("/projects-space")).body;
+    assert.deepEqual(second.skillUsage, { state: "ok", at: done.at });
+    const collab = second.items.find((i) => i.id === "collab");
+    assert.deepEqual(collab.skills.skills.map((x) => [x.name, x.n]), [["tdd", 1]]);
+    assert.equal(second.totals.skillCalls, 1);
+
+    await writeFile(join(dir, "s1.jsonl"), line("tdd") + line("tdd"));
+    assert.equal((await app.call("/projects-space")).body.totals.skillCalls, 1, "1 小时内不点刷新就用已有统计，不重采");
+    const refreshing = (await app.call("/projects-space?refresh=1")).body;
+    assert.equal(refreshing.skillUsage.scanning, true, "点刷新起后台重采，这次先给旧统计");
+    assert.equal(refreshing.totals.skillCalls, 1);
+    await settled(done.at);
+    assert.equal((await app.call("/projects-space")).body.totals.skillCalls, 2);
   } finally {
     await app.close();
   }

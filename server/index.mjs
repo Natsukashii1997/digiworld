@@ -7,7 +7,8 @@ const { startServer } = await import("./http.mjs");
 const { createKnowledgeAgentStatus } = await import("./knowledge-agent-status.mjs");
 if (await readDaemonCodeRevision(root) !== daemonRuntimeCodeRevision) throw new Error("工作台代码在启动期间变化，请在构建完成后重新启动");
 const app = await startServer({
-  discovery: { daemonRuntimeCodeRevision, daemonCurrentPid: process.pid },
+  // 实战（读取会话里的技能使用）默认打开（常浩 10-29：「都给我默认打开」）；只在正式入口打开，测试里起的服务默认关。
+  discovery: { daemonRuntimeCodeRevision, daemonCurrentPid: process.pid, skillUsage: { enabled: async () => true } },
   directory: process.env.WORKBENCH_DATA_DIR || join(root, "data"),
   port: Number(process.env.PORT || 5178),
   staticRoot: join(root, "dist"),

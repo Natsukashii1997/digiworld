@@ -13,7 +13,7 @@ import { issueBreakdown, TRIAGE_LABELS } from "./project-github.mjs";
 import { unpushedCount } from "./savepoint-git.mjs";
 
 export const PIN_LIMIT = 3;
-const DAY = 86400000;
+const DAY = 86400000, HOUR = 3600000;
 const STALE_DAYS = 3;
 const UNPUSHED_WARN = 10;
 
@@ -192,6 +192,18 @@ export function createProjectsSpace(repository, {
     return item;
   }
 
+  // 实战统计：会话记录可能有几个 G，一律后台采（同一时间只采一次）；这次先用已有的统计，没有就标“统计中”。
+  // 还没有统计、点了刷新、或统计超过 1 小时，就起一次后台采集；上次没统计成又没点刷新时如实报读取失败。
+  let scanning = null, scanFailed = false;
+  async function skillUsageFacts(refresh) {
+    const cached = await skillUsage.read().catch(() => ({ state: "error" }));
+    if (cached.state === "off" || cached.state === "error") return cached;
+    if (cached.state === "empty" && scanFailed && !refresh && !scanning) return { state: "error" };
+    if (!scanning && (refresh || cached.state === "empty" || clock() - Date.parse(cached.at) > HOUR))
+      scanning = skillUsage.refresh({}).then(() => { scanFailed = false; }, () => { scanFailed = true; }).finally(() => { scanning = null; });
+    return scanning ? { ...cached, scanning: true } : cached;
+  }
+
   return {
     async inspect(input = {}) {
       exactKeys(input, ["refresh", "roster"]);
@@ -212,7 +224,7 @@ export function createProjectsSpace(repository, {
         items.sort((a, b) => order(a) - order(b));
         return { ...base, roster: { state: "ok", path: roster.path, skipped: roster.skipped }, pending: true, items };
       }
-      const usage = await skillUsage.read().catch(() => ({ state: "error" }));
+      const usage = await skillUsageFacts(input.refresh === true);
       const items = await Promise.all(
         roster.projects.map((p, i) => inspectEntry(p, i + 1, state?.connections, days, input.refresh === true, usage)),
       );
@@ -228,7 +240,7 @@ export function createProjectsSpace(repository, {
           issuesPartial: known.length < items.filter((i) => i.github.state !== "none").length,
           skillCalls: usage.state === "ok" ? items.reduce((n, i) => n + (i.skills?.calls || 0), 0) : null,
         },
-        skillUsage: { state: usage.state, ...(usage.at ? { at: usage.at } : {}) },
+        skillUsage: { state: usage.state, ...(usage.at ? { at: usage.at } : {}), ...(usage.scanning ? { scanning: true } : {}) },
         items,
       };
     },

@@ -10,7 +10,7 @@
 .g5 .cnt { display: flex; align-items: center; gap: 6px; color: var(--lcd); }
 .g5 .cnt small { font: 500 var(--fs-label) var(--mono); color: var(--muted); }
 .g5 .lcd { display: inline-flex; align-items: center; color: var(--lcd); }
-.g5 .lcd svg { height: var(--h); width: auto; }
+.g5 .lcd svg > g:first-child { display: none; } /* 不画「不亮像素」那层暗格（常浩 10-29：背后的痕迹很奇怪） */
 .g5 .lcd .dash, .g5 .cnt .dash { font: 700 var(--fs-section)/0.9 var(--mono); color: var(--faint); }
 .g5 .led { display: block; width: 6px; height: 6px; border-radius: 50%; background: rgba(140, 178, 255, 0.18); }
 .g5 .led.on { background: var(--lcd); box-shadow: 0 0 5px rgba(166, 227, 110, .85); }
@@ -41,7 +41,6 @@
 
 
 .g5 .grow { flex: 1; }
-.g5 .lcd svg { --h: 18px; }
 .g5 .lcd.cyan { color: var(--cyan); }
 .g5 .lcd.violet { color: var(--violet); }
 .g5 .ibtn { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--r-s); background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
@@ -150,7 +149,6 @@
 .g7-reads > div + div { border-left: 1px solid var(--line); }
 .g7-reads small { font: 500 var(--fs-label) var(--sans); color: var(--muted); }
 .g7-reads .lcd { color: var(--text); }
-.g7-reads .lcd svg { --h: 24px; }
 .g7-reads .lcd.warn { color: var(--yellow); }
 .g7-reads .lcd.cyan { color: var(--cyan); }
 .g7-reads .lcd.violet { color: var(--violet); }

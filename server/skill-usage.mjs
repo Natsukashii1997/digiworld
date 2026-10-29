@@ -209,7 +209,7 @@ export function createSkillUsage({
   }
 
   return {
-    // 开关关着：只回“未开启”，不读缓存也不碰会话目录。
+    // 开关关着：只回“未开启”，不读缓存也不碰会话目录。正式入口 server/index.mjs 默认打开（常浩 10-29：「都给我默认打开」）。
     async read() {
       if (!(await enabled())) return { state: "off" };
       const cached = await readCache();

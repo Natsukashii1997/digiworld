@@ -47,7 +47,8 @@ export async function spaceFixture({ roster, gh, staticRoot, skillUsage, space }
       detectAgents: async () => ({ items: [], at: new Date().toISOString() }),
       repoVisibility: async () => ({ state: "unknown" }),
       githubCli: fakeGh,
-      ...(skillUsage ? { skillUsage } : {}),
+      // 照正式入口打开实战，但会话与技能目录用合成目录（sessions/），不读真实 ~/.claude、~/.codex。
+      skillUsage: { enabled: async () => true, home: join(dir, "home"), claudeRoot: join(dir, "sessions/claude"), codexRoot: join(dir, "sessions/codex"), skillDirs: {}, ...skillUsage },
       projectsSpace: {
         rosterPath,
         readCard: async (card) => (card ? { state: "ok", one: "合成一句话", goal: "合成目标", not: "合成不做", url: "obsidian://x" } : { state: "absent" }),
