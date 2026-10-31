@@ -3,6 +3,7 @@ import {searchCollection,COLLECTION_QUERY_MAX} from '../src/collection-search.js
 import { editNote, deleteNote, archiveNote, noteId } from './notes.mjs';
 import { createReaUpdater } from './rea-update.mjs';
 import { createReverseSkillV4 } from "./reverse-skill-v4.mjs";
+import { createReverseReports } from "./reverse-report.mjs";
 import { createReverseRunner } from "./reverse-runner.mjs";
 import { createReverseNative } from "./reverse-native.mjs";
 import { createPolicyKnowledgeFiles } from "./knowledge-access-policy.mjs";
@@ -212,6 +213,7 @@ export async function startServer({
   const reverseMedia=createReverseMedia(await realpath(repository.directory));
   const noteImages=createNoteImages(await realpath(repository.directory));
   const reverseSkillV4 = createReverseSkillV4({ repository, readMedia: reverseMedia.read });
+  const reverseReports = createReverseReports(repository, { clock: clock ?? Date.now });
   const deliveries = createDeliveries(repository, clock);
   const activity = createAssetActivity(repository, deliveries, clock);
   const projectContext = createProjectContext(repository, clock);
@@ -345,7 +347,7 @@ export async function startServer({
     mcpError = "";
   if (mcpPort !== undefined)
     try {
-      mcp = await startProfileMcp({ profile: knowledgeProfile, knowledge:knowledgeAccess, usage: capabilityUsage, port: mcpPort });
+      mcp = await startProfileMcp({ profile: knowledgeProfile, knowledge:knowledgeAccess, reverse: reverseReports, usage: capabilityUsage, port: mcpPort });
     } catch (error) {
       mcpError =
         error.code === "EADDRINUSE"
@@ -550,6 +552,7 @@ export async function startServer({
         if(url.pathname==='/api/reverse/hatch/preview'&&request.method==='POST')return send(response,200,await reverseSkillV4.hatchPreview(await body(request)));
         if(url.pathname==='/api/reverse/hatch/confirm'&&request.method==='POST')return send(response,200,await reverseSkillV4.hatchConfirm(await body(request)));
         if(url.pathname==='/api/reverse/hatch/query'&&request.method==='GET')return send(response,200,await reverseSkillV4.hatchQuery(Object.fromEntries(url.searchParams)));
+        if(['/api/reverse/reports/preview','/api/reverse/reports/adopt','/api/reverse/reports/reject'].includes(url.pathname)&&request.method==='POST')return send(response,200,await reverseReports[url.pathname.slice('/api/reverse/reports/'.length)](await body(request)));
         if(url.pathname==='/api/reverse/update'&&request.method==='GET')return send(response,200,reaUpdater.read());
         if(url.pathname==='/api/reverse/update/check'&&request.method==='POST')return send(response,200,await reaUpdater.check());
         if(url.pathname==='/api/reverse/update/preview'&&request.method==='POST')return send(response,200,await reaUpdater.preview());

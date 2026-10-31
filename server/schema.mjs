@@ -7,6 +7,7 @@ import { validateActivity, validateActivityHistory } from "./asset-activity-sche
 import { validateCollabLog, validateCollabHistory } from "./collab-schema.mjs";
 import { validateBriefReads, validateBriefHistory } from "./brief-schema.mjs";
 import { validateProjectDesk, validateProjectDeskHistory } from "./project-desk-schema.mjs";
+import { validateReverseReports, validateReverseReportHistory } from "./reverse-report-schema.mjs";
 import { validateDesignVersion } from "../src/design-asset.js";
 import { safePath } from "../src/store.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
@@ -416,6 +417,7 @@ export function validateState(state) {
     "profileProposals",
     "agentRoles",
     "reverseRecords",
+    "reverseReports",
     "reverseSettings",
     "revisionCandidates",
     "skillSourceAdoptions",
@@ -1114,6 +1116,7 @@ export function validateState(state) {
   validateCollabLog(state);
   validateBriefReads(state);
   validateProjectDesk(state);
+  validateReverseReports(state);
   // 进化回路 v1：改版候选，旧库缺失按空处理；版本上的 candidateId 与候选互相核对。
   validateRevisionCandidates(state);
   return state;
@@ -1190,6 +1193,7 @@ export function validateHistory(
     allowReverseImport = false,
     allowReverseSkill = false,
     allowProjectDesk = false,
+    allowReverseReports = false,
   } = {},
 ) {
   validateReverseHistory(previous,next,{ allowReverseService, allowReverseImport, allowReverseSkill });
@@ -1219,6 +1223,7 @@ export function validateHistory(
   validateCollabHistory(previous?.collabLog || [], next.collabLog || [], allowCollab);
   validateBriefHistory(previous?.briefReads || [], next.briefReads || [], allowBriefs);
   validateProjectDeskHistory(previous?.projectDesk || [], next.projectDesk || [], allowProjectDesk);
+  validateReverseReportHistory(previous?.reverseReports || [], next.reverseReports || [], allowReverseReports);
   validateSkillSourceAdoptionHistory(previous?.skillSourceAdoptions || [], next.skillSourceAdoptions || [], allowSkillSourceAdoptions);
   if (
     !allowKnowledge &&
