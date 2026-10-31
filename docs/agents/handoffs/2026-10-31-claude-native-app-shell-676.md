@@ -1,7 +1,7 @@
-# Claude 676：数码世界桌面应用改原生外壳（第 1 批，2026-10-31）
+# Claude 676：数码世界桌面应用改原生外壳（2026-10-31）
 
-- 输入状态 / 输出状态：WB-20261030-675 → WB-20261031-676（认领中，第 2 批待用户同意）
-- 执行者 / 本轮范围：Claude（会话 local_111b8e7b），issue #44，分支 `claude/44-native-app-shell`。第 1 批只在仓库里做，不碰正式应用。
+- 输入状态 / 输出状态：WB-20261030-675 → WB-20261031-677（两批完成，交回）
+- 执行者 / 本轮范围：Claude（会话 local_111b8e7b），issue #44，分支 `claude/44-native-app-shell`。第 1 批只在仓库里做；第 2 批经用户说「同意替换」后替换了正式应用。
 
 ## 改动文件
 
@@ -33,12 +33,24 @@
 - 运行服务、真实数据：都没变。只用试装版打开正式 5178 看页面，没有写入。
 - 副作用：核对时覆盖过一次用户剪贴板，在默认浏览器里打开过两次 example.com。
 
+## 第 2 批：替换正式应用（用户 10-31「同意替换」）
+
+- 旧网页应用（`com.apple.Safari.WebApp.E3B9F0BF-…`，正在运行）用 SIGTERM 退出后，整个包 `mv` 到主目录 `work/app-shell/webapp-backup/数码世界.app`。没有改包内文件，签名不变，网页应用自己的存储（`~/Library/Containers/…`）也没动。
+- `bash desktop/app-shell/build.sh ~/Applications` 装新外壳：`codesign --verify --strict` 通过，Info.plist 为 `cn.personal-ai-workbench.app`、`http://127.0.0.1:5178/`、版本 `9926019`；`lsregister -f` 重新登记。试装副本已删掉并取消登记，免得系统打开错的那份。
+- 程序坞里这一项按路径（`file:///Users/nat/Applications/数码世界.app/`）记录，现在打开的就是新外壳。
+- 打开验证：进程是 `~/Applications/数码世界.app/Contents/MacOS/DigitalWorld`，页面正常、不黑屏（证据 `work/app-shell/evidence/正式应用-替换后.jpg`）。用户当时正在用这个窗口，所以没有替用户退出重开；试装阶段已经冷启动过多次。
+
+### 怎么换回旧网页应用
+
+1. 退出新的「数码世界」。
+2. 删掉或移走 `~/Applications/数码世界.app`（新外壳，随时可以用 `build.sh` 重新编出来）。
+3. 把主目录 `work/app-shell/webapp-backup/数码世界.app` 拖回 `~/Applications/`。包没被改过，签名不变，能直接打开；旧网页应用的本地存储还在原处。
+
 ## 未完成
 
-- 第 2 批：替换正式 `~/Applications/数码世界.app`。需要用户先在旧网页应用里确认没有未保存草稿，并单独同意替换。做法：旧应用整份 `ditto` 到主目录 `work/app-shell/webapp-backup/`，`build.sh ~/Applications` 装新外壳，刷新图标登记，退出后重开验证。
 - 选文件「选中后传回页面」一步由用户手动点一次。
 - 后续（不在 #44）：随手记悬浮窗「打开主页」改为打开新外壳。
 
 ## 唯一下一步
 
-用户审 PR，并同意第 2 批替换正式应用。
+用户在正式应用里手动试一次选文件（选中后取消上传），再审 PR #45；说「合并」后合并并关 #44。
