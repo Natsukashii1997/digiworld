@@ -331,7 +331,7 @@ export function validateReverseRecords(records) {
       "imports",
       "stage",
       "copies",
-      "type", "recipe", "recipeReply", "referenceMedia", "replicas", "replicaDraft", "variations", "forge", "reaRuns", "savedSkill", "packVersions", "activePackVersionId", "packSkills", "hatch", "hatchSkills",
+      "type", "recipe", "recipeReply", "referenceMedia", "replicas", "replicaDraft", "variations", "forge", "reaRuns", "savedSkill", "packVersions", "activePackVersionId", "packSkills", "hatch", "hatchSkills", "heldAt",
     ]);
     id(r.id);
     text(r.title, "逆向标题", REVERSE_LIMITS.title);
@@ -340,6 +340,7 @@ export function validateReverseRecords(records) {
     date(r.createdAt);
     optionalDate(r.updatedAt);
     optionalDate(r.deletedAt);
+    optionalDate(r.heldAt);
     keys(r.material, ["text", "url", "target"]);
     if (r.material.target !== undefined && r.type !== "FN") invalid("只有FN可使用REA目标");
     text(r.material.text, "逆向素材原文", REVERSE_LIMITS.material);

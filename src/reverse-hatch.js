@@ -43,10 +43,11 @@ export function initialHatch(record, at = new Date().toISOString()) {
 
 export const hatchOf = (record) => record?.hatch || initialHatch(record, record?.createdAt);
 
-const ANSWER_FORMAT = [
+export const SLOT_FORMAT = SLOTS.flatMap((s) => [`## ${s.name}`, "已知：…", "缺：…", ""]);
+export const ANSWER_FORMAT = [
   "## 回答格式（照写，我会按小标题拆进八格）",
   "八个小标题都要写，顺序不限。每节两行：「已知：」写有证据的结论，「缺：」写还不知道的、写成问题；没有就写「无」。",
-  "", ...SLOTS.flatMap((s) => [`## ${s.name}`, "已知：…", "缺：…", ""]),
+  "", ...SLOT_FORMAT,
 ];
 
 // 追问包：上一轮已知（填上和半格的已知）+ 这一轮只问勾上的格子 + 八格回答格式。预览与复制用同一个字符串。
@@ -191,11 +192,11 @@ export async function packHashOf(pack) {
   return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// 复制追问包后追加一轮；轮次只追加，最多 50 轮。
-export function appendHatchRound(record, { by, asked = [], packHash, at = new Date().toISOString() }) {
+// 复制追问包后追加一轮；轮次只追加，最多 50 轮。kind 是 v5 话术类型（开场 / 追问 / 复刻 / 写 Skill），旧轮次没有。
+export function appendHatchRound(record, { by, asked = [], packHash, kind, at = new Date().toISOString() }) {
   const prev = hatchOf(record), rounds = prev.rounds || [];
   if (rounds.length >= HATCH_LIMITS.rounds) fail(`最多 ${HATCH_LIMITS.rounds} 轮`);
-  return { ...prev, rounds: [...rounds, { n: rounds.length + 1, at, by, asked: SLOT_IDS.filter((id) => asked.includes(id)), status: "sent", packHash }] };
+  return { ...prev, rounds: [...rounds, { n: rounds.length + 1, at, by, asked: SLOT_IDS.filter((id) => asked.includes(id)), status: "sent", packHash, ...(kind ? { kind } : {}) }] };
 }
 
 // 旧记录的每轮：从 packVersions 与 reaRuns 只读推出。已有任务包版本的成功运行算同一轮，不重复计。

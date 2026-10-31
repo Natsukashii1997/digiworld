@@ -3,7 +3,8 @@
 import { randomUUID } from "node:crypto";
 import { failure } from "./repository.mjs";
 import { REVERSE_REPORT_LIMITS } from "./reverse-report-schema.mjs";
-import { parseHatchReply, applyHatchReply, cellsOf, SLOT_IDS } from "../src/reverse-hatch.js";
+import { applyHatchReply, cellsOf, SLOT_IDS } from "../src/reverse-hatch.js";
+import { parseReport } from "../src/reverse-flow.js";
 import { filterRelayText } from "../src/relay-prompt.js";
 
 const PREVIEW_TTL = 5 * 60 * 1000;
@@ -34,15 +35,19 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
     return report;
   };
   // 按回执写回档案：八格照放回结论的规则改；对应那一轮由「已发出」改成「已交回」，别的轮次不动。
+  // 结论、能力清单、证据、下一轮建议问写进 hatch.report；晚到的旧轮次回执不覆盖更新一轮的。
   const adoptInto = (record, report, { at, overwrite }) => {
     const rounds = record.hatch?.rounds || [];
     if (!rounds.some((x) => x.n === report.round)) throw failure("这一轮已不在记录里", 409);
-    const applied = applyHatchReply(record, parseHatchReply(report.text), { at, overwrite });
+    const parsed = parseReport(report.text);
+    const applied = applyHatchReply(record, parsed, { at, overwrite });
+    const latest = !record.hatch?.report || record.hatch.report.round <= report.round;
     const hatch = {
       ...applied.hatch,
       rounds: rounds.map((x) => (x.n === report.round && x.status === "sent" ? { ...x, status: "back", backAt: at, cells: cellsOf(applied.hatch.slots) } : x)),
+      ...(latest ? { report: { round: report.round, ...parsed.report } } : {}),
     };
-    return { ...applied, hatch };
+    return { ...applied, hatch, report: parsed.report, latest };
   };
 
   return {
@@ -91,12 +96,12 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
       const report = reportOf(stored, input.id);
       const record = recordOf(stored, report.recordId);
       const at = now();
-      const { changes, kept, unplaced, missing, redactions } = adoptInto(record, report, { at, overwrite });
+      const { changes, kept, unplaced, missing, redactions, report: parsed, latest } = adoptInto(record, report, { at, overwrite });
       for (const [key, value] of previews) if (value.expires <= clock()) previews.delete(key);
       if (previews.size >= 30) previews.delete(previews.keys().next().value);
       const previewId = randomUUID(), expires = clock() + PREVIEW_TTL;
       previews.set(previewId, { reportId: report.id, revision: stored.revision, overwrite, expires });
-      return { previewId, reportId: report.id, recordId: record.id, round: report.round, revision: stored.revision, changes, kept, unplaced, missing, redactions, expiresAt: new Date(expires).toISOString() };
+      return { previewId, reportId: report.id, recordId: record.id, round: report.round, revision: stored.revision, report: parsed, latest, changes, kept, unplaced, missing, redactions, expiresAt: new Date(expires).toISOString() };
     },
     // 采纳：预览后主库没变才写；回执标为已采纳，档案按预览时的覆盖选择写入。
     async adopt(input) {
