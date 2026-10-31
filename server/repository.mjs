@@ -230,6 +230,21 @@ export async function openRepository(directory) {
         return commit(state);
       });
     },
+    // 逆向回执（v5）：只改 reverseReports，采纳时连带改对应记录的八格与轮次；同一结果不写主库。
+    updateReverseReports(update, { expectedRevision } = {}) {
+      return serial(async () => {
+        const stored = await read();
+        if (!stored) throw failure("请先初始化资产库", 409);
+        if (expectedRevision !== undefined && expectedRevision !== stored.revision) throw failure("记录已变化，请刷新后重试", 409);
+        const patch = await update(structuredClone(stored));
+        if (Object.keys(patch).some((k) => !["reverseReports", "reverseRecords"].includes(k))) throw failure("逆向回执更新字段无效");
+        const state = { ...stored, ...patch, revision: stored.revision + 1 };
+        if (equivalent(state.reverseReports, stored.reverseReports) && equivalent(state.reverseRecords, stored.reverseRecords)) return stored;
+        validateState(state);
+        validateHistory(stored, state, { allowReverseReports: true });
+        return commit(state);
+      });
+    },
     // 每日项目简报的已读状态（项目空间第二批）：只改 briefReads；同一内容重复标记不写主库。
     updateBriefReads(update) {
       return serial(async () => {
@@ -384,6 +399,7 @@ export async function openRepository(directory) {
           allowCandidateImport: true,
           allowSkillSourceAdoptions: true,
           allowProjectDesk: true,
+          allowReverseReports: true,
         });
         const result = await commit({
           ...state,

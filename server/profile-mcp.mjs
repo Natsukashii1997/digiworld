@@ -48,6 +48,27 @@ export const KNOWLEDGE_TOOLS = [
  {name:"search_knowledge",title:"跨知识库检索",description:"只读检索本人已授权知识源；个人说明单独授权。返回来源、相对路径、摘录和覆盖；partial不表示未命中。显式cursor续查。",annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},inputSchema:{type:"object",properties:{query:{type:"string",minLength:1,maxLength:100},limit:{type:"integer",minimum:1,maximum:50},cursor:{type:"string"}},required:["query"],additionalProperties:false}},
  {name:"read_note",title:"读取知识原文",description:"只读当前已授权知识源内一篇Markdown，校验检索哈希；字数超限拒绝，不截断。个人说明请用read_profile。",annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},inputSchema:{type:"object",properties:{sourceId:{type:"string"},path:{type:"string"},expectedSha256:{type:"string",pattern:"^[a-f0-9]{64}$"},maxChars:{type:"integer",minimum:1,maximum:16000}},required:["sourceId","path","expectedSha256"],additionalProperties:false}},
 ];
+// 逆向 v5 回执（#47）：Agent 按工作台给的开场话术做完一轮，把回执交回工作台待过目，由用户采纳。
+export const REVERSE_TOOLS = [
+  {
+    name: "reverse_report",
+    title: "交回逆向回执",
+    description:
+      "按工作台逆向工程的开场话术做完一轮后，把这一轮的回执交回工作台。taskId 和 round 照话术里的任务编号填；text 照话术要求的回执格式写。回执只进工作台待过目，由用户预览后采纳或退回；你不能直接改档案。同一轮同一份正文重复提交不会重复记录。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        taskId: { type: "string", description: "任务编号里的记录 ID，照话术填写。" },
+        round: { type: "integer", minimum: 1, description: "任务编号里的轮次，照话术填写。" },
+        kind: { type: "string", enum: ["report"], description: "回执类型。目前只有 report（拆解回执）。" },
+        text: { type: "string", description: "回执正文，照话术要求的格式，最多 50000 字。" },
+        proposer: { type: "string", description: "提交者，例如 Codex、Claude Code（1–60 字）。" },
+      },
+      required: ["taskId", "round", "kind", "text", "proposer"],
+      additionalProperties: false,
+    },
+  },
+];
 const reply = (id, result) => ({ jsonrpc: "2.0", id, result });
 const error = (id, code, message) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
 const toolResult = (text, structuredContent, isError = false) => ({
@@ -65,7 +86,7 @@ function readText(result) {
 }
 
 // 处理一条 JSON-RPC 消息；通知返回 null。工具执行失败以 isError 结果返回，协议错误用 JSON-RPC error。
-export async function handleMcp(profile, message, knowledge) {
+export async function handleMcp(profile, message, knowledge, reverse) {
   if (!message || typeof message !== "object" || Array.isArray(message) || message.jsonrpc !== "2.0" || typeof message.method !== "string")
     return error(message?.id, -32600, "无效的 JSON-RPC 请求");
   const { id, method, params } = message;
@@ -78,11 +99,12 @@ export async function handleMcp(profile, message, knowledge) {
       capabilities: { tools: { listChanged: false } },
       serverInfo: { name: "workbench-profile", title: "工作台个人说明", version: "1.0.0" },
       instructions:
-        "个人说明来自用户本机 Vault，只读。需要修改时调用 propose_profile_change 提交建议，由用户在工作台采纳。",
+        "个人说明来自用户本机 Vault，只读。需要修改时调用 propose_profile_change 提交建议，由用户在工作台采纳。" +
+        (reverse ? "逆向工程做完一轮时调用 reverse_report 交回回执，由用户在工作台采纳。" : ""),
     });
   }
   if (method === "ping") return reply(id, {});
-  const tools=[...PROFILE_TOOLS,...(knowledge?KNOWLEDGE_TOOLS:[])];
+  const tools=[...PROFILE_TOOLS,...(knowledge?KNOWLEDGE_TOOLS:[]),...(reverse?REVERSE_TOOLS:[])];
   if (method === "tools/list") return reply(id, { tools });
   if (method !== "tools/call") return error(id, -32601, `不支持的方法：${method}`);
   const name = params?.name;
@@ -98,6 +120,18 @@ export async function handleMcp(profile, message, knowledge) {
       const result=await (name === "search_knowledge" ? knowledge.searchAll(args) : knowledge.readNote(args));
       return reply(id,toolResult(name === "search_knowledge" ? `已查${result.searchedSources}/${result.totalSources}个授权知识源，${result.results.length}条命中；覆盖${result.status}。` : `已读取${result.sourceName}/${result.path}；SHA-256 ${result.sha256}`,result));
     }
+    if (name === "reverse_report") {
+      const result = await reverse.propose(args);
+      return reply(
+        id,
+        toolResult(
+          result.duplicate
+            ? `这份回执之前已交过（回执 ${result.id}，${{ pending: "待过目", adopted: "已采纳", rejected: "已退回" }[result.status]}），没有重复记录。`
+            : `已交回工作台待过目（回执 ${result.id}），等用户预览后采纳或退回；档案还没改。`,
+          result,
+        ),
+      );
+    }
     if(name !== "propose_profile_change")return error(id,-32602,"未知工具");
     const result = await profile.propose(args);
     return reply(
@@ -110,7 +144,7 @@ export async function handleMcp(profile, message, knowledge) {
   }
 }
 
-export async function startProfileMcp({ profile, knowledge, usage, port = 5179 }) {
+export async function startProfileMcp({ profile, knowledge, reverse, usage, port = 5179 }) {
   const sessions = new Map();
   const server = http.createServer(async (request, response) => {
     const send = (status, value, headers = {}) => {
@@ -144,7 +178,7 @@ export async function startProfileMcp({ profile, knowledge, usage, port = 5179 }
       } catch {
         return send(400, error(null, -32700, "JSON 解析失败"));
       }
-      const result = await handleMcp(profile, message, knowledge);
+      const result = await handleMcp(profile, message, knowledge, reverse);
       if (result === null) return send(202);
       if (message.method === "initialize" && result?.result) {
         const candidate = message.params?.clientInfo?.name;
@@ -156,7 +190,8 @@ export async function startProfileMcp({ profile, knowledge, usage, port = 5179 }
       }
       const finalResult = ["search_knowledge","read_note"].includes(message.params?.name) && Buffer.byteLength(JSON.stringify(result)) > MAX_BODY
         ? reply(message.id,toolResult("工具输出超过安全上限，请缩小读取范围",null,true)) : result;
-      if (message.method === "tools/call" && [...PROFILE_TOOLS, ...(knowledge ? KNOWLEDGE_TOOLS : [])].some((tool) => tool.name === message.params?.name) && finalResult?.result) {
+      // 逆向回执与个人说明同属这个本机 MCP，使用统计一并记在 knowledge 下（设置页据此认出已接入的 Agent）。
+      if (message.method === "tools/call" && [...PROFILE_TOOLS, ...(knowledge ? KNOWLEDGE_TOOLS : []), ...(reverse ? REVERSE_TOOLS : [])].some((tool) => tool.name === message.params?.name) && finalResult?.result) {
         const session = sessions.get(request.headers["mcp-session-id"]);
         if (session && Date.now() - session.at > 24 * 60 * 60 * 1000) sessions.delete(request.headers["mcp-session-id"]);
         const clientName = session && Date.now() - session.at <= 24 * 60 * 60 * 1000 ? session.clientName : null;
