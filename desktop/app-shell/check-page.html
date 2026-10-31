@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>外壳核对页</title>
+<style>body{font:15px -apple-system;background:#070b16;color:#e9eeff;padding:20px;line-height:1.5}button,a{font-size:15px;margin:3px}h3{margin:12px 0 4px}.f{font-size:26px}#log{white-space:pre-wrap;background:#131d33;padding:8px;min-height:80px}</style>
+<h3>1 复制</h3><button id="c1">writeText</button><button id="c2">富文本 write</button><button id="c3">读剪贴板 read</button>
+<h3>2 选文件</h3><input type="file" id="f1"><input type="file" id="f2" multiple>
+<h3>3 下载</h3><button id="d1">blob 下载</button><a href="check-page.html" download="外壳核对-同站.html">同站文件下载</a>
+<h3>4 离开确认</h3><label><input type="checkbox" id="dirty"> 有未保存内容</label> <a href="#x">站内锚点</a>
+<h3>5 外链</h3><a href="https://example.com/">普通外链</a><a href="https://example.com/" target="_blank">新窗口外链</a><button id="w1">window.open 外链</button>
+<h3>6 对话框</h3><button id="a1">alert</button><button id="a2">confirm</button><button id="a3">prompt</button>
+<h3>7 字体</h3><div class="f" style="font-family:'HanziPen SC'">翩翩体：数码世界 HanziPen SC</div><div class="f" style="font-family:'Hannotate SC'">手札体：数码世界 Hannotate SC</div><div class="f">系统默认：数码世界</div>
+<div id="log"></div>
+<script>
+const log=t=>{document.getElementById('log').textContent+=t+'\n'};
+const $=id=>document.getElementById(id);
+$('c1').onclick=async()=>{try{await navigator.clipboard.writeText('外壳核对-writeText-'+Date.now());log('writeText OK')}catch(e){log('writeText 失败 '+e)}};
+$('c2').onclick=async()=>{try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob(['<b>外壳核对富文本</b>'],{type:'text/html'}),'text/plain':new Blob(['外壳核对富文本'],{type:'text/plain'})})]);log('write OK')}catch(e){log('write 失败 '+e)}};
+$('c3').onclick=async()=>{try{const items=await navigator.clipboard.read();for(const i of items)log('read 类型 '+i.types.join(','));const t=await navigator.clipboard.readText();log('readText '+t.slice(0,40))}catch(e){log('read 失败 '+e)}};
+$('f1').onchange=e=>log('选了 '+[...e.target.files].map(f=>f.name+'/'+f.size).join(', '));
+$('f2').onchange=e=>log('多选 '+[...e.target.files].map(f=>f.name).join(', '));
+$('d1').onclick=()=>{const u=URL.createObjectURL(new Blob(['blob 下载内容'],{type:'text/plain'}));const a=document.createElement('a');a.href=u;a.download='外壳核对-blob.txt';a.click();log('blob 下载已触发')};
+addEventListener('beforeunload',e=>{if($('dirty').checked){e.preventDefault();e.returnValue=''}});
+$('w1').onclick=()=>{window.open('https://example.com/?w');log('window.open 已调用')};
+$('a1').onclick=()=>{alert('alert 正常');log('alert 关闭')};
+$('a2').onclick=()=>log('confirm 返回 '+confirm('confirm 正常？'));
+$('a3').onclick=()=>log('prompt 返回 '+prompt('prompt 正常？','默认值'));
+log('载入于 '+new Date().toLocaleTimeString()+'  secure='+isSecureContext+'  fonts HanziPen='+document.fonts.check("26px 'HanziPen SC'"));
+</script>
