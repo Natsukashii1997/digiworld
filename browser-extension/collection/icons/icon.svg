@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" shape-rendering="crispEdges">
+  <!-- 插件图标 A 版「像素数码蛋」（用户 2026-11-02 选定）：藏青底、奶白数码蛋带橙斑，右下青色加号表示收进来。8px 一格。改完运行 node browser-extension/collection/icons/make-icons.mjs -->
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="#0f1729" shape-rendering="geometricPrecision"/>
+  <g fill="#f6f2e4">
+    <rect x="48" y="16" width="32" height="8"/>
+    <rect x="40" y="24" width="48" height="8"/>
+    <rect x="32" y="32" width="16" height="16"/><rect x="64" y="32" width="32" height="16"/>
+    <rect x="24" y="48" width="80" height="8"/>
+    <rect x="24" y="56" width="56" height="16"/><rect x="96" y="56" width="8" height="16"/>
+    <rect x="24" y="72" width="8" height="8"/><rect x="40" y="72" width="64" height="8"/>
+    <rect x="24" y="80" width="80" height="8"/>
+    <rect x="32" y="88" width="56" height="8"/>
+    <rect x="40" y="96" width="48" height="8"/>
+  </g>
+  <g fill="#ff8a24">
+    <rect x="48" y="32" width="16" height="16"/>
+    <rect x="80" y="56" width="16" height="16"/>
+    <rect x="32" y="72" width="8" height="8"/>
+  </g>
+  <rect x="88" y="88" width="24" height="24" fill="#0f1729"/>
+  <g fill="#4de3ff">
+    <rect x="90" y="96" width="20" height="8"/>
+    <rect x="96" y="90" width="8" height="20"/>
+  </g>
+</svg>
