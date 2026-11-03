@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const project = '/Users/nat/Documents/ChatGPT/个人/work/personal-ai-workbench';
+const project = '/Users/nat/Documents/ChatGPT/个人/work/digiworld';
 const digest = value => createHash('sha256').update(value).digest('hex');
 
 async function loadCandidate() {
