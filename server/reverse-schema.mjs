@@ -11,6 +11,7 @@ import {
   currentVerification,
 } from "../src/reverse-recipe.js";
 import {SLOT_IDS,HATCH_LIMITS,UNPLACED_TAIL} from '../src/reverse-hatch.js';
+import {FLOW_LIMITS,ROUND_KINDS,REPLICA_RESULTS,EVIDENCE_ID} from '../src/reverse-flow.js';
 const fail = (message) => {
   throw Object.assign(new Error("数据校验失败：" + message), { status: 400 });
 };
@@ -212,7 +213,7 @@ const HEX64 = /^[a-f0-9]{64}$/;
 export function validateHatch(r) {
   if (r.hatch !== undefined) {
     const h = r.hatch;
-    keys(h, ['version','slots','rounds','unplaced']); if (h.version !== 1) fail('八格版本无效');
+    keys(h, ['version','slots','rounds','unplaced','report','replica']); if (h.version !== 1) fail('八格版本无效');
     keys(h.slots, SLOT_IDS); if (SLOT_IDS.some((k) => !h.slots[k])) fail('八格不完整');
     for (const k of SLOT_IDS) {
       const s = h.slots[k]; keys(s, ['known','miss','edited','at']);
@@ -221,7 +222,8 @@ export function validateHatch(r) {
     }
     list(h.rounds, HATCH_LIMITS.rounds, '轮次无效或过多');
     h.rounds.forEach((x, i) => {
-      keys(x, ['n','at','by','asked','status','backAt','packHash','cells']);
+      keys(x, ['n','at','by','asked','status','backAt','packHash','cells','kind']);
+      if (x.kind !== undefined && !ROUND_KINDS.includes(x.kind)) fail('轮次类型无效');
       if (x.n !== i + 1) fail('轮次序号不连续'); date(x.at);
       if (!['codex','claude'].includes(x.by)) fail('轮次执行者无效');
       list(x.asked, SLOT_IDS.length, '轮次格子无效');
@@ -230,6 +232,28 @@ export function validateHatch(r) {
       if (x.status === 'back') date(x.backAt); else if (x.status !== 'sent' || x.backAt !== undefined || x.cells !== undefined) fail('轮次状态无效');
       if (x.cells !== undefined && !new RegExp(`^[fhe]{${SLOT_IDS.length}}$`).test(x.cells)) fail('轮次八格快照无效');
     });
+    // v5（#49）：最近一次采纳的拆解回执、复刻对照；round 必须是已有的轮次。
+    const round = (n) => { if (!h.rounds.some((x) => x.n === n)) fail('回执轮次不存在'); };
+    if (h.report !== undefined) {
+      const p = h.report; keys(p, ['round','verdict','caps','evidence','nextAsk']); round(p.round);
+      text(p.verdict, HATCH_LIMITS.text, '回执结论过长或含控制字符');
+      list(p.caps, FLOW_LIMITS.caps, '能力清单无效或过多');
+      for (const c of p.caps) {
+        keys(c, ['name','known','miss','ev']); text(c.name, HATCH_LIMITS.label, '能力名称无效'); if (!c.name.trim()) fail('能力名称为空');
+        text(c.known, HATCH_LIMITS.text, '能力已知过长'); text(c.miss, HATCH_LIMITS.text, '能力缺过长');
+        list(c.ev, FLOW_LIMITS.evidence, '能力证据无效'); if (c.ev.some((e) => !EVIDENCE_ID.test(e)) || new Set(c.ev).size !== c.ev.length) fail('能力证据编号无效');
+      }
+      list(p.evidence, FLOW_LIMITS.evidence, '证据无效或过多');
+      for (const e of p.evidence) { keys(e, ['id','where']); if (!EVIDENCE_ID.test(e.id || '')) fail('证据编号无效'); text(e.where, HATCH_LIMITS.text, '证据位置过长'); }
+      if (new Set(p.evidence.map((e) => e.id)).size !== p.evidence.length) fail('证据编号重复');
+      list(p.nextAsk, FLOW_LIMITS.nextAsk, '下一轮建议问过多'); for (const q of p.nextAsk) { text(q, HATCH_LIMITS.text, '下一轮建议问过长'); if (!q.trim()) fail('下一轮建议问为空'); }
+    }
+    if (h.replica !== undefined) {
+      const p = h.replica; keys(p, ['round','at','where','rows']); round(p.round); date(p.at);
+      text(p.where, HATCH_LIMITS.text, '复刻位置过长');
+      list(p.rows, FLOW_LIMITS.rows, '复刻对照无效或过多');
+      for (const r of p.rows) { keys(r, ['name','result','note']); text(r.name, HATCH_LIMITS.label, '复刻对照能力无效'); if (!r.name.trim()) fail('复刻对照能力为空'); if (!(r.result in REPLICA_RESULTS)) fail('复刻对照结果无效'); text(r.note, HATCH_LIMITS.text, '复刻对照说明过长'); }
+    }
     if (h.unplaced !== undefined) {
       keys(h.unplaced, ['at','items']); date(h.unplaced.at);
       list(h.unplaced.items, HATCH_LIMITS.unplaced, '分不进格的段落过多'); if (!h.unplaced.items.length) fail('分不进格的段落为空');

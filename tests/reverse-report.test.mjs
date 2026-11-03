@@ -161,6 +161,27 @@ test("晚到的第 1 轮回执：只把第 1 轮改成已交回，第 2 轮仍�
   });
 });
 
+test("v5 回执（#49）：采纳时结论、能力清单、证据、下一轮建议问写进 hatch.report；晚到的旧轮次不覆盖新一轮", async () => {
+  const r = specimen(2);
+  const v5 = (n, verdict) => `## 回执 · 接力 · 第 ${n} 轮 · 任务编号 ${r.id}\n一句话结论：${verdict}\n## 能力清单\n- 生成摘要：已知 自动 ｜证据 E1 ｜缺 无\n## 用途\n已知：交接\n缺：无\n## 证据\n- E1：app.js · handoff()\n## 下一轮建议问\n1. 上限多少？`;
+  await repo([r], async (repository, svc) => {
+    const adopt = async (round, verdict) => {
+      const { id } = await propose(svc, r, { round, text: v5(round, verdict) });
+      const p = await svc.preview({ id });
+      assert.equal(p.report.verdict, verdict);
+      assert.deepEqual(p.unplaced, [], "新小节不再算分不进格");
+      await svc.adopt({ previewId: p.previewId, expectedRevision: p.revision });
+      return { p, record: (await repository.read()).reverseRecords[0] };
+    };
+    let { record } = await adopt(2, "第二轮结论");
+    assert.deepEqual(record.hatch.report, { round: 2, verdict: "第二轮结论", caps: [{ name: "生成摘要", known: "自动", miss: "", ev: ["E1"] }], evidence: [{ id: "E1", where: "app.js · handoff()" }], nextAsk: ["上限多少？"] });
+    const late = await adopt(1, "第一轮结论");
+    assert.equal(late.p.latest, false);
+    assert.equal(late.record.hatch.report.verdict, "第二轮结论");
+    assert.deepEqual(late.record.hatch.rounds.map((x) => x.status), ["back", "back"]);
+  });
+});
+
 test("待过目到上限 20 份拒绝新回执", async () => {
   const r = specimen();
   await repo([r], async (repository, svc) => {

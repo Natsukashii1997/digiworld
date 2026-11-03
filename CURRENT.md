@@ -20,6 +20,10 @@
 
 11-03 主目录 `2f33ba7` 把仓库改名为 digiworld（6 个文件里的链接和路径），和 PR #50 分支的 CURRENT 表头冲突。在 worktree `.claude/worktrees/reverse-report` 合并 origin/main（`cc74191`）：CURRENT 冲突取分支内容，GitHub 链接换成 digiworld，其余 5 个文件自动合并。专项（reverse-flow / reverse-report / reverse-hatch / reverse-hatch-skill / controlled-execution）57/57 通过；全量 1634/1638，4 条失败查明是环境原因：digital-world-ui 要 `dist/`（worktree 没构建）；knowledge-writeback 依赖已不存在的 `.claude/worktrees/wiki-local`；controlled-execution 并发下偶发（单跑通过，同 #6 一类）；capability-services 依赖检出路径（同一提交 `cc74191` 换到 scratch 路径 18/18 通过）。表头按实际状态更新：第 1 批已合并，第 2 批 PR #50 待合并，#43 可合并，5178 还没发布 #45/#48/#52。未改业务代码，未发布，未动主目录里其他会话的未跟踪文件。
 
+## Claude 680：逆向 v5 第 2 批话术与回执格式（2026-10-31，PR 待合并）
+
+#48 经用户说「合并」后 squash 合并（`0247307`），主目录快进；主目录里与分支一致的简报和方案未跟踪副本先核对再删。本批 #49：新增 `src/reverse-flow.js`（开场话术六步带 ⏸ 和任务编号 + 轮次、追问 / 复刻 / 写 Skill 短话术、`parseReport`、`parseReplica`、`stageOf`）；`hatch.report`、`hatch.replica`、轮次 `kind`、记录 `heldAt` 的校验；采纳回执时写 `hatch.report`（晚到的旧轮次不覆盖）。不动界面、不碰 5178、不读 `data/`。
+
 ## Claude 678–679：逆向 v5 第 1 批回执通道（2026-10-31，PR #48 已合并）
 
 用户 10-31 定：四批全由 Claude 做（偏离 COLLABORATION §6，按用户决定）；旧 3 件记录不迁移。总 issue #46，本批 #47。新增顶层集合 `reverseReports` 与历史守卫、`server/reverse-report.mjs`（提交 / 预览 / 采纳 / 退回）、`/api/reverse/reports/*`、MCP `reverse_report`（同一个 `workbench-profile`，已登记 Agent 不用重配）。专项 11 个全过；`npm test` 1626 / 1623 过，3 个失败均为已知基线；curl 走查通过。不动界面、不碰 5178、不读 `data/`。
