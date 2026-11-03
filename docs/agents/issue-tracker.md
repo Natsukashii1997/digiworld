@@ -2,7 +2,7 @@
 
 > 2026-10-27 起改用 GitHub Issues。原先这里的本地跟踪记录移到了 [local-tracking-history.md](local-tracking-history.md)，只读保留。
 
-本仓库的需求、规格和任务都放在 GitHub Issues（`Natsukashii1997/personal-ai-workbench`），一律用本机已登录的 `gh`，在仓库目录里运行时 `gh` 会自己认出仓库。
+本仓库的需求、规格和任务都放在 GitHub Issues（`Natsukashii1997/digiworld`），一律用本机已登录的 `gh`，在仓库目录里运行时 `gh` 会自己认出仓库。
 
 ## 操作
 

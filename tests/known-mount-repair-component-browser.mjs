@@ -16,7 +16,7 @@ import {normaliseFiles} from '../server/agent-write.mjs';
 import {readLocalSkill} from '../server/skill-files.mjs';
 import {makeAsset,current} from '../src/store.js';
 
-const project='/Users/nat/Documents/ChatGPT/个人/work/personal-ai-workbench';
+const project='/Users/nat/Documents/ChatGPT/个人/work/digiworld';
 const here=fileURLToPath(new URL('..',import.meta.url));
 const require=createRequire(join(project,'package.json'));
 const {build}=require('esbuild'),{chromium}=require('playwright');

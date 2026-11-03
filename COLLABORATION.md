@@ -2,7 +2,7 @@
 
 ## 1. 唯一工作对象与状态
 
-- 唯一应用目录：`/Users/nat/Documents/ChatGPT/个人/work/personal-ai-workbench`。双方对这份代码负责，不另起一份独立产品副本。
+- 唯一应用目录：`/Users/nat/Documents/ChatGPT/个人/work/digiworld`。双方对这份代码负责，不另起一份独立产品副本。
 - [CURRENT.md](CURRENT.md) 是唯一可变的项目最新状态。`docs/agents/handoffs/` 存放每次交接和证据；日期版完整交接是快照，不参与争夺“最新”。
 - `AGENTS.md` 与 `CLAUDE.md` 只是各 Agent 的入口；不要在两边分别维护完成列表。
 - 当前采用“串行写入、可并行只读检查”。这是一项合作协议，不是操作系统锁；尚未安装自动消息、Hook、调度器或跨设备同步。

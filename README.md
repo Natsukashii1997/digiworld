@@ -11,7 +11,7 @@
 运行环境：Node.js 24 或以上（本机已具备），现有依赖已安装。停止服务后，在应用目录运行：
 
 ```sh
-cd '/Users/nat/Documents/ChatGPT/个人/work/personal-ai-workbench'
+cd '/Users/nat/Documents/ChatGPT/个人/work/digiworld'
 npm run build
 npm start
 ```
