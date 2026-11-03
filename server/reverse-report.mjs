@@ -3,8 +3,8 @@
 import { randomUUID } from "node:crypto";
 import { failure } from "./repository.mjs";
 import { REVERSE_REPORT_LIMITS } from "./reverse-report-schema.mjs";
-import { applyHatchReply, cellsOf, SLOT_IDS } from "../src/reverse-hatch.js";
-import { parseReport } from "../src/reverse-flow.js";
+import { SLOT_IDS } from "../src/reverse-hatch.js";
+import { adoptReport } from "../src/reverse-flow.js";
 import { filterRelayText } from "../src/relay-prompt.js";
 
 const PREVIEW_TTL = 5 * 60 * 1000;
@@ -34,20 +34,10 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
     if (report.status !== "pending") throw failure("这份回执已处理", 409);
     return report;
   };
-  // 按回执写回档案：八格照放回结论的规则改；对应那一轮由「已发出」改成「已交回」，别的轮次不动。
-  // 结论、能力清单、证据、下一轮建议问写进 hatch.report；晚到的旧轮次回执不覆盖更新一轮的。
+  // 写回规则在 adoptReport（手动粘贴也用它）；这里把「轮次不在」转成服务端错误。
   const adoptInto = (record, report, { at, overwrite }) => {
-    const rounds = record.hatch?.rounds || [];
-    if (!rounds.some((x) => x.n === report.round)) throw failure("这一轮已不在记录里", 409);
-    const parsed = parseReport(report.text);
-    const applied = applyHatchReply(record, parsed, { at, overwrite });
-    const latest = !record.hatch?.report || record.hatch.report.round <= report.round;
-    const hatch = {
-      ...applied.hatch,
-      rounds: rounds.map((x) => (x.n === report.round && x.status === "sent" ? { ...x, status: "back", backAt: at, cells: cellsOf(applied.hatch.slots) } : x)),
-      ...(latest ? { report: { round: report.round, ...parsed.report } } : {}),
-    };
-    return { ...applied, hatch, report: parsed.report, latest };
+    try { return adoptReport(record, report.text, report.round, { at, overwrite }); }
+    catch (e) { throw e.status === 409 ? failure(e.message, 409) : e; }
   };
 
   return {
