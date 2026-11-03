@@ -7,6 +7,21 @@ import { makeAsset, seed, current } from "../src/store.js";
 import { stringify, parse } from "../src/serialization.js";
 import { validateHistory } from "../server/schema.mjs";
 
+test("逆向记录产出的 Skill 可删，作为输入引用的资产仍被挡", () => {
+  const input = makeAsset({ title: "输入", type: "Prompt", content: "材料" });
+  const output = (id) => ({ id, type: "Skill", versions: [{ title: id }] });
+  const state = {
+    assets: [input, ...["forge-s", "saved-s", "pack-s", "hatch-s"].map(output)],
+    reverseRecords: [{
+      id: "reverse-a", title: "逆向稿", imports: [{ assetId: input.id }],
+      forge: { assetId: "forge-s" }, savedSkill: { assetId: "saved-s" },
+      packSkills: [{ assetId: "pack-s" }], hatchSkills: [{ assetId: "hatch-s" }],
+    }],
+  };
+  for (const id of ["forge-s", "saved-s", "pack-s", "hatch-s"]) assert.deepEqual(assetDeleteBlockers(state, id), [], id);
+  assert.deepEqual(assetDeleteBlockers(state, input.id).map(item => item.kind), ["reverse"]);
+});
+
 test("引用索引覆盖历史工作流、派生来源和项目，忽略同名不同 ID", () => {
   const target = makeAsset({ title: "目标", type: "Prompt", content: "提示" });
   const other = makeAsset({ title: "目标", type: "Prompt", content: "另一份" });

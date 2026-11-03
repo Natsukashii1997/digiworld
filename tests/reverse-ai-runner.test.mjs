@@ -33,7 +33,7 @@ test('运行裁剪后REA证据与Skill保留，八版本切旧再生成仍可回
   const svc=createReverseSkillV4({repository:app.repository}),p=await svc.preview({recordId:r.id,expectedRevision:state.revision}),saved=await svc.confirm({recordId:r.id,token:p.token,packVersionId:oldId});const oldAsset=structuredClone(saved.state.assets.find(a=>a.id===saved.saved.assetId));
   bad=false;for(let i=0;i<7;i++){await app.start(i%2?'claude':'codex');await finished(app);}
   state=await app.repository.read();await app.runner.selectVersion({recordId:r.id,versionId:oldId,expectedRevision:state.revision});await app.start('claude');await finished(app);
-  state=await app.repository.read();r=state.reverseRecords[0];assert.equal(r.packVersions.length,8);assert.ok(r.packVersions.some(v=>v.id===oldId));assert.deepEqual(state.assets.find(a=>a.id===oldAsset.id),oldAsset);assert.ok(assetDeleteBlockers(state,oldAsset.id).some(x=>x.kind==='reverse'));
+  state=await app.repository.read();r=state.reverseRecords[0];assert.equal(r.packVersions.length,8);assert.ok(r.packVersions.some(v=>v.id===oldId));assert.deepEqual(state.assets.find(a=>a.id===oldAsset.id),oldAsset);assert.ok(!assetDeleteBlockers(state,oldAsset.id).some(x=>x.kind==='reverse'));
   const nextPreview=await svc.preview({recordId:r.id,expectedRevision:state.revision});assert.ok(nextPreview.token);
   await app.runner.selectVersion({recordId:r.id,versionId:oldId,expectedRevision:state.revision});await assert.rejects(svc.confirm({recordId:r.id,token:nextPreview.token,packVersionId:nextPreview.packVersionId}),/版本已变化/);
   const queried=await svc.query({recordId:r.id,packVersionId:oldId});assert.equal(queried.saved.assetId,oldAsset.id);
