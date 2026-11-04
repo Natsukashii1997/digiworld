@@ -1,0 +1,93 @@
+/* UI v19 · 逆向工程 v6（2026-10-31）：按简报 05-reverse-v5，板块化。外壳用工作台原样（common.css + v19.css），这里只写本页板块。 */
+.rv6 .bar6{display:flex;align-items:center;gap:22px;margin:4px 0 20px}
+.rv6 .bar6 h1{margin:0;font:800 30px var(--sans);letter-spacing:.02em}
+.rv6 .bar6 h1 .en{margin-left:12px;font:700 12px var(--mono);letter-spacing:.2em;color:var(--muted)}
+.rv6 .cnt{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)}
+.rv6 .cnt .lcd{--h:24px}
+.rv6 .grow{flex:1}
+.rv6 .lcd.y{color:var(--yellow)}.rv6 .lcd.v{color:var(--violet)}.rv6 .lcd.c{color:var(--cyan)}.rv6 .lcd.o{color:var(--orange-2)}.rv6 .lcd.m{color:var(--muted)}
+.rv6 .btn6{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:10px;border:1px solid var(--line-2);background:transparent;color:var(--text);font:600 13px var(--sans);white-space:nowrap}
+.rv6 .btn6.go{border:0;background:linear-gradient(180deg,var(--orange-2),var(--orange));color:#1f0f00;box-shadow:0 6px 18px -8px var(--orange)}
+.rv6 .btn6.cy{border-color:rgba(77,227,255,.45);color:var(--cyan)}
+.rv6 .btn6.sm{min-height:34px;padding:0 12px;font-size:12.5px}
+/* 板块 */
+.rv6 .blk{border:1px solid var(--line-2);border-radius:16px;background:linear-gradient(180deg,var(--panel),#0c1424);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.rv6 .bh{display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--line)}
+.rv6 .bh .no{font:700 11px var(--mono);letter-spacing:.16em;color:var(--orange-2)}
+.rv6 .bh h3{margin:0;font:700 16px var(--sans)}
+.rv6 .bh .meta{margin-left:auto;font:500 12px var(--mono);color:var(--muted)}
+.rv6 .bb{padding:18px 22px}
+.rv6 .sub3{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;font:700 14px var(--sans)}
+.rv6 .sub3 small{font:500 12px var(--mono);color:var(--muted)}
+.rv6 .sub3 .r{margin-left:auto;font:600 12px var(--sans);color:var(--yellow)}
+.rv6 .tg{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:6px;font:700 11px var(--sans);white-space:nowrap}
+.rv6 .tg.y{background:rgba(255,209,102,.12);color:var(--yellow)}.rv6 .tg.c{background:rgba(77,227,255,.12);color:var(--cyan)}.rv6 .tg.g{background:rgba(166,227,110,.12);color:var(--lcd)}.rv6 .tg.m{background:rgba(139,152,184,.12);color:var(--muted)}.rv6 .tg.v{background:rgba(167,139,250,.14);color:var(--violet)}.rv6 .tg.r{background:rgba(255,107,107,.12);color:#ff8a8a}
+/* 读数格 */
+.rv6 .stats{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0a1120}
+.rv6 .stats>div{display:flex;flex-direction:column;gap:8px;padding:14px 18px}
+.rv6 .stats>div+div{border-left:1px solid var(--line)}
+.rv6 .stats span{font-size:12.5px;color:var(--text-2)}
+.rv6 .stats .lcd{--h:30px}
+.rv6 .stats small{font-size:11.5px;color:var(--muted)}
+.rv6 .stats small.y{color:var(--yellow)}
+/* 现在 / 下一步 */
+.rv6 .nn{display:grid;grid-template-columns:1fr 1fr}
+.rv6 .nn>div{padding:4px 0}
+.rv6 .nn>div+div{padding-left:28px;border-left:1px solid var(--line)}
+.rv6 .nn>div:first-child{padding-right:28px}
+.rv6 .nn .l{font:600 13px var(--sans);color:var(--text-2)}
+.rv6 .nn .l.o{color:var(--orange-2)}
+.rv6 .nn b{display:block;margin:8px 0 6px;font:700 17px/1.45 var(--sans)}
+.rv6 .nn small{font:500 12px var(--mono);color:var(--muted)}
+.rv6 .nn .acts{display:flex;gap:8px;margin-top:10px}
+/* 工作流轨道：六步，⏸ 是 Agent 停下来等你回话的地方 */
+.rv6 .rail{display:grid;grid-template-columns:repeat(6,1fr);position:relative}
+.rv6 .rail .st{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.rv6 .rail .st::before{content:"";position:absolute;top:15px;left:-50%;right:50%;height:2px;background:#26324f}
+.rv6 .rail .st:first-child::before{display:none}
+.rv6 .rail .st.done::before,.rv6 .rail .st.cur::before{background:var(--lcd);box-shadow:0 0 6px rgba(166,227,110,.5)}
+.rv6 .rail .dot{position:relative;z-index:1;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#0b1222;box-shadow:inset 0 0 0 2px #2a3554;font:700 12px var(--mono);color:var(--muted)}
+.rv6 .rail .done .dot{background:rgba(166,227,110,.15);box-shadow:inset 0 0 0 2px var(--lcd);color:var(--lcd)}
+.rv6 .rail .cur .dot{background:#0b1222;box-shadow:inset 0 0 0 2px var(--orange),0 0 0 5px rgba(255,138,36,.14),0 0 14px rgba(255,138,36,.6);color:var(--orange-2)}
+.rv6 .rail .fail .dot{box-shadow:inset 0 0 0 2px #ff6b6b;color:#ff8a8a}
+.rv6 .rail b{font:600 12.5px var(--sans);color:var(--text)}
+.rv6 .rail .todo b{color:var(--muted)}
+.rv6 .rail em{font:600 10.5px var(--mono);font-style:normal;color:var(--muted)}
+.rv6 .rail em.p{color:var(--yellow)}
+.rv6 .rail .n{margin-top:4px}
+.rv6 .rail .n .lcd{--h:22px}
+/* 待过目横条 */
+.rv6 .pend{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:12px;background:linear-gradient(90deg,rgba(255,209,102,.10),rgba(255,209,102,.02));box-shadow:inset 0 0 0 1px rgba(255,209,102,.4)}
+.rv6 .pend i{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 10px var(--yellow);flex:none}
+.rv6 .pend div{flex:1}
+.rv6 .pend b{display:block;font-size:14px}
+.rv6 .pend small{font:500 11.5px var(--mono);color:var(--muted)}
+/* 能力清单 / 八格 / 证据 / 历次 */
+.rv6 .caps{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.rv6 .caps li{display:grid;grid-template-columns:30px 1fr;gap:4px 10px;padding:12px 14px;border-radius:10px;background:#0a1120;border:1px solid var(--line)}
+.rv6 .caps .i{grid-row:span 3;font:700 12px var(--mono);color:var(--muted);padding-top:2px}
+.rv6 .caps b{font-size:14px}
+.rv6 .caps p{display:flex;gap:8px;align-items:baseline;margin:0;font-size:12.5px;line-height:1.6;color:var(--text-2)}
+.rv6 .caps p.ms{color:var(--yellow)}
+.rv6 .k1{flex:none;font:700 10.5px var(--mono);color:var(--muted)}
+.rv6 .ms .k1{color:var(--yellow)}
+.rv6 .ev{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;background:rgba(77,227,255,.12);font:700 10.5px var(--mono);color:var(--cyan)}
+.rv6 .slots{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rv6 .slots div{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:10px;background:#0a1120;border:1px solid var(--line);border-top:2px solid var(--lcd);font-size:12px;color:var(--text-2)}
+.rv6 .slots div.h{border-top-color:var(--yellow)}
+.rv6 .slots div.e{border-top-color:#2a3554;color:var(--muted)}
+.rv6 .slots b{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text)}
+.rv6 .slots b i{font:700 10px var(--mono);font-style:normal;color:var(--lcd)}
+.rv6 .slots .h b i{color:var(--yellow)}.rv6 .slots .e b i{color:var(--muted)}
+.rv6 .slots em{font-style:normal;color:var(--yellow)}
+.rv6 .evl,.rv6 .hist{margin:0;padding:0;list-style:none}
+.rv6 .evl li{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:7px 0;border-bottom:1px dashed var(--line);font:500 12px/1.6 var(--mono);color:var(--text-2)}
+.rv6 .evl li:last-child,.rv6 .hist li:last-child{border-bottom:0}
+.rv6 .evl b{color:var(--cyan)}
+.rv6 .hist li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:12.5px;color:var(--text-2)}
+.rv6 .hist a{font-size:12px;color:var(--cyan)}
+.rv6 .hist a:first-of-type{margin-left:auto}
+.rv6 .outc{display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;border:1px dashed var(--line-3);color:var(--muted);font-size:12.5px}
+.rv6 .outc .eg{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#0a1120;font:700 18px var(--mono);color:#3a4766}
+.rv6 .split2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.rv6 .hr{height:1px;margin:20px 0;background:var(--line)}

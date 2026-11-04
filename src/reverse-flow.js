@@ -1,7 +1,7 @@
 // 逆向 v5 标准工作流（#49）：开场话术、各阶段短话术、回执与复刻对照的解析、阶段推导。纯函数，页面与服务端共用。
 // 依据 docs/design/ui-v19/briefs/05-reverse-v5-工作流与清单.md §2–§5：工作台不取证、不调模型，只生成话术、解析交回的文本。
 import { filterRelayText } from "./relay-prompt.js";
-import { SLOTS, SLOT_FORMAT, HATCH_LIMITS, hatchOf, wantOf, targetOf, parseHatchReply } from "./reverse-hatch.js";
+import { SLOTS, SLOT_FORMAT, HATCH_LIMITS, hatchOf, wantOf, targetOf, parseHatchReply, applyHatchReply, cellsOf } from "./reverse-hatch.js";
 
 export const FLOW_LIMITS = { caps: 20, evidence: 100, nextAsk: 20, rows: 20 };
 export const ROUND_KINDS = ["start", "ask", "replica", "skill"];
@@ -255,6 +255,22 @@ export function parseReplica(raw) {
   }
   const t = rest.join("\n").trim();
   return { where, rows, header, unplaced: t ? [{ label: "认不出的行", text: t }] : [], redactions: filtered.count };
+}
+
+// 按回执写回档案（MCP 交回的采纳和手动粘贴共用）：八格照放回结论的规则改；对应那一轮由「已发出」改成「已交回」，别的轮次不动。
+// 结论、能力清单、证据、下一轮建议问写进 hatch.report；晚到的旧轮次回执不覆盖更新一轮的。
+export function adoptReport(record, text, round, { at = new Date().toISOString(), overwrite = [] } = {}) {
+  const rounds = record.hatch?.rounds || [];
+  if (!rounds.some((x) => x.n === round)) throw Object.assign(new Error("这一轮已不在记录里"), { status: 409 });
+  const parsed = parseReport(text);
+  const applied = applyHatchReply(record, parsed, { at, overwrite });
+  const latest = !record.hatch?.report || record.hatch.report.round <= round;
+  const hatch = {
+    ...applied.hatch,
+    rounds: rounds.map((x) => (x.n === round && x.status === "sent" ? { ...x, status: "back", backAt: at, cells: cellsOf(applied.hatch.slots) } : x)),
+    ...(latest ? { report: { round, ...parsed.report } } : {}),
+  };
+  return { ...applied, hatch, report: parsed.report, header: parsed.header, latest };
 }
 
 // 阶段由数据推出，不存。待过目优先（搁置中交回的也要看到），其次搁置、已收成；再看最后一轮是派出还是已交回。
