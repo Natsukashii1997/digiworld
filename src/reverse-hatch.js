@@ -265,3 +265,17 @@ export function generateHatchSkill(record, { title, slotsHash } = {}) {
   ];
   return { title: name, description: "逆向工程八格的固定版本；未经复刻验证", content, tags: ["逆向工程", "未经复刻验证"], files, source: `逆向工程孵化 · ${record.id}`, score };
 }
+
+// Agent 交回的 Skill 草稿（#55）：草稿原样作 SKILL.md（名字已定好），追问包与八格原样作附件。复刻对照一并记进 source.json。
+export function draftHatchSkill(record, { content, title, description, slotsHash, round, by, reportId }) {
+  const name = clean(title).replace(/\n+/g, " ").slice(0, 80);
+  const hatch = hatchOf(record), replica = hatch.replica, verified = replica ? `复刻对照第 ${replica.round} 轮` : "未经复刻验证";
+  const base = generateHatchSkill(record, { title: name || record.title?.slice(0, 80) || "逆向 Skill", slotsHash });
+  const json = (path, data) => ({ path, text: true, data: JSON.stringify(relayData(data), null, 2) + "\n" });
+  const files = [
+    { path: "SKILL.md", text: true, data: content },
+    base.files.find((f) => f.path === "task-pack.md"),
+    json("source.json", { recordId: record.id, title: record.title, type: record.type || "TXT", material: record.material, why: record.why, hatch: { slots: hatch.slots, rounds: hatch.rounds, ...(replica ? { replica } : {}) }, slotsHash, draft: { reportId, round, by }, validation: verified }),
+  ];
+  return { title: base.title, description: clean(description).slice(0, 500), content, tags: ["逆向工程", "Agent 草稿", verified], files, source: `逆向工程 Skill 草稿 · ${record.id} · 第 ${round} 轮` };
+}

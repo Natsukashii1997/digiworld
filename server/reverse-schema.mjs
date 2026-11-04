@@ -262,7 +262,7 @@ export function validateHatch(r) {
   }
   if (r.hatchSkills !== undefined) {
     list(r.hatchSkills, HATCH_LIMITS.skills, '孵化回执数量超限');
-    for (const p of r.hatchSkills) { keys(p, ['assetId','versionId','at','slotsHash']); id(p.assetId); id(p.versionId); date(p.at); if (!HEX64.test(p.slotsHash || '')) fail('孵化回执无效'); }
+    for (const p of r.hatchSkills) { keys(p, ['assetId','versionId','at','slotsHash','round']); id(p.assetId); id(p.versionId); date(p.at); if (!HEX64.test(p.slotsHash || '')) fail('孵化回执无效'); if (p.round !== undefined && !(r.hatch?.rounds || []).some((x) => x.n === p.round)) fail('孵化回执轮次不存在'); }
   }
 }
 // 轮次只追加；既有轮次唯一可变的是 sent → back 并补 backAt 与八格快照 cells。逐字段比较，不受键顺序影响。

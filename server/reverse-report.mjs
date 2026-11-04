@@ -1,14 +1,15 @@
 // 逆向 v5 回执通道（#47）：外部 Agent 交回一轮的回执 → 待过目 → 用户预览后采纳或退回。照个人说明修改建议的「提交 → 预览 → 确认」。
-// 工作台不取证、不调模型：这里只存回执原文、拆格、写回档案。拆解回执（report）写八格，复刻对照（replica，#55）写 hatch.replica。
+// 工作台不取证、不调模型：这里只存回执原文、拆格、写回档案。拆解回执（report）写八格，复刻对照（replica，#55）写 hatch.replica，
+// Skill 草稿（skill，#55）交给存 Skill 的服务（reverse-skill-v4 的 draftPreview / draftAdopt）存进资产仓库。
 import { randomUUID } from "node:crypto";
 import { failure } from "./repository.mjs";
 import { REVERSE_REPORT_LIMITS } from "./reverse-report-schema.mjs";
 import { SLOT_IDS } from "../src/reverse-hatch.js";
-import { adoptReport, adoptReplica, parseReplica } from "../src/reverse-flow.js";
+import { adoptReport, adoptReplica, parseReplica, parseSkillDraft } from "../src/reverse-flow.js";
 import { filterRelayText } from "../src/relay-prompt.js";
 
 const PREVIEW_TTL = 5 * 60 * 1000;
-const ACCEPTED_KINDS = ["report", "replica"];
+const ACCEPTED_KINDS = ["report", "replica", "skill"];
 const shape = (input, allowed) => {
   if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).some((k) => !allowed.includes(k)))
     throw failure("请求字段无效");
@@ -20,7 +21,7 @@ const revisionOf = (value) => {
 // 回执原文：统一换行、去掉控制字符、隐去密钥一类内容后再存。
 const normalize = (text) => filterRelayText(String(text).replace(/\r\n?/g, "\n").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "")).text;
 
-export function createReverseReports(repository, { clock = Date.now } = {}) {
+export function createReverseReports(repository, { clock = Date.now, skills } = {}) {
   const previews = new Map();
   const now = () => new Date(clock()).toISOString();
   const recordOf = (state, id) => {
@@ -44,7 +45,7 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
     // Agent 交回：只进待过目，不改档案。同一记录、同一轮、同一正文重复交回不重复写入。
     async propose(input) {
       shape(input, ["taskId", "round", "kind", "text", "proposer"]);
-      if (!ACCEPTED_KINDS.includes(input.kind)) throw failure("回执类型只能是 report（拆解回执）或 replica（复刻对照）");
+      if (!ACCEPTED_KINDS.includes(input.kind)) throw failure("回执类型只能是 report（拆解回执）、replica（复刻对照）或 skill（Skill 草稿）");
       if (!Number.isInteger(input.round) || input.round < 1) throw failure("轮次需为正整数");
       if (typeof input.text !== "string") throw failure("回执需为文本");
       if (typeof input.proposer !== "string" || !input.proposer.trim() || input.proposer.length > REVERSE_REPORT_LIMITS.proposer || /[\x00-\x1f\x7f]/.test(input.proposer))
@@ -54,6 +55,7 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
       if (text.length > REVERSE_REPORT_LIMITS.text) throw failure(`回执超过 ${REVERSE_REPORT_LIMITS.text} 字，请精简后再交`);
       // 复刻对照一行都认不出时当场退给 Agent，不进待过目。
       if (input.kind === "replica" && !parseReplica(text).rows.length) throw failure("没认出复刻对照行：每项写成「能力：一致 / 有差异 ｜ 差在哪 / 未验证 ｜ 为什么」");
+      if (input.kind === "skill") parseSkillDraft(text); // 开头没有 YAML 或缺 description 时当场退回
       let result;
       await repository.updateReverseReports((stored) => {
         const record = recordOf(stored, input.taskId);
@@ -79,21 +81,23 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
       });
       return { ...result, recordId: input.taskId, round: input.round };
     },
-    // 预览：会写进档案的格子变化、因「你改过」不覆盖的格子、分不进格的段落。token 绑主库版本与覆盖选择。
+    // 预览：会写进档案的格子变化、因「你改过」不覆盖的格子、分不进格的段落。token 绑主库版本与覆盖选择（Skill 草稿绑名字）。
     async preview(input) {
-      shape(input, ["id", "overwrite"]);
+      shape(input, ["id", "overwrite", "name"]);
       const overwrite = input.overwrite ?? [];
       if (!Array.isArray(overwrite) || overwrite.some((k) => !SLOT_IDS.includes(k))) throw failure("覆盖的格子无效");
       const stored = await repository.read();
       const report = reportOf(stored, input.id);
       const record = recordOf(stored, report.recordId);
+      if (input.name !== undefined && typeof input.name !== "string") throw failure("Skill 名字需为文本");
       const at = now();
-      const adopted = adoptInto(record, report, { at, overwrite });
+      const adopted = report.kind === "skill" ? skills.draftPreview(stored, report, input.name?.trim()) : adoptInto(record, report, { at, overwrite });
       for (const [key, value] of previews) if (value.expires <= clock()) previews.delete(key);
       if (previews.size >= 30) previews.delete(previews.keys().next().value);
       const previewId = randomUUID(), expires = clock() + PREVIEW_TTL;
-      previews.set(previewId, { reportId: report.id, revision: stored.revision, overwrite, expires });
-      const head = { previewId, reportId: report.id, recordId: record.id, round: report.round, kind: report.kind, revision: stored.revision, latest: adopted.latest, unplaced: adopted.unplaced, redactions: adopted.redactions, expiresAt: new Date(expires).toISOString() };
+      previews.set(previewId, { reportId: report.id, kind: report.kind, revision: stored.revision, overwrite, name: adopted.skill?.name, expires });
+      const head = { previewId, reportId: report.id, recordId: record.id, round: report.round, kind: report.kind, revision: stored.revision, latest: adopted.latest, unplaced: adopted.unplaced || [], redactions: adopted.redactions, expiresAt: new Date(expires).toISOString() };
+      if (report.kind === "skill") return { ...head, skill: adopted.skill };
       if (report.kind === "replica") return { ...head, replica: adopted.replica };
       const { changes, kept, missing, report: parsed } = adopted;
       return { ...head, report: parsed, changes, kept, missing };
@@ -105,6 +109,12 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
       const preview = typeof input.previewId === "string" && previews.get(input.previewId);
       if (!preview || preview.expires <= clock()) throw failure("预览已过期或不存在，请重新预览", 409);
       if (preview.revision !== expectedRevision) throw failure("预览后记录已变化，请重新预览", 409);
+      if (preview.kind === "skill") {
+        if (!preview.name) throw failure("先给 Skill 起个名字，再预览一次");
+        const state = await skills.draftAdopt({ reportId: preview.reportId, name: preview.name, revision: expectedRevision });
+        previews.delete(input.previewId);
+        return state;
+      }
       const state = await repository.updateReverseReports(
         (stored) => {
           const report = reportOf(stored, preview.reportId);

@@ -149,8 +149,9 @@ export async function openRepository(directory) {
         const stored = await read(); if (!stored) throw failure('请先初始化资产库',409);
         const result = await update(structuredClone(stored));
         if (equivalent(result, stored)) return stored;
-        const state = {...stored, assets:result.assets, reverseRecords:result.reverseRecords, revision:stored.revision+1};
-        validateState(state); validateHistory(stored,state,{allowReverseSkill:true}); return commit(state);
+        // Skill 草稿采纳（#55）同一次写入里把回执标为已采纳，所以这里也放行 reverseReports（仍受回执历史守卫约束）。
+        const state = {...stored, assets:result.assets, reverseRecords:result.reverseRecords, ...(result.reverseReports!==undefined?{reverseReports:result.reverseReports}:{}), revision:stored.revision+1};
+        validateState(state); validateHistory(stored,state,{allowReverseSkill:true,allowReverseReports:true}); return commit(state);
       });
     },
     updateReverse(update, { expectedRevision } = {}) {

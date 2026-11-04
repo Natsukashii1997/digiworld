@@ -10,6 +10,7 @@ import { createSpecimen } from "../src/reverse-recipe.js";
 import { appendHatchRound, editSlot } from "../src/reverse-hatch.js";
 import { parse, stringify } from "../src/serialization.js";
 import { createReverseReports } from "../server/reverse-report.mjs";
+import { createReverseSkillV4 } from "../server/reverse-skill-v4.mjs";
 import { openRepository } from "../server/repository.mjs";
 import { handleMcp } from "../server/profile-mcp.mjs";
 import { startServer } from "../server/http.mjs";
@@ -29,7 +30,8 @@ async function repo(records, fn, clock) {
     const input = seed();
     input.reverseRecords = records;
     await repository.write(input, { initialize: true });
-    await fn(repository, createReverseReports(repository, clock ? { clock } : {}));
+    const skills = createReverseSkillV4({ repository, ...(clock ? { clock } : {}) });
+    await fn(repository, createReverseReports(repository, { ...(clock ? { clock } : {}), skills }), skills);
   } finally {
     await repository.close();
     await rm(dir, { recursive: true, force: true });
@@ -238,6 +240,92 @@ test("复刻对照：预览过期、revision 冲突拒绝；退回不改档案�
     const state = await svc.reject({ id: third.id, expectedRevision: revision });
     assert.equal(state.reverseRecords[0].hatch.replica.round, 3);
     assert.equal(state.reverseReports.find((x) => x.id === third.id).status, "rejected");
+  }, () => now);
+});
+
+// 第 4 批（#55）：Skill 草稿交回 → 预览（草稿全文、名字可改）→ 采纳一次写入资产、hatchSkills 指针与回执状态 → 回读。
+const DRAFT = (extra = "") => `---\nname: agent-relay\ndescription: 把一个 Agent 的进度交给下一个\n---\n\n# Agent 接力\n\n## 用途\n交接进度。${extra}\n`;
+const skillRound = () => {
+  const r = replicaRound();
+  r.hatch = appendHatchRound(r, { by: "codex", packHash: HASH, kind: "skill", at: "2026-11-04T01:00:00.000Z" });
+  return r;
+};
+
+test("Skill 草稿：提交 → 预览 → 采纳 → 回读；资产正文是草稿原文，附件是追问包和八格原样；再交一份加一版", async () => {
+  const r = skillRound();
+  await repo([r], async (repository, svc, skills) => {
+    const sent = await propose(svc, r, { round: 3, kind: "skill", text: DRAFT() });
+    assert.equal((await propose(svc, r, { round: 3, kind: "skill", text: DRAFT() })).duplicate, true);
+    const { revision, assets } = await repository.read();
+    const p = await svc.preview({ id: sent.id });
+    assert.equal((await repository.read()).revision, revision, "预览不写入");
+    assert.equal(p.kind, "skill");
+    assert.deepEqual([p.skill.name, p.skill.by, p.skill.title, p.skill.versionNo], ["agent-relay", "codex", "Agent 接力", 1]);
+    assert.deepEqual(p.skill.files.map((f) => f.path), ["SKILL.md", "task-pack.md", "source.json"]);
+    await svc.adopt({ previewId: p.previewId, expectedRevision: p.revision });
+    const after = await repository.read(), record = after.reverseRecords[0], asset = after.assets.at(-1);
+    assert.equal(after.assets.length, assets.length + 1);
+    assert.equal(asset.type, "Skill");
+    assert.equal(asset.versions.at(-1).title, "Agent 接力");
+    assert.equal(asset.versions.at(-1).content, DRAFT());
+    const files = asset.versions.at(-1).files;
+    assert.equal(files.find((f) => f.path === "SKILL.md").data, DRAFT());
+    const source = JSON.parse(files.find((f) => f.path === "source.json").data);
+    assert.deepEqual([source.draft.round, source.draft.by, source.draft.reportId, source.validation], [3, "codex", sent.id, "未经复刻验证"]);
+    assert.deepEqual(record.hatchSkills.map((x) => [x.assetId, x.round]), [[asset.id, 3]]);
+    assert.equal(after.reverseReports[0].status, "adopted");
+    assert.equal(after.revision, revision + 1, "存资产、指针和回执状态是同一次写入");
+    const back = await skills.hatchQuery({ recordId: r.id });
+    assert.equal(back.saved.assetId, asset.id, "孵化回读认得这一版");
+    const second = await propose(svc, r, { round: 3, kind: "skill", text: DRAFT("补一句。") });
+    const q = await svc.preview({ id: second.id });
+    assert.equal(q.skill.versionNo, 2);
+    await svc.adopt({ previewId: q.previewId, expectedRevision: q.revision });
+    const final = await repository.read();
+    assert.equal(final.assets.length, assets.length + 1, "同一参照物不另建资产");
+    assert.equal(final.assets.at(-1).versions.length, 2);
+    assert.equal(final.reverseRecords[0].hatchSkills.length, 2);
+  });
+});
+
+test("Skill 草稿：缺 YAML 当场退回；认不出名字先补名字再采纳；名字不合规拒绝", async () => {
+  const r = skillRound();
+  await repo([r], async (repository, svc) => {
+    await assert.rejects(propose(svc, r, { round: 3, kind: "skill", text: "# 只有正文" }), /开头要有 YAML/);
+    await assert.rejects(propose(svc, r, { round: 3, kind: "skill", text: "---\nname: x\n---\n正文" }), /缺 description/);
+    assert.equal(((await repository.read()).reverseReports || []).length, 0);
+    const sent = await propose(svc, r, { round: 3, kind: "skill", text: DRAFT().replace("agent-relay", "Agent 接力") });
+    const p = await svc.preview({ id: sent.id });
+    assert.equal(p.skill.name, "");
+    await assert.rejects(svc.adopt({ previewId: p.previewId, expectedRevision: p.revision }), /先给 Skill 起个名字/);
+    await assert.rejects(svc.preview({ id: sent.id, name: "Agent Relay" }), /只能用小写字母/);
+    const named = await svc.preview({ id: sent.id, name: "agent-relay" });
+    assert.match(named.skill.content, /^---\nname: agent-relay\n/);
+    await svc.adopt({ previewId: named.previewId, expectedRevision: named.revision });
+    assert.match((await repository.read()).assets.at(-1).versions.at(-1).content, /^---\nname: agent-relay\n/);
+  });
+});
+
+test("Skill 草稿：预览过期、revision 冲突拒绝且什么都不写；退回不存资产", async () => {
+  const r = skillRound();
+  let now = Date.parse("2026-11-04T02:00:00.000Z");
+  await repo([r], async (repository, svc) => {
+    const { id } = await propose(svc, r, { round: 3, kind: "skill", text: DRAFT() });
+    const old = await svc.preview({ id });
+    now += 5 * 60 * 1000 + 1;
+    await assert.rejects(svc.adopt({ previewId: old.previewId, expectedRevision: old.revision }), /预览已过期/);
+    const p = await svc.preview({ id });
+    const state = await repository.read();
+    state.reverseRecords[0].why = "改了一句";
+    await repository.write(state);
+    await assert.rejects(svc.adopt({ previewId: p.previewId, expectedRevision: p.revision }), (e) => e.status === 409 && /记录已变化/.test(e.message));
+    let after = await repository.read();
+    assert.equal(after.assets.length, state.assets.length);
+    assert.equal(after.reverseReports[0].status, "pending");
+    assert.equal(after.reverseRecords[0].hatchSkills, undefined);
+    after = await svc.reject({ id, expectedRevision: after.revision });
+    assert.equal(after.reverseReports[0].status, "rejected");
+    assert.equal(after.assets.length, state.assets.length, "退回不存资产");
   }, () => now);
 });
 

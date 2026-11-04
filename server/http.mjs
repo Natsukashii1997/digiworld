@@ -213,7 +213,7 @@ export async function startServer({
   const reverseMedia=createReverseMedia(await realpath(repository.directory));
   const noteImages=createNoteImages(await realpath(repository.directory));
   const reverseSkillV4 = createReverseSkillV4({ repository, readMedia: reverseMedia.read });
-  const reverseReports = createReverseReports(repository, { clock: clock ?? Date.now });
+  const reverseReports = createReverseReports(repository, { clock: clock ?? Date.now, skills: reverseSkillV4 });
   const deliveries = createDeliveries(repository, clock);
   const activity = createAssetActivity(repository, deliveries, clock);
   const projectContext = createProjectContext(repository, clock);

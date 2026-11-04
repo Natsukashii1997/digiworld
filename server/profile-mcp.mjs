@@ -54,14 +54,14 @@ export const REVERSE_TOOLS = [
     name: "reverse_report",
     title: "交回逆向回执",
     description:
-      "按工作台逆向工程的开场话术做完一轮后，把这一轮的回执交回工作台。taskId 和 round 照话术里的任务编号填；text 照话术要求的回执格式写。回执只进工作台待过目，由用户预览后采纳或退回；你不能直接改档案。同一轮同一份正文重复提交不会重复记录。",
+      "按工作台逆向工程的话术做完一轮后，把这一轮交的东西交回工作台：拆解回执（kind=report）、复刻对照表（kind=replica）或 SKILL.md 草稿（kind=skill）。taskId 和 round 照话术里的任务编号填；text 照话术要求的格式写。交回的东西只进工作台待过目，由用户预览后采纳或退回；你不能直接改档案，也不要把 Skill 装进任何 Agent 配置。同一轮同一份正文重复提交不会重复记录。",
     inputSchema: {
       type: "object",
       properties: {
         taskId: { type: "string", description: "任务编号里的记录 ID，照话术填写。" },
         round: { type: "integer", minimum: 1, description: "任务编号里的轮次，照话术填写。" },
-        kind: { type: "string", enum: ["report"], description: "回执类型。目前只有 report（拆解回执）。" },
-        text: { type: "string", description: "回执正文，照话术要求的格式，最多 50000 字。" },
+        kind: { type: "string", enum: ["report", "replica", "skill"], description: "回执类型：report（拆解回执）、replica（复刻对照表）、skill（完整 SKILL.md 草稿，开头 YAML 写 name 和 description）。" },
+        text: { type: "string", description: "正文，照话术要求的格式，最多 50000 字。" },
         proposer: { type: "string", description: "提交者，例如 Codex、Claude Code（1–60 字）。" },
       },
       required: ["taskId", "round", "kind", "text", "proposer"],

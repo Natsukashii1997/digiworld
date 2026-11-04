@@ -2,7 +2,8 @@ import { randomUUID, createHash } from 'node:crypto';
 import {currentPackVersion} from '../src/reverse-ai.js';
 import { buildReplicaPack, generateReplicaSkill, currentSkill } from '../src/reverse-v4.js';
 import { makeAsset, revise } from '../src/store.js';
-import { generateHatchSkill, hatchSlotsText } from '../src/reverse-hatch.js';
+import { generateHatchSkill, hatchSlotsText, draftHatchSkill } from '../src/reverse-hatch.js';
+import { parseSkillDraft, nameSkillDraft } from '../src/reverse-flow.js';
 import { materializeSkillVersion, planSkillVersion } from '../src/skill-version.js';
 import { failure } from './repository.mjs';
 const hash = text => createHash('sha256').update(text).digest('hex');
@@ -96,5 +97,34 @@ export function createReverseSkillV4({repository,readMedia,clock=Date.now}) {
     // token 留到过期：结果不明时再点确认，直接回读已写入的那一版
     return hatchQuery({recordId,slotsHash:p.slotsHash});
   }
-  return {preview,confirm,query,pack,hatchPreview,hatchConfirm,hatchQuery};
+  // Agent 交回的 Skill 草稿（#55）：回执服务预览、采纳时调这里。采纳一次写入：存资产（这件参照物已有 Skill 就加一版）、追加 hatchSkills 指针、回执标为已采纳。
+  const draftValue = (state, report, name) => {
+    const record = recordOf(state, report.recordId), draft = parseSkillDraft(report.text), by = record.hatch?.rounds?.find(x=>x.n===report.round)?.by;
+    if (!name) return {record,draft,name:'',by,value:null};
+    const value = draftHatchSkill(record,{content:nameSkillDraft(draft.content,name),title:draft.title||name,description:draft.description,slotsHash:slotsHashOf(record),round:report.round,by,reportId:report.id});
+    planSkillVersion(value);
+    return {record,draft,name,by,value};
+  };
+  function draftPreview(state, report, name) {
+    const {record,draft,name:final,by,value} = draftValue(state, report, name ?? parseSkillDraft(report.text).name);
+    const prior = state.assets.find(a=>a.id===(record.hatchSkills||[]).at(-1)?.assetId&&!a.archived);
+    return {skill:{name:final,suggested:draft.name,by,title:value?.title||draft.title,description:draft.description,content:value?value.content:draft.content,versionNo:prior?prior.versions.length+1:1,assetTitle:prior?.versions.at(-1).title||'',files:value?value.files.map(f=>({path:f.path,bytes:Buffer.byteLength(f.data)})):[]},redactions:draft.redactions};
+  }
+  async function draftAdopt({reportId,name,revision}) {
+    return repository.updateReverseSkill(state=>{
+      if(state.revision!==revision)throw failure('预览后记录已变化，请重新预览',409);
+      const report=(state.reverseReports||[]).find(r=>r.id===reportId);
+      if(!report)throw failure('回执不存在，请刷新待过目',404);
+      if(report.status!=='pending')throw failure('这份回执已处理',409);
+      const {record,value}=draftValue(state,report,name),at=new Date(clock()).toISOString();
+      const prior=state.assets.find(a=>a.id===(record.hatchSkills||[]).at(-1)?.assetId&&!a.archived);
+      const asset=prior?revise(prior,value):makeAsset({...value,type:'Skill',hatchedFrom:{kind:'reverse',id:record.id}}),version=asset.versions.at(-1);
+      const receipt={assetId:asset.id,versionId:version.id,at,slotsHash:slotsHashOf(record),round:report.round};
+      return {...state,
+        assets:prior?state.assets.map(a=>a.id===asset.id?asset:a):[...state.assets,asset],
+        reverseRecords:state.reverseRecords.map(v=>v.id===record.id?{...v,hatchSkills:[...(v.hatchSkills||[]),receipt],updatedAt:at}:v),
+        reverseReports:state.reverseReports.map(r=>r.id===reportId?{...r,status:'adopted',decidedAt:at}:r)};
+    });
+  }
+  return {preview,confirm,query,pack,hatchPreview,hatchConfirm,hatchQuery,draftPreview,draftAdopt};
 }

@@ -291,6 +291,33 @@ export function adoptReplica(record, text, round, { at = new Date().toISOString(
   };
 }
 
+// Skill 草稿（#55）：Agent 按「写 Skill」话术交回的 SKILL.md。开头 YAML 必须有 description；name 认不出时留空，存之前由用户补。
+const SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const FRONT = /^---\n([\s\S]*?)\n---(?:\n|$)/;
+export function parseSkillDraft(raw) {
+  if (typeof raw !== "string") fail("Skill 草稿需为文本");
+  const filtered = filterRelayText(raw.replace(/\r\n?/g, "\n").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, ""));
+  let content = filtered.text.trim();
+  const fenced = content.match(/^```[a-z]*\n([\s\S]*)\n```$/i);
+  if (fenced) content = fenced[1].trim();
+  const front = content.match(FRONT)?.[1];
+  if (front === undefined) fail("Skill 草稿开头要有 YAML（--- 之间写 name 和 description）");
+  const field = (key) => front.match(new RegExp(`^${key}:\\s*(.*)$`, "m"))?.[1].trim().replace(/^(["'])(.*)\1$/, "$2") || "";
+  const description = field("description"), name = field("name");
+  if (!description) fail("Skill 草稿的 YAML 里缺 description");
+  const title = content.slice(content.match(FRONT)[0].length).match(/^#\s+(.+)$/m)?.[1].trim() || "";
+  return { content: content + "\n", name: SKILL_NAME.test(name) && name.length <= 64 ? name : "", description, title, redactions: filtered.count };
+}
+// 存之前定名字：只能用小写字母、数字和连字符（Agent 按这个名字调用），写回 YAML 的 name。
+export function nameSkillDraft(content, name) {
+  if (!SKILL_NAME.test(name || "") || name.length > 64) fail("Skill 名字只能用小写字母、数字和连字符，最多 64 字，例如 agent-relay");
+  const front = content.match(FRONT)[1];
+  const next = /^name:.*$/m.test(front) ? front.replace(/^name:.*$/m, `name: ${name}`) : `name: ${name}\n${front}`;
+  return content.replace(FRONT, `---\n${next}\n---\n`);
+}
+// 使用口令：Claude Code 用 /名字，Codex 用 $名字。
+export const skillUsage = (name, by) => (name ? `${by === "codex" ? "$" : "/"}${name}` : "");
+
 // 阶段由数据推出，不存。待过目优先（搁置中交回的也要看到），其次搁置、已收成；再看最后一轮是派出还是已交回。
 export function stageOf(record, reports = []) {
   const hatch = record?.hatch, rounds = hatch?.rounds || [], last = rounds.at(-1);
