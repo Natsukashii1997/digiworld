@@ -132,6 +132,10 @@
 .rv6 .outl b { display: block; color: var(--text); overflow-wrap: anywhere; }
 .rv6 .eg { flex: none; width: 42px; height: 42px; border-radius: var(--r-2); display: grid; place-items: center; background: var(--field); font: 700 var(--fs-title) var(--mono); color: var(--hw-key); }
 .rv6 .outl .eg { color: var(--violet); }
+/* 产出区的使用口令（#55）：口令一行可复制，下面一句导出说明。 */
+.rv6 .outl .use { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 4px; }
+.rv6 .outl code { padding: 4px 8px; border-radius: var(--r-1); background: var(--hw-pit); font: var(--fs-caption) var(--mono); color: var(--text); overflow-wrap: anywhere; }
+.rv6 .outl small { display: block; }
 .rv6 .rf-foot { margin: 16px 0 0; }
 .rv6 .rf-foot .text-btn { min-height: 44px; }
 .rv6 .rf-empty { margin-top: 18px; padding: 28px; }
@@ -149,6 +153,10 @@
 .rf-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 .rf-field { display: grid; gap: 6px; margin: 10px 0; font-size: var(--fs-caption); color: var(--muted); }
 .rf-field textarea { width: 100%; box-sizing: border-box; font: var(--fs-caption)/1.5 var(--mono); }
+/* Skill 草稿过目里的名字（#55）。 */
+.rf-name { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.rf-name .rf-field { flex: 1 1 240px; margin: 0; }
+.rf-field input { width: 100%; min-height: 44px; box-sizing: border-box; font: var(--fs-caption) var(--mono); }
 .rf-preview h3 { margin: 14px 0 6px; font: 700 var(--fs-body) var(--sans); }
 .rf-preview ul { display: grid; gap: 8px; margin: 0; padding-left: 18px; }
 .rf-preview li p, .rf-preview > p { margin: 2px 0 0; font-size: var(--fs-meta); color: var(--text-2); overflow-wrap: anywhere; }

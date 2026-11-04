@@ -412,5 +412,17 @@ test("工作台 HTTP：MCP 交回 → /api/reverse/reports 预览、采纳、退
   const state = parse(read);
   const forged = await fetch(app.url + "/api/workspace", { method: "PUT", headers, body: stringify({ state: { ...state, reverseReports: [] } }) });
   assert.equal(forged.status, 400);
+  // 手动粘贴的 Skill 草稿（#55）：同样进待过目，预览后采纳存进资产仓库。
+  const latest = parse(read);
+  latest.reverseRecords[0].hatch = appendHatchRound(latest.reverseRecords[0], { by: "codex", packHash: HASH, kind: "skill", at: "2026-11-04T00:00:00.000Z" });
+  await app.repository.write(latest);
+  assert.equal((await call("reverse/reports/paste", { taskId: r.id, round: 3, kind: "skill", text: DRAFT() }, { "Content-Type": "application/json" })).status, 403, "没有会话令牌拒绝");
+  const pasted = await call("reverse/reports/paste", { taskId: r.id, round: 3, kind: "skill", text: DRAFT() });
+  assert.equal(pasted.status, 200);
+  const sp = (await call("reverse/reports/preview", { id: pasted.body.id })).body;
+  assert.equal(sp.skill.name, "agent-relay");
+  const saved = (await call("reverse/reports/adopt", { previewId: sp.previewId, expectedRevision: sp.revision })).body;
+  assert.equal(saved.reverseReports.find((x) => x.id === pasted.body.id).proposer, "手动粘贴");
+  assert.equal(saved.reverseRecords[0].hatchSkills[0].round, 3);
   assert.equal((await call("reverse/reports/nope", {})).status, 404);
 });

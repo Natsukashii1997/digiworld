@@ -552,7 +552,7 @@ export async function startServer({
         if(url.pathname==='/api/reverse/hatch/preview'&&request.method==='POST')return send(response,200,await reverseSkillV4.hatchPreview(await body(request)));
         if(url.pathname==='/api/reverse/hatch/confirm'&&request.method==='POST')return send(response,200,await reverseSkillV4.hatchConfirm(await body(request)));
         if(url.pathname==='/api/reverse/hatch/query'&&request.method==='GET')return send(response,200,await reverseSkillV4.hatchQuery(Object.fromEntries(url.searchParams)));
-        if(['/api/reverse/reports/preview','/api/reverse/reports/adopt','/api/reverse/reports/reject'].includes(url.pathname)&&request.method==='POST')return send(response,200,await reverseReports[url.pathname.slice('/api/reverse/reports/'.length)](await body(request)));
+        if(['/api/reverse/reports/preview','/api/reverse/reports/adopt','/api/reverse/reports/reject','/api/reverse/reports/paste'].includes(url.pathname)&&request.method==='POST')return send(response,200,await reverseReports[url.pathname.slice('/api/reverse/reports/'.length)](await body(request)));
         if(url.pathname==='/api/reverse/update'&&request.method==='GET')return send(response,200,reaUpdater.read());
         if(url.pathname==='/api/reverse/update/check'&&request.method==='POST')return send(response,200,await reaUpdater.check());
         if(url.pathname==='/api/reverse/update/preview'&&request.method==='POST')return send(response,200,await reaUpdater.preview());

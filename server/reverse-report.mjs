@@ -81,6 +81,11 @@ export function createReverseReports(repository, { clock = Date.now, skills } = 
       });
       return { ...result, recordId: input.taskId, round: input.round };
     },
+    // 手动粘贴（#55）：Agent 没调 reverse_report 时，用户在工作台贴进来，同样先进待过目再预览采纳。
+    async paste(input) {
+      shape(input, ["taskId", "round", "kind", "text"]);
+      return this.propose({ ...input, proposer: "手动粘贴" });
+    },
     // 预览：会写进档案的格子变化、因「你改过」不覆盖的格子、分不进格的段落。token 绑主库版本与覆盖选择（Skill 草稿绑名字）。
     async preview(input) {
       shape(input, ["id", "overwrite", "name"]);
