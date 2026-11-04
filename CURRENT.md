@@ -18,7 +18,7 @@
 运行中的任务必须遵循 [COLLABORATION.md](COLLABORATION.md)。登记不是系统锁或实时消息回执。Claude 已读回 WB-20260929-41 并完成 D-S3 修复 WB-20260929-43；Codex 已读回45并按用户授权完成1.4交接48。Claude 已读回48并于53通过1.4复核；Codex 已读回58，认领59并完成三轮 UI 复核输出60（有条件通过）；又读回62，复核D-UI1修复输出64（通过）。没有向另一个客户端发消息。
 ## Claude 685：合并 #54（2026-11-04）
 
-用户说「合并」。推送前检查 `origin/main..main` 与 `main..origin/main` 都为空；分支之后 main 只改了 CURRENT.md（PR 不碰此文件），未变基，直接 squash 合并（`5e768ad`，#53 关闭）。核对合并后 main 与已测试的分支头 `b5a40ff` 只差 CURRENT.md。主目录 `--ff-only` 拉齐。worktree `.claude/worktrees/reverse-flow-page` 保留，可随其他已合并 worktree 一起清理。未发布。
+用户说「合并」。推送前检查 `origin/main..main` 与 `main..origin/main` 都为空；分支之后 main 只改了 CURRENT.md（PR 不碰此文件），未变基，直接 squash 合并（`5e768ad`，#53 关闭）。核对合并后 main 与已测试的分支头 `b5a40ff` 只差 CURRENT.md。主目录拉齐时，v6-C 样稿 4 份未跟踪原件（`reverse-v6.css/js`、`逆向-v6-C-工作流总控.html`、样稿截图）和 PR 收进的同名文件冲突；逐字节核对一致后删掉原件，再把未推送的 CURRENT 提交接到 `origin/main` 之后。worktree `.claude/worktrees/reverse-flow-page` 保留，可随其他已合并 worktree 一起清理。未发布。
 
 ## Claude 684：逆向 v5 第 3 批页面换成 v6-C（2026-11-03，PR #54 已合并）
 
