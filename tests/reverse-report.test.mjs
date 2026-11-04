@@ -87,7 +87,8 @@ test("任务编号或轮次对不上、类型不支持、正文为空：拒绝�
     await assert.rejects(propose(svc, r, { taskId: "nope" }), (e) => e.status === 404 && /任务编号对不上/.test(e.message));
     await assert.rejects(propose(svc, gone, {}), (e) => e.status === 404);
     await assert.rejects(propose(svc, r, { round: 2 }), (e) => e.status === 404 && /没有这一轮/.test(e.message));
-    await assert.rejects(propose(svc, r, { kind: "replica" }), /只接受拆解回执/);
+    await assert.rejects(propose(svc, r, { kind: "nope" }), /回执类型只能是/);
+    await assert.rejects(propose(svc, r, { kind: "replica" }), /没认出复刻对照行/, "复刻对照一行都认不出时不进待过目");
     await assert.rejects(propose(svc, r, { text: " \n " }), /回执为空/);
     await assert.rejects(propose(svc, r, { text: "x".repeat(50001) }), /超过 50000 字/);
     await assert.rejects(propose(svc, r, { proposer: "a\nb" }), /提交者/);
@@ -180,6 +181,64 @@ test("v5 回执（#49）：采纳时结论、能力清单、证据、下一轮�
     assert.equal(late.record.hatch.report.verdict, "第二轮结论");
     assert.deepEqual(late.record.hatch.rounds.map((x) => x.status), ["back", "back"]);
   });
+});
+
+// 第 4 批（#55）：复刻对照交回 → 预览 → 采纳写进 hatch.replica，对应轮次改成已交回，八格不动。
+const REPLICA = (n = 1) => `## 复刻对照 · 接力 · 第 ${n} 轮 · 任务编号 x\n复刻位置：~/Sandbox/2026-11-04-接力/\n- 交接清单：一致\n- 详情分区：有差异 ｜ 顺序反了\n- 导出：未验证 ｜ 需要登录\n顺带一句闲话`;
+const replicaRound = (rounds = 1) => {
+  const r = specimen(rounds);
+  r.hatch = appendHatchRound(r, { by: "codex", packHash: HASH, kind: "replica", at: "2026-11-04T00:00:00.000Z" });
+  return r;
+};
+
+test("复刻对照：提交 → 预览 → 采纳 → 回读；重复提交不重复写；八格不动", async () => {
+  const r = replicaRound();
+  await repo([r], async (repository, svc) => {
+    const sent = await propose(svc, r, { round: 2, kind: "replica", text: REPLICA(2) });
+    assert.equal((await propose(svc, r, { round: 2, kind: "replica", text: REPLICA(2) })).duplicate, true);
+    const { revision } = await repository.read();
+    const p = await svc.preview({ id: sent.id });
+    assert.equal((await repository.read()).revision, revision, "预览不写入");
+    assert.equal(p.kind, "replica");
+    assert.equal(p.replica.where, "~/Sandbox/2026-11-04-接力/");
+    assert.deepEqual(p.replica.rows.map((x) => x.result), ["ok", "diff", "no"]);
+    assert.deepEqual(p.unplaced.map((u) => u.text), ["顺带一句闲话"]);
+    assert.equal(p.changes, undefined, "复刻对照没有八格变化");
+    await svc.adopt({ previewId: p.previewId, expectedRevision: p.revision });
+    const after = await repository.read(), record = after.reverseRecords[0];
+    assert.deepEqual(record.hatch.replica, { round: 2, at: record.hatch.replica.at, where: "~/Sandbox/2026-11-04-接力/", rows: p.replica.rows });
+    assert.deepEqual(record.hatch.rounds.map((x) => x.status), ["sent", "back"]);
+    assert.deepEqual(record.hatch.slots, r.hatch.slots, "八格不动");
+    assert.equal(after.reverseReports[0].status, "adopted");
+  });
+});
+
+test("复刻对照：预览过期、revision 冲突拒绝；退回不改档案；晚到的旧轮次不覆盖新一轮", async () => {
+  const r = replicaRound();
+  r.hatch = appendHatchRound(r, { by: "claude", packHash: HASH, kind: "replica", at: "2026-11-04T01:00:00.000Z" });
+  let now = Date.parse("2026-11-04T02:00:00.000Z");
+  await repo([r], async (repository, svc) => {
+    const late = await propose(svc, r, { round: 2, kind: "replica", text: REPLICA(2) });
+    const fresh = await propose(svc, r, { round: 3, kind: "replica", text: REPLICA(3).replace("顺序反了", "已对齐").replace("有差异", "一致") });
+    const old = await svc.preview({ id: fresh.id });
+    now += 5 * 60 * 1000 + 1;
+    await assert.rejects(svc.adopt({ previewId: old.previewId, expectedRevision: old.revision }), /预览已过期/);
+    const p = await svc.preview({ id: fresh.id });
+    await assert.rejects(svc.adopt({ previewId: p.previewId, expectedRevision: p.revision - 1 }), /预览后记录已变化/);
+    assert.equal((await repository.read()).reverseRecords[0].hatch.replica, undefined, "拒绝时什么都不写");
+    await svc.adopt({ previewId: p.previewId, expectedRevision: p.revision });
+    const q = await svc.preview({ id: late.id });
+    assert.equal(q.latest, false);
+    await svc.adopt({ previewId: q.previewId, expectedRevision: q.revision });
+    const record = (await repository.read()).reverseRecords[0];
+    assert.equal(record.hatch.replica.round, 3, "晚到的第 2 轮不覆盖第 3 轮");
+    assert.deepEqual(record.hatch.rounds.map((x) => x.status), ["sent", "back", "back"]);
+    const third = await propose(svc, r, { round: 3, kind: "replica", text: REPLICA(3) });
+    const { revision } = await repository.read();
+    const state = await svc.reject({ id: third.id, expectedRevision: revision });
+    assert.equal(state.reverseRecords[0].hatch.replica.round, 3);
+    assert.equal(state.reverseReports.find((x) => x.id === third.id).status, "rejected");
+  }, () => now);
 });
 
 test("待过目到上限 20 份拒绝新回执", async () => {

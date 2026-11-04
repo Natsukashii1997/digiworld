@@ -273,6 +273,24 @@ export function adoptReport(record, text, round, { at = new Date().toISOString()
   return { ...applied, hatch, report: parsed.report, header: parsed.header, latest };
 }
 
+// 按复刻对照写回档案：对照表写进 hatch.replica，对应那一轮改成「已交回」；八格不动。晚到的旧轮次对照不覆盖更新一轮的。
+export function adoptReplica(record, text, round, { at = new Date().toISOString() } = {}) {
+  const rounds = record.hatch?.rounds || [];
+  if (!rounds.some((x) => x.n === round)) throw Object.assign(new Error("这一轮已不在记录里"), { status: 409 });
+  const parsed = parseReplica(text);
+  if (!parsed.rows.length) fail("没认出复刻对照行：每项写成「能力：一致 / 有差异 ｜ 差在哪 / 未验证 ｜ 为什么」");
+  const hatch = hatchOf(record), latest = !hatch.replica || hatch.replica.round <= round;
+  return {
+    hatch: {
+      ...hatch,
+      rounds: rounds.map((x) => (x.n === round && x.status === "sent" ? { ...x, status: "back", backAt: at, cells: cellsOf(hatch.slots) } : x)),
+      ...(latest ? { replica: { round, at, where: parsed.where, rows: parsed.rows } } : {}),
+    },
+    replica: { where: parsed.where, rows: parsed.rows },
+    header: parsed.header, unplaced: parsed.unplaced, redactions: parsed.redactions, latest,
+  };
+}
+
 // 阶段由数据推出，不存。待过目优先（搁置中交回的也要看到），其次搁置、已收成；再看最后一轮是派出还是已交回。
 export function stageOf(record, reports = []) {
   const hatch = record?.hatch, rounds = hatch?.rounds || [], last = rounds.at(-1);

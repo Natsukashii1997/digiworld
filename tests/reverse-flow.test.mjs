@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createSpecimen } from "../src/reverse-recipe.js";
 import { appendHatchRound, editSlot, initialHatch } from "../src/reverse-hatch.js";
-import { buildStartPack, buildAskPack, buildReplicaPack, buildSkillPack, parseReport, parseReplica, stageOf, STAGES } from "../src/reverse-flow.js";
+import { buildStartPack, buildAskPack, buildReplicaPack, buildSkillPack, parseReport, parseReplica, adoptReplica, stageOf, STAGES } from "../src/reverse-flow.js";
 import { validateReverseRecords } from "../server/schema.mjs";
 
 const HASH = "a".repeat(64);
@@ -244,6 +244,19 @@ test("复刻对照：位置、一致 / 有差异 / 未验证三种结果、括�
   assert.equal(bare.where, "");
   assert.equal(bare.rows.length, 1);
   assert.throws(() => parseReplica(5), /复刻对照需为文本/);
+});
+
+test("复刻对照写回（#55，采纳与手动粘贴共用）：写进 hatch.replica、这一轮改已交回、八格不动、过校验；认不出行或轮次不在时拒绝", () => {
+  const r = sent(back(sent(specimen())), "replica");
+  const text = "复刻位置：~/Sandbox/x/\n- 交接清单：一致\n- 导出：未验证 ｜ 要登录";
+  const out = adoptReplica(r, text, 2, { at: AT });
+  assert.deepEqual(out.hatch.replica, { round: 2, at: AT, where: "~/Sandbox/x/", rows: [{ name: "交接清单", result: "ok", note: "" }, { name: "导出", result: "no", note: "要登录" }] });
+  assert.deepEqual(out.hatch.rounds.map((x) => x.status), ["back", "back"]);
+  assert.deepEqual(out.hatch.slots, r.hatch.slots);
+  validateReverseRecords([{ ...r, hatch: out.hatch }]);
+  assert.deepEqual([stageOf({ ...r, hatch: out.hatch }).stage, stageOf({ ...r, hatch: out.hatch }).next], ["replica", "skill"]);
+  assert.throws(() => adoptReplica(r, "随便写写", 2, { at: AT }), /没认出复刻对照行/);
+  assert.throws(() => adoptReplica(r, text, 9, { at: AT }), (e) => e.status === 409);
 });
 
 test("阶段推导：计划中、已派出（等交回 / 该追问或复刻）、回执待过目、复刻中、已收成、搁置", () => {

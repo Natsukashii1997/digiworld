@@ -1,14 +1,14 @@
 // 逆向 v5 回执通道（#47）：外部 Agent 交回一轮的回执 → 待过目 → 用户预览后采纳或退回。照个人说明修改建议的「提交 → 预览 → 确认」。
-// 工作台不取证、不调模型：这里只存回执原文、拆格、写回档案。本批只接「拆解回执」（kind=report），复刻对照与 Skill 草稿在第 4 批。
+// 工作台不取证、不调模型：这里只存回执原文、拆格、写回档案。拆解回执（report）写八格，复刻对照（replica，#55）写 hatch.replica。
 import { randomUUID } from "node:crypto";
 import { failure } from "./repository.mjs";
 import { REVERSE_REPORT_LIMITS } from "./reverse-report-schema.mjs";
 import { SLOT_IDS } from "../src/reverse-hatch.js";
-import { adoptReport } from "../src/reverse-flow.js";
+import { adoptReport, adoptReplica, parseReplica } from "../src/reverse-flow.js";
 import { filterRelayText } from "../src/relay-prompt.js";
 
 const PREVIEW_TTL = 5 * 60 * 1000;
-const ACCEPTED_KINDS = ["report"];
+const ACCEPTED_KINDS = ["report", "replica"];
 const shape = (input, allowed) => {
   if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).some((k) => !allowed.includes(k)))
     throw failure("请求字段无效");
@@ -34,9 +34,9 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
     if (report.status !== "pending") throw failure("这份回执已处理", 409);
     return report;
   };
-  // 写回规则在 adoptReport（手动粘贴也用它）；这里把「轮次不在」转成服务端错误。
+  // 写回规则在 adoptReport / adoptReplica（手动粘贴也用它们）；这里把「轮次不在」转成服务端错误。
   const adoptInto = (record, report, { at, overwrite }) => {
-    try { return adoptReport(record, report.text, report.round, { at, overwrite }); }
+    try { return report.kind === "replica" ? adoptReplica(record, report.text, report.round, { at }) : adoptReport(record, report.text, report.round, { at, overwrite }); }
     catch (e) { throw e.status === 409 ? failure(e.message, 409) : e; }
   };
 
@@ -44,7 +44,7 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
     // Agent 交回：只进待过目，不改档案。同一记录、同一轮、同一正文重复交回不重复写入。
     async propose(input) {
       shape(input, ["taskId", "round", "kind", "text", "proposer"]);
-      if (!ACCEPTED_KINDS.includes(input.kind)) throw failure("目前只接受拆解回执（kind=report）");
+      if (!ACCEPTED_KINDS.includes(input.kind)) throw failure("回执类型只能是 report（拆解回执）或 replica（复刻对照）");
       if (!Number.isInteger(input.round) || input.round < 1) throw failure("轮次需为正整数");
       if (typeof input.text !== "string") throw failure("回执需为文本");
       if (typeof input.proposer !== "string" || !input.proposer.trim() || input.proposer.length > REVERSE_REPORT_LIMITS.proposer || /[\x00-\x1f\x7f]/.test(input.proposer))
@@ -52,6 +52,8 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
       const text = normalize(input.text);
       if (!text.trim()) throw failure("回执为空");
       if (text.length > REVERSE_REPORT_LIMITS.text) throw failure(`回执超过 ${REVERSE_REPORT_LIMITS.text} 字，请精简后再交`);
+      // 复刻对照一行都认不出时当场退给 Agent，不进待过目。
+      if (input.kind === "replica" && !parseReplica(text).rows.length) throw failure("没认出复刻对照行：每项写成「能力：一致 / 有差异 ｜ 差在哪 / 未验证 ｜ 为什么」");
       let result;
       await repository.updateReverseReports((stored) => {
         const record = recordOf(stored, input.taskId);
@@ -86,12 +88,15 @@ export function createReverseReports(repository, { clock = Date.now } = {}) {
       const report = reportOf(stored, input.id);
       const record = recordOf(stored, report.recordId);
       const at = now();
-      const { changes, kept, unplaced, missing, redactions, report: parsed, latest } = adoptInto(record, report, { at, overwrite });
+      const adopted = adoptInto(record, report, { at, overwrite });
       for (const [key, value] of previews) if (value.expires <= clock()) previews.delete(key);
       if (previews.size >= 30) previews.delete(previews.keys().next().value);
       const previewId = randomUUID(), expires = clock() + PREVIEW_TTL;
       previews.set(previewId, { reportId: report.id, revision: stored.revision, overwrite, expires });
-      return { previewId, reportId: report.id, recordId: record.id, round: report.round, revision: stored.revision, report: parsed, latest, changes, kept, unplaced, missing, redactions, expiresAt: new Date(expires).toISOString() };
+      const head = { previewId, reportId: report.id, recordId: record.id, round: report.round, kind: report.kind, revision: stored.revision, latest: adopted.latest, unplaced: adopted.unplaced, redactions: adopted.redactions, expiresAt: new Date(expires).toISOString() };
+      if (report.kind === "replica") return { ...head, replica: adopted.replica };
+      const { changes, kept, missing, report: parsed } = adopted;
+      return { ...head, report: parsed, changes, kept, missing };
     },
     // 采纳：预览后主库没变才写；回执标为已采纳，档案按预览时的覆盖选择写入。
     async adopt(input) {
