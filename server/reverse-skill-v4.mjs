@@ -2,7 +2,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import {currentPackVersion} from '../src/reverse-ai.js';
 import { buildReplicaPack, generateReplicaSkill, currentSkill } from '../src/reverse-v4.js';
 import { makeAsset, revise } from '../src/store.js';
-import { generateHatchSkill, hatchSlotsText, draftHatchSkill } from '../src/reverse-hatch.js';
+import { generateHatchSkill, hatchSlotsText, draftHatchSkill, cellsOf } from '../src/reverse-hatch.js';
 import { parseSkillDraft, nameSkillDraft } from '../src/reverse-flow.js';
 import { materializeSkillVersion, planSkillVersion } from '../src/skill-version.js';
 import { failure } from './repository.mjs';
@@ -122,7 +122,8 @@ export function createReverseSkillV4({repository,readMedia,clock=Date.now}) {
       const receipt={assetId:asset.id,versionId:version.id,at,slotsHash:slotsHashOf(record),round:report.round};
       return {...state,
         assets:prior?state.assets.map(a=>a.id===asset.id?asset:a):[...state.assets,asset],
-        reverseRecords:state.reverseRecords.map(v=>v.id===record.id?{...v,hatchSkills:[...(v.hatchSkills||[]),receipt],updatedAt:at}:v),
+        // 写 Skill 那一轮由「已发出」改成「已交回」，和回执、复刻对照一样。
+        reverseRecords:state.reverseRecords.map(v=>v.id===record.id?{...v,...(v.hatch?{hatch:{...v.hatch,rounds:v.hatch.rounds.map(x=>x.n===report.round&&x.status==='sent'?{...x,status:'back',backAt:at,cells:cellsOf(v.hatch.slots)}:x)}}:{}),hatchSkills:[...(v.hatchSkills||[]),receipt],updatedAt:at}:v),
         reverseReports:state.reverseReports.map(r=>r.id===reportId?{...r,status:'adopted',decidedAt:at}:r)};
     });
   }

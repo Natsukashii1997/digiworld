@@ -273,6 +273,7 @@ test("Skill 草稿：提交 → 预览 → 采纳 → 回读；资产正文是�
     const source = JSON.parse(files.find((f) => f.path === "source.json").data);
     assert.deepEqual([source.draft.round, source.draft.by, source.draft.reportId, source.validation], [3, "codex", sent.id, "未经复刻验证"]);
     assert.deepEqual(record.hatchSkills.map((x) => [x.assetId, x.round]), [[asset.id, 3]]);
+    assert.deepEqual(record.hatch.rounds.map((x) => x.status), ["sent", "sent", "back"], "写 Skill 那一轮改成已交回，别的轮次不动");
     assert.equal(after.reverseReports[0].status, "adopted");
     assert.equal(after.revision, revision + 1, "存资产、指针和回执状态是同一次写入");
     const back = await skills.hatchQuery({ recordId: r.id });

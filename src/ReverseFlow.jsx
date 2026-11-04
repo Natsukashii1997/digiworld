@@ -30,8 +30,8 @@ const PACKS = {
   replica: ["开始复刻", buildReplicaPack],
   skill: ["写 Skill", buildSkillPack],
 };
-// 交回的东西分三种（#55）：拆解回执、复刻对照、Skill 草稿。
-const BACK = { report: "回执", replica: "复刻对照", skill: "Skill 草稿" };
+// 交回的东西分三种（#55）：拆解回执、复刻对照、Skill 草稿。拼在中文后面（「第 3 轮」「粘贴」），英文开头的前面留一个空格。
+const BACK = { report: "回执", replica: "复刻对照", skill: " Skill 草稿" };
 const askIds = (r) => SLOTS.filter((s) => slotState(hatchOf(r).slots[s.id]) !== "full").map((s) => s.id);
 
 // 停在轨道哪一步：-1 未派出，6 已收成；搁置落在第 0 步并标红。
@@ -154,7 +154,7 @@ function History({ record, rounds, reports }) {
           <li key={(x.legacy ? "旧" : "") + x.n}>
             <span className={`tg ${x.status === "back" || x.status === "done" ? "g" : x.status === "sent" ? "c" : x.status === "partial" ? "y" : "r"}`}>{STATUS[x.status] || x.status}</span>
             <span>{x.legacy ? "旧 · " : ""}第 {x.n} 轮 · {md(x.at)} · {WHO[x.by] || x.by}{x.kind ? ` · ${KINDS[x.kind]}` : ""}{x.error ? ` · ${x.error}` : ""}</span>
-            {back.map((r) => <details key={r.id}><summary>回执 · {r.status === "adopted" ? "已采纳" : r.status === "rejected" ? "已退回" : "待过目"}</summary><pre>{r.text}</pre></details>)}
+            {back.map((r) => <details key={r.id}><summary>{(BACK[r.kind] || "回执").trim()} · {r.status === "adopted" ? "已采纳" : r.status === "rejected" ? "已退回" : "待过目"}</summary><pre>{r.text}</pre></details>)}
           </li>);
       })}</ul>
       {result && <details className="rf-more"><summary>旧结论 · 未分格{v && ` · ${md(v.at)} · ${WHO[v.executor] || v.executor}`}</summary>
@@ -499,7 +499,7 @@ export function ReverseFlow({ state, save, notify, adoptState, onSelect, reverse
           {report?.evidence.length > 0 && <div className="hr" />}
           <Evidence report={report} />
           {report?.nextAsk?.length > 0 && <><div className="hr" /><section aria-labelledby="rf-next"><h3 className="sub3" id="rf-next">下一轮建议问<small>{report.nextAsk.length} 条</small></h3><ul className="evl">{report.nextAsk.map((q, i) => <li key={i}><b>{i + 1}</b>{q}</li>)}</ul></section></>}
-          {hatch.replica && <><div className="hr" /><section aria-labelledby="rf-rep"><h3 className="sub3" id="rf-rep">复刻对照<small>{hatch.replica.where}</small></h3><ul className="evl">{hatch.replica.rows.map((x, i) => <li key={i}><b>{REPLICA_RESULTS[x.result]}</b>{x.name}{x.note ? ` · ${x.note}` : ""}</li>)}</ul></section></>}
+          {hatch.replica && <><div className="hr" /><section aria-labelledby="rf-rep"><h3 className="sub3" id="rf-rep">复刻对照<small>{hatch.replica.where}</small></h3><ul className="evl repl">{hatch.replica.rows.map((x, i) => <li key={i}><b>{REPLICA_RESULTS[x.result]}</b>{x.name}{x.note ? ` · ${x.note}` : ""}</li>)}</ul></section></>}
           <div className="hr" />
           <Output record={record} assets={state.assets} onOpen={onSelect} onCopy={copyUsage} />
           <div className="hr" />

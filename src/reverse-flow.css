@@ -122,6 +122,7 @@
 .rv6 .evl, .rv6 .hist, .rv6 .outl { margin: 0; padding: 0; list-style: none; }
 .rv6 .evl li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--line); font: 500 var(--fs-small)/1.6 var(--mono); color: var(--text-2); overflow-wrap: anywhere; }
 .rv6 .evl b { color: var(--cyan); }
+.rv6 .evl.repl li { grid-template-columns: max-content minmax(0, 1fr); } /* 复刻结果三个字不折行 */
 .rv6 .hist li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: var(--fs-meta); color: var(--text-2); }
 .rv6 .evl li:last-child, .rv6 .hist li:last-child { border-bottom: 0; }
 .rv6 .hist details { flex-basis: 100%; }

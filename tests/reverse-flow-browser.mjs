@@ -1,5 +1,6 @@
 // 逆向工程 v5 页面 v6-C（#53）浏览器回归：先 npm run build 再单独跑（不在 npm test 里）。
 // 新建 → 复制开场话术、待过目预览并采纳、退回、手动粘贴回执、搁置与恢复、1440/390/320 无溢出、控件 44px、axe。仅合成隔离库，不读 data/。
+// 第 4 批（#55）：复刻对照经 reverse_report 交回后采纳、派「写 Skill」、手动粘贴 Skill 草稿改名后存进资产仓库、产出区口令。
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -179,6 +180,72 @@ const pick = (p, title) => p.locator(".li6").filter({ hasText: title }).getByRol
     assert.deepEqual([r.hatch.rounds[0].kind, r.hatch.rounds[0].by, r.hatch.rounds[0].status], ["start", "codex", "sent"]);
     assert.equal(r.hatch.rounds[0].packHash, sha(text));
     assert.equal(hatchOf(r).rounds.length, 1);
+  } finally { await p.context().close(); await app.close(); }
+}
+
+// 复刻与存 Skill（#55）：炉子第 1 轮已采纳，第 2 轮派了复刻；AI 用 reverse_report 交回复刻对照 → 采纳 → 派「写 Skill」→ 粘贴草稿 → 改名 → 存 → 产出区口令
+{
+  const app = await fixture();
+  const p0 = { ...seed() };
+  let f = round(furnace(), "start", "2026-10-15T05:00:00.000Z");
+  f = { ...f, hatch: adoptReport(f, reportText(f, 1, "分出「Agent 迁移」「工作交接」两支"), 1, { at: "2026-10-15T08:00:00.000Z" }).hatch };
+  f = round(f, "replica", "2026-10-16T05:00:00.000Z");
+  p0.reverseRecords = [f];
+  await app.repository.write(p0, { initialize: true });
+  const replica = ["## 复刻对照 · 炉子 · 第 2 轮 · 任务编号 rv-furnace", "复刻位置：~/Sandbox/2026-10-16-furnace/", "- Agent 迁移：一致", "- 工作交接：有差异 ｜ 只交接了文本", "- 导出：未验证 ｜ 需要登录"].join("\n");
+  await createReverseReports(app.repository).propose({ taskId: "rv-furnace", round: 2, kind: "replica", text: replica, proposer: "Codex" });
+  const p = await open(app, 1440), dos = p.locator(".dos");
+  try {
+    await dos.getByText("AI 交回了第 2 轮复刻对照").waitFor();
+    await dos.getByRole("button", { name: "预览并采纳" }).click();
+    const rv = p.getByRole("dialog", { name: "过目第 2 轮复刻对照" });
+    await rv.locator(".rf-preview").getByText("只交接了文本").waitFor();
+    await button(rv, "采纳写入").click();
+    await rv.waitFor({ state: "hidden" });
+    f = await rec(app, "rv-furnace");
+    assert.deepEqual([f.hatch.replica.round, f.hatch.replica.where, f.hatch.replica.rows.map((x) => x.result).join()], [2, "~/Sandbox/2026-10-16-furnace/", "ok,diff,no"]);
+    assert.equal(f.hatch.rounds.at(-1).status, "back");
+    await dos.getByRole("heading", { name: /复刻对照/ }).waitFor();
+    assert.equal(await dos.locator(".stats > div").nth(4).locator("[aria-label]").first().getAttribute("aria-label"), "1/3", "复刻读数：一致 1 项 / 共 3 项");
+
+    // 下一步变成「写 Skill」：复制给 Codex，记第 3 轮 skill
+    await dos.getByRole("button", { name: "复制「写 Skill」" }).click();
+    const sk = p.getByRole("dialog", { name: "Agent迁移和上下文接力功能 · 写 Skill" });
+    await button(sk, "复制给 Codex").click();
+    await sk.waitFor({ state: "hidden" });
+    assert.match((await copies(p)).at(-1), /复刻对照（~\/Sandbox\/2026-10-16-furnace\/）/);
+    f = await rec(app, "rv-furnace");
+    assert.deepEqual([f.hatch.rounds.at(-1).n, f.hatch.rounds.at(-1).kind, f.hatch.rounds.at(-1).by], [3, "skill", "codex"]);
+
+    // 手动粘贴 Skill 草稿：name 不合规 → 过目里补名字、重新预览 → 存进资产仓库
+    await dos.getByRole("button", { name: "粘贴回执" }).click();
+    const paste = p.getByRole("dialog", { name: "粘贴 Skill 草稿" });
+    const draft = "---\nname: Agent Relay\ndescription: 把一个 Agent 的进度交给下一个\n---\n\n# Agent 接力\n\n## 用途\n交接进度（证据 E3）。\n";
+    await paste.getByLabel("Skill 草稿原文").fill(draft);
+    await button(paste, "交到待过目并预览").click();
+    const review = p.getByRole("dialog", { name: "过目第 3 轮 Skill 草稿" });
+    await review.getByTestId("skill-draft").getByText("# Agent 接力", { exact: false }).waitFor();
+    assert.equal(await button(review, "存进资产仓库").isDisabled(), true, "没有名字不能存");
+    await review.getByLabel(/Skill 名字/).fill("agent-relay");
+    await button(review, "用这个名字预览").click();
+    await review.getByText("口令 $agent-relay", { exact: false }).waitFor();
+    await checks(p, "1440 Skill 过目");
+    await button(review, "存进资产仓库").click();
+    await review.waitFor({ state: "hidden" });
+    const state = await app.repository.read(), saved = state.reverseRecords[0].hatchSkills.at(-1), asset = state.assets.find((a) => a.id === saved.assetId);
+    assert.equal(saved.round, 3);
+    assert.equal(state.reverseRecords[0].hatch.rounds[2].status, "back", "写 Skill 那一轮已交回");
+    assert.match(asset.versions.at(-1).files.find((x) => x.path === "SKILL.md").data, /^---\nname: agent-relay\ndescription: 把一个 Agent 的进度交给下一个/);
+    assert.deepEqual(state.reverseReports.map((x) => [x.kind, x.status, x.proposer]), [["replica", "adopted", "Codex"], ["skill", "adopted", "手动粘贴"]]);
+
+    // 产出区：Skill 名和版本、给 Codex 用、复制口令
+    const out = dos.locator(".outl li");
+    await out.getByText("agent-relay · v1", { exact: false }).waitFor();
+    await out.getByText("给 Codex 用", { exact: false }).waitFor();
+    await button(out, "复制口令").click();
+    assert.equal((await copies(p)).at(-1), "$agent-relay");
+    await checks(p, "1440 已收成");
+    await p.screenshot({ path: "test-results/reverse-flow-skill-1440.png", fullPage: true });
   } finally { await p.context().close(); await app.close(); }
 }
 
