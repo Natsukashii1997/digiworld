@@ -33,7 +33,8 @@ if (operation === 'doctor') {
     process.stderr.write(JSON.stringify({rea_progress:{phase:'parse_javascript_source',completed:0,total:1,message:'bad source (9/3)'}})+'\n');
     process.stderr.write('plain diagnostic\n{broken JSON\n');
   }
-  if (input.includes('tree')) { const child = spawn(process.execPath, ['-e', "process.on('SIGTERM',()=>{});setInterval(()=>{},1000)"], {stdio:'ignore'}); await writeFile(input+'.pid',String(child.pid)); await delay(30000); }
+  // 孙进程先装好忽略TERM的处理器，再原子写出自己的pid；测试读到即可确定它已在忽略TERM。
+  if (input.includes('tree')) { spawn(process.execPath, ['-e', "const fs=require('fs'),p=process.argv[1];process.on('SIGTERM',()=>{});fs.writeFileSync(p+'.tmp',String(process.pid));fs.renameSync(p+'.tmp',p);setInterval(()=>{},1000)", input+'.pid'], {stdio:'ignore'}); await delay(30000); }
   if (input.includes('slow')) { process.stderr.write('x'.repeat(300000)+'\n'); await delay(30000); }
   if (input.includes('fail')) { console.log(JSON.stringify({code:'SYNTHETIC_BAD_TARGET',message:'合成 REA 错误'})); process.exitCode=1; }
   else {

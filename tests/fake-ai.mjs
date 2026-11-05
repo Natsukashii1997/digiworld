@@ -4,7 +4,8 @@ import {join} from 'node:path';
 const executor=process.argv[2],prompt=await new Promise(resolve=>{let s='';process.stdin.on('data',c=>s+=c);process.stdin.on('end',()=>resolve(s));});
 const events=[];const emit=v=>events.push(v);
 const ev='ev_'+'a'.repeat(64),tool='analyze_javascript_application';
-if(prompt==='tree'){const child=spawn(process.execPath,['-e',"process.on('SIGTERM',()=>{});setInterval(()=>{},1000)"],{stdio:'ignore'});await writeFile(join(process.cwd(),'child.pid'),String(child.pid));setInterval(()=>{},1000);await new Promise(()=>{});}
+// 孙进程先装好忽略TERM的处理器，再原子写出自己的pid；测试读到pid即可确定它已在忽略TERM，不靠固定等待猜时机。
+if(prompt==='tree'){spawn(process.execPath,['-e',"const fs=require('fs');process.on('SIGTERM',()=>{});fs.writeFileSync('child.pid.tmp',String(process.pid));fs.renameSync('child.pid.tmp','child.pid');setInterval(()=>{},1000)"],{stdio:'ignore'});setInterval(()=>{},1000);await new Promise(()=>{});}
 if(prompt==='ps-probe'){
  const r=spawnSync('ps',['-p',String(process.pid),'-o','pid=,ppid=,pgid=,uid=,stat=,command='],{encoding:'utf8'});let denied=false;
  try{await writeFile(join(process.cwd(),'../bin/ps'),'bad');}catch(e){denied=['EACCES','EPERM'].includes(e.code);}

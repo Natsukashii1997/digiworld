@@ -16,15 +16,21 @@ const skill = (title = "合成 Skill") => makeAsset({ title, type: "Prompt", con
 
 async function desk() {
   const app = await projectStatusFixture();
-  const before = await app.workspace();
-  const [slot, other] = before.connections.projects;
-  await app.call("/project-status/mark", { projectId: slot.id, active: true, revision: before.revision });
-  const state = await app.workspace();
-  state.notes = [{ id: "note-a", at: AT, text: "合成需求便签" }, { id: "note-b", at: AT, text: "另一条" }];
-  state.assets = [...state.assets, skill()];
-  const saved = await app.call("/workspace", { state }, "PUT");
-  assert.equal(saved.status, 200, JSON.stringify(saved.body));
-  return { app, slot: slot.id, other: other.id, asset: saved.body.assets.at(-1) };
+  // 准备失败时也关掉服务，否则监听句柄让整个测试文件永不退出。
+  try {
+    const before = await app.workspace();
+    const [slot, other] = before.connections.projects;
+    await app.call("/project-status/mark", { projectId: slot.id, active: true, revision: before.revision });
+    const state = await app.workspace();
+    state.notes = [{ id: "note-a", at: AT, text: "合成需求便签" }, { id: "note-b", at: AT, text: "另一条" }];
+    state.assets = [...state.assets, skill()];
+    const saved = await app.call("/workspace", { state }, "PUT");
+    assert.equal(saved.status, 200, JSON.stringify(saved.body));
+    return { app, slot: slot.id, other: other.id, asset: saved.body.assets.at(-1) };
+  } catch (error) {
+    await app.close().catch(() => {});
+    throw error;
+  }
 }
 
 test("旧库没有任何阶段 2 字段时照常校验；新字段格式错误被拒绝", () => {

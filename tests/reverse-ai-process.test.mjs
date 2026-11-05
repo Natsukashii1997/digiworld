@@ -7,6 +7,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {createAiProcess,aiArguments,aiPrompt} from '../server/reverse-ai-process.mjs';
 import {REA_READ_TOOLS} from '../src/reverse-ai.js';
+import {terminated,waitTerminated} from './process-terminated.mjs';
 const fake=fileURLToPath(new URL('./fake-ai.mjs',import.meta.url));
 const execute=createAiProcess({commands:Object.fromEntries(['codex','claude'].map(x=>[x,{command:process.execPath,prefix:[fake,x]}])),killGraceMs:40});
 test('两个AI真实合成子进程：只读工具参数、流式日志、结构化结果、原始文件',async()=>{
@@ -37,14 +38,27 @@ test('真实进程中文逐字节分块不损坏，认证/额度/权限/REA/格�
   const missing=createAiProcess({commands:{codex:{command:join(root,'not-installed')}}});await assert.rejects(missing('codex',{folder:join(root,'absent'),prompt:'success'}),e=>e.kind==='launch'&&e.status===503);
  }finally{await rm(root,{recursive:true,force:true});}
 });
-test('真实OS写入隔离拒绝目标改写，停止清理忽略TERM的孙进程',async()=>{
+test('真实OS写入隔离拒绝目标改写',async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-readonly-'))),target=join(root,'project.txt');await writeFile(target,'unchanged');
  try{
-  await execute('codex',{folder:join(root,'probe'),prompt:'write:'+target});assert.equal(await readFile(target,'utf8'),'unchanged');assert.equal(JSON.parse(await readFile(join(root,'probe/cwd/write-probe.json'),'utf8')).denied,true);
-  const folder=join(root,'tree'),controller=new AbortController();const running=execute('codex',{folder,prompt:'tree',signal:controller.signal});const rejected=assert.rejects(running,/synthetic stop/);let pid;
-  for(let i=0;i<100;i++){try{pid=Number(await readFile(join(folder,'cwd/child.pid'),'utf8'));break;}catch{await delay(10);}}
-  assert.ok(pid);await delay(70);controller.abort(new Error('synthetic stop'));await rejected;await delay(50);assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});
+  await execute('codex',{folder:join(root,'probe'),prompt:'write:'+target,signal:AbortSignal.timeout(30000)});assert.equal(await readFile(target,'utf8'),'unchanged');assert.equal(JSON.parse(await readFile(join(root,'probe/cwd/write-probe.json'),'utf8')).denied,true);
  }finally{await rm(root,{recursive:true,force:true});}
+});
+// 整套并发时假AI与孙进程启动可能远超1秒；等待按截止时间而非固定次数。无论断言成败，finally 都会停止本次运行并强杀孙进程，失败也不留进程卡住整套测试。
+test('停止清理忽略TERM的孙进程',async()=>{
+ const root=await realpath(await mkdtemp(join(tmpdir(),'ai-tree-'))),folder=join(root,'tree'),controller=new AbortController(),stop=()=>controller.abort(new Error('synthetic stop'));
+ const running=execute('codex',{folder,prompt:'tree',signal:controller.signal}),outcome=running.then(()=>null,e=>e);let pid,settled=false;outcome.then(()=>{settled=true;});
+ try{
+  // 孙进程装好忽略TERM的处理器后才写pid（见 fake-ai.mjs），读到即可停止。
+  for(const deadline=Date.now()+30000;!pid&&!settled&&Date.now()<deadline;){pid=Number(await readFile(join(folder,'cwd/child.pid'),'utf8').catch(()=>''))||undefined;if(!pid)await delay(20);}
+  assert.ok(pid,settled?'假AI提前结束：'+(await outcome)?.message:'30秒内未读到孙进程pid');assert.equal(terminated(pid),false);
+  stop();assert.match(String((await outcome)?.message),/synthetic stop/);
+  // SIGKILL 已在 execute 返回前发出；孙进程被收养后才由 launchd 回收，负载下回收前短暂是僵尸，按截止时间等待（见 process-terminated.mjs）。
+  assert.equal(await waitTerminated(pid),true,'停止后孙进程仍在运行');
+ }finally{
+  stop();await outcome;if(pid)try{process.kill(pid,'SIGKILL');}catch{}
+  await rm(root,{recursive:true,force:true});
+ }
 });
 
 // All state/config probes are synthetic; never attempt a write to the user's actual configuration.

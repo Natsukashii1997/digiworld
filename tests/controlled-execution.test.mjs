@@ -7,7 +7,8 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const project = '/Users/nat/Documents/ChatGPT/个人/work/digiworld';
+// 依赖从本次检出解析：原先写死用户主工作区，干净副本会混用主工作区的依赖，其他机器直接找不到模块。
+const project = here;
 const digest = value => createHash('sha256').update(value).digest('hex');
 
 async function loadCandidate() {

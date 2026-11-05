@@ -13,6 +13,7 @@ import { visitJson, summarizeEvidence } from '../server/reverse-json.mjs';
 import { seed } from '../src/store.js';
 import { createSpecimen } from '../src/reverse-recipe.js';
 import { packDirectory } from '../server/full-backup.mjs';
+import {terminated,waitTerminated} from './process-terminated.mjs';
 
 const execute = createReaProcess({ command: process.execPath, prefix: [fileURLToPath(new URL('./fake-rea.mjs',import.meta.url))], killGraceMs:30 });
 async function setup(name='target', options={}) {
@@ -94,12 +95,14 @@ test('磁盘写入失败停止子进程并清晰分类',async()=>{
 });
 
 test('停止后leader已退出仍清理忽略TERM的孙进程', async()=>{
- const app=await setup('tree');try{
-  const {run}=await app.start();let pid;
-  for(let i=0;i<80;i++){try{pid=Number(await readFile(app.path+'.pid','utf8'));break;}catch{await delay(20);}}
-  assert.ok(pid);await delay(80);await app.runner.stop({recordId:app.record.id,runId:run.id});await delay(30);
-  assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});
- }finally{await app.close();}
+ const app=await setup('tree');let pid;try{
+  // 等 pid 按截止时间而非固定次数；孙进程装好忽略TERM的处理器后才写pid（见 fake-rea.mjs）。
+  const {run}=await app.start();
+  for(const deadline=Date.now()+30000;!pid&&Date.now()<deadline;){pid=Number(await readFile(app.path+'.pid','utf8').catch(()=>''))||undefined;if(!pid)await delay(20);}
+  assert.ok(pid,'30秒内未读到孙进程pid');assert.equal(terminated(pid),false);
+  await app.runner.stop({recordId:app.record.id,runId:run.id});
+  assert.equal(await waitTerminated(pid),true,'停止后孙进程仍在运行');
+ }finally{await app.close();if(pid)try{process.kill(pid,'SIGKILL');}catch{}}
 });
 test('关闭覆盖启动doctor等待，关闭后不会异步起跑',async()=>{
  let release;const gate=new Promise(resolve=>{release=resolve;});

@@ -4,7 +4,7 @@ import {NoteActions} from './NoteActions.jsx';
 import {notePaper} from './note-paper.js';
 import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {Pin,Minus,ArrowUpRight,StickyNote,ListTodo,Clock3} from 'lucide-react';
-import {Pixel} from './Pixel.jsx';
+import {Pixel} from './pixel.jsx';
 import hopeBadge from './hope-badge.png';
 import {useReducedMotion} from './v14.jsx';
 import {NoteEditor,NoteLines} from './NoteEditor.jsx';

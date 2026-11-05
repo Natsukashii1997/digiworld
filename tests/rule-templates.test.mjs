@@ -523,7 +523,12 @@ test("D-R5：核对等待在途写入完成，不会在 rename 前给出写入�
     const rules = createRuleTemplates(repository, { filesystem });
     const preview = await rules.preview({ ...target(app, asset), revision });
     const applying = rules.apply({ token: preview.token, revision });
-    await renaming;
+    // 写入若在 rename 前就结束（成功或失败），不再无限等待被拦住的 rename，直接以真实结果失败。
+    const early = await Promise.race([
+      renaming.then(() => null),
+      applying.then((r) => ({ r }), (e) => ({ e })),
+    ]);
+    if (early) throw early.e || new Error("写入未经过被拦截的 rename 就结束：" + JSON.stringify(early.r));
     let checked = null;
     const checking = rules.check({ id: preview.token }).then((r) => (checked = r));
     await new Promise((r) => setTimeout(r, 150));

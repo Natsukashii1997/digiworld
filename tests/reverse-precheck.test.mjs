@@ -45,9 +45,11 @@ test('三执行器共同预检，唯一匹配才启动，预检失败不形成�
  }finally{await app.close();}
 });
 test('预检15秒预算覆盖版本检查，关闭与并发互斥且释放锁',async()=>{
- const app=await setup({precheckTimeoutMs:25,getVersion:({signal})=>new Promise((resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}))});
- try{const pending=app.runner.start(await app.input());await new Promise(r=>setTimeout(r,5));await assert.rejects(app.runner.precheck({recordId:app.record.id,expectedRevision:(await app.repository.read()).revision}),/已有取证/);const result=await pending;assert.equal(result.precheck.status,'unavailable');assert.match(result.precheck.message,/15秒/);assert.equal(app.runner.busy,false);assert.equal(app.aiCalls,0);}finally{await app.close();}
- const closing=await setup({getVersion:({signal})=>new Promise((resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}))});try{const pending=closing.runner.start(await closing.input());await new Promise(r=>setTimeout(r,5));const rejected=assert.rejects(pending,/服务关闭/);await closing.runner.close();await rejected;assert.equal(closing.aiCalls,0);}finally{await closing.close();}
+ // 等版本检查真正开始（预检已占用）再发并发请求，不用固定 5ms 猜时机；预算 1 秒，整套并发负载下也不会在并发请求到达前就耗尽。
+ const hanging=()=>{let entered;const called=new Promise(r=>{entered=r;});return {called,getVersion:({signal})=>{entered();return new Promise((resolve,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}));}};};
+ const budget=hanging(),app=await setup({precheckTimeoutMs:1000,getVersion:budget.getVersion});
+ try{const pending=app.runner.start(await app.input());await budget.called;await assert.rejects(app.runner.precheck({recordId:app.record.id,expectedRevision:(await app.repository.read()).revision}),/已有取证/);const result=await pending;assert.equal(result.precheck.status,'unavailable');assert.match(result.precheck.message,/15秒/);assert.equal(app.runner.busy,false);assert.equal(app.aiCalls,0);}finally{await app.close();}
+ const held=hanging(),closing=await setup({getVersion:held.getVersion});try{const pending=closing.runner.start(await closing.input());await held.called;const rejected=assert.rejects(pending,/服务关闭/);await closing.runner.close();await rejected;assert.equal(closing.aiCalls,0);}finally{await closing.close();}
 });
 test('预检期间revision变化不能启动AI',async()=>{
  let app;app=await setup({execute:async(v,args,out)=>{const state=await app.repository.read();state.reverseRecords[0].material.target.url='https://example.test/other';await app.repository.write(state);await writeFile(out,JSON.stringify({normalized_result:{targets:[page('https://example.test/community')]}}));}});

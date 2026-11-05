@@ -26,14 +26,16 @@ test("会话版本号取自 package.json，不另写一份", async () => {
 test("开发页面经代理访问本机服务，只接受自身来源，外部来源仍被拒绝", async () => {
   const app = await fixture();
   process.env.WORKBENCH_API_PORT = new URL(app.url).port;
-  const { createServer } = await import("vite");
-  const dev = await createServer({
-    root,
-    configFile: join(root, "vite.config.js"),
-    server: { port: 0 },
-    logLevel: "silent",
-  });
+  // 开发服务器创建失败时也要关掉 fixture，否则监听句柄让整个测试文件永不退出。
+  let dev;
   try {
+    const { createServer } = await import("vite");
+    dev = await createServer({
+      root,
+      configFile: join(root, "vite.config.js"),
+      server: { port: 0 },
+      logLevel: "silent",
+    });
     await dev.listen();
     const own = `http://127.0.0.1:${dev.httpServer.address().port}`;
     const session = await fetch(own + "/api/session", {
@@ -56,7 +58,7 @@ test("开发页面经代理访问本机服务，只接受自身来源，外部�
       );
     assert.equal((await fetch(own + "/api/workspace")).status, 403);
   } finally {
-    await dev.close();
+    await dev?.close();
     delete process.env.WORKBENCH_API_PORT;
     await app.close();
   }
