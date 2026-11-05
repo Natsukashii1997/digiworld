@@ -7,6 +7,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {createAiProcess,aiArguments,aiPrompt} from '../server/reverse-ai-process.mjs';
 import {REA_READ_TOOLS} from '../src/reverse-ai.js';
+import {terminated,waitTerminated} from './process-terminated.mjs';
 const fake=fileURLToPath(new URL('./fake-ai.mjs',import.meta.url));
 const execute=createAiProcess({commands:Object.fromEntries(['codex','claude'].map(x=>[x,{command:process.execPath,prefix:[fake,x]}])),killGraceMs:40});
 test('两个AI真实合成子进程：只读工具参数、流式日志、结构化结果、原始文件',async()=>{
@@ -47,15 +48,13 @@ test('真实OS写入隔离拒绝目标改写',async()=>{
 test('停止清理忽略TERM的孙进程',async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-tree-'))),folder=join(root,'tree'),controller=new AbortController(),stop=()=>controller.abort(new Error('synthetic stop'));
  const running=execute('codex',{folder,prompt:'tree',signal:controller.signal}),outcome=running.then(()=>null,e=>e);let pid,settled=false;outcome.then(()=>{settled=true;});
- const alive=p=>{try{process.kill(p,0);return true;}catch(e){if(e.code==='ESRCH')return false;throw e;}};
  try{
   // 孙进程装好忽略TERM的处理器后才写pid（见 fake-ai.mjs），读到即可停止。
   for(const deadline=Date.now()+30000;!pid&&!settled&&Date.now()<deadline;){pid=Number(await readFile(join(folder,'cwd/child.pid'),'utf8').catch(()=>''))||undefined;if(!pid)await delay(20);}
-  assert.ok(pid,settled?'假AI提前结束：'+(await outcome)?.message:'30秒内未读到孙进程pid');assert.equal(alive(pid),true);
+  assert.ok(pid,settled?'假AI提前结束：'+(await outcome)?.message:'30秒内未读到孙进程pid');assert.equal(terminated(pid),false);
   stop();assert.match(String((await outcome)?.message),/synthetic stop/);
-  // SIGKILL 已在 execute 返回前发出；孙进程被收养后由 init/launchd 回收，负载下可能短暂处于僵尸态，按截止时间等待消失。
-  for(const deadline=Date.now()+10000;alive(pid)&&Date.now()<deadline;)await delay(20);
-  assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});
+  // SIGKILL 已在 execute 返回前发出；孙进程被收养后才由 launchd 回收，负载下回收前短暂是僵尸，按截止时间等待（见 process-terminated.mjs）。
+  assert.equal(await waitTerminated(pid),true,'停止后孙进程仍在运行');
  }finally{
   stop();await outcome;if(pid)try{process.kill(pid,'SIGKILL');}catch{}
   await rm(root,{recursive:true,force:true});
