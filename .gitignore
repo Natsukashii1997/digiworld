@@ -2,6 +2,8 @@ node_modules/
 dist/
 .DS_Store
 test-results/
+# capability-daemon 测试用 mkdtemp 建的临时根，正常测试结束即删
+tests/fixture-daemon*-*/
 data/
 
 # 第三方拼豆图纸原图（带作者水印），仅本机参考，不入库
