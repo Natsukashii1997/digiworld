@@ -64,6 +64,7 @@ export async function spaceFixture({ roster, gh, staticRoot, skillUsage, space }
   };
   await call("/workspace", { state: seed(), initialize: true }, "PUT");
   assert.equal((await call("/scan/projects", {})).status, 200);
-  return { ...app, dir, paths, call, calls, rosterPath, async close() { await app.close(); await rm(dir, { recursive: true, force: true }); } };
+  // 首次读 /projects-space 会起后台技能统计并写缓存进 data；服务关闭不等它，删除目录时可能撞上新写入（ENOTEMPTY），故清理带重试。
+  return { ...app, dir, paths, call, calls, rosterPath, async close() { await app.close(); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }); } };
 }
 
