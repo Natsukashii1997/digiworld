@@ -282,51 +282,57 @@ export async function projectBriefFixture({ clock, visibility = fakeVisibility }
       githubCli: createGhRunner({ paths: [gh.path] }),
     },
   });
-  const session = await (
-    await fetch(app.url + "/api/session", {
-      headers: { "x-workbench-client": "1" },
-    })
-  ).json();
-  const headers = {
-    "x-workbench-token": session.token,
-    "content-type": "application/json",
-  };
-  const call = async (path, data, method = data === undefined ? "GET" : "POST") => {
-    const r = await fetch(app.url + "/api" + path, {
-      method,
-      headers,
-      ...(data === undefined ? {} : { body: stringify(data) }),
-    });
-    return { status: r.status, body: parse(await r.text()) };
-  };
-  await call("/workspace", { state: seed(), initialize: true }, "PUT");
-  const scanned = await call("/scan/projects", {});
-  assert.equal(scanned.status, 200, JSON.stringify(scanned.body));
-  const workspace = async () => (await call("/workspace")).body;
-  const projectId = async (name) =>
-    (await workspace()).connections.projects.find((p) => p.name === name)?.id;
-  async function mark(name, active = true) {
-    const ws = await workspace();
-    const r = await call("/project-status/mark", {
-      projectId: await projectId(name),
-      active,
-      revision: ws.revision,
-    });
-    assert.equal(r.status, 200, JSON.stringify(r.body));
+  // 准备步骤失败时也关掉已启动的服务并清理，否则监听句柄让整个测试文件永不退出。
+  try {
+    const session = await (
+      await fetch(app.url + "/api/session", {
+        headers: { "x-workbench-client": "1" },
+      })
+    ).json();
+    const headers = {
+      "x-workbench-token": session.token,
+      "content-type": "application/json",
+    };
+    const call = async (path, data, method = data === undefined ? "GET" : "POST") => {
+      const r = await fetch(app.url + "/api" + path, {
+        method,
+        headers,
+        ...(data === undefined ? {} : { body: stringify(data) }),
+      });
+      return { status: r.status, body: parse(await r.text()) };
+    };
+    await call("/workspace", { state: seed(), initialize: true }, "PUT");
+    const scanned = await call("/scan/projects", {});
+    assert.equal(scanned.status, 200, JSON.stringify(scanned.body));
+    const workspace = async () => (await call("/workspace")).body;
+    const projectId = async (name) =>
+      (await workspace()).connections.projects.find((p) => p.name === name)?.id;
+    async function mark(name, active = true) {
+      const ws = await workspace();
+      const r = await call("/project-status/mark", {
+        projectId: await projectId(name),
+        active,
+        revision: ws.revision,
+      });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+    }
+    return {
+      ...app,
+      dir,
+      paths,
+      gh,
+      now,
+      call,
+      workspace,
+      projectId,
+      mark,
+      async close() {
+        await app.close();
+        await rm(dir, { recursive: true, force: true });
+      },
+    };
+  } catch (error) {
+    await app.close().catch(() => {}); await rm(dir, { recursive: true, force: true });
+    throw error;
   }
-  return {
-    ...app,
-    dir,
-    paths,
-    gh,
-    now,
-    call,
-    workspace,
-    projectId,
-    mark,
-    async close() {
-      await app.close();
-      await rm(dir, { recursive: true, force: true });
-    },
-  };
 }
