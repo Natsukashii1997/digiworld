@@ -94,15 +94,17 @@ test('磁盘写入失败停止子进程并清晰分类',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'rea-disk-'));try{await assert.rejects(execute('6.4.0',['analyze-javascript-application','slow.asar'],join(dir,'absent','out.json')),e=>e.kind==='disk');}finally{await rm(dir,{recursive:true,force:true});}
 });
 
-test('停止后leader已退出仍清理忽略TERM的孙进程', async()=>{
- const app=await setup('tree');let pid;try{
+// 单条超时防止停止逻辑回退时 app.close() 无限等待：超时时 node 中止 t.signal，借此强杀孙进程，否则它占着资源，测试文件仍不退出。
+// 用例正常结束时 t.signal 也会中止，所以 app.close() 返回后才摘掉监听；卡在 app.close() 里超时仍会清理。
+test('停止后leader已退出仍清理忽略TERM的孙进程',{timeout:60000}, async(t)=>{
+ const app=await setup('tree');let pid;const onTimeout=()=>{if(pid)try{process.kill(pid,'SIGKILL');}catch{}};t.signal.addEventListener('abort',onTimeout,{once:true});try{
   // 等 pid 按截止时间而非固定次数；孙进程装好忽略TERM的处理器后才写pid（见 fake-rea.mjs）。
   const {run}=await app.start();
   for(const deadline=Date.now()+30000;!pid&&Date.now()<deadline;){pid=Number(await readFile(app.path+'.pid','utf8').catch(()=>''))||undefined;if(!pid)await delay(20);}
   assert.ok(pid,'30秒内未读到孙进程pid');assert.equal(terminated(pid),false);
   await app.runner.stop({recordId:app.record.id,runId:run.id});
   assert.equal(await waitTerminated(pid),true,'停止后孙进程仍在运行');
- }finally{await app.close();if(pid)try{process.kill(pid,'SIGKILL');}catch{}}
+ }finally{await app.close();t.signal.removeEventListener('abort',onTimeout);if(pid)try{process.kill(pid,'SIGKILL');}catch{}}
 });
 test('关闭覆盖启动doctor等待，关闭后不会异步起跑',async()=>{
  let release;const gate=new Promise(resolve=>{release=resolve;});
