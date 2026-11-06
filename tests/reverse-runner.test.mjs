@@ -101,8 +101,11 @@ test('停止后leader已退出仍清理忽略TERM的孙进程',{timeout:60000}, 
   // 等 pid 按截止时间而非固定次数；孙进程装好忽略TERM的处理器后才写pid（见 fake-rea.mjs）。
   const {run}=await app.start();
   // leader 一写出 pid 就登记身份，不等孙进程：孙进程起不来或没写 pid 时，超时兜底也能杀掉 leader 所在进程组（含没登记的孙进程）。
-  let leader;const own=async(file,known,group)=>{if(known)return known;const p=Number(await readFile(file,'utf8').catch(()=>''))||undefined;const id=p&&processIdentity(p,group);if(id)owned.push(id);return p;};
-  for(const deadline=Date.now()+30000;!pid&&Date.now()<deadline;){leader=await own(app.path+'.leader.pid',leader,true);pid=await own(app.path+'.pid');if(!pid)await delay(20);}
+  // 读到 pid 与登记成功分开记：ps 某次没取到身份时下一轮照样重试；读到孙进程 pid 后，再给没登记上的最多 2 秒补登记。
+  const seen=new Set(),own=async(file,group)=>{const p=Number(await readFile(file,'utf8').catch(()=>''))||undefined;if(p&&!seen.has(file)){const id=processIdentity(p,group);if(id){owned.push(id);seen.add(file);}}return p;};
+  const leaderFile=app.path+'.leader.pid',childFile=app.path+'.pid';
+  for(const deadline=Date.now()+30000;!pid&&Date.now()<deadline;){await own(leaderFile,true);pid=await own(childFile);if(!pid)await delay(20);}
+  for(const deadline=Date.now()+2000;pid&&seen.size<2&&Date.now()<deadline;){await own(leaderFile,true);await own(childFile);if(seen.size<2)await delay(20);}
   assert.ok(pid,'30秒内未读到孙进程pid');assert.equal(terminated(pid),false);
   await app.runner.stop({recordId:app.record.id,runId:run.id});
   assert.equal(await waitTerminated(pid),true,'停止后孙进程仍在运行');

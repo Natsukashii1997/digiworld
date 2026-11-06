@@ -15,7 +15,7 @@ export function terminated(pid) {
   try {
     const state = process.platform === "linux"
       ? readFileSync(`/proc/${pid}/stat`, "utf8").replace(/^.*\) /s, "")[0]
-      : execFileSync("/bin/ps", ["-o", "stat=", "-p", String(pid)], { encoding: "utf8" }).trim()[0];
+      : execFileSync("/bin/ps", ["-o", "stat=", "-p", String(pid)], { encoding: "utf8", timeout: 2000 }).trim()[0];
     return state === "Z";
   } catch {
     return missing(pid);
