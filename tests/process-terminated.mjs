@@ -22,6 +22,17 @@ export function terminated(pid) {
   }
 }
 
+// 进程身份 = pid + 启动时间（ps lstart，秒级）。超时兜底只杀身份仍一致的进程，避免 pid 被复用后误杀别的进程。
+export function processIdentity(pid) {
+  try { const start = execFileSync("/bin/ps", ["-o", "lstart=", "-p", String(pid)], { encoding: "utf8" }).trim(); return start ? { pid, start } : undefined; }
+  catch { return undefined; }
+}
+
+export function killIdentified(identity) {
+  if (!identity || terminated(identity.pid) || processIdentity(identity.pid)?.start !== identity.start) return;
+  try { process.kill(identity.pid, "SIGKILL"); } catch {}
+}
+
 export async function waitTerminated(pid, timeoutMs = 10000) {
   for (const deadline = Date.now() + timeoutMs; !terminated(pid) && Date.now() < deadline;) await delay(20);
   return terminated(pid);

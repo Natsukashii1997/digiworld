@@ -1,6 +1,6 @@
 // Synthetic executable only. It never reads a real target or Agent config.
 import { setTimeout as delay } from 'node:timers/promises';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, rename } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 const args = process.argv.slice(2), ev = 'ev_' + 'a'.repeat(64);
 const operation = args.find(x => ['doctor','analyze-javascript-application','trace-application-feature','list-browser-targets','analyze-web-bundle'].includes(x));
@@ -34,7 +34,8 @@ if (operation === 'doctor') {
     process.stderr.write('plain diagnostic\n{broken JSON\n');
   }
   // 孙进程先装好忽略TERM的处理器，再原子写出自己的pid；测试读到即可确定它已在忽略TERM。
-  if (input.includes('tree')) { spawn(process.execPath, ['-e', "const fs=require('fs'),p=process.argv[1];process.on('SIGTERM',()=>{});fs.writeFileSync(p+'.tmp',String(process.pid));fs.renameSync(p+'.tmp',p);setInterval(()=>{},1000)", input+'.pid'], {stdio:'ignore'}); await delay(30000); }
+  // leader 也先原子写出自己的pid，测试超时兜底时可不依赖被测的停止逻辑直接清理它。
+  if (input.includes('tree')) { await writeFile(input+'.leader.pid.tmp',String(process.pid)); await rename(input+'.leader.pid.tmp',input+'.leader.pid'); spawn(process.execPath, ['-e', "const fs=require('fs'),p=process.argv[1];process.on('SIGTERM',()=>{});fs.writeFileSync(p+'.tmp',String(process.pid));fs.renameSync(p+'.tmp',p);setInterval(()=>{},1000)", input+'.pid'], {stdio:'ignore'}); await delay(30000); }
   if (input.includes('slow')) { process.stderr.write('x'.repeat(300000)+'\n'); await delay(30000); }
   if (input.includes('fail')) { console.log(JSON.stringify({code:'SYNTHETIC_BAD_TARGET',message:'合成 REA 错误'})); process.exitCode=1; }
   else {
