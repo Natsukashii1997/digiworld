@@ -53,9 +53,9 @@ test('停止清理忽略TERM的孙进程',{timeout:60000},async(t)=>{
  const owned=[];const onTimeout=()=>{stop();owned.forEach(killIdentified);rm(root,{recursive:true,force:true,maxRetries:5}).catch(()=>{});};t.signal.addEventListener('abort',onTimeout,{once:true});
  try{
   // 孙进程装好忽略TERM的处理器后才写pid（见 fake-ai.mjs），读到即可停止。
-  for(const deadline=Date.now()+30000;!pid&&!settled&&Date.now()<deadline;){pid=Number(await readFile(join(folder,'cwd/child.pid'),'utf8').catch(()=>''))||undefined;if(!pid)await delay(20);}
-  // leader 在起孙进程之前已写好 pid，读到孙进程 pid 时 leader 的必然已在。
-  for(const p of [Number(await readFile(join(folder,'cwd/leader.pid'),'utf8').catch(()=>''))||undefined,pid])if(p){const id=processIdentity(p);if(id)owned.push(id);}
+  // leader 一写出 pid 就登记身份，不等孙进程：孙进程起不来或没写 pid 时，超时兜底也能杀掉 leader 所在进程组（含没登记的孙进程）。
+  let leader;const own=async(file,known,group)=>{if(known)return known;const p=Number(await readFile(file,'utf8').catch(()=>''))||undefined;const id=p&&processIdentity(p,group);if(id)owned.push(id);return p;};
+  for(const deadline=Date.now()+30000;!pid&&!settled&&Date.now()<deadline;){leader=await own(join(folder,'cwd/leader.pid'),leader,true);pid=await own(join(folder,'cwd/child.pid'));if(!pid)await delay(20);}
   assert.ok(pid,settled?'假AI提前结束：'+(await outcome)?.message:'30秒内未读到孙进程pid');assert.equal(terminated(pid),false);
   stop();assert.match(String((await outcome)?.message),/synthetic stop/);
   // SIGKILL 已在 execute 返回前发出；孙进程被收养后才由 launchd 回收，负载下回收前短暂是僵尸，按截止时间等待（见 process-terminated.mjs）。
