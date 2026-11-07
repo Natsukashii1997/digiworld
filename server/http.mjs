@@ -71,6 +71,7 @@ import { createSkillUsage } from "./skill-usage.mjs";
 import { createKnowledgeTrends } from "./knowledge-trends.mjs";
 import { createCalendar, createCalendarHelper } from "./calendar.mjs";
 import { createCapabilityUsage, capabilityUseOutcome } from "./capability-usage.mjs";
+import { createAiAccess } from "./ai-access.mjs";
 import packageInfo from "../package.json" with { type: "json" };
 import {
   detectAgents,
@@ -359,6 +360,10 @@ export async function startServer({
           ? `端口 ${mcpPort} 已被占用，MCP 服务未启动`
           : "MCP 服务未能启动";
     }
+  const modelCapability = async name => (await capabilities.dispatch(`/api/capabilities/model/${name}`, "GET")).value;
+  const aiAccess = createAiAccess({ readState: () => repository.read(), modelStatus: () => modelCapability("status"),
+    modelHistory: async () => (await modelCapability("history")).items, mcp: () => ({ url: mcp?.url || null, error: mcp ? "" : mcpError || "MCP 服务未启用" }),
+    ...(adapters.aiAccessProbes ? { probes: adapters.aiAccessProbes } : {}), ...(clock ? { now: clock } : {}) });
   const relaySessions = adapters.relaySessions || createRelaySessions({clock, getAgents:async()=>(await repository.read())?.connections?.agents||[], getWorkspace:()=>repository.read()});
   const savepoints = adapters.savepointsService || createSavepoints(repository,{clock,...adapters.savepoints});
   const scans = new Map();
@@ -520,6 +525,8 @@ export async function startServer({
             slotId: url.searchParams.get("slotId") }));
         if (url.pathname === "/api/capability-usage" && request.method === "GET")
           return send(response, 200, await capabilityUsage.summary());
+        if (url.pathname === "/api/ai-access" && request.method === "GET")
+          return send(response, 200, await aiAccess.status());
         if(url.pathname==='/api/note-images'&&request.method==='POST')return send(response,200,await noteImages.store(await body(request,12*1024*1024)));
         const imageRead=url.pathname.match(/^\/api\/note-images\/([a-f0-9]{64}\.(?:png|jpg|webp))\/read$/);
         if(imageRead&&request.method==='POST'){const input=await body(request,1024);if(!input||Object.keys(input).length)throw failure('图片读取请求无效');return send(response,200,await noteImages.read(imageRead[1]));}
