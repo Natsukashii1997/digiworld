@@ -3,7 +3,6 @@
 // - 无协议项目：没有 CURRENT.md，唯一提交在 30 天前，没有远程。
 // - 泄露项目：跟踪了 .env 与 data/app.sqlite，远程为（模拟的）公开仓库，有 1 个未提交改动。
 // - 文档项目：不是 Git 仓库，也没有 CURRENT.md，只有 package.json（活动时间读不到）。
-import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -17,6 +16,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer } from "../server/http.mjs";
+import { seedProjects } from "./seed-projects.mjs";
 import { seed } from "../src/store.js";
 import { stringify, parse } from "../src/serialization.js";
 
@@ -126,13 +126,6 @@ export async function projectStatusFixture({ visibility = fakeVisibility } = {})
     staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
     discovery: {
       defaultRoots: () => [paths.projects],
-      scanGitHub: async () => ({
-        status: "not_connected",
-        items: [],
-        truncated: false,
-        message: "",
-        at: new Date().toISOString(),
-      }),
       detectAgents: async () => ({ items: [], at: new Date().toISOString() }),
       repoVisibility: visibility,
     },
@@ -157,8 +150,7 @@ export async function projectStatusFixture({ visibility = fakeVisibility } = {})
       return { status: r.status, body: parse(await r.text()) };
     };
     await call("/workspace", { state: seed(), initialize: true }, "PUT");
-    const scanned = await call("/scan/projects", {});
-    assert.equal(scanned.status, 200, JSON.stringify(scanned.body));
+    await seedProjects(app.repository, { roots: [paths.projects] });
     const workspace = async () => (await call("/workspace")).body;
     const projectId = async (name) =>
       (await workspace()).connections.projects.find((p) => p.name === name)?.id;

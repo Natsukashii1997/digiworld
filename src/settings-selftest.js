@@ -66,11 +66,9 @@ export function selfTestRows({ state, settings, history, calendar, usage, aihot,
     const result = mark === "net" ? `${label} · 写入“${calendar.calendarName || "工作台"}”日历和“${calendar.listName || "工作台"}”列表` : calendar?.error ? `未知 · ${calendar.error}` : label;
     rows.push({ id: "calendar", label: "日历与提醒", mark, result });
   }
-  // 项目扫描、资产交付
+  // 项目设置（名册只读，#71：扫描目录已下线）、资产交付
   const t = savepointThresholds(c);
-  rows.push(c.roots?.length
-    ? { id: "scan", label: "项目扫描", mark: "ok", result: `${c.roots.length} 个目录 · 停滞 ${c.projectStallDays || 7} 天 · 未存档 黄 ${t.warn} / 红 ${t.danger} 天` }
-    : { id: "scan", label: "项目扫描", mark: "idle", result: "尚未配置扫描目录" });
+  rows.push({ id: "scan", label: "项目设置", mark: "ok", result: `名册只读 · 停滞 ${c.projectStallDays || 7} 天 · 未存档 黄 ${t.warn} / 红 ${t.danger} 天` });
   rows.push(c.agentTargets?.length
     ? { id: "deliver", label: "资产交付", mark: "ok", result: `${c.agentTargets.length} 个目标` }
     : { id: "deliver", label: "资产交付", mark: "idle", result: "0 个目标" });

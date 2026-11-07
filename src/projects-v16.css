@@ -194,8 +194,6 @@
 .projects-v16 .pj-scan .led { width: 7px; height: 7px; border-radius: 50%; background: var(--lcd); }
 .projects-v16 .pj-scan.warn { background: rgba(255, 209, 102, .05); box-shadow: inset 0 0 0 1px rgba(255, 209, 102, .22); }
 .projects-v16 .pj-scan.warn .led { background: var(--yellow); }
-.projects-v16 .pj-rescan { min-width: 44px; min-height: 44px; margin: -6px 0; padding: 0 12px; border: 0; border-radius: var(--r-s); background: var(--panel-2); box-shadow: inset 0 0 0 1px var(--line-2); color: var(--text); font: 600 var(--fs-small) var(--sans); cursor: pointer; }
-.projects-v16 .pj-rescan:hover { color: var(--cyan); }
 .projects-v16 .pj-library .scan-notice { margin: 0 0 var(--s-3); }
 .projects-v16 .pj-lib-tools { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 12px; }
 .projects-v16 .pj-filter { display: flex; gap: 4px; padding: 3px; border-radius: var(--r-s); background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
@@ -254,20 +252,13 @@
 .projects-v16 .pj-fold-panel strong { font: 600 var(--fs-meta) var(--sans); overflow-wrap: anywhere; }
 .projects-v16 .pj-fold-panel button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 
-.project-catalog-editor { display: grid; gap: var(--s-3); margin: var(--s-4) 0; padding: var(--s-4); border: 1px solid var(--line-2); border-radius: var(--r); background: var(--panel); }
-.project-catalog-editor h3, .project-catalog-editor p { margin: 0; }
-.project-catalog-editor label { display: grid; gap: var(--s-1); color: var(--text-2); font-size: var(--fs-caption); }
-.project-catalog-editor input, .project-catalog-editor select { width: 100%; min-height: 44px; padding: 0 var(--s-3); border: 1px solid var(--line-2); border-radius: var(--r-s); background: var(--field); color: var(--text); font: inherit; }
-.project-catalog-editor input:focus-visible, .project-catalog-editor select:focus-visible, .projects-v16 .pj-pending button:focus-visible, .projects-v16 .pj-pending summary:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.projects-v16 .pj-pending button:focus-visible, .projects-v16 .pj-pending summary:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 
 /* 空与扫描中 */
 .projects-v16 .pj-none { display: grid; justify-items: center; gap: var(--s-3); padding: var(--s-7) 0; color: var(--text-2); }
 .projects-v16 .pj-none p { margin: 0; font-size: var(--fs-title); font-weight: 700; }
-.projects-v16 .pj-skel { display: grid; gap: 2px; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
-.projects-v16 .pj-skel i { height: 48px; background: linear-gradient(90deg, rgba(140, 178, 255, 0.04), rgba(140, 178, 255, 0.09), rgba(140, 178, 255, 0.04)); }
 .projects-v16 .spinning-btn svg { transform: rotate(35deg); color: var(--cyan); }
 .projects-v16 .pj-library:focus { outline: 2px solid var(--cyan); outline-offset: 4px; }
-.projects-v16 .pj-skel span { padding: var(--s-3); color: var(--muted); font-size: var(--fs-caption); }
 .projects-v16 .pj-flight { position: fixed; z-index: 30; pointer-events: none; background: var(--panel-2); color: var(--cyan); border: 1px solid var(--cyan); clip-path: var(--px-cut); display: grid; place-items: center; animation: pj-flight var(--t-slow) steps(6) forwards; }
 @keyframes pj-flight { to { transform: translate(var(--flight-x), var(--flight-y)); opacity: 0; } }
 .projects-v16 { --px-cut: polygon(0 0, calc(100% - 15px) 0, calc(100% - 15px) 5px, calc(100% - 10px) 5px, calc(100% - 10px) 10px, calc(100% - 5px) 10px, calc(100% - 5px) 15px, 100% 15px, 100% 100%, 0 100%); }
@@ -334,7 +325,6 @@
   .projects-v16 .pj-lib-head { flex-wrap: wrap; row-gap: 8px; }
   .projects-v16 .pj-lib-head .grow { display: none; }
   .projects-v16 .pj-scan { width: 100%; }
-  .projects-v16 .pj-rescan { margin-left: auto; }
   .projects-v16 .pj-lib-tools { flex-wrap: wrap; }
   .projects-v16 .pj-filter { width: 100%; }
   .projects-v16 .pj-filter button { flex: 1; justify-content: center; }

@@ -66,7 +66,7 @@ export function pickNext({ issues, top, tableNext, lastCommitAt, unpushed = null
 export function attentionOf(item) {
   const gh = item.github, iss = gh.state === "ok" ? gh.issues : null;
   if (item.dir === "missing") return { kind: "missing", text: "本机找不到目录", warn: true };
-  if (item.dir === "unregistered") return { kind: "unregistered", text: "还没在设置里扫描登记", warn: true };
+  if (item.dir === "unregistered") return { kind: "unregistered", text: "数码世界没有它的本机登记记录", warn: true };
   if (iss?.human) return { kind: "human", text: `待人工验收 ${iss.human} 张`, warn: true };
   if (item.next?.stale) return { kind: "stale", text: "下一步可能过期", warn: true };
   if (item.unpushed > UNPUSHED_WARN) return { kind: "unpushed", text: `未推送 ${item.unpushed} 个`, warn: true };
@@ -268,7 +268,7 @@ export function createProjectsSpace(repository, {
       const inRoster = (p) => roster.projects.some((r) => matchProject(r, [p]));
       await repository.updateConnections((c) => {
         const target = matchProject(entry, c?.projects, dir.real);
-        if (!target) throw failure("这个项目还没在设置里扫描登记，不能置顶", 409);
+        if (!target) throw failure("这个项目在数码世界没有本机登记记录，不能置顶（项目扫描已下线）", 409);
         const others = (c.projects || []).filter((p) => p.id !== target.id && p.active === true && inRoster(p));
         if (input.pinned && others.length >= PIN_LIMIT) throw failure(`最多置顶 ${PIN_LIMIT} 个，先取消一个`, 409);
         return {

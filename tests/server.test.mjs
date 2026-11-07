@@ -184,7 +184,7 @@ test("Agent 目录检查仅接受已支持身份、受会话保护且不写主�
   }
 });
 
-test("扫描结果自动存入主库且不可伪造；重复扫描保留关联 ID", async () => {
+test("Agent 扫描结果自动存入主库且不可伪造；项目扫描接口已下线（#71）", async () => {
   const app = await fixture();
   try {
     const session = await (
@@ -205,14 +205,9 @@ test("扫描结果自动存入主库且不可伪造；重复扫描保留关联 I
       return { status: r.status, body: parse(await r.text()) };
     };
     await call("/workspace", { state: seed(), initialize: true }, "PUT");
-    const first = await call("/scan/projects", {});
-    assert.equal(first.status, 200);
-    assert.equal(first.body.connections.projects.length, 3);
-    const again = await call("/scan/projects", {});
-    assert.equal(
-      again.body.connections.projects[0].id,
-      first.body.connections.projects[0].id,
-    );
+    const retired = await call("/scan/projects", {});
+    assert.equal(retired.status, 410);
+    assert.match(retired.body.error, /digital-twin\/projects\.json/);
     const agents = await call("/scan/agents", {});
     assert.equal(agents.status, 200);
     assert.equal(agents.body.connections.agents.length, 3);

@@ -409,13 +409,21 @@ export async function openRepository(directory) {
         return result;
       });
     },
-    write(state, { initialize = false, restrictAssetDeletion = false } = {}) {
+    write(state, { initialize = false, restrictAssetDeletion = false, keepConnectionFields = [] } = {}) {
       return serial(async () => {
         const stored = await read();
         if (initialize && stored) return stored;
         // 旧客户端或旧导出可能仍携带银饰字段；保存时丢弃，不让它回到当前主库。
         const active = { ...state };
         delete active.silver;
+        // 只读的连接字段（如项目名册）以主库为准：整库保存带来的改动一律忽略，同一请求里的其他修改照常保存。
+        if (stored && keepConnectionFields.length && active.connections && typeof active.connections === "object" && !Array.isArray(active.connections)) {
+          const connections = { ...active.connections };
+          for (const key of keepConnectionFields)
+            if (stored.connections && Object.hasOwn(stored.connections, key)) connections[key] = stored.connections[key];
+            else delete connections[key];
+          active.connections = connections;
+        }
         validateState(active);
         if (!initialize && (active.revision ?? 0) !== (stored?.revision ?? 0))
           throw Object.assign(failure(

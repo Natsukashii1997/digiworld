@@ -256,7 +256,7 @@ test("GET /api/projects-space：按名册列项目，读数、现在 / 下一步
     // 不是 Git 仓库
     assert.equal(by.docs.commits.state, "none");
     assert.equal(by.docs.now, null);
-    // 目录不存在 / 没扫描登记
+    // 目录不存在 / 没有本机登记记录
     assert.equal(by.gone.dir, "missing");
     assert.equal(by.gone.attention.text, "本机找不到目录");
     assert.equal(by.gone.commits.state, "error");
@@ -304,7 +304,7 @@ test("POST /api/projects-space/pin：置顶带版本检查、最多 3 个、写�
     assert.equal((await app.call("/projects-space/pin", { id: "nope", pinned: true, revision: await rev() })).status, 404);
     const outside = await app.call("/projects-space/pin", { id: "outside", pinned: true, revision: await rev() });
     assert.equal(outside.status, 409);
-    assert.match(outside.body.error || JSON.stringify(outside.body), /扫描登记/);
+    assert.match(outside.body.error || JSON.stringify(outside.body), /没有本机登记记录/);
 
     for (const id of ["bare", "leaky", "docs"]) {
       const ok = await app.call("/projects-space/pin", { id, pinned: true, revision: await rev() });

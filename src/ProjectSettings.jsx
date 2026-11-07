@@ -3,46 +3,32 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button } from "./components.jsx";
 import { request } from "./api.js";
 import { savepointThresholds } from "./settings-v16.js";
-import { ManualProjectForm } from "./ProjectCatalog.jsx";
+import { RosterReadonlyNote } from "./roster-readonly.jsx";
 // 两入口复用同一个表单和服务；不另存设置。表单草稿保留开启时 revision，冲突由服务拒绝。
+// 项目名册只读（#71）：扫描目录、手工登记已下线，这里只保留停滞与未存档提醒两项显示偏好。
 export function ProjectSettings({ state, adoptState, notify, onBusyChange }) {
   const c = state.connections || {},
     thresholds = savepointThresholds(c);
-  const [roots, setRoots] = useState(c.roots?.join("\n") || ""),
-    [days, setDays] = useState(String(c.projectStallDays || 7)),
+  const [days, setDays] = useState(String(c.projectStallDays || 7)),
     [warn, setWarn] = useState(String(thresholds.warn)),
     [danger, setDanger] = useState(String(thresholds.danger)),
     [revision, setRevision] = useState(state.revision),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [rootsReady, setRootsReady] = useState(Array.isArray(c.roots));
-  const dirty = useRef(false),
-    fieldsDirty = useRef({ days: false, reminder: false }),
+    [error, setError] = useState("");
+  const fieldsDirty = useRef({ days: false, reminder: false }),
     base = useRef(c),
-    lock = useRef(false),
-    rootsBase = useRef(c.roots || []),
-    rootsGeneration = useRef(0);
+    lock = useRef(false);
   const [pending, setPending] = useState(false);
   function reconcile(next, group) {
     const nc = next.connections || {},
       nt = savepointThresholds(nc),
       old = savepointThresholds(base.current);
-    if (group === "roots") dirty.current = false;
-    else if (group) fieldsDirty.current[group] = false;
-    const nextRoots = (nc.roots || []).join("\n"),
-      previousRoots = rootsBase.current.join("\n");
+    if (group) fieldsDirty.current[group] = false;
     const conflict =
-      (dirty.current && nextRoots !== previousRoots) ||
       (fieldsDirty.current.days &&
         (nc.projectStallDays || 7) !== (base.current.projectStallDays || 7)) ||
       (fieldsDirty.current.reminder &&
         (nt.warn !== old.warn || nt.danger !== old.danger));
-    if (!dirty.current) {
-      rootsGeneration.current++;
-      rootsBase.current = nc.roots || [];
-      setRoots(nextRoots);
-      setRootsReady(Array.isArray(nc.roots));
-    }
     if (!fieldsDirty.current.days) setDays(String(nc.projectStallDays || 7));
     if (!fieldsDirty.current.reminder) {
       setWarn(String(nt.warn));
@@ -56,8 +42,8 @@ export function ProjectSettings({ state, adoptState, notify, onBusyChange }) {
       setRevision(next.revision);
     }
   }
-  // Project-page auto scan can advance the workspace revision while this drawer
-  // is open. Rebase untouched fields before the user saves a different setting.
+  // Other pages can advance the workspace revision while this drawer is open.
+  // Rebase untouched fields before the user saves a different setting.
   useEffect(() => {
     if (!lock.current && !pending && state.revision > revision) reconcile(state);
   }, [state.revision]);
@@ -69,10 +55,8 @@ export function ProjectSettings({ state, adoptState, notify, onBusyChange }) {
     try {
       const next = await request("/workspace", undefined, "GET", false);
       adoptState(next);
-      dirty.current = false;
       fieldsDirty.current = { days: false, reminder: false };
-      const connections = Array.isArray(next.connections?.roots) ? next.connections : await request("/connections");
-      reconcile({...next, connections});
+      reconcile(next);
       setPending(false);
       setError("");
     } catch (e) {
@@ -84,28 +68,6 @@ export function ProjectSettings({ state, adoptState, notify, onBusyChange }) {
     }
   }
 
-  useEffect(() => {
-    let alive = true;
-    const generation = rootsGeneration.current;
-    request("/connections")
-      .then((v) => {
-        if (alive && !dirty.current && rootsGeneration.current === generation) {
-          rootsBase.current = v.roots;
-          base.current = {...base.current, roots: v.roots};
-          setRoots(v.roots.join("\n"));
-          setRootsReady(true);
-        }
-      })
-      .catch((e) => {
-        if (alive && rootsGeneration.current === generation && !lock.current) {
-          setError(e.message);
-          if (!Array.isArray(c.roots)) setPending(true);
-        }
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
   async function run(fn, group) {
     if (lock.current || pending) return;
     lock.current = true;
@@ -130,47 +92,7 @@ export function ProjectSettings({ state, adoptState, notify, onBusyChange }) {
   }
   return (
     <div className="asset-form st-panel">
-      <form
-        className="asset-form"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (!rootsReady) return;
-          const next = await run(() =>
-            request("/scan/projects", {
-              expectedRoots: rootsBase.current,
-              roots: roots
-                .split("\n")
-                .map((s) => s.trim())
-                .filter(Boolean),
-            }, "POST", false), "roots",
-          );
-          if (next) {
-            notify("扫描目录已保存并读取");
-          }
-        }}
-      >
-        <h3>扫描目录</h3>
-        <label>
-          本地项目目录（每行一个绝对路径）
-          <textarea
-            rows={4}
-            required
-            value={roots}
-            disabled={busy || pending || !rootsReady}
-            onChange={(e) => {
-              dirty.current = true;
-              setRoots(e.target.value);
-            }}
-          />
-        </label>
-        <p className="body-copy">
-          只读取项目标记、Git
-          远端与最近提交时间；不读取源码内容，不跟随子目录符号链接。
-        </p>
-        <Button type="submit" disabled={busy || pending || !rootsReady}>
-          {busy ? "扫描中…" : "保存并扫描"}
-        </Button>
-      </form>
+      <RosterReadonlyNote />
       <form
         className="asset-form"
         onSubmit={async (e) => {
@@ -280,7 +202,6 @@ export function ProjectSettings({ state, adoptState, notify, onBusyChange }) {
           保存未存档提醒
         </Button>
       </form>
-      <ManualProjectForm state={state} adoptState={adoptState} notify={notify} />
       {error && (
         <p className="inline-error" role="alert">
           {error}

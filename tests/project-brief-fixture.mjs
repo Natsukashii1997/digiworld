@@ -19,6 +19,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer } from "../server/http.mjs";
+import { seedProjects } from "./seed-projects.mjs";
 import { createGhRunner } from "../server/project-github.mjs";
 import { seed } from "../src/store.js";
 import { stringify, parse } from "../src/serialization.js";
@@ -270,13 +271,6 @@ export async function projectBriefFixture({ clock, visibility = fakeVisibility }
     ...(clock ? { clock } : {}),
     discovery: {
       defaultRoots: () => [paths.projects],
-      scanGitHub: async () => ({
-        status: "not_connected",
-        items: [],
-        truncated: false,
-        message: "",
-        at: new Date().toISOString(),
-      }),
       detectAgents: async () => ({ items: [], at: new Date().toISOString() }),
       repoVisibility: visibility,
       githubCli: createGhRunner({ paths: [gh.path] }),
@@ -302,8 +296,7 @@ export async function projectBriefFixture({ clock, visibility = fakeVisibility }
       return { status: r.status, body: parse(await r.text()) };
     };
     await call("/workspace", { state: seed(), initialize: true }, "PUT");
-    const scanned = await call("/scan/projects", {});
-    assert.equal(scanned.status, 200, JSON.stringify(scanned.body));
+    await seedProjects(app.repository, { roots: [paths.projects] });
     const workspace = async () => (await call("/workspace")).body;
     const projectId = async (name) =>
       (await workspace()).connections.projects.find((p) => p.name === name)?.id;
