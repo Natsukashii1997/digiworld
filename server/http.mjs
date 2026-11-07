@@ -79,6 +79,9 @@ import {
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { stat } from "node:fs/promises";
+import { readCockpitAgents } from "./cockpit-agents.mjs";
+import { readCockpitRules } from "./cockpit-rules.mjs";
+import { cachedRead } from "./cockpit-read.mjs";
 const exec = promisify(execFile);
 // 项目名册只读（#71）：这些写接口已下线，统一回 410；整库保存时这三项保留主库原值。
 const PROJECT_ROSTER_READONLY = "项目名册以 digital-twin/projects.json 为准，在数码世界只读；这个写入接口已下线。";
@@ -1041,6 +1044,15 @@ export async function startServer({
           }
           await exec("/usr/bin/open", ["-R", path], { timeout: 5000 });
           return send(response, 200, { revealed: true });
+        }
+        // 驾驶舱只读页（#74）：不收任何路径参数；refresh=1 才现读，否则先回内存快照。
+        if (url.pathname === "/api/cockpit/agents" && request.method === "GET") {
+          adapters.cockpitAgents ??= cachedRead(() => readCockpitAgents());
+          return send(response, 200, await adapters.cockpitAgents({ refresh: url.searchParams.get("refresh") === "1" }));
+        }
+        if (url.pathname === "/api/cockpit/rules" && request.method === "GET") {
+          adapters.cockpitRules ??= cachedRead(() => readCockpitRules());
+          return send(response, 200, await adapters.cockpitRules({ refresh: url.searchParams.get("refresh") === "1" }));
         }
         throw failure("接口不存在", 404);
       }
