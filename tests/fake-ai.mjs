@@ -5,7 +5,8 @@ const executor=process.argv[2],prompt=await new Promise(resolve=>{let s='';proce
 const events=[];const emit=v=>events.push(v);
 const ev='ev_'+'a'.repeat(64),tool='analyze_javascript_application';
 // 孙进程先装好忽略TERM的处理器，再原子写出自己的pid；测试读到pid即可确定它已在忽略TERM，不靠固定等待猜时机。
-if(prompt==='tree'){spawn(process.execPath,['-e',"const fs=require('fs');process.on('SIGTERM',()=>{});fs.writeFileSync('child.pid.tmp',String(process.pid));fs.renameSync('child.pid.tmp','child.pid');setInterval(()=>{},1000)"],{stdio:'ignore'});setInterval(()=>{},1000);await new Promise(()=>{});}
+// leader 也先原子写出自己的pid，测试超时兜底时可不依赖被测的停止逻辑直接清理它。
+if(prompt==='tree'){await writeFile('leader.pid.tmp',String(process.pid));await rename('leader.pid.tmp','leader.pid');spawn(process.execPath,['-e',"const fs=require('fs');process.on('SIGTERM',()=>{});fs.writeFileSync('child.pid.tmp',String(process.pid));fs.renameSync('child.pid.tmp','child.pid');setInterval(()=>{},1000)"],{stdio:'ignore'});setInterval(()=>{},1000);await new Promise(()=>{});}
 if(prompt==='ps-probe'){
  const r=spawnSync('ps',['-p',String(process.pid),'-o','pid=,ppid=,pgid=,uid=,stat=,command='],{encoding:'utf8'});let denied=false;
  try{await writeFile(join(process.cwd(),'../bin/ps'),'bad');}catch(e){denied=['EACCES','EPERM'].includes(e.code);}

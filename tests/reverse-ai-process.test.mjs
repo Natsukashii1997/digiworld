@@ -7,7 +7,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {fileURLToPath} from 'node:url';
 import {createAiProcess,aiArguments,aiPrompt} from '../server/reverse-ai-process.mjs';
 import {REA_READ_TOOLS} from '../src/reverse-ai.js';
-import {terminated,waitTerminated} from './process-terminated.mjs';
+import {terminated,waitTerminated,processIdentity,killIdentified} from './process-terminated.mjs';
 const fake=fileURLToPath(new URL('./fake-ai.mjs',import.meta.url));
 const execute=createAiProcess({commands:Object.fromEntries(['codex','claude'].map(x=>[x,{command:process.execPath,prefix:[fake,x]}])),killGraceMs:40});
 test('两个AI真实合成子进程：只读工具参数、流式日志、结构化结果、原始文件',async()=>{
@@ -45,18 +45,27 @@ test('真实OS写入隔离拒绝目标改写',async()=>{
  }finally{await rm(root,{recursive:true,force:true});}
 });
 // 整套并发时假AI与孙进程启动可能远超1秒；等待按截止时间而非固定次数。无论断言成败，finally 都会停止本次运行并强杀孙进程，失败也不留进程卡住整套测试。
-test('停止清理忽略TERM的孙进程',async()=>{
+// 单条超时防止停止逻辑回退时整套卡住：超时时 node 中止 t.signal。兜底不依赖被测的停止逻辑：按记下的身份直接强杀假AI leader 与孙进程
+// （否则它们占着管道，测试文件仍不退出），并删临时目录。用例正常结束时 t.signal 也会中止，所以 finally 收尾完才摘掉监听；卡在 finally 的 await 里超时仍会清理。
+test('停止清理忽略TERM的孙进程',{timeout:60000},async(t)=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-tree-'))),folder=join(root,'tree'),controller=new AbortController(),stop=()=>controller.abort(new Error('synthetic stop'));
  const running=execute('codex',{folder,prompt:'tree',signal:controller.signal}),outcome=running.then(()=>null,e=>e);let pid,settled=false;outcome.then(()=>{settled=true;});
+ const owned=[];const onTimeout=()=>{stop();owned.forEach(killIdentified);rm(root,{recursive:true,force:true,maxRetries:5}).catch(()=>{});};t.signal.addEventListener('abort',onTimeout,{once:true});
  try{
   // 孙进程装好忽略TERM的处理器后才写pid（见 fake-ai.mjs），读到即可停止。
-  for(const deadline=Date.now()+30000;!pid&&!settled&&Date.now()<deadline;){pid=Number(await readFile(join(folder,'cwd/child.pid'),'utf8').catch(()=>''))||undefined;if(!pid)await delay(20);}
+  // leader 一写出 pid 就登记身份，不等孙进程：孙进程起不来或没写 pid 时，超时兜底也能杀掉 leader 所在进程组（含没登记的孙进程）。
+  // 读到 pid 与登记成功分开记：ps 某次没取到身份时下一轮照样重试；读到孙进程 pid 后，再给没登记上的最多 2 秒补登记。
+  const seen=new Set(),own=async(file,group)=>{const p=Number(await readFile(file,'utf8').catch(()=>''))||undefined;if(p&&!seen.has(file)){const id=processIdentity(p,group);if(id){owned.push(id);seen.add(file);}}return p;};
+  const leaderFile=join(folder,'cwd/leader.pid'),childFile=join(folder,'cwd/child.pid');
+  for(const deadline=Date.now()+30000;!pid&&!settled&&Date.now()<deadline;){await own(leaderFile,true);pid=await own(childFile);if(!pid)await delay(20);}
+  for(const deadline=Date.now()+2000;pid&&seen.size<2&&Date.now()<deadline;){await own(leaderFile,true);await own(childFile);if(seen.size<2)await delay(20);}
   assert.ok(pid,settled?'假AI提前结束：'+(await outcome)?.message:'30秒内未读到孙进程pid');assert.equal(terminated(pid),false);
   stop();assert.match(String((await outcome)?.message),/synthetic stop/);
   // SIGKILL 已在 execute 返回前发出；孙进程被收养后才由 launchd 回收，负载下回收前短暂是僵尸，按截止时间等待（见 process-terminated.mjs）。
   assert.equal(await waitTerminated(pid),true,'停止后孙进程仍在运行');
  }finally{
   stop();await outcome;if(pid)try{process.kill(pid,'SIGKILL');}catch{}
+  t.signal.removeEventListener('abort',onTimeout);
   await rm(root,{recursive:true,force:true});
  }
 });

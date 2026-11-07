@@ -13,7 +13,7 @@ import { visitJson, summarizeEvidence } from '../server/reverse-json.mjs';
 import { seed } from '../src/store.js';
 import { createSpecimen } from '../src/reverse-recipe.js';
 import { packDirectory } from '../server/full-backup.mjs';
-import {terminated,waitTerminated} from './process-terminated.mjs';
+import {terminated,waitTerminated,processIdentity,killIdentified} from './process-terminated.mjs';
 
 const execute = createReaProcess({ command: process.execPath, prefix: [fileURLToPath(new URL('./fake-rea.mjs',import.meta.url))], killGraceMs:30 });
 async function setup(name='target', options={}) {
@@ -94,15 +94,22 @@ test('磁盘写入失败停止子进程并清晰分类',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'rea-disk-'));try{await assert.rejects(execute('6.4.0',['analyze-javascript-application','slow.asar'],join(dir,'absent','out.json')),e=>e.kind==='disk');}finally{await rm(dir,{recursive:true,force:true});}
 });
 
-test('停止后leader已退出仍清理忽略TERM的孙进程', async()=>{
- const app=await setup('tree');let pid;try{
+// 单条超时防止停止逻辑回退时 app.close() 无限等待：超时时 node 中止 t.signal。兜底不依赖被测的停止逻辑：按记下的身份直接强杀假REA leader 与孙进程
+// （否则它们占着资源，测试文件仍不退出），并删临时目录。用例正常结束时 t.signal 也会中止，所以 app.close() 返回后才摘掉监听；卡在 app.close() 里超时仍会清理。
+test('停止后leader已退出仍清理忽略TERM的孙进程',{timeout:60000}, async(t)=>{
+ const app=await setup('tree');let pid;const owned=[];const onTimeout=()=>{owned.forEach(killIdentified);rm(app.directory,{recursive:true,force:true,maxRetries:5}).catch(()=>{});};t.signal.addEventListener('abort',onTimeout,{once:true});try{
   // 等 pid 按截止时间而非固定次数；孙进程装好忽略TERM的处理器后才写pid（见 fake-rea.mjs）。
   const {run}=await app.start();
-  for(const deadline=Date.now()+30000;!pid&&Date.now()<deadline;){pid=Number(await readFile(app.path+'.pid','utf8').catch(()=>''))||undefined;if(!pid)await delay(20);}
+  // leader 一写出 pid 就登记身份，不等孙进程：孙进程起不来或没写 pid 时，超时兜底也能杀掉 leader 所在进程组（含没登记的孙进程）。
+  // 读到 pid 与登记成功分开记：ps 某次没取到身份时下一轮照样重试；读到孙进程 pid 后，再给没登记上的最多 2 秒补登记。
+  const seen=new Set(),own=async(file,group)=>{const p=Number(await readFile(file,'utf8').catch(()=>''))||undefined;if(p&&!seen.has(file)){const id=processIdentity(p,group);if(id){owned.push(id);seen.add(file);}}return p;};
+  const leaderFile=app.path+'.leader.pid',childFile=app.path+'.pid';
+  for(const deadline=Date.now()+30000;!pid&&Date.now()<deadline;){await own(leaderFile,true);pid=await own(childFile);if(!pid)await delay(20);}
+  for(const deadline=Date.now()+2000;pid&&seen.size<2&&Date.now()<deadline;){await own(leaderFile,true);await own(childFile);if(seen.size<2)await delay(20);}
   assert.ok(pid,'30秒内未读到孙进程pid');assert.equal(terminated(pid),false);
   await app.runner.stop({recordId:app.record.id,runId:run.id});
   assert.equal(await waitTerminated(pid),true,'停止后孙进程仍在运行');
- }finally{await app.close();if(pid)try{process.kill(pid,'SIGKILL');}catch{}}
+ }finally{await app.close();t.signal.removeEventListener('abort',onTimeout);if(pid)try{process.kill(pid,'SIGKILL');}catch{}}
 });
 test('关闭覆盖启动doctor等待，关闭后不会异步起跑',async()=>{
  let release;const gate=new Promise(resolve=>{release=resolve;});
