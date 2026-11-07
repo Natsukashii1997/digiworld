@@ -13,13 +13,6 @@ export async function nightV2Fixture({ prepareState, nightV2 = {} } = {}) {
     nightV2,
     discovery: {
       defaultRoots: () => [],
-      scanLocalProjects: async () => ({
-        items: [], errors: [], truncated: false, at: new Date().toISOString(),
-      }),
-      scanGitHub: async () => ({
-        items: [], status: "not_connected", login: "", message: "",
-        truncated: false, at: new Date().toISOString(),
-      }),
       detectAgents: async () => ({ items: [], at: new Date().toISOString() }),
       calendarHelper: { platform: "linux", run: () => deny("calendar") },
       learningMetadataReader: () => deny("learningMetadataReader"),

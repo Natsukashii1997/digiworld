@@ -7,6 +7,7 @@ import { startServer } from "../server/http.mjs";
 
 export async function fixture({ discovery = {}, nightV2 = {}, controlledExecution = {}, reverse = {}, reverseNative = {}, reaUpdate = {} } = {}) {
   const directory = await realpath(await mkdtemp(join(tmpdir(), "guiji-ui-")));
+  // 全盘项目扫描已删除（#73），calls.projects 恒为 0，留给旧断言核对「没有扫描」。
   const calls = { projects: 0, agents: 0 };
   const stamp = () => new Date().toISOString();
   const app = await startServer({
@@ -28,55 +29,6 @@ export async function fixture({ discovery = {}, nightV2 = {}, controlledExecutio
         truncated: false,
       }),
       defaultRoots: () => ["/fixture/projects", "/fixture/work"],
-      scanLocalProjects: async () => {
-        calls.projects++;
-        return {
-          items: [
-            {
-              id: "project-a",
-              name: "我的网站",
-              kind: "Git",
-              repoKey: "tester/website",
-              localPaths: ["/fixture/projects/website"],
-              branch: "main",
-              localSeenAt: stamp(),
-            },
-            {
-              id: "project-b",
-              name: "知识编译器",
-              kind: "Node",
-              repoKey: "",
-              localPaths: ["/fixture/work/compiler"],
-              localSeenAt: stamp(),
-            },
-          ],
-          errors: [],
-          truncated: false,
-          at: stamp(),
-        };
-      },
-      scanGitHub: async () => ({
-        items: [
-          {
-            name: "我的网站",
-            repoKey: "tester/website",
-            githubUrl: "https://github.com/tester/website",
-            private: true,
-            githubSeenAt: stamp(),
-          },
-          {
-            name: "远端项目",
-            repoKey: "tester/remote",
-            githubUrl: "https://github.com/tester/remote",
-            githubSeenAt: stamp(),
-          },
-        ],
-        status: "connected",
-        login: "tester",
-        message: "",
-        truncated: false,
-        at: stamp(),
-      }),
       detectAgents: async () => {
         calls.agents++;
         return {

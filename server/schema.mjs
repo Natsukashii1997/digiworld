@@ -938,6 +938,7 @@ export function validateState(state) {
     keys(c.github, ["status", "login", "message", "at"]);
     for (const key of ["status", "login", "message", "at"])
       text(c.github[key], "GitHub 状态", 1000);
+    unique(c.projects.filter((p) => p?.rosterId !== undefined).map((p) => p.rosterId), "名册项目 ID");
     for (const p of c.projects) {
       keys(p, [
         "id",
@@ -962,7 +963,14 @@ export function validateState(state) {
         "identityConflict",
         "active",
         "manual",
+        "rosterId",
+        "rosterRemoved",
       ]);
+      // 名册派生（#73）：rosterId 是名册里的项目 id；rosterRemoved 只能是 true（名册里已删掉）。
+      if (p.rosterId !== undefined && (typeof p.rosterId !== "string" || !/^[A-Za-z0-9][\w.-]{0,79}$/.test(p.rosterId)))
+        invalid("名册项目 ID");
+      if (p.rosterRemoved !== undefined && (p.rosterRemoved !== true || p.rosterId === undefined))
+        invalid("名册删除标记");
       if (p.githubPushedAt !== undefined) date(p.githubPushedAt);
       if (p.recentUpdate !== undefined) {
         const u=p.recentUpdate;keys(u,["state","source","checkedAt","at","reason"]);

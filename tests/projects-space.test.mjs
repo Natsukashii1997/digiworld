@@ -208,6 +208,15 @@ test("名册条目按本机路径或真实路径对上已登记项目", () => {
   assert.equal(matchProject({ path: "/other" }, projects), null);
 });
 
+test("名册条目先按名册 id（rosterId）对上本机登记，路径兜底只认没挂名册的记录", () => {
+  const derived = { id: "roster-a", rosterId: "a", localPaths: ["/moved/a"] };
+  const legacy = { id: "local-a", localPaths: ["/real/a"] };
+  const other = { id: "roster-b", rosterId: "b", localPaths: ["/real/a"] };
+  assert.equal(matchProject({ id: "a", path: "/real/a" }, [legacy, derived]), derived);
+  assert.equal(matchProject({ id: "c", path: "/real/a" }, [other, legacy]), legacy);
+  assert.equal(matchProject({ id: "c", path: "/real/a" }, [other]), null);
+});
+
 // ---------- 接口 ----------
 
 test("GET /api/projects-space：按名册列项目，读数、现在 / 下一步、30 天提交与要注意的事各自如实", macOnly(VOLUME_UUID), async () => {
@@ -331,6 +340,50 @@ test("POST /api/projects-space/pin：置顶带版本检查、最多 3 个、写�
     assert.deepEqual(no, { collab: 1, bare: 2, leaky: 3, docs: 4, gone: 5, outside: 6 }, "置顶换了顺序，名册编号不变");
     const quick = (await app.call("/projects-space?roster=1")).body;
     assert.deepEqual(quick.items.slice(0, 3).map((i) => i.id).sort(), ["collab", "docs", "leaky"], "只读名册时置顶也排在前面");
+  } finally {
+    await app.close();
+  }
+});
+
+test("POST /api/projects-space/sync：按名册派生本机登记，派生的项目能置顶、取消，第 4 个被拒；置顶按 rosterId 对上", macOnly(VOLUME_UUID), async () => {
+  const app = await spaceFixture();
+  try {
+    const rev = async () => (await app.call("/workspace")).body.revision;
+    assert.equal((await app.call("/projects-space/sync", { revision: (await rev()) - 1 })).status, 409);
+    assert.equal((await app.call("/projects-space/sync", { path: "/etc" })).status, 400);
+    const before = await rev();
+    const r = await app.call("/projects-space/sync", { revision: before });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.body.state, "updated");
+    assert.equal(r.body.revision, before + 1);
+    assert.deepEqual(r.body.linked, ["collab", "bare", "leaky", "docs"]);
+    assert.deepEqual(r.body.added, ["gone", "outside"]);
+    const again = await app.call("/projects-space/sync", {});
+    assert.equal(again.body.state, "unchanged");
+    assert.equal(again.body.revision, before + 1);
+
+    const s = (await app.call("/projects-space")).body;
+    const outside = s.items.find((i) => i.id === "outside");
+    assert.equal(outside.projectId, "roster-outside");
+    assert.notEqual(outside.dir, "unregistered");
+    assert.ok(s.items.every((i) => i.attention.kind !== "unregistered"));
+
+    for (const id of ["outside", "collab", "bare"]) {
+      const ok = await app.call("/projects-space/pin", { id, pinned: true, revision: await rev() });
+      assert.equal(ok.status, 200, JSON.stringify(ok.body));
+    }
+    const fourth = await app.call("/projects-space/pin", { id: "docs", pinned: true, revision: await rev() });
+    assert.equal(fourth.status, 409);
+    assert.match(JSON.stringify(fourth.body), /最多置顶 3 个/);
+
+    // 派生记录的路径对不上名册了（例如目录搬走），仍按 rosterId 找到同一条。
+    await app.repository.updateConnections((c) => ({ ...c, projects: c.projects.map((p) => (p.rosterId === "outside" ? { ...p, localPaths: ["/fixture/elsewhere"] } : p)) }));
+    const off = await app.call("/projects-space/pin", { id: "outside", pinned: false, revision: await rev() });
+    assert.equal(off.status, 200, JSON.stringify(off.body));
+    assert.deepEqual([off.body.projectId, off.body.pinned], ["roster-outside", false]);
+    const projects = (await app.call("/workspace")).body.connections.projects;
+    assert.equal(projects.find((p) => p.id === "roster-outside").active, undefined);
+    assert.equal(projects.filter((p) => p.active === true).length, 2);
   } finally {
     await app.close();
   }

@@ -65,11 +65,13 @@ import { createBackupRecords } from "./backup-records.mjs";
 import { createStorageStatus } from "./storage-status.mjs";
 import { createProjectActivity } from "./project-activity.mjs";
 import { createProjectsSpace } from "./projects-space.mjs";
+import { createRosterSync } from "./roster-sync.mjs";
 import { createCardReader, readRoster, DEFAULT_ROSTER_PATH } from "./project-roster.mjs";
 import { createSkillUsage } from "./skill-usage.mjs";
 import { createKnowledgeTrends } from "./knowledge-trends.mjs";
 import { createCalendar, createCalendarHelper } from "./calendar.mjs";
 import { createCapabilityUsage, capabilityUseOutcome } from "./capability-usage.mjs";
+import { createAiAccess } from "./ai-access.mjs";
 import packageInfo from "../package.json" with { type: "json" };
 import {
   detectAgents,
@@ -156,6 +158,8 @@ export async function startServer({
   mcpPort,
   mcpClientHealth,
   enableCapabilityScheduler = false,
+  // 启动时按名册同步一次本机登记（#73）：只在正式入口打开，测试里起的服务默认关，不读真实名册。
+  syncRosterOnStart = false,
   nightV2 = {},
   controlledExecution = {},
   reverse = {},
@@ -300,6 +304,12 @@ export async function startServer({
     readCard: createCardReader(repository, { files: knowledgeFiles }),
     ...adapters.projectsSpace,
   });
+  // 本机登记从名册派生（#73）：启动时一次 + 项目空间「按名册刷新」；名册路径与目录检查可由测试注入。
+  const rosterSync = createRosterSync(repository, {
+    rosterPath: adapters.projectsSpace?.rosterPath,
+    initialConnections: () => emptyConnections(adapters.defaultRoots()),
+    ...adapters.rosterSync,
+  });
   const feishuConnections = createFeishuConnections(repository, {
     provider: feishuFiles,
     clock,
@@ -353,6 +363,10 @@ export async function startServer({
           ? `端口 ${mcpPort} 已被占用，MCP 服务未启动`
           : "MCP 服务未能启动";
     }
+  const modelCapability = async name => (await capabilities.dispatch(`/api/capabilities/model/${name}`, "GET")).value;
+  const aiAccess = createAiAccess({ readState: () => repository.read(), modelStatus: () => modelCapability("status"),
+    modelHistory: async () => (await modelCapability("history")).items, mcp: () => ({ url: mcp?.url || null, error: mcp ? "" : mcpError || "MCP 服务未启用" }),
+    ...(adapters.aiAccessProbes ? { probes: adapters.aiAccessProbes } : {}), ...(clock ? { now: clock } : {}) });
   const relaySessions = adapters.relaySessions || createRelaySessions({clock, getAgents:async()=>(await repository.read())?.connections?.agents||[], getWorkspace:()=>repository.read()});
   const savepoints = adapters.savepointsService || createSavepoints(repository,{clock,...adapters.savepoints});
   const scans = new Map();
@@ -514,6 +528,8 @@ export async function startServer({
             slotId: url.searchParams.get("slotId") }));
         if (url.pathname === "/api/capability-usage" && request.method === "GET")
           return send(response, 200, await capabilityUsage.summary());
+        if (url.pathname === "/api/ai-access" && request.method === "GET")
+          return send(response, 200, await aiAccess.status());
         if(url.pathname==='/api/note-images'&&request.method==='POST')return send(response,200,await noteImages.store(await body(request,12*1024*1024)));
         const imageRead=url.pathname.match(/^\/api\/note-images\/([a-f0-9]{64}\.(?:png|jpg|webp))\/read$/);
         if(imageRead&&request.method==='POST'){const input=await body(request,1024);if(!input||Object.keys(input).length)throw failure('图片读取请求无效');return send(response,200,await noteImages.read(imageRead[1]));}
@@ -741,6 +757,11 @@ export async function startServer({
           return send(response, 200, await skillUsage.read());
         if (url.pathname === "/api/projects-space/skill-usage/refresh" && request.method === "POST")
           return send(response, 200, await skillUsage.refresh(await body(request)));
+        if (url.pathname === "/api/projects-space/sync" && request.method === "POST") {
+          const result = await rosterSync.sync(await body(request));
+          if (result.state === "error") throw failure(`名册读不到，没有同步：${result.message}`, 409);
+          return send(response, 200, result);
+        }
         if (url.pathname === "/api/projects-space/pin" && request.method === "POST")
           return send(response, 200, await projectsSpace.pin(await body(request)));
         if (url.pathname === "/api/project-github/panel" && request.method === "POST")
@@ -1121,6 +1142,11 @@ export async function startServer({
     await repository.close();
     throw error;
   }
+  if (syncRosterOnStart)
+    await rosterSync.sync().then(
+      (r) => r.state === "error" && console.error(`名册读不到，本机登记没有同步：${r.message}`),
+      (e) => console.error(`名册同步失败：${e.message}`),
+    );
   await collection.start();
   aihot.start();
   capabilities.start();

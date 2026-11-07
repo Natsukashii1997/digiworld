@@ -1,12 +1,11 @@
 import { createStableIdentityReader } from "./directory-identity.mjs";
 import * as fs from "node:fs/promises";
-import { basename, isAbsolute, join, relative, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { homedir } from "node:os";
 import { digest, failure } from "./repository.mjs";
 
-import { readGitUpdate } from "./project-update.mjs";
 const exec = promisify(execFile);
 export function githubKey(url) {
   if (typeof url !== "string") return "";
@@ -143,14 +142,14 @@ const statusRow = (path, status, message) => ({
 const directoryIdentity = (info) =>
   digest(JSON.stringify([info.dev, info.ino, info.birthtimeMs]));
 
-async function observe(root, path, filesystem, update, stable) {
+async function observe(root, path, filesystem, stable) {
   if (!root)
     return {
       entries: [],
       observation: statusRow(path, "out_of_scope", "不在有效扫描范围内"),
     };
   try {
-    return await observeDirectory(root, path, filesystem, update, stable);
+    return await observeDirectory(root, path, filesystem, stable);
   } catch (error) {
     return {
       entries: [],
@@ -195,7 +194,7 @@ async function directoryChain(root, path, filesystem) {
   return chain;
 }
 
-async function observeDirectory(root, path, filesystem, update, stable) {
+async function observeDirectory(root, path, filesystem, stable) {
   const chain = await directoryChain(root, path, filesystem);
   const entries = await filesystem.readdir(path, { withFileTypes: true });
   const marker = MARKERS.find(([name]) =>
@@ -210,17 +209,6 @@ async function observeDirectory(root, path, filesystem, update, stable) {
       ? await gitMetadata(path)
       : { repoKey: "", branch: "" };
   const signature = digest(JSON.stringify(chain));
-  let recentUpdate;
-  if (update) {
-    if (git && !blockedGit) {
-      const canonical = await filesystem.realpath(path);
-      const within = relative(chain[0][2], canonical);
-      if (isAbsolute(within) || within === ".." || within.startsWith("../") ||
-          digest(JSON.stringify(await directoryChain(root, path, filesystem))) !== signature)
-        throw Object.assign(new Error("目录发生变化"), { code: "ESTALE" });
-      recentUpdate = await update(canonical);
-    } else recentUpdate = {state:"unknown",source:"Git",checkedAt:new Date().toISOString(),reason:"目录不是可读取的Git仓库"};
-  }
   const identity = await stable(path);
   const canonicalPath = await filesystem.realpath(path);
   try {
@@ -241,7 +229,6 @@ async function observeDirectory(root, path, filesystem, update, stable) {
       checkedAt: new Date().toISOString(),
       ...identity,
       canonicalPath,
-      ...(recentUpdate ? {recentUpdate} : {}),
       scopeSignature: signature,
       ...(git || marker
         ? { ...metadata, kind: git ? "Git" : marker[1] }
@@ -259,130 +246,5 @@ export async function inspectProjectLocation(
 ) {
   path = absolutePath(path);
   const root = scopedRoot(validateRoots(roots), path);
-  return (await observe(root, path, filesystem, undefined, createStableIdentityReader({ filesystem, volumeUuid }))).observation;
-}
-
-export async function scanLocalProjects(
-  roots,
-  {
-    knownPaths = [],
-    excludePaths = [],
-    maxDirectories = 5000,
-    maxDepth = 6,
-    filesystem = fs,
-    runGit,
-    volumeUuid,
-    maxUpdateReads = 500,
-  } = {},
-) {
-  if (!Number.isSafeInteger(maxUpdateReads) || maxUpdateReads < 0 || maxUpdateReads > 500) throw failure("时间读取预算无效");
-  const stable = createStableIdentityReader({ filesystem, volumeUuid });
-  let updateReads=0;
-  const normalizedRoots = validateRoots(roots);
-  if (
-    !Number.isSafeInteger(maxDirectories) ||
-    maxDirectories < 0 ||
-    maxDirectories > 5000 ||
-    !Number.isSafeInteger(maxDepth) ||
-    maxDepth < 0 ||
-    maxDepth > 32
-  )
-    throw failure("扫描预算或深度无效");
-  if (!Array.isArray(knownPaths) || knownPaths.length > 10000)
-    throw failure("已知目录列表无效");
-  const normalizedKnownPaths = [...new Set(knownPaths.map(absolutePath))];
-  if (!Array.isArray(excludePaths) || excludePaths.length > 1000) throw failure("排除目录列表无效");
-  const exclusions = [...new Set(excludePaths.map(absolutePath))];
-  const isExcluded = path => exclusions.some(parent => within(parent, path));
-  const items = [],
-    locations = [],
-    errors = [];
-  const probed = new Map(), expanded = new Map(), identities = new Set();
-  const pathIdentities = new Map(), expandedIdentities = new Map(), canonicalPaths = new Map(), expandedCanonical = new Set();
-  const depthBlocked = new Map(), directoryBlocked = new Set(), gitBlocked = new Set();
-  let visited = 0, knownChecked = 0;
-  async function probe(root, path) {
-    if (probed.has(path)) return probed.get(path);
-    if (!root || isExcluded(path)) {
-      locations.push(statusRow(path, "out_of_scope", isExcluded(path) ? "已排除的派生目录" : "不在有效扫描范围内"));
-      probed.set(path, []);
-      return [];
-    }
-    if (visited >= maxDirectories) {
-      directoryBlocked.add(path);
-      if (!locations.some(l => l.path === path)) locations.push(statusRow(path, "unknown", "扫描预算已用尽，尚未核实"));
-      return [];
-    }
-    visited++;
-    const { observation, entries } = await observe(root, path, filesystem, async target => {
-      if (updateReads >= maxUpdateReads) {gitBlocked.add(path);return {state:"unknown",source:"Git",checkedAt:new Date().toISOString(),reason:"时间读取预算已用尽，结果不完整"};}
-      updateReads++;return readGitUpdate(target, {run:runGit});
-    }, stable);
-    probed.set(path, entries);
-    if (observation.identity) pathIdentities.set(path, observation.identity);
-    if (observation.canonicalPath) canonicalPaths.set(path, observation.canonicalPath);
-    locations.push(observation);
-    if (observation.message) errors.push(`${path}：${observation.message}`);
-    if (observation.status === "present" && !identities.has(observation.identity)) {
-      items.push({
-        id: `local-${digest(path).slice(0, 24)}`,
-        name: basename(path), localPaths: [path],
-        ...(observation.repoKey === undefined ? {} : { repoKey: observation.repoKey }),
-        kind: observation.kind, branch: observation.branch,
-        localSeenAt: observation.checkedAt, recentUpdate: observation.recentUpdate,
-      });
-    }
-    if (observation.identity) identities.add(observation.identity);
-    return entries;
-  }
-  async function walk(root, path, depth) {
-    if (!root || isExcluded(path)) return;
-    if (expanded.has(path) && expanded.get(path) <= depth) return;
-    const entries = await probe(root, path);
-    if (!probed.has(path)) return;
-    const identity = pathIdentities.get(path);
-    if (identity && expandedIdentities.has(identity) && expandedIdentities.get(identity) <= depth) return;
-    expanded.set(path, depth);
-    if (identity) expandedIdentities.set(identity, depth);
-    if (canonicalPaths.has(path)) expandedCanonical.add(canonicalPaths.get(path));
-    const children = entries.filter(entry => entry.isDirectory() && !entry.isSymbolicLink() && !excluded(entry.name) && !isExcluded(join(path, entry.name)));
-    if (depth >= maxDepth) {
-      for (const child of children) depthBlocked.set(join(path, child.name), join(canonicalPaths.get(path) || path, child.name));
-      return;
-    }
-    for (const entry of children) {
-      const child = join(path, entry.name);
-      if (visited >= maxDirectories && !probed.has(child)) {
-        directoryBlocked.add(child);
-        continue;
-      }
-      await walk(root, child, depth + 1);
-    }
-  }
-  // Known registrations share the same budget but receive it first. Reuse their
-  // entries in the broad walk, so real nested projects remain discoverable.
-  for (const path of normalizedKnownPaths) {
-    const before = visited;
-    await probe(scopedRoot(normalizedRoots, path), path);
-    if (visited > before) knownChecked++;
-  }
-  for (const path of normalizedRoots) await walk(scopedRoot(normalizedRoots, path), path, 0);
-  const reasons = [];
-  const addReason = (code, limit, used, paths) => {
-    if (paths.length) reasons.push({ code, limit, used, samples: paths.slice(0, 5) });
-  };
-  addReason('directory_budget', maxDirectories, visited, [...directoryBlocked].filter(p => !probed.has(p)));
-  addReason('depth', maxDepth, maxDepth, [...depthBlocked].filter(([p, canonical]) => !expanded.has(p) && !expandedCanonical.has(canonical)).map(([p]) => p));
-  addReason('git_time_budget', maxUpdateReads, updateReads, [...gitBlocked]);
-  const diagnostics = { visited, knownRequested: normalizedKnownPaths.length, knownChecked, gitReads: updateReads, maxDirectories, maxDepth, maxUpdateReads, reasons };
-  const truncated = reasons.length > 0;
-  return {
-    items,
-    errors,
-    locations,
-    visited,
-    truncated,
-    diagnostics,
-    at: new Date().toISOString(),
-  };
+  return (await observe(root, path, filesystem, createStableIdentityReader({ filesystem, volumeUuid }))).observation;
 }

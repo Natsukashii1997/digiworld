@@ -26,7 +26,7 @@ async function fixture(state) {
       reaUpdate: fake,
       reverse: { execute: fake.execute, executeAi: async () => { throw Error('禁止真实AI'); } },
       reverseNative: { connect: async () => { throw Error('禁止真实Agent'); } },
-      discovery: { defaultRoots: () => ['/synthetic/projects'], scanLocalProjects: async () => { throw Error('禁止扫描'); }, scanGitHub: async () => { throw Error('禁止外网'); }, detectAgents: async () => { throw Error('禁止探测'); }, inspectAgentInventory: async () => ({ homes: [], errors: [], truncated: false }), calendarHelper: { platform: 'linux', run: async () => { throw Error('禁止日历'); } } },
+      discovery: { defaultRoots: () => ['/synthetic/projects'], detectAgents: async () => { throw Error('禁止探测'); }, inspectAgentInventory: async () => ({ homes: [], errors: [], truncated: false }), calendarHelper: { platform: 'linux', run: async () => { throw Error('禁止日历'); } } },
     });
     const data = seed(); data.reverseRecords = []; data.assets = []; data.notes = [];
     await app.repository.write(data, { initialize: true });
