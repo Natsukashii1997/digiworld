@@ -30,14 +30,11 @@ import { parse, stringify } from "../src/serialization.js";
 import { createAssetActivity } from "./asset-activity.mjs";
 import { createDeliveries } from "./delivery.mjs";
 import { createProjectContext } from "./project-context.mjs";
-import { createProjectIdentity } from "./project-identity.mjs";
 import { createProjectStatus, ghVisibility } from "./project-status.mjs";
 import { createCollabBoard } from "./collab-board.mjs";
 import { createProjectDesk } from "./project-desk.mjs";
 import { createProjectGithub, createGhRunner } from "./project-github.mjs";
 import { createProjectBrief } from "./project-brief.mjs";
-import { applyProjectCatalog, excludedProject, reconcileProjectCatalog } from "./project-catalog.mjs";
-import { inspectProjectLocation } from "./project-scan.mjs";
 import { createSkillSources } from "./skill-sources.mjs";
 import { hanziPenBold } from "./system-font.mjs";
 import { createSkillSourceUpdates } from "./skill-source-updates.mjs";
@@ -75,10 +72,7 @@ import { createCalendar, createCalendarHelper } from "./calendar.mjs";
 import { createCapabilityUsage, capabilityUseOutcome } from "./capability-usage.mjs";
 import packageInfo from "../package.json" with { type: "json" };
 import {
-  scanLocalProjects,
-  scanGitHub,
   detectAgents,
-  mergeProjects,
   mergeAgents,
   defaultRoots,
 } from "./discovery.mjs";
@@ -86,6 +80,15 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { stat } from "node:fs/promises";
 const exec = promisify(execFile);
+// 项目名册只读（#71）：这些写接口已下线，统一回 410；整库保存时这三项保留主库原值。
+const PROJECT_ROSTER_READONLY = "项目名册以 digital-twin/projects.json 为准，在数码世界只读；这个写入接口已下线。";
+const RETIRED_PROJECT_WRITES = [
+  "/api/project-catalog/apply",
+  "/api/scan/projects",
+  "/api/project-identity/preview",
+  "/api/project-identity/confirm",
+];
+const READONLY_PROJECT_FIELDS = ["projects", "projectCatalog", "projectExclusions"];
 const emptyConnections = (roots) => ({
   roots,
   projects: [],
@@ -220,14 +223,11 @@ export async function startServer({
   const skillSources = createSkillSources(repository, clock);
   const token = randomBytes(32).toString("hex");
   const adapters = {
-    scanLocalProjects,
-    scanGitHub,
     detectAgents,
     defaultRoots,
     inspectAgentInventory,
     readAgentContents,
     inspectAgentPrograms,
-    inspectProjectLocation,
     repoVisibility: ghVisibility,
     // GitHub 面板的只读 gh 运行器（测试注入桩脚本）。
     githubCli: createGhRunner(),
@@ -278,10 +278,6 @@ export async function startServer({
   const agentConfig = createAgentConfig(repository, adapters, { clock, settings:capabilities.settings,filesystem:adapters.capabilityFilesystem });
   const ruleTemplates = createRuleTemplates(repository, { clock });
   const assetDeletion = createAssetDeletion(repository, ruleTemplates);
-  const projectIdentity = createProjectIdentity(repository, {
-    clock,
-    inspect: adapters.inspectProjectLocation,
-  });
   const feishuFiles = adapters.feishuKnowledge || createFeishuKnowledgeFiles({ clock });
   const rawKnowledgeFiles = createKnowledgeFileDispatch(adapters.knowledgeFiles || createKnowledgeFiles(), feishuFiles);
   const knowledgeFiles = createPolicyKnowledgeFiles(repository,rawKnowledgeFiles);
@@ -723,15 +719,6 @@ export async function startServer({
           if (savepointAction === "confirm" && value?.newlyStarted === true) await used("savepoints", value);
           return send(response,200,value);
         }
-        const projectIdentityAction = url.pathname.match(
-          /^\/api\/project-identity\/(preview|confirm)$/,
-        )?.[1];
-        if (projectIdentityAction && request.method === "POST")
-          return send(
-            response,
-            200,
-            await projectIdentity[projectIdentityAction](await body(request)),
-          );
         if(url.pathname==="/api/agent-health/history" && request.method==="GET") return send(response,200,await healthAudit.history());
         if(url.pathname==="/api/agent-health/inspect" && request.method==="POST") return send(response,200,await healthAudit.inspect(await body(request)));
         if (url.pathname === "/api/project-status/activity" && request.method === "POST")
@@ -932,6 +919,7 @@ export async function startServer({
             await repository.write(input.state, {
               initialize: input.initialize === true,
               restrictAssetDeletion: true,
+              keepConnectionFields: READONLY_PROJECT_FIELDS,
             }),
           );
         }
@@ -1018,77 +1006,9 @@ export async function startServer({
             (await repository.read())?.connections ||
               emptyConnections(adapters.defaultRoots()),
           );
-        if (url.pathname === "/api/project-catalog/apply" && request.method === "POST")
-          return send(response, 200, await applyProjectCatalog(repository, await body(request)));
-        if (
-          url.pathname === "/api/scan/projects" &&
-          request.method === "POST"
-        ) {
-          const input = await body(request);
-          if (!input || typeof input !== "object" || Array.isArray(input)) throw failure("请求格式无效");
-          const result = await singleScan("projects", async () => {
-            const existing =
-              (await repository.read())?.connections ||
-              emptyConnections(adapters.defaultRoots());
-            if (Object.hasOwn(input, "roots") &&
-              (!Array.isArray(input.expectedRoots) || JSON.stringify(input.expectedRoots) !== JSON.stringify(existing.roots)))
-              throw failure("扫描目录已被其他窗口修改，已保留本次输入；请重新读取设置后确认", 409);
-            const roots = input.roots ?? existing.roots;
-            const [local, remote] = await Promise.all([
-              adapters.scanLocalProjects(roots, {
-                knownPaths: [
-                  ...new Set(existing.projects
-                    .filter((p) => !p.manual && !excludedProject(p, existing.projectExclusions || []))
-                    .sort((a, b) => Number(!!b.active) - Number(!!a.active))
-                    .flatMap((p) => p.localPaths)),
-                ],
-                excludePaths: (existing.projectExclusions || []).filter(entry => entry.startsWith("path:")).map(entry => entry.slice(5)),
-              }),
-              adapters.scanGitHub(),
-            ]);
-            return repository.updateConnections((previous) => {
-              const c = previous || existing;
-              if (JSON.stringify(c.roots) !== JSON.stringify(existing.roots) || JSON.stringify(c.projectExclusions || []) !== JSON.stringify(existing.projectExclusions || []))
-                throw failure("扫描期间目录范围已变化，请重新扫描", 409);
-              const exclusions = c.projectExclusions || [];
-              const prior = c.projects.filter((p) => !excludedProject(p, exclusions));
-              const merged = mergeProjects(
-                prior,
-                local.items.filter((p) => !excludedProject(p, exclusions)),
-                (remote.status === "connected" ? remote.items : [])
-                  .filter((p) => !excludedProject(p, exclusions)),
-                {
-                  protectedIds: [
-                    ...(c.contextBindings || []).map((b) => b.projectId),
-                    ...(c.projectCatalog || []).map((item) => item.projectId),
-                  ],
-                  locations: local.locations || [],
-                  at: local.at,
-                  remoteComplete: remote.status === "connected" && !remote.truncated,
-                },
-              ).filter((p) => !excludedProject(p, exclusions));
-              return {
-                ...c,
-                roots,
-                projects: merged,
-                ...(c.projectCatalog ? {
-                  projectCatalog: reconcileProjectCatalog(c.projectCatalog, merged),
-                } : {}),
-                projectScannedAt: local.at,
-                errors: local.errors,
-                truncated: local.truncated || remote.truncated,
-                projectScanDiagnostics: (local.truncated && !local.diagnostics) || (remote.truncated && !remote.diagnostics) ? undefined : { version: 1, at: local.at, ...(local.diagnostics ? { local: local.diagnostics } : {}), ...(remote.diagnostics ? { remote: remote.diagnostics } : {}) },
-                github: {
-                  status: remote.status,
-                  login: remote.login || c.github.login,
-                  message: remote.message,
-                  at: remote.at,
-                },
-              };
-            });
-          });
-          return send(response, 200, result);
-        }
+        // 项目名册以 digital-twin/projects.json 为准，数码世界只读（#71）：整理目录、扫描登记、目录关联的写接口一律拒绝，不读请求、不碰主库。
+        if (RETIRED_PROJECT_WRITES.includes(url.pathname))
+          throw failure(PROJECT_ROSTER_READONLY, 410);
         if (url.pathname === "/api/scan/agents" && request.method === "POST") {
           await body(request);
           const result = await singleScan("agents", async () => {

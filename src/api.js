@@ -106,13 +106,3 @@ export function initializeWorkspace() {
   return initialization;
 }
 
-// A shared in-flight request prevents StrictMode/remounts from starting duplicate scans.
-const scans = new Map();
-export function scan(kind, data = {}) {
-  if (!scans.has(kind))
-    scans.set(
-      kind,
-      request("/scan/" + kind, data).finally(() => scans.delete(kind)),
-    );
-  return scans.get(kind);
-}

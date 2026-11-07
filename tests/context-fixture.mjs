@@ -1,8 +1,8 @@
-import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer } from "../server/http.mjs";
+import { seedProjects } from "./seed-projects.mjs";
 import { seed } from "../src/store.js";
 import { stringify, parse } from "../src/serialization.js";
 
@@ -18,33 +18,26 @@ export async function contextFixture() {
     join(root, "AGENTS.md"),
     "仅修改当前项目；发布需人工确认。\n",
   );
+  const scanLocal = async () => ({
+    items: [
+      {
+        id: "project-context",
+        name: "作品集",
+        localPaths: [root],
+        repoKey: "",
+        kind: "Node",
+      },
+    ],
+    errors: [],
+    truncated: false,
+    at: new Date().toISOString(),
+  });
   const app = await startServer({
     directory: join(dir, "data"),
     port: 0,
     staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist"),
     discovery: {
       defaultRoots: () => [join(dir, "projects")],
-      scanLocalProjects: async () => ({
-        items: [
-          {
-            id: "project-context",
-            name: "作品集",
-            localPaths: [root],
-            repoKey: "",
-            kind: "Node",
-          },
-        ],
-        errors: [],
-        truncated: false,
-        at: new Date().toISOString(),
-      }),
-      scanGitHub: async () => ({
-        status: "not_connected",
-        items: [],
-        truncated: false,
-        message: "",
-        at: new Date().toISOString(),
-      }),
       detectAgents: async () => ({ items: [], at: new Date().toISOString() }),
     },
   });
@@ -70,7 +63,7 @@ export async function contextFixture() {
     return { status: r.status, body: parse(await r.text()) };
   };
   await call("/workspace", { state: seed(), initialize: true }, "PUT");
-  assert.equal((await call("/scan/projects", {})).status, 200);
+  await seedProjects(app.repository, { roots: [join(dir, "projects")], scanLocal });
   let stopped = false;
   async function stop() {
     if (!stopped) {

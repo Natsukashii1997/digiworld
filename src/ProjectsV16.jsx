@@ -14,13 +14,13 @@ import {
   Github,
 } from "lucide-react";
 import { Button, Dialog, Badge, SourceReadError } from "./components.jsx";
-import { request, scan } from "./api.js";
+import { request } from "./api.js";
 import { Pixel } from "./pixel.jsx";
 import { AgentSprite, LcdText, useReducedMotion } from "./v14.jsx";
 import { castOf, characterOf, AGENT_CAST } from "./characters.js";
 import { ActiveToggle, CurrentBlock, SafetyBlock, CHECK_LABELS, checkText } from "./ProjectStatus.jsx";
 import { ProjectLocations } from "./ProjectLocations.jsx";
-import { ProjectCatalogEditor } from "./ProjectCatalog.jsx";
+import { RosterReadonlyNote } from "./roster-readonly.jsx";
 import { ProjectContext } from "./ProjectContext.jsx";
 import { ProjectRules } from "./RuleInstall.jsx";
 import { GithubBlock, useGithubPanel } from "./ProjectGithub.jsx";
@@ -637,9 +637,7 @@ export function ProjectsV16({
   refreshProjectStatus = () => {},
   projectJump,
 }) {
-  const [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [filter, setFilter] = useState("all"),
+  const [filter, setFilter] = useState("all"),
     [query, setQuery] = useState(""),
     [selectedId, setSelectedId] = useState(null),
     [settings, setSettings] = useState(false),
@@ -664,9 +662,7 @@ export function ProjectsV16({
   }, []);
   const settingsBusy = useRef(false);
   const dailyGeneration = useRef(0);
-  const started = useRef(false),
-    scanLock = useRef(false),
-    lib = useRef(null),
+  const lib = useRef(null),
     flightTimer = useRef(null),
     flightOrigin = useRef(null),
     reduced = useReducedMotion();
@@ -685,30 +681,6 @@ export function ProjectsV16({
   useEffect(() => {
     if (projectJump?.id && all.some(p => p.id === projectJump.id)) setSelectedId(projectJump.id);
   }, [projectJump?.key, projectJump?.id]);
-  async function run(data = {}) {
-    if (scanLock.current) return null;
-    scanLock.current = true;
-    setBusy(true);
-    setError("");
-    try {
-      const next = await scan("projects", data);
-      adoptState(next);
-      return next;
-    } catch (e) {
-      setError(e.message);
-      notify(e.message, "error");
-      return null;
-    } finally {
-      scanLock.current = false;
-      setBusy(false);
-    }
-  }
-  useEffect(() => {
-    if (!started.current && !c.projectScannedAt) {
-      started.current = true;
-      run();
-    }
-  }, []);
   const loadDaily = useCallback(async () => {
     const generation = ++dailyGeneration.current;
     if (!ids) { setDaily({ items: [], error: "" }); return; }
@@ -839,7 +811,7 @@ export function ProjectsV16({
   }
   return (
     <div className="projects-v16 project-space">
-      <ReadReveal pending={busy} ready={!error}/>
+      <ReadReveal pending={false} ready/>
       <header className="pj-bar">
         <h1>项目空间<span className="en">PROJECTS</span></h1>
         <button className="page-help" aria-label="项目空间怎么用" onClick={() => setHelp(true)}>?</button>
@@ -961,16 +933,9 @@ export function ProjectsV16({
             <i className="led" aria-hidden="true" />
             <span>{c.truncated ? "结果不完整 · " : ""}{c.projectScannedAt ? `${date(c.projectScannedAt)} 扫描` : "还没扫描"}</span>
             {c.truncated && <span className="sr-only">{projectScanNotice(c)}</span>}
-            <button type="button" className="pj-rescan" aria-label="重新扫描" disabled={busy} onClick={() => run()}>
-              {busy ? <Reading mini label="扫描项目" /> : "重新扫描"}
-            </button>
           </span>
         </div>
-        {error && (
-          <p className="inline-error" role="alert">
-            {error}
-          </p>
-        )}
+        <RosterReadonlyNote />
         {c.github?.message && (
           <p className="scan-notice" role="status">
             {c.github.message}
@@ -1017,75 +982,64 @@ export function ProjectsV16({
             </label>
           </div>
         )}
-        {busy && (
-          <div className="pj-skel" role="status" aria-label="正在查找项目">
-            <Reading label="正在读取目录标记与 GitHub 仓库"/>
-          </div>
-        )}
-        {!busy && (
-          <div className="pj-racks">
-            {(curated ? groupPortfolioSections(projects, c.projectCatalog) : groupProjectRacks(projects, c.roots || [])).map((g, i) => (
-              <div className="pj-rack" key={g.key}>
-                <h4>
-                  <span className="en">{curated ? "ZONE" : "RACK"} {pad2(i + 1)}</span>
-                  <b title={g.label}>{g.label}</b>
-                  <LcdText text={pad2(g.items.length)} px={2} label={`${g.items.length} 个`} />
-                </h4>
-                <ul>
-                  {g.items.map((p) => (
-                    <li
-                      className={`pj-cs${projectSource(p) === "github" ? " git" : ""}${p.active ? " in-save" : ""}`}
-                      key={p.id}
+        <div className="pj-racks">
+          {(curated ? groupPortfolioSections(projects, c.projectCatalog) : groupProjectRacks(projects, c.roots || [])).map((g, i) => (
+            <div className="pj-rack" key={g.key}>
+              <h4>
+                <span className="en">{curated ? "ZONE" : "RACK"} {pad2(i + 1)}</span>
+                <b title={g.label}>{g.label}</b>
+                <LcdText text={pad2(g.items.length)} px={2} label={`${g.items.length} 个`} />
+              </h4>
+              <ul>
+                {g.items.map((p) => (
+                  <li
+                    className={`pj-cs${projectSource(p) === "github" ? " git" : ""}${p.active ? " in-save" : ""}`}
+                    key={p.id}
+                  >
+                    <button
+                      className="pj-cs-tab project-discovery-row"
+                      onClick={() => setSelectedId(p.id)}
+                      aria-label={`项目：${p.name}`}
+                      title={[p.manual && "手工登记", p.localPaths[0] || p.repoKey].filter(Boolean).join(" · ")}
                     >
-                      <button
-                        className="pj-cs-tab project-discovery-row"
-                        onClick={() => setSelectedId(p.id)}
-                        aria-label={`项目：${p.name}`}
-                        title={[p.manual && "手工登记", p.localPaths[0] || p.repoKey].filter(Boolean).join(" · ")}
-                      >
-                        <span className="pj-cs-code en">{projectSource(p) === "github" ? "GIT" : "LOCAL"}</span>
-                        <span className="pj-cs-name">
-                          <b>
-                            {p.name}
-                            {p.identityConflict && <span className="pj-flag">身份待确认</span>}
-                            {!p.manual && !p.seenThisScan && <span className="pj-flag">本次未检出</span>}
-                          </b>
-                          <PathLabel value={shortPath(p.localPaths[0] || p.repoKey)} />
-                        </span>
-                        <span className="pj-row-at en" title={p.recentUpdate?.reason}>{recent(p)}</span>
-                      </button>
-                      <span className="pj-cs-tail">
-                        {p.active ? (
-                          <span className="pj-cs-save"><i className="led" aria-hidden="true" />SLOT {pad2(slots.get(p.id))}</span>
-                        ) : displayOnly(p) ? (
-                          <span className="pj-cs-only" title="手工登记、仅展示的项目不开档">仅展示</span>
-                        ) : (
-                          <ActiveToggle
-                            project={p}
-                            state={state}
-                            adoptState={adoptState}
-                            notify={notify}
-                            launch
-                            onPrepare={prepareFlight}
-                            onMarked={() => fly(p)}
-                          />
-                        )}
+                      <span className="pj-cs-code en">{projectSource(p) === "github" ? "GIT" : "LOCAL"}</span>
+                      <span className="pj-cs-name">
+                        <b>
+                          {p.name}
+                          {p.identityConflict && <span className="pj-flag">身份待确认</span>}
+                          {!p.manual && !p.seenThisScan && <span className="pj-flag">本次未检出</span>}
+                        </b>
+                        <PathLabel value={shortPath(p.localPaths[0] || p.repoKey)} />
                       </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-        {!busy && !projects.length && !assets.length && !tasks.length && !candidates.length && !hidden.length && (
+                      <span className="pj-row-at en" title={p.recentUpdate?.reason}>{recent(p)}</span>
+                    </button>
+                    <span className="pj-cs-tail">
+                      {p.active ? (
+                        <span className="pj-cs-save"><i className="led" aria-hidden="true" />SLOT {pad2(slots.get(p.id))}</span>
+                      ) : displayOnly(p) ? (
+                        <span className="pj-cs-only" title="手工登记、仅展示的项目不开档">仅展示</span>
+                      ) : (
+                        <ActiveToggle
+                          project={p}
+                          state={state}
+                          adoptState={adoptState}
+                          notify={notify}
+                          launch
+                          onPrepare={prepareFlight}
+                          onMarked={() => fly(p)}
+                        />
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        {!projects.length && !assets.length && !tasks.length && !candidates.length && !hidden.length && (
           <div className="pj-none">
             <Pixel sprite="koromon" size={72} />
             <p>{query ? "没有匹配的项目" : "没找到项目"}</p>
-            <Button secondary onClick={() => run()}>
-              <RefreshCw size={16} />
-              重新扫描
-            </Button>
           </div>
         )}
         {folds.length > 0 && (
@@ -1152,7 +1106,7 @@ export function ProjectsV16({
                 <p className="body-copy">{selected.description}</p>
               )}
             </header>
-            <ProjectCatalogEditor key={selected.id} project={selected} state={state} adoptState={adoptState} notify={notify} />
+            <RosterReadonlyNote />
             {curated && (c.projectCatalog || []).some((item) => item.parentId === selected.id) && <section aria-label="附属目录与阶段材料">
               <h3>附属目录与阶段材料</h3>
               {(c.projectCatalog || []).filter((item) => item.parentId === selected.id).map((item) => {
@@ -1240,9 +1194,6 @@ export function ProjectsV16({
               <ProjectLocations
                 key={selected.id}
                 project={selected}
-                identityIssueRoot={projectStatus.error ? '' : projectStatus.items.find(item => item.projectId === selected.id && item.current?.code === 'DIRECTORY_IDENTITY_CHANGED')?.root || ''}
-                state={state}
-                adoptState={adoptState}
                 notify={notify}
               />
             </section>}
@@ -1302,8 +1253,8 @@ export function ProjectsV16({
               {c.github?.login || "未连接"}。扫描于 {date(c.projectScannedAt)}。
             </p>
             <p>
-              扫描只读项目标记和 Git 时间；状态来自项目自己的 CURRENT、Git 与
-              GitHub。未知或不完整不代表没有活动。根目录与停滞阈值在设置抽屉。
+              项目名册以 digital-twin/projects.json 为准，在数码世界只读；这里展示的是此前扫描留下的记录。状态来自项目自己的 CURRENT、Git 与
+              GitHub。未知或不完整不代表没有活动。停滞阈值在设置抽屉。
             </p>
             {[...new Set(daily.items.map((i) => i.note).filter(Boolean))].map(
               (note) => (

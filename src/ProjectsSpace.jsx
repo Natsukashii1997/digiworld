@@ -314,7 +314,7 @@ function Head({ item, pinBusy, onPin, onDetail }) {
       </div>
       <div className="acts">
         <button type="button" className="btn" aria-pressed={item.pinned} disabled={pinBusy || !item.projectId}
-          title={item.projectId ? "" : "还没在设置里扫描登记，不能置顶"} onClick={onPin}>{item.pinned ? "已置顶" : "置顶"}</button>
+          title={item.projectId ? "" : "数码世界没有它的本机登记记录，不能置顶"} onClick={onPin}>{item.pinned ? "已置顶" : "置顶"}</button>
         {doc.url ? <a className="btn" href={doc.url} title={`Vault · ${item.card}`}>项目卡 ↗</a>
           : <span className="btn off" title={doc.message || "没连 Vault 知识源"}>项目卡 ↗</span>}
         <button type="button" className="btn" disabled={!item.projectId} title={item.path} onClick={onDetail}>详情</button>
@@ -477,7 +477,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
         </div>
         <span className="grow" />
         <button type="button" className="ibtn" aria-label="刷新" title="重读名册、CURRENT、GitHub 与会话统计" disabled={loading} onClick={refresh}><RefreshCw /></button>
-        <button type="button" className="ibtn" aria-label="设置" title="设置：目录与扫描" onClick={goSettings}><Settings2 /></button>
+        <button type="button" className="ibtn" aria-label="设置" title="设置" onClick={goSettings}><Settings2 /></button>
       </header>
 
       <SourceReadError title="项目空间" error={error} retained={!!data} onRetry={() => load()} />
@@ -521,7 +521,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
               refreshProjectStatus={refreshProjectStatus} statusReading={!projectStatus.loaded}
               readFailed={!!projectStatus.error} sourceKey={projectStatus.sourceKey} speaker={null} />
           ) : (
-            <p className="detail-footnote">接手口令只给置顶的项目准备（要先读到它的 CURRENT 与状态）。{item.projectId ? "先置顶这个项目再来复制。" : "这个项目还没在设置里扫描登记。"}</p>
+            <p className="detail-footnote">接手口令只给置顶的项目准备（要先读到它的 CURRENT 与状态）。{item.projectId ? "先置顶这个项目再来复制。" : "数码世界没有这个项目的本机登记记录。"}</p>
           )}
         </Dialog>
       )}
@@ -531,7 +531,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
           <div className="asset-form pj-detail">
             <header><h2>{item.name}</h2><p className="detail-footnote">{item.path}</p></header>
             {statusItem && <section aria-label="状态"><h3>状态</h3><CurrentBlock current={statusItem.current} />{statusItem.safety?.checks?.git && <SafetyBlock safety={statusItem.safety} />}</section>}
-            <section aria-label="位置"><h3>位置</h3><ProjectLocations key={project.id} project={project} state={state} adoptState={adoptState} notify={notify} /></section>
+            <section aria-label="位置"><h3>位置</h3><ProjectLocations key={project.id} project={project} notify={notify} /></section>
             <section aria-label="连接"><h3>连接</h3><ProjectContext key={project.id} project={project} state={state} adoptState={adoptState} notify={notify} /></section>
             <section aria-label="规则"><h3>规则</h3><ProjectRules project={project} state={state} installs={ruleInstalls} refresh={refreshRuleInstalls} /></section>
           </div>

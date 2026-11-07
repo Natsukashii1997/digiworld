@@ -1,10 +1,10 @@
 // 项目空间第二版的合成环境：临时目录里现建 Git 仓库（见 project-status-fixture.mjs）、合成名册、合成项目卡与 gh 桩。
 // 不读真实名册、Vault、~/.claude、~/.codex 与 data/。接口测试与浏览器测试共用。
-import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startServer } from "../server/http.mjs";
+import { seedProjects } from "./seed-projects.mjs";
 import { seed } from "../src/store.js";
 import { stringify, parse } from "../src/serialization.js";
 import { buildProjects } from "./project-status-fixture.mjs";
@@ -43,7 +43,6 @@ export async function spaceFixture({ roster, gh, staticRoot, skillUsage, space }
     staticRoot: staticRoot ?? join(dir, "static"),
     discovery: {
       defaultRoots: () => [paths.projects],
-      scanGitHub: async () => ({ status: "not_connected", items: [], truncated: false, message: "", at: new Date().toISOString() }),
       detectAgents: async () => ({ items: [], at: new Date().toISOString() }),
       repoVisibility: async () => ({ state: "unknown" }),
       githubCli: fakeGh,
@@ -63,7 +62,7 @@ export async function spaceFixture({ roster, gh, staticRoot, skillUsage, space }
     return { status: r.status, body: parse(await r.text()) };
   };
   await call("/workspace", { state: seed(), initialize: true }, "PUT");
-  assert.equal((await call("/scan/projects", {})).status, 200);
+  await seedProjects(app.repository, { roots: [paths.projects] });
   // 首次读 /projects-space 会起后台技能统计并写缓存进 data；服务关闭不等它，删除目录时可能撞上新写入（ENOTEMPTY），故清理带重试。
   return { ...app, dir, paths, call, calls, rosterPath, async close() { await app.close(); await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 }); } };
 }

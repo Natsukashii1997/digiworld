@@ -30,7 +30,7 @@ test("自检：问题排最上，标记由事实源派生", () => {
   assert.equal(r.aihot.result, "AI HOT 已开启 · 每 3 小时更新");
   assert.equal(r.calendar.result, "已授权 · 写入“工作台”日历和“工作台”列表");
   assert.equal(r.vault.result, "关闭 · 从未使用");
-  assert.equal(r.scan.result, "2 个目录 · 停滞 7 天 · 未存档 黄 1 / 红 3 天");
+  assert.equal(r.scan.result, "名册只读 · 停滞 7 天 · 未存档 黄 1 / 红 3 天");
   const t = selfTestTally(rows);
   assert.deepEqual([t.bad, t.warn, t.ok], [1, 2, 7]);
   assert.equal(t.verdict, "还有 1 项要处理，2 项要看一眼");
