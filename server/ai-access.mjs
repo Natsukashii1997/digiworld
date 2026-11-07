@@ -80,6 +80,8 @@ export function createAiAccess({ readState, modelStatus, modelHistory, mcp = () 
         { name: 'Agent 发现与清单', source: '本机已安装的 Agent 程序与配置目录（只读）' },
         { name: 'MCP 注册自检', source: '调用 codex / claude / hermes 的 mcp 查询命令' },
         { name: 'AI HOT 资讯', source: '外部资讯源，不是 AI 替本应用产出的内容' },
+        { name: '驾驶舱 Agent 页', source: '4 个 Agent 的全局指令（疑似密钥打码）、模型名、Skill 目录、MCP 与 hook 名字、网关状态、驿窗额度快照；只读，不读凭据与会话（#74）' },
+        { name: '驾驶舱规则页', source: 'Vault 偏好表的编号与确认依据、agent-kit LESSONS 与自检、全局规则审核包、各项目 AGENTS/LESSONS/ADR 统计；只读（#74）' },
       ];
       const localModels = [
         { name: '收藏视频转写', detail: '本机 SenseVoice 模型，失败时改用 macOS 系统识别并提示核对；不外发，不属于可切换执行方' },
