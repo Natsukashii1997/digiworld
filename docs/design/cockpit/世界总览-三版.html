@@ -1,0 +1,377 @@
+<title>数码世界 世界总览三版</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap">
+<style>
+/* 布局：数码世界侧栏 + 主区；三版差在首页怎么组织「我有什么 / 进展到哪 / 去哪继续」。只做暗色，沿用 v18 基地的暴龙机语言。 */
+:root{
+  color-scheme:dark;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --pixel:"Silkscreen",ui-monospace,"SF Mono",Menlo,monospace;
+  --bg:#070b16;--panel:#0f1729;--panel-2:#131d33;--panel-3:#1a2641;--field:#0a1120;
+  --line:rgba(140,178,255,.11);--line-2:rgba(140,178,255,.19);--line-3:rgba(140,178,255,.32);
+  --text:#e9eeff;--text-2:#b4bfda;--muted:#8b98b8;--faint:#5d6987;
+  --orange:#ff8a24;--orange-2:#ffb35c;--orange-ink:#1f0f00;--cyan:#4de3ff;--cyan-2:#9beeff;--lcd:#a6e36e;--violet:#a891ff;--yellow:#ffd166;--red:#ff6b6b;--blue:#6fb0ff;
+  --lcd-screen:#aebc93;--lcd-ink:#1c2616;
+  --m-panel:linear-gradient(180deg,#152039 0%,#0f1729 40%,#0c1325 100%);
+  --m-panel-edge:inset 0 1px 0 rgba(255,255,255,.06),inset 0 0 0 1px rgba(140,178,255,.07),0 18px 40px -26px rgba(0,0,0,.95);
+  --focus:0 0 0 2px var(--bg),0 0 0 4px var(--cyan);
+  --r-1:6px;--r-2:10px;--r:12px;--r-l:16px;
+  --f-12:12px;--f-13:13px;--f-14:14px;--f-16:16px;--f-20:20px;--f-28:28px;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:var(--f-14);line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:none;box-shadow:var(--focus);border-radius:var(--r-1)}
+canvas.spr{image-rendering:pixelated;display:block}
+.mono{font-family:var(--mono)}.num{font-variant-numeric:tabular-nums}
+
+.proto{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:#04070f;border-bottom:1px solid var(--line-2);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:#04070f}
+.proto-in{display:flex;align-items:center;gap:16px;flex-wrap:wrap;max-width:1600px;margin:0 auto}
+.proto-tag{font-family:var(--mono);font-size:var(--f-12);letter-spacing:.08em;color:var(--muted)}
+.proto-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.proto-tab{display:flex;align-items:baseline;gap:8px;padding:7px 14px;border-radius:var(--r-2);border:1px solid var(--line-2);color:var(--text-2);min-height:36px}
+.proto-tab b{font-family:var(--pixel);font-weight:400;font-size:13px;color:var(--muted)}
+.proto-tab[aria-selected="true"]{background:var(--orange);border-color:var(--orange);color:var(--orange-ink);font-weight:600}
+.proto-tab[aria-selected="true"] b{color:var(--orange-ink)}
+.proto-note{flex:1 1 280px;min-width:0;color:var(--muted);font-size:var(--f-13);margin:0}
+
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:calc(100vh - 57px);max-width:1600px;margin:0 auto;border-inline:1px solid var(--line)}
+.side{background:linear-gradient(180deg,#0b1222,#080d1a);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 14px;gap:18px;position:sticky;top:57px;height:calc(100vh - 57px)}
+.logo{display:flex;align-items:center;gap:10px;padding:2px 6px 8px}
+.logo-mark{width:34px;height:34px;border-radius:9px;background:radial-gradient(circle at 50% 50%,var(--orange) 0 5px,transparent 6px),repeating-conic-gradient(from 0deg,#ff8a24 0 8deg,transparent 8deg 30deg);box-shadow:inset 0 0 0 2px #2a1a0a,0 0 0 1px var(--line-2);background-color:#1a1206}
+.logo b{display:block;font-size:19px;letter-spacing:.06em}
+.logo small{display:block;font-family:var(--pixel);font-size:9px;letter-spacing:.18em;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:14px}
+.nav-h{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);padding:0 10px 4px;display:flex;justify-content:space-between}
+.nav-h i{font-style:normal;color:var(--muted);border:1px solid var(--line-2);border-radius:4px;padding:0 5px;letter-spacing:0}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-2);color:var(--text-2);text-decoration:none;min-height:40px}
+.nav a .ic{width:16px;height:16px;border:1.5px solid currentColor;border-radius:4px;opacity:.7;flex:none}
+.nav a .ct{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);padding:0 7px;border-radius:999px}
+.nav a.on{background:linear-gradient(90deg,rgba(255,138,36,.16),rgba(255,138,36,.04));color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,138,36,.28)}
+.nav a.on .ic{border-color:var(--orange);opacity:1}
+.nav-end{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+.partner{border-radius:var(--r-2);padding:8px;background:#1a2236;box-shadow:inset 0 0 0 1px var(--line-2)}
+.partner-lcd{height:58px;border-radius:6px;background:var(--lcd-screen);background-image:radial-gradient(var(--lcd-ink) .6px,transparent .8px);background-size:4px 4px;opacity:.85;position:relative}
+.partner-lcd::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:22px;transform:translate(-50%,-50%);background:#f6f2e4;border-radius:50% 50% 45% 45%;box-shadow:0 0 0 2px var(--lcd-ink)}
+.partner small{display:block;margin-top:6px;font-size:11px;color:var(--muted)}
+.main{min-width:0;padding-block:22px 56px;padding-inline:32px}
+.crumb{display:flex;gap:8px;color:var(--muted);font-size:var(--f-13);margin-bottom:18px;align-items:center}
+.crumb b{color:var(--text);font-weight:500}
+.crumb .ro{margin-left:auto}
+
+/* 通用 */
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.px{font-family:var(--pixel);letter-spacing:.08em}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:var(--f-12);padding:2px 8px;border-radius:var(--r-1);background:var(--panel-3);color:var(--text-2);border:1px solid var(--line);white-space:nowrap}
+.st-ok{--s:var(--lcd)}.st-warn{--s:var(--yellow)}.st-bad{--s:var(--red)}.st-unk{--s:var(--faint)}.st-you{--s:var(--orange)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block;background:var(--s);box-shadow:0 0 8px color-mix(in srgb,var(--s) 55%,transparent)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:var(--f-12);padding:2px 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--s) 45%,transparent);color:var(--s);background:color-mix(in srgb,var(--s) 9%,transparent);white-space:nowrap}
+.ro{display:inline-flex;align-items:center;gap:6px;font-size:var(--f-12);color:var(--lcd);border:1px solid rgba(166,227,110,.35);border-radius:999px;padding:2px 10px;background:rgba(166,227,110,.06)}
+.ro::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--lcd)}
+.src{font-family:var(--mono);font-size:11px;color:var(--faint);line-height:1.5}
+.note{font-size:var(--f-12);color:var(--faint)}
+.muted{color:var(--muted)}
+.panel{background:var(--m-panel);box-shadow:var(--m-panel-edge);border-radius:var(--r-l);min-width:0}
+.ph{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.ph .key{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font-family:var(--mono);font-size:12px;color:var(--cyan);box-shadow:inset 0 0 0 1.5px rgba(77,227,255,.5)}
+.ph h2{margin:0;font-size:var(--f-16);font-weight:600}
+.ph .big{margin-left:auto;font-family:var(--pixel);font-size:24px;line-height:1;color:var(--s,var(--cyan))}
+.ph .r{margin-left:auto}
+
+/* LED 时钟 */
+.clock{display:flex;align-items:flex-end;gap:14px;justify-content:center}
+.clock .t{font-family:var(--pixel);font-size:64px;line-height:.9;color:var(--cyan);text-shadow:0 0 18px rgba(77,227,255,.45);letter-spacing:.02em}
+.clock .d b{display:block;font-size:var(--f-20);font-weight:600}
+.clock .d span{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--muted)}
+.greet{text-align:center;color:var(--text-2);margin-top:6px}
+.greet b{color:var(--orange-2)}
+
+/* 暴龙机 */
+.digivice{width:300px;height:300px;position:relative;margin:0 auto}
+.digivice svg{width:100%;height:100%;overflow:visible}
+.digivice .screen{position:absolute;left:50%;top:50%;width:92px;height:92px;transform:translate(-50%,-50%);border-radius:12px;background:var(--lcd-screen);box-shadow:inset 0 0 0 3px #050913,0 0 0 2px rgba(77,227,255,.45),0 0 24px rgba(77,227,255,.25);display:grid;place-items:center;overflow:hidden}
+.digivice .screen::after{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(28,38,22,.22) .7px,transparent .9px);background-size:3px 3px}
+.idle canvas{animation:bob 1.6s steps(2) infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}
+
+/* 快记 */
+.quick{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 16px;border-radius:999px;background:#0a1222;box-shadow:inset 0 0 0 1.5px rgba(77,227,255,.35),0 0 20px -8px rgba(77,227,255,.5)}
+.quick span.p{font-family:var(--mono);color:var(--cyan)}
+.quick input{flex:1;min-width:0;background:none;border:0;color:var(--text);font:inherit;padding:8px 0}
+.quick input::placeholder{color:var(--faint)}
+.quick kbd{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px}
+.quick button{width:40px;height:40px;border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(77,227,255,.6);color:var(--cyan);font-size:18px}
+
+/* 行项目 */
+.items{display:flex;flex-direction:column}
+.it{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 16px;border-top:1px solid var(--line);text-align:left;width:100%}
+.it:hover{background:rgba(140,178,255,.03)}
+.it b{display:block;font-size:var(--f-14);font-weight:600;line-height:1.35}
+.it p{margin:2px 0 0;font-size:var(--f-12);color:var(--muted)}
+.it .go{font-size:var(--f-12);color:var(--cyan);white-space:nowrap;padding-top:2px}
+.it .dot{margin-top:6px}
+
+/* 读数块 */
+.reads{display:grid;gap:8px;padding:0 12px 12px}
+.rd{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:10px 12px;border-radius:var(--r-2);background:rgba(6,10,20,.55);border:1px solid var(--line);text-align:left;width:100%}
+.rd:hover{border-color:var(--line-3)}
+.rd .n{font-family:var(--pixel);font-size:22px;line-height:1.1;grid-row:1/3;grid-column:2;align-self:center;color:var(--s,var(--text))}
+.rd b{font-size:var(--f-14);font-weight:600}
+.rd span{font-size:11.5px;color:var(--muted)}
+.rd .src{grid-column:1/3}
+
+/* ===== H1 暴龙机中枢 ===== */
+.base{position:relative;border-radius:22px;padding:24px;background:radial-gradient(60% 50% at 50% 40%,rgba(77,227,255,.06),transparent 70%),linear-gradient(180deg,#0b1427,#08101f);box-shadow:inset 0 0 0 1px var(--line-2);overflow:hidden}
+.base::after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;background:repeating-linear-gradient(90deg,rgba(77,227,255,.05) 0 1px,transparent 1px 56px),linear-gradient(0deg,rgba(77,227,255,.05),transparent);mask:linear-gradient(0deg,#000,transparent);pointer-events:none}
+.h1grid{display:grid;grid-template-columns:minmax(0,1fr) 380px minmax(0,1fr);gap:24px;align-items:start;position:relative;z-index:1}
+.h1mid{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.wire{position:absolute;inset:0;pointer-events:none;z-index:0}
+.h1grid .panel{border:1px solid rgba(255,138,36,.0)}
+.h1grid .pa{box-shadow:var(--m-panel-edge),inset 0 0 0 1px rgba(255,138,36,.25)}
+.pa .ph .key{color:var(--orange);box-shadow:inset 0 0 0 1.5px rgba(255,138,36,.55)}
+.recent{margin-top:20px;position:relative;z-index:1}
+.strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.chg{flex:0 0 250px;padding:12px 14px;border-radius:var(--r);background:var(--panel);border:1px solid var(--line);min-width:0}
+.chg b{display:block;font-size:var(--f-13);font-weight:600}
+.chg p{margin:3px 0 0;font-size:var(--f-12);color:var(--muted)}
+.chg .src{margin-top:6px}
+
+/* ===== H2 驾驶舱仪表板 ===== */
+.h2top{display:flex;align-items:center;gap:18px;margin-bottom:18px;flex-wrap:wrap}
+.h2top .clock{justify-content:flex-start}
+.h2top .clock .t{font-size:40px}
+.h2top .greet{text-align:left;margin:0}
+.h2top .quick{margin-left:auto;flex:1 1 380px;max-width:520px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.kpi{padding:14px 16px;border-radius:var(--r-l);background:var(--m-panel);box-shadow:var(--m-panel-edge);display:flex;flex-direction:column;gap:6px;min-width:0;text-align:left}
+.kpi .n{font-family:var(--pixel);font-size:30px;line-height:1.1}
+.kpi .bar{display:flex;height:6px;border-radius:3px;overflow:hidden;gap:2px}
+.kpi .bar i{display:block;height:100%}
+.kpi p{margin:0;font-size:var(--f-12);color:var(--muted)}
+.h2mid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start;margin-bottom:16px}
+.squad{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 12px 12px}
+.mate{--tint:var(--orange);display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center;padding:10px;border-radius:var(--r);background:linear-gradient(110deg,color-mix(in srgb,var(--tint) 10%,#0e1628),#0b1222 70%);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tint) 22%,transparent);text-align:left;min-width:0}
+.mate .av{width:64px;height:64px;border-radius:10px;background:#070c18;display:grid;place-items:center;overflow:hidden;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tint) 35%,transparent)}
+.mate b{display:block;font-size:var(--f-14)}
+.mate small{display:block;font-size:11px;color:var(--muted)}
+.mate .q{display:grid;grid-template-columns:28px minmax(0,1fr) 34px;gap:6px;align-items:center;font-size:11px;color:var(--muted);margin-top:4px}
+.mate .q .b{height:5px;border-radius:3px;background:var(--panel-3);overflow:hidden}.mate .q .b i{display:block;height:100%;background:var(--s)}
+.mate .q span:last-child{font-family:var(--mono);text-align:right}
+.projmap{padding:0 12px 12px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:12px}
+.ptype:not(:first-child) .pcells{grid-template-columns:minmax(0,1fr)}
+.ptype h4{margin:0 0 8px;font-size:var(--f-13);font-weight:600;display:flex;gap:8px;align-items:center}
+.ptype h4 span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.pcells{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pc{padding:8px 10px;border-radius:var(--r-2);background:rgba(6,10,20,.55);border:1px solid var(--line);min-width:0;border-left:3px solid var(--s)}
+.pc b{display:block;font-size:var(--f-12);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc span{font-size:11px;color:var(--muted)}
+
+/* ===== H3 三个问题 ===== */
+.h3head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;margin-bottom:22px;padding:22px 24px;border-radius:20px;background:radial-gradient(50% 120% at 85% 50%,rgba(77,227,255,.08),transparent 70%),linear-gradient(180deg,#0b1427,#08101f);box-shadow:inset 0 0 0 1px var(--line-2)}
+.h3head h1{margin:0;font-size:30px;line-height:1.25;font-weight:650;text-wrap:balance}
+.h3head h1 em{font-style:normal;color:var(--orange-2)}
+.h3head p{margin:8px 0 14px;color:var(--text-2)}
+.h3head .clock{flex-direction:column;align-items:flex-end;gap:6px}
+.h3head .clock .t{font-size:48px}
+.q3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.qcol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.qh{display:flex;gap:12px;align-items:baseline;padding:0 4px}
+.qh .no{font-family:var(--pixel);font-size:28px;line-height:1;color:var(--cyan)}
+.qh h2{margin:0;font-size:var(--f-20);font-weight:650}
+.qh p{margin:2px 0 0;font-size:var(--f-12);color:var(--muted)}
+.own{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.own .rd .n{font-size:24px}
+.tlist{list-style:none;margin:0;padding:6px 14px 10px}
+.tlist li{display:grid;grid-template-columns:46px 12px minmax(0,1fr);gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.tlist li:last-child{border-bottom:0}
+.tlist .d{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding-top:1px}
+.tlist i{width:8px;height:8px;border-radius:50%;margin-top:6px;background:var(--c,var(--cyan))}
+.tlist b{display:block;font-size:var(--f-13);font-weight:600}
+.tlist span{display:block;font-size:11.5px;color:var(--muted)}
+.mine{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px}
+
+@media (max-width:1280px){.h1grid{grid-template-columns:minmax(0,1fr) 340px}.h1grid>.pb{grid-column:1/-1}.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.h2mid,.q3{grid-template-columns:minmax(0,1fr)}.projmap{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}.side{display:none}
+  .main{padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+  .h1grid,.kpis,.squad,.own,.h3head{grid-template-columns:minmax(0,1fr)}.clock .t{font-size:44px}.digivice{width:240px;height:240px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="proto" role="region" aria-label="原型方案切换">
+  <div class="proto-in">
+    <span class="proto-tag">世界总览 · 3 版</span>
+    <div class="proto-tabs" role="tablist" aria-label="方案">
+      <button class="proto-tab" role="tab" id="pt-1" data-v="1" aria-selected="true"><b>H1</b>暴龙机中枢</button>
+      <button class="proto-tab" role="tab" id="pt-2" data-v="2" aria-selected="false"><b>H2</b>驾驶舱仪表板</button>
+      <button class="proto-tab" role="tab" id="pt-3" data-v="3" aria-selected="false"><b>H3</b>三个问题</button>
+    </div>
+    <p class="proto-note" id="proto-note"></p>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="side" aria-label="侧栏">
+    <div class="logo"><span class="logo-mark" aria-hidden="true"></span><div><b>数码世界</b><small>DIGITAL·WORLD</small></div></div>
+    <nav class="nav" aria-label="主导航">
+      <div>
+        <div class="nav-h">体系 <i>只读</i></div>
+        <a href="#h1" onclick="return false" class="on" aria-current="page"><span class="ic"></span>世界总览</a>
+        <a href="#h1" onclick="return false"><span class="ic"></span>项目空间<span class="ct">16</span></a>
+        <a href="#h1" onclick="return false"><span class="ic"></span>Agent<span class="ct">4</span></a>
+        <a href="#h1" onclick="return false"><span class="ic"></span>自建 Skill<span class="ct">15</span></a>
+        <a href="#h1" onclick="return false"><span class="ic"></span>规则</a>
+      </div>
+      <div>
+        <div class="nav-h">我的素材 <i>可写</i></div>
+        <a href="#h1" onclick="return false"><span class="ic"></span>资产仓库<span class="ct">9</span></a>
+        <a href="#h1" onclick="return false"><span class="ic"></span>个人收藏<span class="ct">15</span></a>
+        <a href="#h1" onclick="return false"><span class="ic"></span>随手记<span class="ct">20</span></a>
+        <a href="#h1" onclick="return false"><span class="ic"></span>逆向工程</a>
+      </div>
+    </nav>
+    <div class="nav-end">
+      <nav class="nav" aria-label="系统"><a href="#h1" onclick="return false"><span class="ic"></span>设置</a></nav>
+      <div class="partner" aria-hidden="true"><div class="partner-lcd"></div><small>冬 · 初雪 · 数码蛋（原样保留）</small></div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="crumb">数码世界 <span aria-hidden="true">/</span> <b>世界总览</b><span class="ro">只读汇总 · 读取于 11-07 23:30</span></div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<script>
+const SPR = {"metalgreymon16":{"palette":{"K":"#000000","A":"#522322","B":"#34234e","C":"#5e464b","D":"#934842","E":"#4a568b","F":"#6b557f","G":"#a86d51","H":"#666f9a","I":"#d25948","J":"#9c8273","L":"#dd8549","M":"#d87469","N":"#999a94","O":"#e0a5ad","P":"#cfd4cd"},"frames":[["......................................K.................",".....KK..............................KK.................",".....KHK............................KHK.................",".....KHEK...........................KEK.................",".....KEEEK.........................KEEK.................","......KEEEK.....................K..KEK..................","......KEEEEK....................K.KEEK..................",".......KEEHHK..................KK.KEEK..................",".K.....KEHEHEK.................KBKKHEK..................",".KKK....HHEEEEK................KBKEEK...................","..KEKK..H.KEBEEK......K....K...KBKEEK..........K........","..KEEEK.KK.KEBEEK....KK....K..KBBKEEK..........K........","...KHEEK.EK.KEBEEK...KCK...IK.KBKEEKK.........KK........","....KEEEKHEKKEEEHEK..KJK...II.BHIKEK.........KJKK.......",".....KHEHHEHEHEEBEEK.KJK.K.IIMKFKBKC.........KJK........",".....KHEEEKEEEEEEBEK.KCJKMMIIIMKNNNNKK.......KJKK.......",".....KHHHKEKEEEEEEHB.KCJKKKIIMMNPNNKNNKK....KJJK........","......KEH.KEKEEEEEEHH.KCJJJKKKNNNPNNKNNNK..KKCJKK.......",".......KEK.KHKEEEEEEEK.KKJJCJJKCNNCNNKNNNKKJJJK.........","........KEKKE.KEEEKKEBKKKKKCCCKCCCNNPNKKKPKKCJK.........",".........HEEEKBKEEK.BEKIIIIKKFKCKKCNNPNNNNK.CJK.........",".........CHHHHHHKHEKHHEKDDDDKKKCKPFJJJPJNCKFJJK.........",".....KKKKKKBBBBBFKKHEKBEKIIMKNKCKEKCCNNPKNNCJK..........","......KBBBBKKBHEBBHEEBHKMOIJKNKCKKEJCCNCPNNFJK..........",".......KBBKKBKKBBBBBKBKIDDDMKNKCCCKCCCKNNPNNKK..........","........KBB.KBBBKKBBBKKKDJGMKKKCCCCCCCCNNNNNNPK.........",".........KBEHBBBEKCCHKJJKOMLKFJKACKJCKCJNNNNNPK.........",".......KKKKKHHBBEBBBKLLLMOMMKNIKA.AKKCCFCNNNNNB.........",".....KKLMLIIKKKKKKKKMLLLLJIDKMIKCCA.KJJFCNNNNNK.........","...KKLLLLLLLLKK....KMLLLLGDMLKMKCDDCACKKCNNNPK..........","..KLLLLLLLLLLLKK.KKLLADDKMMLLMELK.DDAK.KKCNNNK..........",".KMLMDDILELLKKNNKLLLLLKKLMLLDGJLLKDDDAK.KKKNK...........",".MMDDKKIMDLKNNNKLLKLIKDDKKMLDDJELLK.DA.K..KK............","KMOKK..KHDDMKNCKLLMKKMIKFNNMLMIKHLK.DDCK................","LMJ......KMLKCCKLLLDEMLKJNNKKMMMKLLK.AA.K...............","LK.......KLILKKKKKLDELKCNCNPPKKKKKLLKKKMK...............","K........KLIDDDKLLKLMLKCNINPNNNCNNKLLLLK................","..........KIDDDKLLKLODDKJNNPNNKNNNKKKKK.................","..........KIGMKKLNKLIKMLKFJJKKKJJKKJJK..................","..........KMDKLLKPKLLLKLMKKKCNNKKKCNKKKKK...............","...........KMKLLLKMMJPKKKKNKCNNKKIKKKPPPNK..............","...........KMKLLLMKKKPKCNNNCCNNNKLEKCCCCPNKK............","............KKNPKKHEHKLKKKKMKKMKKEMLKKNNCPCNK...........",".............KKNKELLOKMMMOMMLLOMKIIHEEKCNCPNNK..........","..............KKKMLLLKEEEMLLLLIELLEHLLMKKNCPPNK.........","...............KLLHEMKDLLMLLLLLKLLELLLLKJCNNKKJK........","..............KKMEHLOKEDMMLLLLMLLLLLLLLMKNNNNNPNNK......",".............KLKEMLLMKLDDMLLLMDDLLLPOLLMMKKCNNNNNNK.....",".............KLKELLLLKODDOLLLMDDIIIIMOOOMKKCNNNJNNK.....",".............KLKLLLLLKLDGOGBBCKDDLLLLLLMLKCNFNNNNNNK....","............KLIKLLLLLKKKKKK....KKKLLLLLLLKCNCKNCCPKK....","...........KDILLLLLLMK.........KLDDILLLLLKCCKPKCNNPBK...","...........KDDLLLLLLK..........KLILLLLLMK.KCKNPKNNNPKK..","..........KDDDLKLLLLK.........KLILLLLLLK...KKCNPPNNNPNK.","..........KIIMMGKLLL..........KMLLLILMK.....KCCPPKKNPKN.","...........KLDDDDKKK.........KDDDLLLKK.......KCNNPKKNPNN","...........KLLDLDK..........KIDDDLLK..........KCFPK.KNKB","..........KILLLLLK.........KDMILDLK............KNNK..KK.","..........KDILLOLK.........GDIIIDLK..............KK...K.","..........KLIILILLK.......KLLLILLILCK.KK................",".........KLLMLLLILLK.......KLMMLLLLIKKLMKK..............",".........BPIKLLPKLLP........KGMLLLLLLLKLLLK.............",".........NPLKDNPPKLPK........KMLLLLLLNPKLPPK............",".........NPKKKNPPKKNK.........KLLDDDINNPKNNP............",".........KKK..KKK..KK..........KKKKKKKKKKKKK............"]]},"machinedramon16":{"palette":{"K":"#010303","A":"#2e2c2f","B":"#6c3a2d","C":"#44464c","D":"#ac062b","E":"#16559c","F":"#84828d","G":"#e3ae50","H":"#f4937d","I":"#b4b0b8","J":"#e2e0ea","L":"#fcfdfd"},"frames":[[".................KKKKKK.....................................","...............KKIF.IIIKK................KKKKKK.............",".............KKIIC..KKIIIK............KKKFIJIIIK............","............KKIIK..KFFKF.IK..........KIIFII.KKIIK...........",".........KKKKIIIK.IKKKFK..K........KKIIFFIIKFFKJJK..........","........KIKIKIFFK.IKKKFK..K.......KIKIFKIIKKKKFK.K..........",".......KIDKIKKFFK.IKKKFK.JK.KK....KAIFFKIIKKKKFK.K..........","......KIKDKCIKFFKIIIKKK.IIKKCK...KICKFFKI.IKKKFKIK..........","......KIKKFAIK.FFKIII...IFKCCKKK.KCIIK.FK.IIKKKIIK..........","......KFFFKFCIKFFFKFIJ.ICKCCKKCK.KFFIKFFKFIIIIIIFK..........","......KFAFKFCIKFFFFKKKKKKACKKCCKKKFFIKFFFKKIIIIFK...........","......KFFFKFFKIIFKKFFFFFKCKKCCKKIKFFCIKFFFFKKKKK............",".......KKKKKFFKKKIIKFFKKCKKCCKKIIFKFFCIKKFFFFFK.............",".......KDKFKFFFFFCIIKKKCAKCCKKICIFKFFFCIIKKFKK..............",".......KDKFFKFFFFFKKCKCAKCCKCKFCFFFKK..FFFKKK...............","........KKAFFKKKKKAACKCKACKCCKFFAFKDKKKKKK..................",".........KFKKKAKDKAAACKAAAKKKCKFFKKKDK......................",".........KFFFFKDDKCAKKKKKKKKCKKKKKKCK.......................","........KFFKKKKKDKKKFFFIIIIKACKIIKKACKKKK...................","........K.KKF.IIKKFFFFIIKKKKKCCKKIKKC.KIIK..................","..KKK...KKKKKFFKKKFFFFIKKKKKKACCKKKKACCKDDK.................",".KIIIK.KFIIKIKFDHHKFFFIKKFIFFKCACKIIKCCKDHK.................","KFIIIK.KCCIIKIKDDHKFFFIKKFCIIKKACCKKKKKAKDDK................","KFIIIKKFF.CIKIKDDDKKFFIKKAFFCIKKKACCCCCCCKKK................","KFIIIKKKFFCIIKIKKKIKFFIKKFCFCFIKAAACCCCCCCCK................","KFCCCCKKKFCIIKIIIIIKFFIKKFFAAFFKAAKACCCCCCCCK...............","KCFIIIKFKKCIIK.....KFFIKKKFCFAFKAAKKKCCAACCCCK..............","KCFIIIKFFKCIIKFFFFFKFFIKIIKKFFKKKAKKDKACCCCCCCK.............","KFFICCKCFFCIIAIIIIIKFFIKKKIIKKKDKCAKDDKACCCCCCCK............","KAFCIIIKCCFFKCCCCCKFIFICKFKKIIKDKCCAKKKCCIFFICF.K...........","KCFCIIIKKFFKCFFFFFKFIFFIIKIIKKKKKCAAAAKCCCCCCCCCK...........","KFAFIIIIKKKKKKKKKKFFFJFFIIKIIIIIIKKAAACCKKCCCAKCK...........","KFAFFICCKFAFIIIIKKFFFI.FFFFKKKKKKIKKKCCACCCCCCCK............",".KCFFCIIKFCFIKKIKDKFFFF.IIFFFFFKAKKKKKKACCCCCCCK............",".KFCFCIIKFCFIKGIKDDKFFFFFFFFFFFKAACKCKKKCCKCKKCK............",".KFCFCIKKKCFIKKIKKDDKKKKKKKKKKKKKACCAKAKCKCKCKK.............","..KFAFKKFIKFIIIIKCKKFFKKKBKFFKFKDKKCAAAAKCKCKCK.............","..KFAAKFCIIKKKKKKKEEKKKEKDKKKEKKDKFKAAACCCCCCCK.............","...KFAKFICIKKIII.IKEEEEKIKDDDKIIKKFFKKCCCCCCCKKK............","...K.FKFICIKFIIII.IKKKKIIIKKKIIIIIKKFFKKKKKKKCCCKK..........","....KFKFFCIKFFIIII.IKIIIIIKCFFIICIIIKFKCCCCCCCCCCCK.........","....KKFKFIKIKFFICCC.IKIIIIKFCFFIIIIIIKKACCCCCCCCCCCK........",".....KFFKKFIIK.FIIIIJIKIIIKFFCFFIIIKKKKKKCCCCCCCKKKCK.......","......KFFKFFIIKFFIIIIJIKKKKF.FCF.IKIIIIIKKCCCCCKCCCKCK......",".......KFKFKFIIKFFKKKKKKKLKFFFCFFKFIIII..IKCCCKCCCFKKKK.....","........KKFGAFIIFKFIIIIFIKLKKFCFFKFIKKIIIIKCCCKCCCKKIJIK....",".......KFKFGGKFIKIICCCC..IKLLKKKKKFIKKKIIKKCCKCCCCKFF.IIK...",".......KFFKFGKFKFIIIIIII.IKKKFFFKIKIIKKIIKKCKCCCCKKF.F.IK...",".......KFFKFKKFKIIIIIIKK.KIK.KFFK.IKIIIIKIKKACCCKKKK.FF..K..","........K.FKFAKFIIIIIIKFKKCFKKFFFKKFFIIIIIKKKACKIIFFKFFF.K..","........KFFFKFKFIIKKIIKFFKCCFKKFFFFKFIKIKIK..KAKFI.IFKFFFIK.",".......KKFFFFKKFFIKFKIKCFFKCCFKKKKKKKKKKKK....KKFFI..FKKFIK.","......KFFKKKKKKAFFKFFKKCCFFKCCFKFFCCKK..........KKFFI.FAK.IK","......KFKKFFF.FKAFKCFKFKCCFFKCCFKFKIIK............KKKFF.FKIK","......KKFIKIIIKKKKKCCFKKKCCFKKCCKKKKKK...............KKFF.KK","......KKFFKKKKKAK..KCCFKLKCCFKKCCKCCCCKKKK.............KKKK.","......KKKKCCCCACCK..KCCFKLKCCFKKCFKCCKCCKCKKK...............",".....KACCCCCCCCCCCK..KC.KLLKCFKKKFKCKIKCCKKI.K..............",".....KCKKCKCCCKCCKK...KCFKLKKCFKKCFKIIJKII.KF.K.............",".....KKIJAKCKKCKCI.K...KFKLKKKCKCKFKCIIJKFF.KF.K............",".....KI.IAKKI.KKCII.K..KCFK..KCFKKKKKKFFIKKKKKKK............",".....KIICKKKI.KKKFIIK...KFK...KFK..K..KKK..KK...............",".....KIKK..KIJK..KKIK....KK....KK...........................",".....KK.....AF.....KK.....K.....K...........................","............KK.............................................."]]},"agumon16":{"palette":{"K":"#000103","A":"#229950","B":"#dd7c34","C":"#f6ad4d","D":"#efdc4c","E":"#fbfdfd"},"frames":[["...............KKKKKK......KKKKK.........................",".............KKDDDDDDKKKKKKDDDDDKK.......................","............KDDDDDDDDDKDDDDBBDDDDDK......................","...........KDDDDDDDDDDDKDDDDDBBDDDDK.....................","..........KKDDDDDDDDDDDDKDDDDDDDDDDK.....................",".........KKBDDDDKKKKDDDDKDDDDDDDDKDK.....................","........KBDDDDDKAAAAKDDDKDDDDDDDDDKK.....................","........KBDDDKKAEKKEAKDDDDDDDDDDDDDKK....................","........KBKDDDKAKKKEAKDDDDDDDDDDDDDDDKK..................","........KBDDDDKAKKKKAKDDDDDDDDDDDDDDDDDK.................","........KBDDDDKAKKKKAKKDDDDDDDDDDDDDDDDDK................","........KBDDDDKAAKKAAKKDDDDDDDDDDDDDDDDDDK...............","........KBDDDDDKAAAAKDDDDDDDDDDDDDDDDDDDDK...............","........KBDDDDDDKKKKDDDDDDDDDDDDDKKDDDDDKDK..............","........KBDDDDDDDDDDDDDDDDDDDDDDDDKDDDDDKDK..............","........KBDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDK..............","........KBBDDDDKDDDDDDDDDDDDDDDDDDDDDDDDDDK..............","........KBBDDDDDKDDDDDDDDDDDDDDDDDDDDDDDDDK..............",".........KBBDDDDDKKKKDDDDDEDDDDDDDDDDDDDDDK..............","..........KBDDDDDEDDDKKKKKKKDDDDDDDDDDDDDK...............","..........KBBDDDDDDDDEDDDDDDKKKDDDDDDDDDDK...............","...........KBBDDDDDDDDDDDDDDDDDKKKKKKKKKK................","............KBBBDDDDDDDDDDDDDDDD.DDDDDDDK................",".............KKBKKDDDDDDDDDDDDDDDDDDDDDK.................","..............KBBBKKBBBKKKKKBBBBBBBBBKK.........KKKK.....","............KKKBBBBBBBBBBBBBKKKKKKKKK.........KKEEEEKKKK.","...........KDDDBBBBBBBBBBBBBKKK............KKKEEEEKKEEEEK","..........KDDDDDDDBBBBBBBKKKBDDK.........KKDDDKEEKKEEEKK.","..........KDDDDDDDDDBBBBBBBBDDDDK.......KDDDDDDKKKBEEK...",".........KDDDDDDDDDDDDDDDDDDDDDDDK.....KDDDDDBBKBBBKK....",".........KDDDDBBDDDDDDDDDDDDDKDDDDK..KKDDDDDBKKBBBKKKKK..","........KDDDDBKKDDDDDDDDDDDDDKBDDDDKKDDDDDDBKBBBBKBKEEEKK",".......KDDDDDKBKDDDDDDDDDDDDDKBBDDDDKDDDDDDBBBBBBBBKEEEEK","......KDDDDDKKBBKDDDDBBDDBBDDKKBBDDKDDDDDDBBBBBBBBBKKKKK.","......KDDDDBKKBBBKKKBDDDDDBKKK.KBBDDDDDDBBBBBBBBBBKK.....",".....KDDDDBKKBBBBBBBDDDDDDDBBK..KBBBDDBBBBBBBBKKKK.......","....KDDDDDKEKBBDDDDDDDDDDDDDDBK..KBBBBBBBBKKKK...........","....KDDDDDKEKBDDDDDDDDDDDDDDDDK...KBBBBKKK...............","....KDDDDDDKBBDDDDDDDDDDDDDDDDK....KKKK..................","...KDDDDDDDKBBDDDDDDDDDDDDDDDDK..........................","...KDDDDDDDKBBDDDDDDDDDDDDDDDDK..........................","..KBDDDDDDDKBBBDCDDDDDDDDDDDDDK..........................","..KBDDDDDDDKBBBDDDDDDDDDDDDDDBK..........................","..KBDDDDDBDDKBDKDDDDDDDDDDDDBBK..........................","..KBDBDDDKDDKBDDKBDDDDDDDDDBBBDK.........................","..KBDKDDDKDKKDDDDKBBBBBBBBKBBDDK.........................","..KBDKDDDKKEKDDDDBBBBBBBKKBBBDDDK........................","..KBDKBKKBKEKDDDDBKKKKKKBBBBBDDDK........................","..KKKEKEEKKEKDDDBK......KBBBBDDDK........................","...KEEKEEEKKKDDBBK.......KBBBBDDK........................","...KEEKKEEKKBDBBK.......KBBBBBBK.........................","....KEEKEEKBBBBBK.......KBBBBBBK.........................",".....KEKKEKBBBBBBK.....KBBBBDDKKK........................","......KKKKKDDDBBBK.....KBBBDDDDDDKKKKKK..................","....KKBBBBKKKDDDBK.....KBBDDDDDKKDDDKBBK.................","..KKBKKKBKDDDDDDBBK...KBBBDDDDDDDKBKEKBEK................",".K..KKEBKEKDDDDDBBK...KBBBBDDDDDKEKEEEKEEK...............","KE..KEEKEEEKDDBBBBK...KBBBBBBDDKEEEKEEEKEEK..............","KEEKEEKEEEEKBBBBBBK....KBBBBBBBKEEEEKEEKKEK..............","KKKKKKKKKKKKKKKKKK......KKKKKKKKKKKKKKKKKKK.............."]]},"bakemon":{"palette":{"K":"#000001","A":"#b1042c","B":"#862a96","C":"#87858b","D":"#fcfeff"},"frames":[[".................KKKKKKKKK...................","..............KKKDDDDDDDDDKK.................","............KKDDDDDDDDDDDDDDKK...............","...........KKDDDDDDDDDDDDDDDDKK..............","..........KDDDDDDDDDDDDDDDDDDDDK.............",".........KDDDDDDDDDDDDDDDDDDDDDDK............",".........KDKKKDDDDDDDKKKDDDDDDDDDK...........",".........KDKKKKDDDDCKKKKKDDDDDDDDK...........","........KDKKKKKDDDDCKKKKKDDDDDDDDKK..........","........KDKKKKKDDDDCKKKKKDDDDDDDDDK..........","........KDDKKKDDDDDDDKKKDDDDDDDDDDK..........","........KDDDDDDDDDDDDDDDDDDDDDDDDDDK.........",".......KDDDKKKKKKKKKKKKKDDDDDDDDDDDK.........",".......KDDKAAAAAAAAAAAAAKDDDDDDDDDDDK........",".......KDDKDDKKDDKDCKDKKKDDDDDDDDDDDK........","......KKDDKDKBKDKKDKKDBBKDDDDDDDDDDDK........","....KKKKDDKDKBKDKKDKKDBBKDDDDDDDDDDDKC.......","...KDDDDDDDKBBBKBKKBBKBBKDDDDDDDDDDDDK.......","..KDDDDDDDDDKBBBBBBBBBBBKDKKDDDDDDDDDK.......","..KDDDDDDDDDKBBBBAAAAAAKDDDDKKDDDDDDDDK......",".KDDDDDDKDDKKBKAAAAKAAAKDKDDDDKDDDDDDDK......",".KDDDDDDKDKDKKDKKCKDKAKDDKDDDDDDDDDDDDDK.....","KDDDKDDDKDKDDKDKKDKDDKKDKDDDDDDDDDDDDDDK.....","KDDDKKDKKDKAAAAAAAAAAKDKDDDDDDDDDDDKDDDDK....","KDDDDKKKKDDKKKKKKKKKKDDKDDDDDKDDDDDKDDDDDK...","KDDDDKK.KDDDDDDDDDDDDDKDDDDKKKDDDDDDDKDKDDKK.","KDKDKK..KDDDDDDDDDDDDDKDDDKKDDDDDDKDDKDDDDDK.","KDKKK...KDDDDDDDDDDDDDKDDDKDDDDDDDDKDDKDDDDK.","KDKK....KDDDKDDDDDDDDDKDDKDDDDDDDKDKDDKDDDDK.","KK.....KDDDDKKDDDDDDDDKDKDDDDDDDDKDKKDKKKDDD.",".K.....KDDDDDDDDDDDDDDDKDDDDDDDKDDDDKDKKKKDDK","......KDDDDDDDKDDDDDDDDDDKDDDDDKKDDDKDKKKKKDK","......KDDDKDDKKDDDKDDDDDDKDDDDDKKDDDKKKDKKKKK","......KDKDKDDKDDDDKDKDDKDDDDDDDKKDDDKKKK.C.KK","......KKKDKDDKDDDDKDKDDKCDDDDDDKKDDDKKKK.C.KK","......KKKDDDDKDDDDDDKDDKKKCDDDDKKKDDKKKK...K.","........KDDDKKKDDDKDKKDKK.KDDKDKKKDDKKK......","........KDDDCKKKDDKK.KDKK.KDDKDK.KDK.K.......",".........KDDDK.KDDDK..KK...KDDDK.KDK.........",".........KDKDK..KDDK...K...KKDK..KK..........",".........KDKK....KDK........KDK..............","..........KK.....KK.........KDK..............",".................K..........KK..............."]]},"gabumon16":{"palette":{"K":"#020001","A":"#373538","B":"#b60328","C":"#884427","D":"#334889","E":"#b0046c","F":"#bd454d","G":"#3676cc","H":"#04abe6","I":"#d68d3f","J":"#e0677b","L":"#7786e1","M":"#eaaf4a","N":"#fbd948","O":"#bbcde9","P":"#fefefe"},"frames":[[".....................K.....",".............KK.....KK.....",".............KDKK..KNK.....",".............KDDDK.KNK.....","..............KKOOKNIK.....","..KKKKK..KKKKKKKKKKNMK.....","...KDDDKKOOODDODDKNIIK.....","....KDOOOOODDOOODDKNMAK....",".....KKAAKKDOOOOODDKKDOK...",".........KDDOKKKOODDDDOK...",".........KLDOKBPKOOODOD....",".........KODOKBKPKOOOODK...","........KOOOD.FKBKOOOOOOK..","........KDOOOOOODOOOOKKKDK.","........KDOOOODDODDOOOKKOK.","........KODOOOKOODOOOOOOOK.",".......KOOOOOKNPKPKOOKKKPK.",".......KDOOODNNNNNNKKNNKK..",".......KDDOOONINNNNNNKK....",".KKK...KODDDOINIIIIIKOK....","KNNNK.KKOOOOKNNNNNNNKDDK...",".KINNKKDDDOOKNNNHHHNKMOK...","..KINNKOODDOKNNHJJJINKDDK..","..KIIKDDDOOKINNHJHJINKDOOK.","...KIKDOOOOKINHJHHHIHKMODK.","...KIKOODDDKINHJJJJJHKMNDOK","....KKOOOOOKNIHHJHJHIKMMOOK",".....KEOOOOKNNIGJJJIKNKMOEK",".....KKEEKEKNNKIGGIKNNKEKEK",".....K.KEKEKINKKKKKINKKEKK.","........KIKKIK...KIIIK.K...","........KNNNNNK.KIIINMMK...",".......KPNPNNPK.KIIIIPCPK..",".......KKKKKKKK..KKKKKKKK.."]]}};
+const EGG=(()=>{const w=22,h=28,rows=[];for(let y=0;y<h;y++){let r='';for(let x=0;x<w;x++){const dx=(x-10.5)/10.5,dy=(y-15)/(y<15?14.5:12.5);const d=dx*dx+dy*dy;const spot=((x-6)**2+(y-10)**2<5)||((x-14)**2+(y-17)**2<6)||((x-8)**2+(y-22)**2<3);r+=d<=0.82?(spot?'B':'A'):d<=1.0?'K':'.';}rows.push(r);}return {palette:{K:'#0b0e18',A:'#f6f2e4',B:'#ff8a24'},frames:[rows]};})();
+SPR.egg=EGG;
+function hydrate(root){root.querySelectorAll('canvas.spr').forEach(cv=>{const s=SPR[cv.dataset.key];const f=s.frames[0];let x0=0,y0=0,w=f[0].length,h=f.length;if(cv.dataset.crop)[x0,y0,w,h]=cv.dataset.crop.split(',').map(Number);const sc=+cv.dataset.scale;cv.width=w*sc;cv.height=h*sc;const x=cv.getContext('2d');for(let j=0;j<h;j++){const row=f[y0+j]||'';for(let i=0;i<w;i++){const ch=row[x0+i];if(!ch||ch==='.'||!s.palette[ch])continue;x.fillStyle=s.palette[ch];x.fillRect(i*sc,j*sc,sc,sc);}}});}
+const spr=(key,scale,crop)=>`<canvas class="spr" data-key="${key}" data-scale="${scale}"${crop?` data-crop="${crop}"`:''} aria-hidden="true"></canvas>`;
+
+/* ---- 真实数据（11-07 晚读取）---- */
+const TODO=[ /* 等你动手的事：来自各项目 CURRENT.md */
+ ['you','数码世界','说「合并」后合并 PR #72','I-DW-3：下线第二份项目名册；之后做 #73、I-DW-4','CURRENT · 11-07'],
+ ['you','管培生工作台','PR #20 待合并','原型按 PRD v1.1 和 V3 柔光重做','CURRENT · 11-06'],
+ ['you','ChatGPT 回答收藏器','下一步等你定','FR-14 剪贴板已提交（e0c9e1f）','CURRENT · 11-07'],
+ ['you','Obsidian 知识库','项目卡验收第 2、3 条还没测','第 1 条 11-05 已通过','CURRENT · 11-07'],
+ ['you','GET 索引维护','下次运行时确认多行 tags','运行「运行 GET 索引维护.command」','CURRENT · 11-07'],
+ ['you','GitHub 快速中心','11-09（周一）11:30 后看飞书卡片','11-08 那期由 11-09 的每日更新生成','CURRENT · 11-07']
+];
+const WATCH=[ /* 需要留意：读数过期、来源缺失或规则问题 */
+ ['bad','规则','3 处要处理','P-08 预览形式三处说法不一；交接时机 Claude 与 Codex 相反；改规则要改哪几处没写','审核包 11-07 11:30','规则'],
+ ['warn','Claude Code','云端会话额度读数过期','停在 11-05 15:56，当时已用 96.7%','驿窗 HUD','Agent'],
+ ['warn','CarvoMOTO-汽配','进度未知','5 天没有提交，也没有 CURRENT.md','git · 名册路径','项目'],
+ ['warn','工程约束','G-15 提醒疑似误报','3 天命中 331 次，触发词太宽（推断）','lessons-hits','规则'],
+ ['unk','agent-kit、自建技能库','没有 CURRENT.md','只能看提交时间，读不出下一步','名册路径','项目']
+];
+const READS=[
+ {k:'项目',n:16,s:'ok',sub:'产品 10 · 能力 3 · 基础设施 3',src:'projects.json v1.5 · 11-07',seg:[[10,'var(--orange)'],[3,'var(--violet)'],[3,'var(--cyan)']],to:'项目空间'},
+ {k:'Agent',n:4,s:'warn',sub:'正常 3 · 要看一眼 1',src:'本机配置 · 22:53',seg:[[3,'var(--lcd)'],[1,'var(--yellow)']],to:'Agent'},
+ {k:'自建 Skill',n:15,s:'ok',sub:'有 evals 4 · 有 CHANGELOG 4 · 发布状态未核定',src:'catalog/skills.json · 11-07 22:14',seg:[[15,'var(--lcd)']],to:'自建 Skill'},
+ {k:'Prompt',n:5,s:'ok',sub:'最常用：会话交接 Handoff 9 次',src:'资产仓库 · rev 1046',seg:[[5,'var(--cyan)']],to:'资产仓库'},
+ {k:'规则',n:3,s:'bad',sub:'要处理 3 · 要看一眼 5 · 正常 5',src:'自检 12:15 · 审核包 11:30',seg:[[3,'var(--red)'],[5,'var(--yellow)'],[5,'var(--lcd)']],to:'规则',unit:'处'}
+];
+const CHANGES=[
+ ['11-07','数码世界','定位改为信息驾驶舱，产品定义 v2.0 合入','62284a2','var(--orange)'],
+ ['11-07','名册','v1.5：16 个项目加类型，登记多 Agent 协同、UI 设计体系','digital-twin','var(--orange)'],
+ ['11-07','自建技能库','生成机器索引 catalog/skills.json，15 个','07fc6f9','var(--lcd)'],
+ ['11-07','agent-kit','新增 G-20、G-21；Claude 取消 git「先问」','#32 #34 #28','var(--cyan)'],
+ ['11-07','多 Agent 协同','I-MA-1 合并：两份精简契约','317945b','var(--violet)'],
+ ['11-07','ChatGPT 回答收藏器','FR-14 剪贴板已提交','e0c9e1f','var(--blue)'],
+ ['11-06','管培生工作台','原型按 PRD v1.1 重做，PR #20','trainee-hub','var(--blue)']
+];
+const SQUAD=[
+ {n:'Claude Code',c:'机械暴龙兽',key:'metalgreymon16',crop:'28,2,26,26',tint:'var(--orange)',st:'warn',q:[['5H',7,'ok'],['周',22,'ok']]},
+ {n:'Codex',c:'机械邪龙兽',key:'machinedramon16',crop:'30,17,26,26',tint:'var(--cyan)',st:'ok',q:[['5H',0,'ok'],['周',21,'ok']]},
+ {n:'Hermes 私人',c:'猛鬼兽',key:'bakemon',crop:'8,0,28,28',tint:'var(--violet)',st:'ok',on:'飞书已连接'},
+ {n:'Hermes 企业',c:'亚古兽',key:'agumon16',crop:'3,0,28,28',tint:'var(--yellow)',st:'ok',on:'飞书已连接'}
+];
+const PROJ={
+ product:[['牛马之家','you','11-07 · 在做 ChatGPT 桥接'],['数码世界','you','等你合并 #72'],['管培生工作台','you','PR #20 待合并'],['GitHub 快速中心','you','11-09 看卡片'],['数字分身','ok','11-07 有提交'],['CarvoMOTO-汽配','warn','5 天没提交'],['驿窗 PostPane','ok','阶段 4 进行中'],['ChatGPT 回答收藏器','you','等你定'],['磁盘瘦身','ok','第 9 批完成'],['Little Steps','unk','产品停在 10-24']],
+ capability:[['自建技能库','unk','无 CURRENT · 11-07 提交'],['多 Agent 协同','ok','I-MA-1 已合并'],['UI 设计体系','ok','下一步 I-UI-1']],
+ infrastructure:[['agent-kit','unk','无 CURRENT · 11-07 提交'],['GET 索引维护','you','运行时确认 tags'],['Obsidian 知识库','you','验收 2、3 条待测']]
+};
+const STL={you:'等你',ok:'正常',warn:'要看',bad:'要处理',unk:'未知'};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dot=st=>`<span class="dot st-${st}"></span>`;
+const pill=(st,t)=>`<span class="pill st-${st}"><span class="dot"></span>${esc(t)}</span>`;
+const qcol=st=>({ok:'var(--lcd)',warn:'var(--yellow)'})[st];
+
+const clock=()=>`<div class="clock"><span class="t num">23:30</span><span class="d"><b>11月7日</b><span>SATURDAY · WK45</span></span></div>`;
+const quick=()=>`<label class="quick" for="q-${V}"><span class="p">&gt;</span><input id="q-${V}" type="text" placeholder="记一笔：一个念头、一个问题……"><kbd>⌘↵</kbd><button type="button" aria-label="记下">→</button></label>`;
+const digivice=()=>`<div class="digivice" aria-hidden="true"><svg viewBox="0 0 300 300" fill="none" stroke="#4de3ff" stroke-width="2">
+  <rect x="48" y="48" width="204" height="204" rx="58" stroke-opacity=".9" style="filter:drop-shadow(0 0 6px rgba(77,227,255,.6))"/>
+  <rect x="62" y="62" width="176" height="176" rx="48" stroke-opacity=".35"/>
+  <circle cx="150" cy="150" r="74" stroke-opacity=".8"/><circle cx="150" cy="150" r="62" stroke-opacity=".25" stroke-dasharray="3 5" stroke-width="5"/>
+  <path d="M96 96 L124 124 M204 96 L176 124 M96 204 L124 176 M204 204 L176 176" stroke-opacity=".5"/>
+  <rect x="112" y="28" width="28" height="18" rx="5"/><rect x="160" y="28" width="28" height="18" rx="5"/><rect x="112" y="254" width="28" height="18" rx="5"/><rect x="160" y="254" width="28" height="18" rx="5"/>
+  <circle cx="44" cy="150" r="14"/><circle cx="44" cy="150" r="7" fill="rgba(77,227,255,.25)"/><circle cx="256" cy="128" r="11"/><circle cx="256" cy="172" r="11"/>
+  </svg><div class="screen idle">${spr('egg',3)}</div></div>`;
+const todoRows=(n)=>TODO.slice(0,n).map(t=>`<button type="button" class="it">${dot('you')}<div style="min-width:0"><b>${esc(t[1])}：${esc(t[2])}</b><p>${esc(t[3])}</p><span class="src">${esc(t[4])}</span></div><span class="go">去项目 →</span></button>`).join('');
+const watchRows=()=>WATCH.map(w=>`<button type="button" class="it">${dot(w[0])}<div style="min-width:0"><b>${esc(w[1])}：${esc(w[2])}</b><p>${esc(w[3])}</p><span class="src">${esc(w[4])}</span></div><span class="go">去${w[5]} →</span></button>`).join('');
+const readRows=()=>READS.map(r=>`<button type="button" class="rd st-${r.s}"><b>${r.k}</b><span class="n num">${r.n}</span><span>${esc(r.sub)}</span><span class="src">${esc(r.src)}</span></button>`).join('');
+
+/* ---------- H1 暴龙机中枢：延续 v18 基地，左「等你」、右「读数」 ---------- */
+function v1(){
+ return `<section class="base" aria-label="世界总览"><svg class="wire" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true"><path d="M330 150 H360 V300 H400" stroke="rgba(255,138,36,.35)" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/><path d="M670 150 H640 V300 H600" stroke="rgba(77,227,255,.35)" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/></svg>
+  <div class="h1grid">
+   <div class="panel pa"><div class="ph"><span class="key">A</span><span class="lbl">TO DO</span><h2>等你动手</h2><span class="big st-you num" style="--s:var(--orange)">6</span></div><div class="items">${todoRows(6)}</div></div>
+   <div class="h1mid">${clock()}<div class="greet">晚上好，被选召的孩子 · <b>6</b> 件事等你，<b>3</b> 处规则要处理</div>${digivice()}<div class="lbl" style="text-align:center;color:var(--cyan)">PARTNER · 数码蛋</div>${quick()}</div>
+   <div class="panel pb"><div class="ph"><span class="key">B</span><span class="lbl">READOUT</span><h2>体系读数</h2><span class="r note">点一项去对应页</span></div><div class="reads">${readRows()}</div></div>
+  </div>
+  <div class="recent"><div class="ph" style="padding:0 0 10px"><span class="lbl">CHANGES</span><h2>最近变化</h2><span class="r note">按时间，来源写在每张卡下面</span></div>
+   <div class="strip">${CHANGES.map(c=>`<div class="chg" style="border-top:2px solid ${c[4]}"><span class="lbl">${c[0]} · ${esc(c[1])}</span><b>${esc(c[2])}</b><div class="src">${esc(c[3])}</div></div>`).join('')}</div></div>
+ </section>`;}
+
+/* ---------- H2 驾驶舱仪表板：数字在上，关注与团队在中，项目地图在下 ---------- */
+function v2(){
+ const kpis=READS.map(r=>{const tot=r.seg.reduce((a,b)=>a+b[0],0);return `<button type="button" class="kpi"><span class="lbl">${r.k}</span><span class="n num" style="color:${r.s==='bad'?'var(--red)':r.s==='warn'?'var(--yellow)':'var(--text)'}">${r.n}${r.unit?`<small style="font-family:var(--sans);font-size:13px;color:var(--muted);margin-left:4px">${r.unit}</small>`:''}</span><span class="bar">${r.seg.map(s=>`<i style="width:${s[0]/tot*100}%;background:${s[1]}"></i>`).join('')}</span><p>${esc(r.sub)}</p><span class="src">${esc(r.src)}</span></button>`;}).join('');
+ const squad=SQUAD.map(m=>`<button type="button" class="mate" style="--tint:${m.tint}"><span class="av">${spr(m.key,2,m.crop)}</span><span style="min-width:0"><b>${m.n} ${dot(m.st)}</b><small>${m.c}</small>${m.q?m.q.map(q=>`<span class="q"><span>${q[0]}</span><span class="b" style="--s:${qcol(q[2])}"><i style="width:${Math.max(2,q[1])}%"></i></span><span>${q[1]}%</span></span>`).join(''):`<span class="q"><span>网关</span><span class="b" style="--s:var(--lcd)"><i style="width:100%"></i></span><span>ON</span></span><small>${m.on}</small>`}</span></button>`).join('');
+ const pmap=Object.entries(PROJ).map(([t,arr])=>`<div class="ptype"><h4>${({product:'产品',capability:'能力',infrastructure:'基础设施'})[t]}<span>${arr.length}</span></h4><div class="pcells">${arr.map(p=>`<div class="pc st-${p[1]}"><b>${esc(p[0])}</b><span>${esc(p[2])}</span></div>`).join('')}</div></div>`).join('');
+ return `<div class="h2top">${clock()}<div class="greet">晚上好，被选召的孩子<br><span class="note">6 件事等你 · 3 处规则要处理</span></div>${quick()}</div>
+  <div class="kpis">${kpis}</div>
+  <div class="h2mid">
+   <div class="panel"><div class="ph"><span class="lbl">ATTENTION</span><h2>需要关注</h2><span class="r">${pill('you','等你 6')} ${pill('bad','要处理 1')} ${pill('warn','要看 3')}</span></div><div class="items">${todoRows(6)}${watchRows()}</div></div>
+   <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+    <div class="panel"><div class="ph"><span class="lbl">SQUAD</span><h2>Agent 小队</h2><span class="r note">额度来自驿窗 HUD · 22:52</span></div><div class="squad">${squad}</div></div>
+    <div class="panel"><div class="ph"><span class="lbl">CHANGES</span><h2>最近变化</h2></div><ul class="tlist">${CHANGES.slice(0,5).map(c=>`<li style="--c:${c[4]}"><span class="d">${c[0]}</span><i></i><div><b>${esc(c[1])}：${esc(c[2])}</b><span class="mono">${esc(c[3])}</span></div></li>`).join('')}</ul></div>
+   </div>
+  </div>
+  <div class="panel"><div class="ph"><span class="lbl">PROJECTS</span><h2>项目地图</h2><span class="r">${['you','ok','warn','unk'].map(s=>`<span class="note" style="display:inline-flex;align-items:center;gap:6px;margin-left:10px">${dot(s)}${STL[s]}</span>`).join('')}</span></div><div class="projmap">${pmap}</div></div>`;}
+
+/* ---------- H3 三个问题：按产品定义的三问排版 ---------- */
+function v3(){
+ const own=READS.map(r=>`<button type="button" class="rd st-${r.s}"><b>${r.k}</b><span class="n num">${r.n}</span><span>${esc(r.sub)}</span><span class="src">${esc(r.src)}</span></button>`).join('');
+ return `<section class="h3head"><div><span class="lbl">11 月 7 日 · 周六晚上</span><h1>晚上好，被选召的孩子。今天有 <em>6 件事</em>等你，<em>3 处规则</em>要处理。</h1><p>16 个项目里 14 个今天有提交；4 个 Agent 都可用，Claude 有一项读数过期。</p>${quick()}</div>${clock()}</section>
+  <div class="q3">
+   <div class="qcol"><div class="qh"><span class="no">01</span><div><h2>我现在有什么</h2><p>只读汇总，点进去看明细</p></div></div>
+    <div class="own">${own}<button type="button" class="rd st-ok"><b>我的素材</b><span class="n num">44</span><span>随手记 20 · 收藏 15 · 资产 9</span><span class="src">本机数据 · 可写</span></button></div>
+    <div class="panel"><div class="ph"><span class="lbl">SQUAD</span><h2>Agent</h2></div><div class="mine">${SQUAD.map(m=>`<span class="chip" style="padding:4px 8px 4px 4px">${spr(m.key,1,m.crop)}${m.n} ${dot(m.st)}</span>`).join('')}</div></div></div>
+   <div class="qcol"><div class="qh"><span class="no">02</span><div><h2>进展到哪、变了什么</h2><p>各项目 CURRENT 与提交记录</p></div></div>
+    <div class="panel"><ul class="tlist">${CHANGES.map(c=>`<li style="--c:${c[4]}"><span class="d">${c[0]}</span><i></i><div><b>${esc(c[1])}</b><span>${esc(c[2])} · <span class="mono">${esc(c[3])}</span></span></div></li>`).join('')}</ul></div>
+    <div class="panel"><div class="ph"><span class="lbl">WATCH</span><h2>读数不可靠的地方</h2></div><div class="items">${watchRows().replace(/去(规则|Agent|项目) →/g,'查看 →')}</div></div></div>
+   <div class="qcol"><div class="qh"><span class="no">03</span><div><h2>接下来去哪</h2><p>等你动手的事，按项目排</p></div></div>
+    <div class="panel"><div class="items">${todoRows(6)}</div></div>
+    <div class="note" style="padding:0 4px">要继续某件事，点「去项目」到项目空间，复制接手口令交给对应的 Agent。</div></div>
+  </div>`;}
+
+const NOTES={
+ '1':'延续现在的「基地」：暴龙机在中间当中枢，左边 A「等你动手」、右边 B「体系读数」，下面一排最近变化。改动最小，熟悉感最强。',
+ '2':'驾驶舱仪表板：顶部 5 个读数，中间「需要关注」和带形象的 Agent 小队，底部 16 个项目按类型排成地图。信息最密，适合每天扫一眼全局。',
+ '3':'按产品定义的三个问题排版：我有什么 / 进展到哪 / 接下来去哪，开头一句话把今天说清楚。最好读，像一份每日简报。'
+};
+let V='1';
+function render(){
+ document.querySelectorAll('.proto-tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.v===V)));
+ document.getElementById('proto-note').textContent=NOTES[V];
+ const view=document.getElementById('view');view.innerHTML=V==='1'?v1():V==='2'?v2():v3();hydrate(view);
+}
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.v){V=t.dataset.v;history.replaceState(null,'','#h'+V);render();window.scrollTo({top:0});}});
+function fromHash(){const h=location.hash.slice(1);if(['h1','h2','h3'].includes(h))V=h.slice(1);render();}
+window.addEventListener('hashchange',fromHash);fromHash();
+</script>
