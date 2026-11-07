@@ -52,7 +52,7 @@
 | 个人说明 MCP（HTTP，仅 127.0.0.1:5179） | 本机已注册的 Codex、Claude Code、Hermes、OpenClaw | `read_profile`、`search_knowledge`、`read_note` | `propose_profile_change`（只进待采纳）、`reverse_report`（回执只进待过目） | 环境变量 `WORKBENCH_MCP_PORT=off` 后重启 |
 | 收藏集 MCP（stdio） | 本人注册了它的 Agent | `search_saved_notes`、`read_saved_note` | 无 | 在对应 Agent 里注销 |
 
-**数据对象**（只读，不进切换）：本机会话（接力用）、Skill 使用统计、MCP 使用统计、Agent 发现与清单、MCP 注册自检、AI HOT 资讯。
+**数据对象**（只读，不进切换）：本机会话（接力用）、Skill 使用统计、MCP 使用统计、Agent 发现与清单、MCP 注册自检、AI HOT 资讯、驾驶舱 Agent 页与规则页（`GET /api/cockpit/agents`、`/api/cockpit/rules`，只读本机 Agent 配置摘要与规则来源，#74）。
 
 Agent 配置、模型配置、Skill 启停、迁移、挂载修复、交付目标改的是外部 Agent 的文件，不属于本节，按 D-A 在 I-DW-5/6 下线。
 

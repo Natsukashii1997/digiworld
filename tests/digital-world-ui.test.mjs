@@ -334,7 +334,8 @@ test("世界总览相对时间：刚刚、分钟、小时、昨天、天数，�
 test("个人收藏保留learning路由，侧栏不分区且不恢复旧书架", () => {
   // 用户 2026-10-26：侧栏去掉“捕获”“炼化与出战”分组标题，个人收藏排在资产仓库后、随手记前；编号按此顺序连续。
   const page=PAGES.find(page=>page.id==='learning');assert.equal(page.group,'资产');assert.equal(page.label,'个人收藏');assert.equal(PAGES[PAGES.findIndex(p=>p.id==='assets')+1].id,'learning');assert.equal(PAGES[PAGES.findIndex(p=>p.id==='learning')+1].id,'notes');assert.equal(page.plan,undefined);
-  assert.equal(NAV.some(s=>s.heading),false);
+  // 常浩 2026-11-07（#74）：侧栏改为「体系·只读」「我的素材·可写」两组，设置沉底不加标题。
+  assert.deepEqual(NAV.map(s=>s.heading||null),['体系·只读','我的素材·可写',null]);
   assert.deepEqual(NAV.flatMap(s=>s.items),PAGES.map(p=>p.id));
   assert.deepEqual(PAGES.map(p=>p.code),PAGES.map((_,i)=>String(i).padStart(2,'0')));
   const html=render(Collection);assert.match(html,/<h1[^>]*>个人收藏<\/h1>/);assert.match(html,/aria-label="收藏分组"/);assert.match(html,/aria-label="搜索收藏"/);assert.doesNotMatch(html,/<h2[^>]*>收藏画布<\/h2>/);assert.doesNotMatch(html,/书架|学习状态|链接收藏|回收区/);

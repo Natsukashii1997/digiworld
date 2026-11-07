@@ -24,6 +24,7 @@ import {
   Info,
   TriangleAlert,
   OctagonAlert,
+  Scale,
 } from "lucide-react";
 import { current } from "./store.js";
 import { searchWorkspace, terms, GROUP_LIMIT } from "./search.js";
@@ -52,6 +53,8 @@ import { NotesV16 } from "./NotesV16.jsx";
 import { captureRouteIndex } from "./capture-routes.js";
 import { scrollsOf, createScroll } from "./scrolls.js";
 import { PAGES, NAV, page as pageOf, resolveRoute } from "./pages.js";
+import { AgentsPage } from "./AgentsPage.jsx";
+import { RulesPage } from "./RulesPage.jsx";
 import {
   Pixel,
   PixelText,
@@ -62,7 +65,7 @@ import {
   StageBar,
 } from "./pixel.jsx";
 
-const ICONS = { home: Sun, ...PAGE_ICONS };
+const ICONS = { home: Sun, ...PAGE_ICONS, rules: Scale };
 // 旧板块地址归一到首页；焚决别名仍选择资产仓库内的类型。
 function initialTarget() {
   const target = resolveRoute(location.hash.slice(1));
@@ -427,7 +430,6 @@ export default function App() {
                         ) : null}
                       </button>
                       {/* 用户 2026-10-27：世界总览下一条横线，和正式工作版块分开。 */}
-                      {id === "home" && <div className="nav-sep" aria-hidden="true" />}
                       </React.Fragment>
                     );
               })}
@@ -528,6 +530,8 @@ export default function App() {
           {route === "notes" && <NotesV16 {...common} navigate={navigate} onHatchAsset={hatchAsset} noteJump={target.noteId ? {id:target.noteId,key:target.agentJumpKey} : null} />}
           {route === "references" && <References {...common} reverseJump={target.reverseId ? {id:target.reverseId,key:target.agentJumpKey} : null} referenceJump={target.referenceId ? {id:target.referenceId,key:target.agentJumpKey} : null} onSelect={a=>{navigate("assets");setSelected(a.id);}} />}
           {route === "settings" && <Settings {...common} navigate={navigate} onSelect={setSelected} />}
+          {route === "agents" && <AgentsPage />}
+          {route === "rules" && <RulesPage />}
           {route === "learning" && <Collection {...common} navigate={navigate} onHatchAsset={hatchAsset} collectionArchived={collectionMeta.archived} onCollectionNotes={adoptCollectionNotes} noteJump={target.collectionNoteId ? {id:target.collectionNoteId,key:target.agentJumpKey} : null} />}
         </main>
       </div>

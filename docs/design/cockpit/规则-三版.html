@@ -1,0 +1,447 @@
+<title>数码世界 规则页三版</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap">
+<style>
+/* 布局：数码世界侧栏 + 主区；顶部原型切换栏。三版差在信息组织：分层总表 / 偏好落地为中心 / 巡检优先。只做暗色。 */
+:root{
+  color-scheme:dark;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --pixel:"Silkscreen",ui-monospace,"SF Mono",Menlo,monospace;
+  --bg:#070b16;--panel:#0f1729;--panel-2:#131d33;--panel-3:#1a2641;--field:#0a1120;
+  --line:rgba(140,178,255,.11);--line-2:rgba(140,178,255,.19);--line-3:rgba(140,178,255,.32);
+  --text:#e9eeff;--text-2:#b4bfda;--muted:#8b98b8;--faint:#5d6987;
+  --orange:#ff8a24;--orange-2:#ffb35c;--orange-ink:#1f0f00;--cyan:#4de3ff;--lcd:#a6e36e;--violet:#a891ff;--yellow:#ffd166;--red:#ff6b6b;--blue:#6fb0ff;--pink:#ff7ad1;
+  --lcd-screen:#aebc93;--lcd-ink:#1c2616;
+  --m-panel:linear-gradient(180deg,#152039 0%,#0f1729 40%,#0c1325 100%);
+  --m-panel-edge:inset 0 1px 0 rgba(255,255,255,.06),inset 0 0 0 1px rgba(140,178,255,.07),0 18px 40px -26px rgba(0,0,0,.95);
+  --focus:0 0 0 2px var(--bg),0 0 0 4px var(--cyan);
+  --r-1:6px;--r-2:10px;--r:12px;--r-l:16px;
+  --f-12:12px;--f-13:13px;--f-14:14px;--f-16:16px;--f-20:20px;--f-28:28px;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:var(--f-14);line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:none;box-shadow:var(--focus);border-radius:var(--r-1)}
+.mono{font-family:var(--mono)}.num{font-variant-numeric:tabular-nums}
+
+.proto{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:#04070f;border-bottom:1px solid var(--line-2);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:#04070f}
+.proto-in{display:flex;align-items:center;gap:16px;flex-wrap:wrap;max-width:1600px;margin:0 auto}
+.proto-tag{font-family:var(--mono);font-size:var(--f-12);letter-spacing:.08em;color:var(--muted)}
+.proto-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.proto-tab{display:flex;align-items:baseline;gap:8px;padding:7px 14px;border-radius:var(--r-2);border:1px solid var(--line-2);color:var(--text-2);min-height:36px}
+.proto-tab b{font-family:var(--pixel);font-weight:400;font-size:13px;color:var(--muted)}
+.proto-tab[aria-selected="true"]{background:var(--orange);border-color:var(--orange);color:var(--orange-ink);font-weight:600}
+.proto-tab[aria-selected="true"] b{color:var(--orange-ink)}
+.proto-note{flex:1 1 280px;min-width:0;color:var(--muted);font-size:var(--f-13);margin:0}
+
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:calc(100vh - 57px);max-width:1600px;margin:0 auto;border-inline:1px solid var(--line)}
+.side{background:linear-gradient(180deg,#0b1222,#080d1a);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 14px;gap:18px;position:sticky;top:57px;height:calc(100vh - 57px)}
+.logo{display:flex;align-items:center;gap:10px;padding:2px 6px 8px}
+.logo-mark{width:34px;height:34px;border-radius:9px;background:radial-gradient(circle at 50% 50%,var(--orange) 0 5px,transparent 6px),repeating-conic-gradient(from 0deg,#ff8a24 0 8deg,transparent 8deg 30deg);box-shadow:inset 0 0 0 2px #2a1a0a,0 0 0 1px var(--line-2);background-color:#1a1206}
+.logo b{display:block;font-size:19px;letter-spacing:.06em}
+.logo small{display:block;font-family:var(--pixel);font-size:9px;letter-spacing:.18em;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:14px}
+.nav-h{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--faint);padding:0 10px 4px;display:flex;justify-content:space-between}
+.nav-h i{font-style:normal;color:var(--muted);border:1px solid var(--line-2);border-radius:4px;padding:0 5px;letter-spacing:0}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-2);color:var(--text-2);text-decoration:none;min-height:40px}
+.nav a .ic{width:16px;height:16px;border:1.5px solid currentColor;border-radius:4px;opacity:.7;flex:none}
+.nav a .ct{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);padding:0 7px;border-radius:999px}
+.nav a.on{background:linear-gradient(90deg,rgba(255,138,36,.16),rgba(255,138,36,.04));color:var(--text);box-shadow:inset 0 0 0 1px rgba(255,138,36,.28)}
+.nav a.on .ic{border-color:var(--orange);opacity:1}
+.nav-end{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+.partner{border-radius:var(--r-2);padding:8px;background:#1a2236;box-shadow:inset 0 0 0 1px var(--line-2)}
+.partner-lcd{height:58px;border-radius:6px;background:var(--lcd-screen);background-image:radial-gradient(var(--lcd-ink) .6px,transparent .8px);background-size:4px 4px;opacity:.85;position:relative}
+.partner-lcd::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:22px;transform:translate(-50%,-50%);background:#f6f2e4;border-radius:50% 50% 45% 45%;box-shadow:0 0 0 2px var(--lcd-ink)}
+.partner small{display:block;margin-top:6px;font-size:11px;color:var(--muted)}
+
+.main{min-width:0;padding-block:22px 56px;padding-inline:32px}
+.crumb{display:flex;gap:8px;color:var(--muted);font-size:var(--f-13);margin-bottom:18px}
+.crumb b{color:var(--text);font-weight:500}
+.head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.head h1{margin:0;font-size:30px;line-height:1.1;font-weight:650}
+.head .en{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--muted);margin-left:10px}
+.head p{margin:8px 0 0;color:var(--text-2);max-width:62ch}
+.head-r{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ro{display:inline-flex;align-items:center;gap:6px;font-size:var(--f-12);color:var(--lcd);border:1px solid rgba(166,227,110,.35);border-radius:999px;padding:3px 10px;background:rgba(166,227,110,.06)}
+.ro::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--lcd)}
+.read{font-family:var(--mono);font-size:var(--f-12);color:var(--muted)}
+.btn{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:var(--r-2);border:1px solid var(--line-2);background:var(--panel-2);color:var(--text-2);font-size:var(--f-13)}
+
+/* 通用 */
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:var(--f-12);padding:2px 8px;border-radius:var(--r-1);background:var(--panel-3);color:var(--text-2);border:1px solid var(--line);white-space:nowrap}
+.chip.p{font-family:var(--mono);color:var(--violet);border-color:rgba(168,145,255,.3);background:rgba(168,145,255,.08)}
+.chip.g{font-family:var(--mono);color:var(--cyan);border-color:rgba(77,227,255,.3);background:rgba(77,227,255,.07)}
+.chip.must{color:var(--orange-2);border-color:rgba(255,138,36,.35);background:rgba(255,138,36,.08)}
+.st-ok{--s:var(--lcd)}.st-warn{--s:var(--yellow)}.st-bad{--s:var(--red)}.st-unk{--s:var(--faint)}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block;background:var(--s);box-shadow:0 0 8px color-mix(in srgb,var(--s) 55%,transparent)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:var(--f-12);padding:2px 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--s) 45%,transparent);color:var(--s);background:color-mix(in srgb,var(--s) 9%,transparent);white-space:nowrap}
+.src{font-family:var(--mono);font-size:11.5px;color:var(--faint);line-height:1.5}
+.src b{font-weight:400;color:var(--muted)}
+.note{font-size:var(--f-12);color:var(--faint)}
+.muted{color:var(--muted)}
+.crest{width:28px;height:28px;flex:none;color:var(--c)}
+.crest.lg{width:40px;height:40px}
+.sec{display:flex;flex-direction:column;gap:12px;scroll-margin-top:76px}
+.sec-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sec-h h2{margin:0;font-size:var(--f-20);font-weight:650}
+.sec-h .what{color:var(--muted);font-size:var(--f-13)}
+.sec-h .meta{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-l);min-width:0}
+.tw{overflow-x:auto;border-radius:var(--r-l);border:1px solid var(--line);background:var(--panel)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:var(--f-13)}
+th,td{padding:9px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+thead th{background:#111a2f;color:var(--muted);font-weight:500;font-size:var(--f-12);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td .sub{display:block;color:var(--faint);font-size:11.5px;margin-top:2px}
+.cell{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:24px;padding:0 8px;border-radius:var(--r-1);font-size:var(--f-12);font-weight:500}
+.cell.y{background:rgba(166,227,110,.13);color:var(--lcd)}
+.cell.p{background:rgba(255,209,102,.13);color:var(--yellow)}
+.cell.n{background:rgba(255,107,107,.12);color:var(--red-2,#ff9a9a)}
+.cell.u{background:rgba(93,105,135,.15);color:var(--faint)}
+.cell.x{box-shadow:inset 0 0 0 1.5px var(--yellow)}
+.hit{display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:8px;align-items:center;min-width:120px}
+.hit .b{height:6px;border-radius:3px;background:var(--panel-3);overflow:hidden}
+.hit .b i{display:block;height:100%;background:var(--cyan)}
+.hit span{font-family:var(--mono);font-size:12px;text-align:right;color:var(--text-2)}
+.hit.hot .b i{background:var(--yellow)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.guard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.guard b{font-size:var(--f-14)}
+.guard .who{display:flex;gap:6px;flex-wrap:wrap}
+.guard p{margin:0;font-size:var(--f-12);color:var(--muted)}
+.issue{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);align-items:start}
+.issue:last-child{border-bottom:0}
+.issue .k{font-family:var(--pixel);font-size:12px;color:var(--s);padding-top:2px}
+.issue b{display:block;font-size:var(--f-14);font-weight:600}
+.issue p{margin:2px 0 0;font-size:var(--f-12);color:var(--muted)}
+.tl{list-style:none;margin:0;padding:6px 14px;display:grid}
+.tl li{display:grid;grid-template-columns:52px 14px minmax(0,1fr);gap:10px;align-items:start;padding:7px 0;font-size:var(--f-13)}
+.tl li .d{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.tl li i{width:9px;height:9px;border-radius:50%;margin-top:5px;background:var(--c,var(--cyan));box-shadow:0 0 0 3px color-mix(in srgb,var(--c,var(--cyan)) 18%,transparent)}
+.tl li span.s{display:block;font-size:11.5px;color:var(--faint)}
+.srcs{display:flex;flex-wrap:wrap;gap:6px 18px}
+
+/* R1 分层总表 */
+.r1{display:grid;grid-template-columns:210px minmax(0,1fr);gap:24px;align-items:start}
+.toc1{position:sticky;top:76px;display:flex;flex-direction:column;gap:4px}
+.toc1 a{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-radius:var(--r-2);text-decoration:none;color:var(--text-2);font-size:var(--f-13);min-height:44px}
+.toc1 a:hover{background:var(--panel-2)}
+.toc1 a.on{background:var(--panel-3);color:var(--text)}
+.toc1 a small{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.toc1 .crest{width:22px;height:22px}
+.r1-body{display:flex;flex-direction:column;gap:34px;min-width:0}
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border-radius:var(--r-l);overflow:hidden;box-shadow:var(--m-panel-edge)}
+.strip>div{background:var(--panel);padding:14px 16px;min-width:0}
+.strip .v{font-family:var(--pixel);font-size:24px;line-height:1.2;margin:4px 0 2px}
+.strip .v small{font-family:var(--sans);font-size:var(--f-13);color:var(--muted);margin-left:4px}
+.strip p{margin:0;font-size:var(--f-12);color:var(--muted)}
+
+/* R2 偏好落地为中心 */
+.r2-top{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.mx tbody tr{cursor:pointer}
+.mx tbody tr:hover td{background:rgba(140,178,255,.035)}
+.mx tbody tr.on td{background:rgba(168,145,255,.08)}
+.mx tbody tr.on td:first-child{box-shadow:inset 3px 0 0 var(--violet)}
+.mx td,.mx th{text-align:center}
+.mx td:nth-child(2),.mx th:nth-child(2),.mx td:first-child,.mx th:first-child{text-align:left}
+.detail{position:sticky;top:76px;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--m-panel);box-shadow:var(--m-panel-edge);border:0}
+.detail h3{margin:0;font-size:var(--f-20)}
+.where{display:grid;gap:6px}
+.where div{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:var(--f-13)}
+.bars{display:flex;flex-direction:column;gap:6px;padding:14px}
+.bars .row{display:grid;grid-template-columns:52px minmax(0,1fr) 220px;gap:10px;align-items:center;font-size:var(--f-13)}
+.bars .row .t{color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--f-12)}
+.r2-low{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+.projgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.proj{border:1px solid var(--line);border-radius:var(--r-2);padding:9px 11px;background:var(--panel);min-width:0}
+.proj b{display:block;font-size:var(--f-13);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj span{font-size:11.5px;color:var(--muted)}
+
+/* R3 巡检优先 */
+.post{border-radius:var(--r-l);background:var(--m-panel);box-shadow:var(--m-panel-edge);overflow:hidden}
+.post-h{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.post-h .tag{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--muted)}
+.post-h .sum{margin-left:auto;display:flex;gap:14px;font-size:var(--f-13)}
+.post-h .sum span{display:inline-flex;align-items:center;gap:6px}
+.grp{padding:8px 18px 4px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--faint);background:#0b1324;border-bottom:1px solid var(--line)}
+.chk{display:grid;grid-template-columns:44px 30px minmax(0,1fr) minmax(0,260px) auto;gap:12px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--line)}
+.chk .g{font-family:var(--mono);font-size:13px;color:var(--s);font-weight:600}
+.chk b{display:block;font-size:var(--f-14);font-weight:600}
+.chk p{margin:2px 0 0;font-size:var(--f-12);color:var(--muted)}
+.chk .fix{font-size:var(--f-12);color:var(--text-2);min-width:0}
+.chk .fix span{display:block;font-family:var(--mono);font-size:11.5px;color:var(--faint);overflow-wrap:anywhere}
+.chk.bad{background:linear-gradient(90deg,rgba(255,107,107,.07),transparent 40%)}
+.layers{display:flex;gap:6px;flex-wrap:wrap;margin:24px 0 12px}
+.layer-tab{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:var(--r-2);border:1px solid var(--line-2);font-size:var(--f-13);color:var(--text-2);min-height:40px}
+.layer-tab .crest{width:22px;height:22px}
+.layer-tab[aria-selected="true"]{border-color:var(--c);color:var(--text);background:color-mix(in srgb,var(--c) 9%,transparent)}
+.layer-tab small{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+@media (max-width:1240px){.r2-top,.r2-low{grid-template-columns:minmax(0,1fr)}.detail{position:static}.strip{grid-template-columns:repeat(3,minmax(0,1fr))}.chk{grid-template-columns:44px 30px minmax(0,1fr) auto}.chk .fix{display:none}.projgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}.side{display:none}
+  .main{padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+  .r1{grid-template-columns:minmax(0,1fr)}.toc1{position:static}.strip,.grid2,.grid3,.projgrid{grid-template-columns:minmax(0,1fr)}
+  .chk{grid-template-columns:36px minmax(0,1fr)}.chk .crest,.chk>.pill{display:none}.bars .row{grid-template-columns:44px minmax(0,1fr) 120px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="proto" role="region" aria-label="原型方案切换">
+  <div class="proto-in">
+    <span class="proto-tag">规则页 · 定稿</span>
+    <div class="proto-tabs" role="tablist" aria-label="方案"><button class="proto-tab" role="tab" id="pt-1" data-v="1" aria-selected="true"><b>R1</b>分层总表 · 已定稿</button></div>
+    <p class="proto-note" id="proto-note"></p>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="side" aria-label="侧栏">
+    <div class="logo"><span class="logo-mark" aria-hidden="true"></span><div><b>数码世界</b><small>DIGITAL·WORLD</small></div></div>
+    <nav class="nav" aria-label="主导航">
+      <div>
+        <div class="nav-h">体系 <i>只读</i></div>
+        <a href="#r1" onclick="return false"><span class="ic"></span>世界总览</a>
+        <a href="#r1" onclick="return false"><span class="ic"></span>项目空间<span class="ct">16</span></a>
+        <a href="#r1" onclick="return false"><span class="ic"></span>Agent<span class="ct">4</span></a>
+        <a href="#r1" onclick="return false"><span class="ic"></span>自建 Skill<span class="ct">15</span></a>
+        <a href="#r1" onclick="return false" class="on" aria-current="page"><span class="ic"></span>规则</a>
+      </div>
+      <div>
+        <div class="nav-h">我的素材 <i>可写</i></div>
+        <a href="#r1" onclick="return false"><span class="ic"></span>资产仓库<span class="ct">9</span></a>
+        <a href="#r1" onclick="return false"><span class="ic"></span>个人收藏<span class="ct">15</span></a>
+        <a href="#r1" onclick="return false"><span class="ic"></span>随手记<span class="ct">20</span></a>
+        <a href="#r1" onclick="return false"><span class="ic"></span>逆向工程</a>
+      </div>
+    </nav>
+    <div class="nav-end">
+      <nav class="nav" aria-label="系统"><a href="#r1" onclick="return false"><span class="ic"></span>设置</a></nav>
+      <div class="partner" aria-hidden="true"><div class="partner-lcd"></div><small>冬 · 初雪 · 数码蛋（原样保留）</small></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="crumb">数码世界 <span aria-hidden="true">/</span> <b>规则</b></div>
+    <header class="head">
+      <div>
+        <h1>规则<span class="en">RULES</span></h1>
+        <p>偏好、工程约束、项目规则从哪来、在哪生效、有没有守住。这里只看不改：改规则回原处，走 agent-kit 的 PR 或在 Vault 里改。</p>
+      </div>
+      <div class="head-r"><span class="ro">只读</span><span class="read">读取于 11-07 23:20</span><button class="btn" type="button" id="refresh">重新读取</button></div>
+    </header>
+    <div id="view"></div>
+  </main>
+</div>
+
+<script>
+/* 纹章：数码世界 src/pixel.jsx 里已有的八枚纹章线稿；每块规则配一枚（对应关系为本稿拟定）。 */
+const CREST={
+ 爱心:{c:'#ff4d4d',d:'M20 35 L8 22 C3 16 6 7 13 7 C17 7 20 10 20 13 C20 10 23 7 27 7 C34 7 37 16 32 22 Z M13.5 18 C9.5 16.5 10 11 14 11 C17 11 17.2 15 14.3 15',ci:[[27,14.5,4],[27,14.5,1.8]]},
+ 友情:{c:'#3d8bff',d:'M20 11.5 C14 16 26 24 20 28.5 M11.8 22 Q7 25.5 1.5 25.5 Q8 21 12.1 17.6 M28.2 18 Q33 14.5 38.5 14.5 Q32 19 27.9 22.4',ci:[[20,20,8.5]]},
+ 知识:{c:'#a66bff',d:'M16.8 18.6 Q20.5 15.8 24.4 18.6',ci:[[10.5,20,7],[10.5,20,3.4],[30,20,6],[30,20,2.8]]},
+ 诚实:{c:'#e9eeff',d:'M17.5 2 H22.5 V16.5 H34 V21.5 H22.5 V38 H17.5 V21.5 H6 V16.5 H17.5 Z M9 3 H15 V14 Z M31 3 H25 V14 Z M9 37 H15 V26 Z M31 37 H25 V26 Z'},
+ 希望:{c:'#ffd23f',d:'M20 1 L21.4 4.6 H18.6 Z M28.5 4.5 L27.2 8.2 L25.6 6.6 Z M11.5 4.5 L12.8 8.2 L14.4 6.6 Z M31 12 L27.3 12.8 L27.3 10.6 Z M9 12 L12.7 12.8 L12.7 10.6 Z M15.6 14.8 L12.6 37 L15.6 33 L18.1 37 L20.6 33 L23.1 37 L25.6 33 L27.6 37 L24.4 14.8',ci:[[20,11,4.6]]},
+ 光明:{c:'#ff7ad1',d:[0,45,90,135,180,225,270,315].map(a=>{const r=([x,y])=>{const t=a*Math.PI/180;return `${(20+x*Math.cos(t)-y*Math.sin(t)).toFixed(2)} ${(20+x*Math.sin(t)+y*Math.cos(t)).toFixed(2)}`;};return `M${r([0,-18.5])} L${r([2.6,-11])} L${r([0,-6.8])} L${r([-2.6,-11])} Z`;}).join(' '),ci:[[20,20,3.4]]}
+};
+const crest=(n,cls='')=>{const k=CREST[n];return `<svg class="crest ${cls}" style="--c:${k.c}" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="${k.d}"/>${(k.ci||[]).map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</svg>`;};
+
+const LAYERS=[
+ {id:'pref',n:'个人偏好',cr:'爱心',what:'你给所有 Agent 定的做事偏好',src:'Vault 个人上下文/当前人机协作偏好.md',upd:'11-07 11:29',count:'12 条',lock:true},
+ {id:'land',n:'落地对照',cr:'友情',what:'每条偏好在各 Agent 的指令里有没有写到',src:'两份全局指令 + Hermes 记忆 + 审核包',upd:'11-07 11:30',count:'4 处'},
+ {id:'eng',n:'工程约束',cr:'知识',what:'跨项目的坑和改动走法',src:'agent-kit LESSONS.md、工程流程.md',upd:'11-07 18:31',count:'21 条'},
+ {id:'guard',n:'机器守护',cr:'诚实',what:'交给机器把关、不靠自觉的规则',src:'hook、权限规则、agent-kit 自检',upd:'11-07 12:15',count:'7 项全过'},
+ {id:'proj',n:'项目规则',cr:'希望',what:'各项目自己的 AGENTS、LESSONS 和 ADR',src:'16 个项目仓库',upd:'11-07 23:20',count:'16 个'},
+ {id:'issue',n:'问题与变更',cr:'光明',what:'已知冲突、待同步，和最近改了什么',src:'全局规则审核包、agent-kit 提交记录',upd:'11-07',count:'5 冲突'}
+];
+/* 偏好：编号与一句话标题（不显示正文）；落地取自 11-07 11:30 审核包第 3 节，y 有 / p 部分 / n 无 / u 未核 */
+const P=[
+ ['P-01','专业清晰的中文，结论先行','p','y','p','u','Claude §0 只管用中文'],
+ ['P-02','常浩管业务判断和验收，AI 补技术','n','y','n','u',''],
+ ['P-03','明确的请求直接做完，少问','p','y','n','u','Claude §1「不确定就问」偏向多问'],
+ ['P-04','前置定义、最小闭环，维护唯一下一步','p','y','n','u',''],
+ ['P-05','修改、检查、采用、验证、验收分开报告','n','y','n','u',''],
+ ['P-06','对外动作先预览、等确认，写后回读','n','y','n','u','Claude 靠应用自带的安全规则'],
+ ['P-07','常浩不读代码也能独立使用才算完成','n','y','n','u',''],
+ ['P-08','UI 每版出 3 个带预览的方案','y','y','y','u','Claude 只认网页链接；Codex 和 Vault 允许截图','x'],
+ ['P-09','新项目默认只做电脑版','y','y','y','u',''],
+ ['P-10','第一版就按能交付的标准做','y','y','y','u','Vault 里漏登 6 天，11-07 补上'],
+ ['P-11','每轮答复以收尾三项结束','y','y','y','u','Hermes 写了「按场景选格式」的例外','x'],
+ ['P-12','模糊想法先深挖再成文','y','y','y','u','和 Codex「底层思维系统」重叠']
+];
+const LAB={y:'有',p:'部分',n:'没写',u:'未核'};
+/* 全局坑：标题、提升日期、11-05 23:00 起的提醒命中次数 */
+const G=[
+ ['G-01','验证证据放 /tmp，被系统清理','10-24',23,1],['G-02','页面截取 ISO 时间串，把 UTC 当本地时间','10-24',5],['G-03','改了脚本只做语法或单条路径验证，没跑全量测试','10-24',768,1],
+ ['G-04','并行会话共用工作区，测试互相污染','10-24',141,1],['G-05','launchd 里 /bin/bash 读不了「文稿」下的脚本','10-24',128],['G-06','PlistBuddy 找不到文件时提示打到标准输出','10-24',9],
+ ['G-07','只监听 127.0.0.1 仍挡不住网页发来的请求','10-24',11],['G-08','set -u 脚本里可选开关裸引用','10-24',10],['G-09','改界面时把原有强调色、状态样式改没了','10-24',0],
+ ['G-10','外部只读来源每次现读，页面打开都要等','10-24',205],['G-11','无头 Chrome 截图与合成事件不可靠','10-24',140,1],['G-12','电脑重启，会话里等着到点跑的任务落空','10-24',2,1],
+ ['G-13','回退测试用了不存在的模型名','10-27',1],['G-14','删了探针定时任务，失败记录还在导致误报','10-28',38],['G-15','改了 Safari 网页应用包内文件再重签，打不开','10-28',331],
+ ['G-16','Safari 网页应用用磁盘里的旧首页','10-28',1],['G-17','WKWebView 外壳的「重新载入」被接走','10-31',8],['G-18','launchctl bootout 未卸完就 bootstrap 报 5','11-03',5],
+ ['G-19','launchd 服务读不到终端里的代理变量','11-05',16,1],['G-20','Mac 睡眠时定时任务被拖慢到强制中断','11-07',0],['G-21','跳本机应用用 https 链接被浏览器接走','11-07',9]
+];
+const GUARD=[
+ ['强推、删除远端 main','直接拒绝',['Claude 拒绝','Codex 先问'],'工程流程','16 条拒绝规则；自检实跑「强推 main 被拦下」'],
+ ['git 危险操作','Codex 先问；Claude 11-07 起只保留拒绝',['Codex'],'工程流程','agent-kit.rules'],
+ ['按关键词提醒全局坑','动手前把相关 G 条目塞给 Agent',['Claude','Codex'],'G-01～G-21','lessons-remind；11-05 起命中 1,851 次'],
+ ['上下文提醒交接','上下文到一半时提醒出交接卡',['Claude'],'CLAUDE.md §5','context-handoff hook'],
+ ['全局指令和仓库版一致','每次自检比对本机文件和仓库版',['Claude','Codex'],'全局指令进 git','两份都一致'],
+ ['每周汇总与再犯统计','每周汇总 LESSONS 命中和 Skill 调用',['Claude','Codex'],'复盘','weekly-review']
+];
+const DOCTOR=[['Claude 权限规则与 hook','16 条拒绝规则、3 个 hook 都在'],['Codex hook 与执行策略','2 个 hook 和 agent-kit.rules 都在'],['已装的 hook 与仓库一致','runtime 与仓库一致'],['hook 实跑自检','强推 main 被拦下；launchctl 收到 G-05 提醒'],['「跨项目沉淀」两份一致','12 行逐字相同'],['Claude 全局指令与仓库版一致','仓库版 + 个人段'],['Codex 全局指令与仓库版一致','仓库版 + 个人段']];
+const PROJ=[
+ ['牛马之家','product',120,'—',17,'—'],['数码世界','product',41,'9 行','—','—'],['管培生工作台','product',81,'—',2,'—'],['GitHub 快速中心','product',25,'—','—',2],
+ ['数字分身','product',73,'—','—','—'],['CarvoMOTO-汽配','product',null,'—','—','—'],['驿窗 PostPane','product',107,'—',24,'—'],['ChatGPT 回答收藏器','product',79,'—',19,'—'],
+ ['磁盘瘦身','product',106,'—',12,'—'],['Little Steps 育儿记录','product',125,'—',1,1],['agent-kit','infrastructure',28,'—','—','—'],['GET 索引维护','infrastructure',31,'—',1,'—'],
+ ['Obsidian 知识库','infrastructure',85,'—',1,'—'],['自建技能库','capability',26,'—','—','—'],['多 Agent 协同','capability',82,'—',1,'—'],['UI 设计体系','capability',76,'—',1,'—']
+];
+const TYPE={product:'产品',infrastructure:'基础设施',capability:'能力'};
+const ISSUES=[
+ ['B1','冲突','上下文长了要不要提议交接','Claude §5 说等 hook 提醒；Codex 省 Token 守则说主动提醒。两边相反','bad'],
+ ['B3','冲突','P-08 的预览形式三处说法不一','Claude 只认网页链接、不发截图；Codex 和 Vault 写「页面或截图」','bad'],
+ ['B2','冲突','什么时候先问','Claude §1「不确定就问」、§5「多文件先给计划」；P-03 和 Codex「明确的请求直接做完」','warn'],
+ ['B4','冲突','P-11 固定三行和别的规则有摩擦','Hermes「按场景选格式」已写例外；桌面应用提示框里问过的不再在正文问','warn'],
+ ['B5','冲突','「不加没要的功能」和 P-12「再想一层」的边界','原则上不矛盾，边界没写清','warn'],
+ ['A1','真源','改一条全局规则要改哪几处、按什么顺序，没有写','P-10 漏登 6 天、P-11/12 当时漏了仓库版，都是这个原因','bad'],
+ ['A3','真源','P-02、P-05、P-06、P-07 只写在 Codex','Claude 不知道你的岗位，也不知道你不读代码；是有意分工还是没同步，待定','warn']
+];
+const CHANGES=[
+ ['11-07','新增 G-21：跳本机应用用 https 链接被浏览器接走','agent-kit #34','var(--cyan)'],
+ ['11-07','新增 G-20：Mac 睡眠时定时任务被强制中断','agent-kit #32','var(--cyan)'],
+ ['11-07','Claude 取消 git 操作的「先问」，只保留拒绝','agent-kit #28','var(--lcd)'],
+ ['11-07','仓库版补上 P-11、P-12','agent-kit #24','var(--violet)'],
+ ['11-07','Vault 偏好表补登 P-10（漏了 6 天）','审核包','var(--violet)'],
+ ['11-07','两份全局指令进 git，个人段留本机拼装','agent-kit #14','var(--lcd)'],
+ ['11-05','机器执行层落地：权限规则、hook、自检、每周汇总','agent-kit #9','var(--lcd)'],
+ ['11-03','新增 G-18：launchctl bootout 未卸完就 bootstrap','agent-kit','var(--cyan)']
+];
+
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pill=(st,t)=>`<span class="pill st-${st}"><span class="dot"></span>${esc(t)}</span>`;
+const dot=st=>`<span class="dot st-${st}"></span>`;
+const L=id=>LAYERS.find(x=>x.id===id);
+const cell=(v,x)=>`<span class="cell ${v}${x?' x':''}">${LAB[v]}</span>`;
+const maxHit=Math.max(...G.map(g=>g[3]));
+const hit=n=>`<div class="hit${n>300?' hot':''}"><div class="b"><i style="width:${Math.max(n?2:0,Math.round(n/maxHit*100))}%"></i></div><span>${n.toLocaleString()}</span></div>`;
+const secHead=(id,extra='')=>{const l=L(id);return `<div class="sec-h">${crest(l.cr,'lg')}<div><h2>${l.n}</h2><div class="what">${l.what}</div></div><div class="meta">${l.lock?'<span class="chip">受限：只显示编号和标题</span>':''}<span class="src"><b>来源</b> ${esc(l.src)} · ${l.upd}</span>${extra}</div></div>`;};
+
+/* 共用块 */
+function prefTable(){return `<div class="tw"><table><thead><tr><th>编号</th><th>偏好</th><th>Claude</th><th>Codex</th><th>Hermes 私人</th><th>Hermes 企业</th><th>说明</th></tr></thead><tbody>${P.map(p=>`<tr><td><span class="chip p">${p[0]}</span></td><td>${esc(p[1])}</td><td>${cell(p[2],p[7])}</td><td>${cell(p[3],p[7])}</td><td>${cell(p[4])}</td><td>${cell(p[5])}</td><td class="muted" style="font-size:12px">${esc(p[6])||'—'}</td></tr>`).join('')}</tbody></table></div>
+ <div class="note">落地情况取自 11-07 11:30 的全局规则审核包，之后的改动未重核；「有 / 部分」由人判定。Hermes 企业分身未核。黄框＝几处说法不一致。</div>`;}
+function landSummary(){
+ const cnt=k=>({y:P.filter(p=>p[k]==='y').length,p:P.filter(p=>p[k]==='p').length,n:P.filter(p=>p[k]==='n').length});
+ const col=(name,k,sync,st)=>{const c=cnt(k);return `<div class="guard"><b>${name}</b><div class="who">${cell('y')} <span class="num">${c.y}</span>　${cell('p')} <span class="num">${c.p}</span>　${cell('n')} <span class="num">${c.n}</span></div><p>${sync}</p>${pill(st,st==='ok'?'和仓库版一致':'没有仓库版')}</div>`;};
+ return `<div class="grid3">${col('Claude · CLAUDE.md',2,'仓库版 + 个人段拼装；自检 12:15 通过','ok')}${col('Codex · AGENTS.md',3,'仓库版 + 个人段拼装；自检 12:15 通过','ok')}${col('Hermes 私人 · SOUL + 记忆',4,'指令里没写编号，记忆里有 P-08～P-12 索引','unk')}</div>`;}
+function gTable(sorted){const rows=sorted?[...G].sort((a,b)=>b[3]-a[3]):G;return `<div class="tw"><table><thead><tr><th>编号</th><th>坑</th><th>提升</th><th style="min-width:200px">提醒命中（11-05 起）</th></tr></thead><tbody>${rows.map(g=>`<tr><td><span class="chip g">${g[0]}</span></td><td>${esc(g[1])}${g[4]?' <span class="chip must">每次都要守</span>':''}</td><td class="mono muted" style="font-size:12px">${g[2]}</td><td>${hit(g[3])}</td></tr>`).join('')}</tbody></table></div>
+ <div class="note">命中＝命令里出现了这条坑的触发词，不等于真犯了。G-15 的触发词含 <span class="mono">.app/Contents</span>，驿窗的 hook 路径里就有，命中多半是误报（推断）。另有《工程流程》：issue → 分支 → PR → 合并，更新于 11-07 12:32。</div>`;}
+function guards(){return `<div class="grid3">${GUARD.map(g=>`<div class="guard"><b>${esc(g[0])}</b><p>${esc(g[1])}</p><div class="who">${g[2].map(w=>`<span class="chip">${esc(w)}</span>`).join('')}<span class="chip g">守 ${esc(g[3])}</span></div><span class="src">${esc(g[4])}</span></div>`).join('')}</div>
+ <div class="panel" style="padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center"><span class="lbl">最近一次自检 11-07 12:15</span>${pill('ok','7 项通过 · 0 警告 · 0 失败')}<span class="note">还没交给机器的：P-11 收尾三行（可加 Stop hook）、偏好四处一致（可扩展自检）、Hermes 记忆余量提醒。</span></div>`;}
+function projTable(){return `<div class="tw"><table><thead><tr><th>项目</th><th>类型</th><th>AGENTS.md</th><th>CLAUDE.md</th><th>LESSONS 条目</th><th>ADR</th></tr></thead><tbody>${PROJ.map(p=>`<tr><td>${esc(p[0])}</td><td class="muted">${TYPE[p[1]]}</td><td class="mono num">${p[2]==null?'<span style="color:var(--yellow)">未找到</span>':p[2]+' 行'}</td><td class="mono muted">${p[3]}</td><td class="mono num">${p[4]}</td><td class="mono num">${p[5]}</td></tr>`).join('')}</tbody></table></div>
+ <div class="note">LESSONS 按「L 编号」标题计数，写法不同的项目可能少算。Claude 项目记忆：0 条（自动记忆默认开启，还没记过）。</div>`;}
+function issues(){return `<div class="panel">${ISSUES.map(i=>`<div class="issue st-${i[4]}"><span class="k">${i[0]}</span><div><b>${esc(i[2])} <span class="chip" style="margin-left:6px">${i[1]}</span></b><p>${esc(i[3])}</p></div></div>`).join('')}</div>`;}
+function timeline(){return `<div class="panel"><ul class="tl">${CHANGES.map(c=>`<li style="--c:${c[3]}"><span class="d">${c[0]}</span><i></i><div>${esc(c[1])}<span class="s">${esc(c[2])}</span></div></li>`).join('')}</ul></div>`;}
+
+/* ---------- R1 分层总表 ---------- */
+function v1(){
+ const toc=LAYERS.map((l,i)=>`<a href="#s-${l.id}" class="${i===0?'on':''}" data-jump="${l.id}">${crest(l.cr)}<span>${l.n}</span><small>${l.count}</small></a>`).join('');
+ return `<div class="r1"><nav class="toc1" aria-label="本页目录">${toc}</nav><div class="r1-body">
+  <div class="strip">
+   <div><span class="lbl">个人偏好</span><div class="v num">12<small>条</small></div><p>Vault 11-07 11:29 更新</p></div>
+   <div><span class="lbl">三个 Agent 都写到</span><div class="v num" style="color:var(--yellow)">5<small>/ 12</small></div><p>P-08～P-12；其余只有 Codex 写全</p></div>
+   <div><span class="lbl">全局坑</span><div class="v num">21<small>条</small></div><p>6 条每次都要守</p></div>
+   <div><span class="lbl">机器自检</span><div class="v num" style="color:var(--lcd)">7<small>/ 7 通过</small></div><p>11-07 12:15</p></div>
+   <div><span class="lbl">已知冲突</span><div class="v num" style="color:var(--red)">5<small>处</small></div><p>另有 2 处真源不清</p></div>
+  </div>
+  <section class="sec" id="s-pref">${secHead('pref')}${prefTable()}</section>
+  <section class="sec" id="s-land">${secHead('land')}${landSummary()}</section>
+  <section class="sec" id="s-eng">${secHead('eng')}${gTable(false)}</section>
+  <section class="sec" id="s-guard">${secHead('guard')}${guards()}</section>
+  <section class="sec" id="s-proj">${secHead('proj')}${projTable()}</section>
+  <section class="sec" id="s-issue">${secHead('issue')}<div class="grid2">${issues()}${timeline()}</div></section>
+ </div></div>`;}
+
+/* ---------- R2 偏好落地为中心 ---------- */
+let PSEL=7;
+function v2(){
+ const p=P[PSEL];
+ const rel=ISSUES.filter(i=>i[2].includes(p[0])||i[3].includes(p[0]));
+ const mx=`<div class="tw"><table class="mx"><thead><tr><th>编号</th><th>偏好</th><th>Vault</th><th>Claude</th><th>Codex</th><th>Hermes 私人</th><th>Hermes 企业</th><th>机器守护</th></tr></thead><tbody>${P.map((r,i)=>`<tr class="${i===PSEL?'on':''}" data-p="${i}" tabindex="0"><td><span class="chip p">${r[0]}</span></td><td>${esc(r[1])}</td><td>${cell('y')}</td><td>${cell(r[2],r[7])}</td><td>${cell(r[3],r[7])}</td><td>${cell(r[4])}</td><td>${cell(r[5])}</td><td>${r[0]==='P-11'?'<span class="chip">候选</span>':'<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table></div>`;
+ const where=[['Vault 偏好表','y','个人上下文/当前人机协作偏好.md'],['Claude','  '+p[2],p[2]==='y'?'CLAUDE.md §'+(+p[0].slice(2)+1):'CLAUDE.md'],['Codex',p[3],'AGENTS.md'],['Hermes 私人',p[4],'SOUL.md / memories/USER.md'],['Hermes 企业',p[5],'profiles/agumon']].map(w=>`<div><span class="muted">${w[0]}</span><span class="src" style="overflow-wrap:anywhere">${esc(w[2])}</span>${cell(w[1].trim())}</div>`).join('');
+ const bars=[...G].sort((a,b)=>b[3]-a[3]).map(g=>`<div class="row"><span class="chip g">${g[0]}</span><span class="t">${esc(g[1])}${g[4]?' · 每次都要守':''}</span>${hit(g[3])}</div>`).join('');
+ return `<div style="display:flex;flex-direction:column;gap:30px">
+  <section class="sec">${secHead('land','<span class="chip">点一行看详情</span>')}
+   <div class="r2-top">${mx}
+    <aside class="panel detail" aria-label="${p[0]} 详情"><div style="display:flex;align-items:center;gap:10px">${crest('爱心','lg')}<div><span class="chip p">${p[0]}</span><h3>${esc(p[1])}</h3></div></div>
+     <div class="where">${where}</div>
+     ${p[6]?`<div class="note" style="color:var(--text-2)">${esc(p[6])}</div>`:''}
+     ${rel.length?`<div><span class="lbl">相关问题</span>${rel.map(i=>`<div class="issue st-${i[4]}" style="padding:8px 0;grid-template-columns:36px minmax(0,1fr)"><span class="k">${i[0]}</span><div><b style="font-size:13px">${esc(i[2])}</b></div></div>`).join('')}</div>`:''}
+     <span class="src"><b>正文</b> 受限，不在这里显示 · 在 Obsidian 打开</span>
+     <span class="src"><b>落地依据</b> 审核包 11-07 11:30</span></aside></div></section>
+  <div class="r2-low">
+   <section class="sec">${secHead('eng')}<div class="panel bars">${bars}</div><div class="note">按命中次数排序；命中＝出现触发词，不等于真犯。G-15 多半是误报（推断）。</div></section>
+   <section class="sec">${secHead('guard')}<div class="panel" style="padding:4px 0">${GUARD.map(g=>`<div class="issue st-ok" style="grid-template-columns:24px minmax(0,1fr)"><span class="k">${dot('ok')}</span><div><b style="font-size:13px">${esc(g[0])}</b><p>${esc(g[1])} · 守 ${esc(g[3])}</p></div></div>`).join('')}</div>
+    <div class="panel" style="padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${pill('ok','自检 7 / 7 通过')}<span class="note">11-07 12:15</span></div></section>
+  </div>
+  <section class="sec">${secHead('proj')}<div class="projgrid">${PROJ.map(p=>`<div class="proj"><b>${esc(p[0])}</b><span>${TYPE[p[1]]} · ${p[2]==null?'<span style="color:var(--yellow)">无 AGENTS</span>':'AGENTS '+p[2]+' 行'} · LESSONS ${p[4]}</span></div>`).join('')}</div></section>
+  <section class="sec">${secHead('issue')}<div class="grid2">${issues()}${timeline()}</div></section>
+ </div>`;}
+
+/* ---------- R3 巡检优先 ---------- */
+let LSEL='pref';
+const CHECKS=[
+ ['bad','✗','光明','P-08 预览形式三处说法不一','Claude 只认网页链接；Codex 和 Vault 允许截图','改 Vault P-08 后同步两份全局指令','agent-kit global/ → PR'],
+ ['bad','✗','光明','交接时机 Claude 和 Codex 相反','Claude 等 hook 提醒；Codex 主动提醒','定一种，改另一份','agent-kit global/ → PR'],
+ ['bad','✗','光明','改一条全局规则要改哪几处，没有写','P-10 漏登 6 天就是因此','在《工程流程》补一节','agent-kit/工程流程.md'],
+ ['warn','!','友情','P-02、P-05、P-06、P-07 只写在 Codex','Claude 不知道你的岗位和「不读代码」','决定是否同步给 Claude','agent-kit global/claude'],
+ ['warn','!','友情','Hermes 两个分身的指令没写偏好编号','私人分身记忆里有索引；企业分身未核','核对后补索引','~/.hermes/…/USER.md'],
+ ['warn','!','知识','G-15 提醒 3 天命中 331 次','触发词 .app/Contents 太宽，多半是误报（推断）','收窄触发词','agent-kit LESSONS.md'],
+ ['warn','!','诚实','P-11 收尾三行只靠自觉','可加 Stop hook 检查最后三行','你决定要不要','agent-kit hooks/'],
+ ['warn','!','希望','CarvoMOTO-汽配 没有 AGENTS.md','按名册路径没找到，可能路径变了','核对名册路径','digital-twin/projects.json'],
+ ['ok','✓','诚实','两份全局指令和仓库版一致','自检 12:15；本页读取时预览也一致','',''],
+ ['ok','✓','诚实','强推 main 会被拦下','hook 实跑通过','',''],
+ ['ok','✓','诚实','Claude 16 条拒绝规则、Codex 执行策略都在','hook 与仓库一致','',''],
+ ['ok','✓','知识','全局坑提醒在工作','11-05 起命中 1,851 次','',''],
+ ['ok','●','希望','Claude 项目记忆 0 条','自动记忆默认开启，还没记过','','']
+];
+function v3(){
+ const grp=(st,t)=>{const rows=CHECKS.filter(c=>c[0]===st);return `<div class="grp">${t} · ${rows.length}</div>${rows.map(c=>`<div class="chk st-${c[0]} ${c[0]==='bad'?'bad':''}"><span class="g">[${c[1]}]</span>${crest(c[2])}<div style="min-width:0"><b>${esc(c[3])}</b><p>${esc(c[4])}</p></div><div class="fix">${c[5]?esc(c[5]):''}${c[6]?`<span>${esc(c[6])}</span>`:''}</div>${c[0]==='ok'?pill('ok','正常'):c[0]==='bad'?pill('bad','要处理'):pill('warn','要看一眼')}</div>`).join('')}`;};
+ const l=L(LSEL);
+ const body={pref:prefTable,land:landSummary,eng:()=>gTable(true),guard:guards,proj:projTable,issue:()=>`<div class="grid2">${issues()}${timeline()}</div>`}[LSEL]();
+ return `<section class="post" aria-label="规则巡检"><div class="post-h"><span class="tag">RULE CHECK · 规则巡检</span><span class="note">读取于 11-07 23:20 · 自检 12:15 · 审核包 11:30</span>
+   <div class="sum"><span>${dot('bad')} 要处理 3</span><span>${dot('warn')} 要看一眼 5</span><span>${dot('ok')} 正常 5</span></div></div>
+   ${grp('bad','要处理')}${grp('warn','要看一眼')}${grp('ok','正常')}
+   <div style="padding:10px 18px" class="note">每行右边是去哪改；这里不改，只告诉你。</div></section>
+  <div class="layers" role="tablist" aria-label="按块浏览">${LAYERS.map(x=>`<button type="button" class="layer-tab" role="tab" data-l="${x.id}" aria-selected="${x.id===LSEL}" style="--c:${CREST[x.cr].c}">${crest(x.cr)}${x.n}<small>${x.count}</small></button>`).join('')}</div>
+  <section class="sec">${secHead(LSEL)}${body}</section>`;}
+
+const NOTES={
+ '1':'11-07 已定：R1 分层总表。6 块按顺序排，左边目录跟随滚动，顶部 5 个数。',
+ '2':'思路：以「每条偏好在各 Agent 那里有没有落地」这张表为中心，点一行看它写在哪、有什么冲突；其他块放下面。适合查漏和对齐。',
+ '3':'思路：先告诉你哪里有问题、去哪改（和设置页的自检同一种样式），再按块浏览明细。适合定期巡检。'
+};
+let V='1';
+function render(){
+ document.querySelectorAll('.proto-tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.v===V)));
+ document.getElementById('proto-note').textContent=NOTES[V];
+ document.getElementById('view').innerHTML=V==='1'?v1():V==='2'?v2():v3();
+}
+document.addEventListener('click',e=>{
+ const tr=e.target.closest('tr[data-p]'); if(tr){PSEL=+tr.dataset.p;render();return;}
+ const a=e.target.closest('a[data-jump]'); if(a){e.preventDefault();document.getElementById('s-'+a.dataset.jump).scrollIntoView({behavior:'smooth',block:'start'});document.querySelectorAll('.toc1 a').forEach(x=>x.classList.toggle('on',x===a));return;}
+ const t=e.target.closest('button'); if(!t) return;
+ if(t.dataset.v){V=t.dataset.v;history.replaceState(null,'','#r'+V);render();window.scrollTo({top:0});}
+ else if(t.dataset.l){LSEL=t.dataset.l;render();}
+ else if(t.id==='refresh'){t.textContent='已重新读取 · 原型不联动';setTimeout(()=>t.textContent='重新读取',1600);}
+});
+document.addEventListener('keydown',e=>{const tr=e.target.closest&&e.target.closest('tr[data-p]');if(tr&&(e.key==='Enter'||e.key===' ')){e.preventDefault();PSEL=+tr.dataset.p;render();}});
+function fromHash(){V='1';render();}
+window.addEventListener('hashchange',fromHash);fromHash();
+/* R1：目录跟随滚动高亮 */
+window.addEventListener('scroll',()=>{if(V!=='1')return;let cur=LAYERS[0].id;for(const l of LAYERS){const el=document.getElementById('s-'+l.id);if(el&&el.getBoundingClientRect().top<140)cur=l.id;}document.querySelectorAll('.toc1 a').forEach(a=>a.classList.toggle('on',a.dataset.jump===cur));},{passive:true});
+</script>
