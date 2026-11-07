@@ -65,6 +65,7 @@ import { createBackupRecords } from "./backup-records.mjs";
 import { createStorageStatus } from "./storage-status.mjs";
 import { createProjectActivity } from "./project-activity.mjs";
 import { createProjectsSpace } from "./projects-space.mjs";
+import { createRosterSync } from "./roster-sync.mjs";
 import { createCardReader, readRoster, DEFAULT_ROSTER_PATH } from "./project-roster.mjs";
 import { createSkillUsage } from "./skill-usage.mjs";
 import { createKnowledgeTrends } from "./knowledge-trends.mjs";
@@ -154,6 +155,8 @@ export async function startServer({
   mcpPort,
   mcpClientHealth,
   enableCapabilityScheduler = false,
+  // 启动时按名册同步一次本机登记（#73）：只在正式入口打开，测试里起的服务默认关，不读真实名册。
+  syncRosterOnStart = false,
   nightV2 = {},
   controlledExecution = {},
   reverse = {},
@@ -297,6 +300,12 @@ export async function startServer({
     skillUsage,
     readCard: createCardReader(repository, { files: knowledgeFiles }),
     ...adapters.projectsSpace,
+  });
+  // 本机登记从名册派生（#73）：启动时一次 + 项目空间「按名册刷新」；名册路径与目录检查可由测试注入。
+  const rosterSync = createRosterSync(repository, {
+    rosterPath: adapters.projectsSpace?.rosterPath,
+    initialConnections: () => emptyConnections(adapters.defaultRoots()),
+    ...adapters.rosterSync,
   });
   const feishuConnections = createFeishuConnections(repository, {
     provider: feishuFiles,
@@ -745,6 +754,11 @@ export async function startServer({
           return send(response, 200, await skillUsage.read());
         if (url.pathname === "/api/projects-space/skill-usage/refresh" && request.method === "POST")
           return send(response, 200, await skillUsage.refresh(await body(request)));
+        if (url.pathname === "/api/projects-space/sync" && request.method === "POST") {
+          const result = await rosterSync.sync(await body(request));
+          if (result.state === "error") throw failure(`名册读不到，没有同步：${result.message}`, 409);
+          return send(response, 200, result);
+        }
         if (url.pathname === "/api/projects-space/pin" && request.method === "POST")
           return send(response, 200, await projectsSpace.pin(await body(request)));
         if (url.pathname === "/api/project-github/panel" && request.method === "POST")
@@ -1116,6 +1130,11 @@ export async function startServer({
     await repository.close();
     throw error;
   }
+  if (syncRosterOnStart)
+    await rosterSync.sync().then(
+      (r) => r.state === "error" && console.error(`名册读不到，本机登记没有同步：${r.message}`),
+      (e) => console.error(`名册同步失败：${e.message}`),
+    );
   await collection.start();
   aihot.start();
   capabilities.start();

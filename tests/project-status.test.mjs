@@ -18,7 +18,6 @@ import {
 } from "../server/project-status.mjs";
 import { validateState } from "../server/schema.mjs";
 import { mergeBackup } from "../server/merge.mjs";
-import { mergeProjects } from "../server/discovery.mjs";
 import { pendingItems } from "../src/pending.js";
 import { seed } from "../src/store.js";
 import {
@@ -299,22 +298,6 @@ test("合并备份：active 与其他项目连接字段一样，不从备份导�
   assert.equal(state.connections.projects.find((p) => p.id === "b").active, undefined);
   // 空主库从备份恢复：连接结果需要重新扫描，标记同样不随备份带入。
   assert.equal(mergeBackup(null, backup).state.connections, undefined);
-});
-
-test("重新扫描保留在推进标记，即使远端换了；消失的项目标记随项目保留", () => {
-  const previous = [
-    project("a", { active: true, repoKey: "old/a" }),
-    project("b"),
-    project("gone", { active: true, githubUrl: "https://github.com/x/gone", repoKey: "x/gone" }),
-  ];
-  const locals = [
-    { ...project("a"), repoKey: "new/a" },
-    { ...project("b") },
-  ];
-  const merged = mergeProjects(previous, locals, [], {});
-  assert.equal(merged.find((p) => p.id === "a").active, true);
-  assert.equal(merged.find((p) => p.id === "b").active, undefined);
-  assert.equal(merged.find((p) => p.id === "gone").active, true);
 });
 
 // ---------- 待处理汇总 ----------

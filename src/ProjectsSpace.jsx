@@ -1,5 +1,6 @@
 // 项目空间第二版（电路卡带 7E，issue #10）：上面一排电路卡带（名册里每个项目一盘），下面一块档案屏。
-// 只读为主：数据来自 GET /api/projects-space；唯一的写入是置顶（POST /api/projects-space/pin，带版本检查并回读）。
+// 只读为主：数据来自 GET /api/projects-space；写入只有置顶（POST /api/projects-space/pin，带版本检查并回读）
+// 和「按名册刷新」（POST /api/projects-space/sync，按数字分身名册派生本机登记，#73）。
 // 接力口令、收件、装备从这页撤下，代码保留在 ProjectsV16；页脚「复制接手口令」复用旧组件，核对与留痕不变。
 // 动效全部按帧：卡带压下、走线流光一次、扫描线、液晶滚动、逐字、像素格；减少动态效果时直接到位。
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -314,7 +315,7 @@ function Head({ item, pinBusy, onPin, onDetail }) {
       </div>
       <div className="acts">
         <button type="button" className="btn" aria-pressed={item.pinned} disabled={pinBusy || !item.projectId}
-          title={item.projectId ? "" : "数码世界没有它的本机登记记录，不能置顶"} onClick={onPin}>{item.pinned ? "已置顶" : "置顶"}</button>
+          title={item.projectId ? "" : "数码世界没有它的本机登记记录，先点「按名册刷新」"} onClick={onPin}>{item.pinned ? "已置顶" : "置顶"}</button>
         {doc.url ? <a className="btn" href={doc.url} title={`Vault · ${item.card}`}>项目卡 ↗</a>
           : <span className="btn off" title={doc.message || "没连 Vault 知识源"}>项目卡 ↗</span>}
         <button type="button" className="btn" disabled={!item.projectId} title={item.path} onClick={onDetail}>详情</button>
@@ -334,7 +335,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
   const [data, setData] = useState(null), [error, setError] = useState(""), [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(null), [run, setRun] = useState(0), [pressed, setPressed] = useState(null);
   const [open, setOpen] = useState(false), [receipt, setReceipt] = useState(""), [pinBusy, setPinBusy] = useState(false);
-  const [detail, setDetail] = useState(false), [launch, setLaunch] = useState(false);
+  const [detail, setDetail] = useState(false), [launch, setLaunch] = useState(false), [syncBusy, setSyncBusy] = useState(false);
   const [collection, setCollection] = useState({ notes: [], state: "loading" }), [agent, setAgent] = useState("claude"), [openApp, setOpenApp] = useState(true);
   const screen = useRef(null), live = useRef(true), full = useRef(false);
   useEffect(() => () => { live.current = false; }, []);
@@ -444,6 +445,29 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
     }
   }
 
+  // 按名册刷新：名册里的项目补成本机登记（同路径旧登记就地挂上，置顶不变），名册外的旧登记不动。
+  async function syncRoster() {
+    if (syncBusy || !data) return;
+    setSyncBusy(true);
+    try {
+      const r = await request("/projects-space/sync", { revision: data.revision });
+      if (r.state === "updated") adoptState(await request("/workspace"));
+      await load();
+      if (!live.current) return;
+      const n = (k) => r[k]?.length || 0;
+      setReceipt(r.state === "updated"
+        ? `已按名册刷新：新登记 ${n("added")} 个、挂上旧登记 ${n("linked")} 个${n("removed") ? `、名册里已删 ${n("removed")} 个（登记保留）` : ""}`
+        : r.state === "unchanged" ? "本机登记已和名册一致" : r.message || "没有同步");
+      if (r.state === "updated") void refreshProjectStatus();
+    } catch (e) {
+      if (!live.current) return;
+      setReceipt(e.status === 409 ? `${e.message}（已重新读取）` : e.message);
+      if (e.status === 409) void load();
+    } finally {
+      if (live.current) setSyncBusy(false);
+    }
+  }
+
   async function refresh() {
     const value = await load(true);
     if (!value || reduced) return;
@@ -476,6 +500,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
           <span className="cnt"><span className="lcd violet">{totals?.skillCalls != null ? <Count value={(totals.skillCalls)} run={data?.at} px={3} /> : <b className="dash">—</b>}</span><small>近 30 天技能调用</small></span>
         </div>
         <span className="grow" />
+        <button type="button" className="btn" title="按数字分身名册更新本机登记：新项目补登记，已有登记和置顶保留" disabled={!data || syncBusy || loading} onClick={syncRoster}>{syncBusy ? "刷新中…" : "按名册刷新"}</button>
         <button type="button" className="ibtn" aria-label="刷新" title="重读名册、CURRENT、GitHub 与会话统计" disabled={loading} onClick={refresh}><RefreshCw /></button>
         <button type="button" className="ibtn" aria-label="设置" title="设置" onClick={goSettings}><Settings2 /></button>
       </header>

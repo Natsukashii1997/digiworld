@@ -9,7 +9,7 @@ import { axe, geometry } from './ui-v14-checks.mjs';
 const output = resolve(process.env.DESIGN_TEST_RESULTS || 'test-results/design');
 await mkdir(output,{recursive:true});
 const deny = () => { throw Error('本专项禁止真实来源'); };
-const app = await fixture({discovery:{defaultRoots:()=>[],detectAgents:async()=>({items:[],errors:[],at:new Date().toISOString()}),scanLocalProjects:async()=>({items:[],errors:[],at:new Date().toISOString()}),skillSourceReader:deny,knowledgeFiles:{read:deny,write:deny}}});
+const app = await fixture({discovery:{defaultRoots:()=>[],detectAgents:async()=>({items:[],errors:[],at:new Date().toISOString()}),skillSourceReader:deny,knowledgeFiles:{read:deny,write:deny}}});
 const control = makeAsset({type:'Prompt',title:'参照卡片',description:'保留原有卡片与操作位置',content:'对照正文'});
 await app.repository.write({...seed(),assets:[control],scrolls:[],agents:[],projects:[]},{initialize:true});
 const files=[{path:'frame/SKILL.md',text:true,data:'---\nname: frame-studio\n---\n# Frame\nFull package',mode:0o644},{path:'frame/素材.bin',text:false,data:new Uint8Array([0,255,128,4]),mode:0o644},{path:'frame/参考.md',text:true,data:'保留中文引用',mode:0o644}];
