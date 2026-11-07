@@ -49,6 +49,7 @@ async function fixture(run) {
     await write(join(home, ".claude", "projects", "p1", "sessions", "s.jsonl"), "FAKE-SECRET-session");
     // Skill：一个来自 my-skills，一个链到 ~/.agents/skills，一个仅本机。
     await write(join(work, "my-skills", "skills", "mine-a", "SKILL.md"), "x");
+    await write(join(work, "my-skills", "catalog", "skills.json"), { skills: [{ id: "mine-a" }, { id: "mine-b" }] });
     await write(join(home, ".agents", "skills", "shared-b", "SKILL.md"), "x");
     await fs.symlink(join(work, "my-skills", "skills", "mine-a"), join(home, ".agents", "skills", "mine-a"));
     await fs.mkdir(join(home, ".claude", "skills", "local-c"), { recursive: true });
@@ -116,6 +117,7 @@ test("Agent：4 个 Agent 的字段、来源与读取时间；ChatGPT 不计入"
   const value = await readCockpitAgents(opts(home));
   assert.deepEqual(value.agents.map((a) => a.id), ["claude", "codex", "hermes", "agumon"]);
   assert.equal(value.readAt, new Date(NOW).toISOString());
+  assert.equal(value.mySkillsTotal, 2);
   const [claude, codex, hermes, agumon] = value.agents;
   assert.equal(claude.model.main, "Opus 5.5");
   assert.equal(claude.model.deny, 2);
@@ -148,6 +150,8 @@ test("Agent：4 个 Agent 的字段、来源与读取时间；ChatGPT 不计入"
   assert.deepEqual(hermes.status, { level: "ok", text: "网关运行中 · 飞书已连接" });
   assert.equal(hermes.skills.total, 1);
   assert.equal(hermes.instructions.sync.level, "unk");
+  assert.equal(hermes.instructions.origin, "本机文件，没有进任何仓库");
+  assert.match(claude.instructions.origin, /global-instructions\.mjs/);
 
   // 企业分身：SOUL.md 指向白名单外 → 读不到，显示未知；网关一小时没更新 → 过期。
   assert.equal(agumon.instructions.state, "missing");

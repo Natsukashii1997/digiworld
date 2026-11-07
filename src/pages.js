@@ -1,5 +1,7 @@
-// 用户确认的七板块注册表；导航、页头和搜索共用此顺序。
-// 用户 2026-10-26：顺序为世界总览 / 资产仓库 / 个人收藏 / 随手记 / 项目空间 / 逆向工程，编号按此顺序连续排。
+// 页面注册表；导航、页头和搜索共用此顺序，编号按此顺序连续排。
+// 常浩 2026-11-07（信息驾驶舱 v2.0，#74）：侧栏分「体系·只读」（世界总览、项目空间、Agent、规则）与
+// 「我的素材·可写」（资产仓库、个人收藏、随手记、逆向工程）两组，设置沉底；自建 Skill 页还没设计，暂不进侧栏。
+// Agent、规则两页的 group 记为「系统」只为兼容旧分组元数据（GROUPS / LAYERS 不再驱动侧栏）。
 export const MATURITY = {ready: "可用", partial: "部分可用", draft: "草稿", planned: "规划中"};
 export const PAGES = [
   {
@@ -13,9 +15,42 @@ export const PAGES = [
     "lead": "资产、收藏与随手记录，常用内容从这里进入。"
   },
   {
+    "id": "projects",
+    "group": "目标",
+    "code": "01",
+    "label": "项目空间",
+    "title": "项目空间",
+    "eyebrow": "PROJECTS",
+    "maturity": "ready",
+    "lead": "挑一个存档接着干，或从库里开新档。",
+    "stage": "识别 · 对齐 · 交接"
+  },
+  {
+    "id": "agents",
+    "group": "系统",
+    "code": "02",
+    "label": "Agent",
+    "title": "Agent",
+    "eyebrow": "AGENTS",
+    "maturity": "ready",
+    "lead": "4 个 Agent 的指令、模型、Skill 与运行状态。",
+    "stage": "只读"
+  },
+  {
+    "id": "rules",
+    "group": "系统",
+    "code": "03",
+    "label": "规则",
+    "title": "规则",
+    "eyebrow": "RULES",
+    "maturity": "ready",
+    "lead": "偏好、落地、全局坑、机器守护、项目规则与冲突，分六层看。",
+    "stage": "只读"
+  },
+  {
     "id": "assets",
     "group": "资产",
-    "code": "01",
+    "code": "04",
     "label": "资产仓库",
     "title": "资产仓库",
     "eyebrow": "ASSET LIBRARY",
@@ -26,7 +61,7 @@ export const PAGES = [
   {
     "id": "learning",
     "group": "资产",
-    "code": "02",
+    "code": "05",
     "label": "个人收藏",
     "title": "个人收藏",
     "eyebrow": "COLLECTION",
@@ -37,7 +72,7 @@ export const PAGES = [
   {
     "id": "notes",
     "group": "生活",
-    "code": "03",
+    "code": "06",
     "label": "随手记",
     "title": "随手记",
     "eyebrow": "QUICK NOTES",
@@ -46,20 +81,9 @@ export const PAGES = [
     "stage": "捕捉"
   },
   {
-    "id": "projects",
-    "group": "目标",
-    "code": "04",
-    "label": "项目空间",
-    "title": "项目空间",
-    "eyebrow": "PROJECTS",
-    "maturity": "ready",
-    "lead": "挑一个存档接着干，或从库里开新档。",
-    "stage": "识别 · 对齐 · 交接"
-  },
-  {
     "id": "references",
     "group": "资产",
-    "code": "05",
+    "code": "07",
     "label": "逆向工程",
     "title": "逆向工程",
     "eyebrow": "REVERSE ENGINEERING",
@@ -70,7 +94,7 @@ export const PAGES = [
   {
     "id": "settings",
     "group": "系统",
-    "code": "06",
+    "code": "08",
     "label": "设置",
     "title": "设置",
     "eyebrow": "SETTINGS",
@@ -80,9 +104,9 @@ export const PAGES = [
   }
 ];
 export const page = id => PAGES.find(p => p.id === id);
-// 侧栏不分区、不加分组标题（用户 2026-10-26），设置沉底。
 export const NAV = [
-  {items: ["home", "assets", "learning", "notes", "projects", "references"]},
+  {heading: "体系·只读", items: ["home", "projects", "agents", "rules"]},
+  {heading: "我的素材·可写", items: ["assets", "learning", "notes", "references"]},
   {items: ["settings"], end: true},
 ];
 export const GROUPS = ["今日", "资产", "目标", "生活", "系统"];

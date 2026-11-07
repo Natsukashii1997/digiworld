@@ -55,6 +55,11 @@ export function outline(text) {
   return toc;
 }
 
+const ORIGIN = {
+  claude: "agent-kit global/claude/CLAUDE.md + 本机个人段，由 global-instructions.mjs 拼装",
+  codex: "agent-kit global/codex/AGENTS.md + 本机个人段，由 global-instructions.mjs 拼装",
+};
+
 async function instructions(reader, path, syncFor) {
   const file = await reader.text(path);
   const display = tilde(path, reader.paths.home);
@@ -63,6 +68,7 @@ async function instructions(reader, path, syncFor) {
   const prefs = [...new Set(toc.flatMap((t) => t.prefs))].sort();
   return {
     path: display, state: "ok", lines: file.text.split("\n").length, updatedAt: file.mtime,
+    origin: ORIGIN[syncFor] || "本机文件，没有进任何仓库",
     sync: syncFor ? await instructionSync(reader, syncFor) : { level: "unk", text: "没有仓库版，无从比对" },
     prefs, toc, text: maskSecrets(file.text),
   };
@@ -267,7 +273,10 @@ function overall(agent) {
 export async function readCockpitAgents({ home = homedir(), clock = Date.now, fs } = {}) {
   const reader = createSafeReader({ home, ...(fs ? { fs } : {}) });
   const now = clock();
-  const readings = await reader.json(reader.paths.readings);
+  const [readings, catalog] = await Promise.all([
+    reader.json(reader.paths.readings),
+    reader.json(join(reader.paths.mySkills, "catalog", "skills.json")),
+  ]);
   const parts = await Promise.all([
     claudeAgent(reader, readings, now),
     codexAgent(reader, readings, now),
@@ -278,5 +287,6 @@ export async function readCockpitAgents({ home = homedir(), clock = Date.now, fs
     const a = { id, ...PROFILES[id], ...parts[i] };
     return { ...a, status: overall(a) };
   });
-  return { readAt: new Date(now).toISOString(), agents };
+  const mySkillsTotal = Array.isArray(catalog?.value?.skills) ? catalog.value.skills.length : null;
+  return { readAt: new Date(now).toISOString(), mySkillsTotal, agents };
 }

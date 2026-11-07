@@ -12,7 +12,7 @@ const out=join(import.meta.dirname,'../test-results/dispatch155-home');await mkd
 await build({absWorkingDir:join(import.meta.dirname,'..'),entryPoints:['src/Home.jsx'],outfile:join(out,'Home.mjs'),bundle:true,platform:'node',format:'esm',packages:'external',logLevel:'silent'});
 const {Home,homeFacts}=await import(pathToFileURL(join(out,'Home.mjs')));
 test('七个保留页成熟度延续原事实',()=>{
- const expected={home:'ready',assets:'ready',learning:'partial',references:'ready',projects:'ready',notes:'ready',settings:'partial'};
+ const expected={home:'ready',agents:'ready',rules:'ready',assets:'ready',learning:'partial',references:'ready',projects:'ready',notes:'ready',settings:'partial'};
  assert.deepEqual(Object.fromEntries(PAGES.map(p=>[p.id,p.maturity])),expected);
 });
 test('C10 首页协同/模型配置仅来自本机事实，不把意向当连接或未开发',()=>{

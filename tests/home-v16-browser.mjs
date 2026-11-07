@@ -15,7 +15,7 @@ await mkdir(out,{recursive:true});
 const browser=await chromium.launch();
 const checks=[],errors=[];
 // 用户 2026-10-26：侧栏顺序为世界总览 / 资产仓库 / 个人收藏 / 随手记 / 项目空间 / 逆向工程，首页改叫“世界总览”。
-const expectedNav=['世界总览','资产仓库','个人收藏','随手记','项目空间','逆向工程','设置'];
+const expectedNav=['世界总览','项目空间','Agent','规则','资产仓库','个人收藏','随手记','逆向工程','设置'];
 const sharedState=seed();
 sharedState.assets.forEach((a,i)=>a.versions.forEach(v=>v.at=`2026-10-16T0${i}:00:00.000Z`));
 sharedState.assets[0].archived=true;
@@ -80,10 +80,10 @@ try {
    assert.deepEqual(await page.locator('.hx-mod h2').allTextContents(),['COLLECTION个人收藏','ASSETS资产仓库','NOTES随手记','PROJECTS项目空间']);
    assert.deepEqual(await page.locator('.hx-port').allTextContents(),['1','2','3','4']);
    assert.deepEqual(await page.locator('.nav-item > span').allTextContents(),expectedNav);
-   // 侧栏不分区、不加分组标题（用户 2026-10-26）；.nav-group 只用来把设置沉底。
-   assert.equal(await page.locator('.nav-zone-title,.nav-divider,.nav-zone,.sidebar .nav-heading').count(),0);
-   // 用户 2026-10-27：世界总览下一条横线，和正式工作版块分开。
-   assert.equal(await page.locator('.sidebar .nav-sep').count(),1);assert.equal(await page.locator('.sidebar .nav-sep').evaluate(el=>el.previousElementSibling.innerText.trim()),'世界总览');
+   // 常浩 2026-11-07（#74）：侧栏分「体系·只读」「我的素材·可写」两组，设置沉底；分组取代 10-27 世界总览下的横线。
+   assert.equal(await page.locator('.nav-zone-title,.nav-divider,.nav-zone').count(),0);
+   assert.deepEqual(await page.locator('.sidebar .nav-heading').allTextContents(),['体系·只读','我的素材·可写']);
+   assert.equal(await page.locator('.sidebar .nav-sep').count(),0);
    assert.equal(await page.locator('.hx-mod-a .hx-count b').innerText(),'6');assert.equal(await page.locator('.nav-item').filter({hasText:'资产仓库'}).locator('small').innerText(),'6');
    assert.equal(await page.locator('.hx-mod-b .hx-count b').innerText(),'3');
    assert.deepEqual(await page.locator('.hx-mod-b .hx-pick b').allTextContents(),['合成收藏 3','合成收藏 2','合成收藏 1']);
