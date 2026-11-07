@@ -32,6 +32,7 @@ import {
   projectBriefFixture,
   git,
 } from "./project-brief-fixture.mjs";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 const sha = (text) => createHash("sha256").update(text).digest("hex");
 
@@ -703,7 +704,7 @@ test("已读状态只能经专用操作修改；备份合并不导入也不覆�
 
 // ---------- HTTP：面板、简报、已读 ----------
 
-test("HTTP：面板与简报只读，项目文件与主库版本不变；gh 只收到白名单只读调用", async () => {
+test("HTTP：面板与简报只读，项目文件与主库版本不变；gh 只收到白名单只读调用", macOnly(VOLUME_UUID), async () => {
   const app = await projectBriefFixture();
   try {
     // 没有在推进项目时不查询。
@@ -769,7 +770,7 @@ test("HTTP：面板与简报只读，项目文件与主库版本不变；gh 只�
   }
 });
 
-test("HTTP：标为已读写入主库；重复标记不增版本；内容变化后显示“有更新”；非法输入拒绝", async () => {
+test("HTTP：标为已读写入主库；重复标记不增版本；内容变化后显示“有更新”；非法输入拒绝", macOnly(VOLUME_UUID), async () => {
   const app = await projectBriefFixture();
   try {
     await app.mark("协同项目");

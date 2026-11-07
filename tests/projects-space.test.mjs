@@ -12,6 +12,7 @@ import { parseRoster, readRoster, cardSummary, expandHome, createCardReader } fr
 import { pickNext, attentionOf, matchProject, PIN_LIMIT } from "../server/projects-space.mjs";
 import { projectHue, fallbackCode, PROJECT_HUES } from "../src/project-hues.js";
 import { spaceFixture } from "./projects-space-fixture.mjs";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 // ---------- CURRENT 顶节：名册里各仓库的写法（合成样例） ----------
 
@@ -209,7 +210,7 @@ test("名册条目按本机路径或真实路径对上已登记项目", () => {
 
 // ---------- 接口 ----------
 
-test("GET /api/projects-space：按名册列项目，读数、现在 / 下一步、30 天提交与要注意的事各自如实", async () => {
+test("GET /api/projects-space：按名册列项目，读数、现在 / 下一步、30 天提交与要注意的事各自如实", macOnly(VOLUME_UUID), async () => {
   const app = await spaceFixture();
   try {
     const r = await app.call("/projects-space");
@@ -292,7 +293,7 @@ test("GET /api/projects-space：名册读不到时整页只给原因；旧接口
   }
 });
 
-test("POST /api/projects-space/pin：置顶带版本检查、最多 3 个、写后回读；没登记的项目不能置顶", async () => {
+test("POST /api/projects-space/pin：置顶带版本检查、最多 3 个、写后回读；没登记的项目不能置顶", macOnly(VOLUME_UUID), async () => {
   const app = await spaceFixture();
   try {
     const rev = async () => (await app.call("/workspace")).body.revision;
@@ -353,7 +354,7 @@ test("GET /api/projects-space?roster=1：只读名册先画卡带，不碰 gh �
   }
 });
 
-test("现在取最近提交时，如实说明是没有 CURRENT 还是顶节读不出", async () => {
+test("现在取最近提交时，如实说明是没有 CURRENT 还是顶节读不出", macOnly(VOLUME_UUID), async () => {
   const app = await spaceFixture();
   try {
     await writeFile(join(app.paths.leaky, "CURRENT.md"), "# 合成\n\n| 项 | 值 |\n|---|---|\n| a | 1 |\n");

@@ -6,6 +6,7 @@ import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { execFile } from "node:child_process";
 import { inspectAgentPrograms } from "../server/agent-programs.mjs";
+import { macOnly, PLUTIL } from "./mac-only.mjs";
 
 async function fixture(t) {
   const root = await fs.realpath(
@@ -421,7 +422,7 @@ test("npm 版本只接受 Codex 包身份及准确的 bin 映射", async (t) => 
   );
 });
 
-test("App 版本来自 bundle 身份，内嵌 CLI 不冒用 App 版本；支持二进制 plist", async (t) => {
+test("App 版本来自 bundle 身份，内嵌 CLI 不冒用 App 版本；支持二进制 plist", macOnly(PLUTIL), async (t) => {
   const { root, write } = await fixture(t);
   const app = join(root, "ChatGPT.app");
   const path = await write(

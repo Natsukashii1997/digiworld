@@ -19,4 +19,5 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm run build   # UI 测试要读当前构建出的 dist
       - run: npm test

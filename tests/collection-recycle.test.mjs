@@ -4,6 +4,7 @@ import { readFile, readdir, rm, writeFile, appendFile, symlink, link, mkdir, lst
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { collectionFixture, syntheticNote } from './collection-fixture.mjs';
+import { macOnly, PLATFORM_GUARD } from "./mac-only.mjs";
 
 const recycle = app => app.api('/recycle');
 const organize = app => app.api('/recycle/organize', {});
@@ -15,7 +16,7 @@ async function deleted(app, index = 1, extra = {}) {
   return note;
 }
 
-test('回收整理移动原媒体、唯一正文快照、标识、幂等和完整恢复', async () => {
+test('回收整理移动原媒体、唯一正文快照、标识、幂等和完整恢复', macOnly(PLATFORM_GUARD), async () => {
   const opened = [], app = await collectionFixture({ platform:'darwin', runOpen:async path => opened.push(path) });
   try {
     const note = await deleted(app, 1, { title:'合成 / 已删除：笔记', content:'只属于删除快照的正文' });
@@ -40,7 +41,7 @@ test('回收整理移动原媒体、唯一正文快照、标识、幂等和完�
   } finally { await app.close(); }
 });
 
-test('人工删除整个目录不复活，部分删除/篡改不伪造可恢复状态', async () => {
+test('人工删除整个目录不复活，部分删除/篡改不伪造可恢复状态', macOnly(PLATFORM_GUARD), async () => {
   const app = await collectionFixture(); try {
     await deleted(app, 2); let item = (await organize(app)).items[0];
     await rm(join(item.path, 'files/media', item.noteId, '01.png'));
@@ -57,7 +58,7 @@ test('人工删除整个目录不复活，部分删除/篡改不伪造可恢复�
   } finally { await app.close(); }
 });
 
-test('同帖子多次删除独立整理，活跃新版和未知历史版本不移动，恢复不覆盖', async () => {
+test('同帖子多次删除独立整理，活跃新版和未知历史版本不移动，恢复不覆盖', macOnly(PLATFORM_GUARD), async () => {
   const app = await collectionFixture(); try {
     const old = await deleted(app, 4); await app.importNote(syntheticNote(4, { title:'新收藏' }));
     const active = (await app.api('/notes')).notes[0]; let item = (await organize(app)).items[0];
@@ -88,7 +89,7 @@ test('旧删除记录和纯文本可整理，缺失的源媒体不宣称完整',
   } finally { await app.close(); }
 });
 
-test('跨移动和状态提交中断可核对续接；恢复中断不重复移动', async () => {
+test('跨移动和状态提交中断可核对续接；恢复中断不重复移动', macOnly(PLATFORM_GUARD), async () => {
   for (const stage of ['afterPlan', 'afterArchive', 'afterMove', 'afterRestoreMove']) {
     let armed = false, crashed = false;
     const app = await collectionFixture({ recycleCheckpoint:async point => { if (armed && !crashed && point === stage) { crashed = true; throw new Error('合成中断'); } } });
@@ -125,7 +126,7 @@ test('符号链接、硬链接和路径替换闭锁，外部文件不动', async
   }
 });
 
-test('手动编辑文字保留不删除，反向中断后媒体缺失如实显示', async () => {
+test('手动编辑文字保留不删除，反向中断后媒体缺失如实显示', macOnly(PLATFORM_GUARD), async () => {
   let armed=false, crashed=false;
   const app=await collectionFixture({recycleCheckpoint:async point=>{if(armed&&!crashed&&point==='afterRestoreMove'){crashed=true;throw new Error('合成恢复中断');}}});
   try {
@@ -137,7 +138,7 @@ test('手动编辑文字保留不删除，反向中断后媒体缺失如实显�
   } finally {await app.close();}
 });
 
-test('视频分析租约保护已删除版本，结束后可整理；恢复目标冲突不覆盖', async () => {
+test('视频分析租约保护已删除版本，结束后可整理；恢复目标冲突不覆盖', macOnly(PLATFORM_GUARD), async () => {
   let release, entered;const started=new Promise(resolve=>entered=resolve);let calls=0;
   const app=await collectionFixture({fetchImpl:async url=>new Response(Buffer.from('fixture media'),{headers:{'content-type':String(url).includes('video')?'video/mp4':'image/png'}}),analyzer:async()=>{if(++calls>1){entered();await new Promise(resolve=>release=resolve);}return {duration:3,transcriptSegments:[]};}});
   let analysis;
@@ -150,7 +151,7 @@ test('视频分析租约保护已删除版本，结束后可整理；恢复目�
   } finally {release?.();await analysis;await app.close();}
 });
 
-test('排他移动拒绝检查后出现的空目录，不覆盖正向或恢复目标', async () => {
+test('排他移动拒绝检查后出现的空目录，不覆盖正向或恢复目标', macOnly(PLATFORM_GUARD), async () => {
   for (const stage of ['beforeMove','beforeRestoreMove']) {
     let app, armed=false, created, inode;
     app=await collectionFixture({recycleCheckpoint:async point=>{
@@ -165,7 +166,7 @@ test('排他移动拒绝检查后出现的空目录，不覆盖正向或恢复�
   }
 });
 
-test('移动边界父目录换成外部链接时闭锁，正向和恢复均不移出原库', async () => {
+test('移动边界父目录换成外部链接时闭锁，正向和恢复均不移出原库', macOnly(PLATFORM_GUARD), async () => {
   for(const stage of ['beforeMove','beforeRestoreMove']) {
     let app, armed=false;
     app=await collectionFixture({recycleCheckpoint:async point=>{if(armed&&point===stage){armed=false;const entry=(await app.readCollection()).trash[0];const parent=stage==='beforeMove'?join(app.directory,'collection/recycle',entry.recycle.folder):join(app.directory,'collection/versions');await rename(parent,parent+'-original');await symlink(join(app.directory,'outside'),parent);}}});

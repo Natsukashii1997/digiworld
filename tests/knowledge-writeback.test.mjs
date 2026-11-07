@@ -6,6 +6,11 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { knowledgeFixture } from "./knowledge-fixture.mjs";
+import { existsSync } from "node:fs";
+
+// wiki-local 是仓库外的同级目录（或用 GUIJI_WIKI_HELPER 指定），CI 检出里没有，找不到就跳过（#65）。
+const wikiHelper =
+  process.env.GUIJI_WIKI_HELPER || join(import.meta.dirname, "../../wiki-local/wiki.py");
 
 async function fixture(run) {
   const f = await knowledgeFixture();
@@ -309,7 +314,7 @@ test("撤回预览后有新编辑时保留编辑，记录不能假称已撤回",
     );
   }));
 
-test("保存的候选能被既有 wiki-local 解析，但不能绕过有效性门禁成为当前知识", () =>
+test("保存的候选能被既有 wiki-local 解析，但不能绕过有效性门禁成为当前知识", { skip: !existsSync(wikiHelper) && `需要仓库外的 ${wikiHelper}` }, () =>
   fixture(async (f) => {
     const preview = (await f.preview()).body;
     assert.equal(
@@ -327,8 +332,7 @@ test("保存的候选能被既有 wiki-local 解析，但不能绕过有效性�
       "-B",
       "-c",
       script,
-      process.env.GUIJI_WIKI_HELPER ||
-        join(import.meta.dirname, "../../wiki-local/wiki.py"),
+      wikiHelper,
       f.root,
       preview.path,
     ]);

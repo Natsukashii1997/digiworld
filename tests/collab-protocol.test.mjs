@@ -13,6 +13,7 @@ import { seed } from "../src/store.js";
 import { collabV16Fixture, CURRENT_V16 } from "./collab-v16-fixture.mjs";
 import { writeFile, readFile, symlink, link } from "node:fs/promises";
 import { join } from "node:path";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 const head = (fields, path = "docs/agents/handoffs/one.md") =>
   parseProtocolHead(
     "# 交接\n" +
@@ -244,7 +245,7 @@ test("口令保留原权限规则并附当前事项方法，不含凭据", () =>
   assert.match(text, /不替另一方声称已读/);
   assert.match(text, /未记载的过关/);
 });
-test("真实隔离HTTP读协议、指纹、Git佐证，无正文回传/主库写入", async () => {
+test("真实隔离HTTP读协议、指纹、Git佐证，无正文回传/主库写入", macOnly(VOLUME_UUID), async () => {
   const app = await collabV16Fixture();
   try {
     const before = await app.workspace(),
@@ -316,7 +317,7 @@ test("无时间及同事件冲突不得显示通过或确认，writer只解析�
     "claude-code",
   );
 });
-test("持续缺失的当前交接保持可诊断且禁止生成口令", async () => {
+test("持续缺失的当前交接保持可诊断且禁止生成口令", macOnly(VOLUME_UUID), async () => {
   const app = await collabV16Fixture();
   try {
     await writeFile(

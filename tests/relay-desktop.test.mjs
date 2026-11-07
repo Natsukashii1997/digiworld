@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createRelaySessions } from "../server/relay-sessions.mjs";
+import { macOnly, PLUTIL } from "./mac-only.mjs";
 
 async function fixture(run) {
   const home = await fs.realpath(await fs.mkdtemp(join(tmpdir(), "guiji-desktop-")));
@@ -17,7 +18,7 @@ async function app(home, name, bundle) {
 }
 const record = (id, path) => ({ id, status: "detected", programs: [{ kind: "App", path }] });
 
-test("Claude协作角色打开已检测Claude桌面版，不执行CLI或传提示词", () => fixture(async home => {
+test("Claude协作角色打开已检测Claude桌面版，不执行CLI或传提示词", macOnly(PLUTIL), () => fixture(async home => {
   const path = await app(home, "Claude.app", "com.anthropic.claudefordesktop"), calls = [];
   const service = createRelaySessions({ home, getAgents: () => [
     { id: "claude-code", status: "detected", programs: [{ kind: "CLI", path: "/fixture/bin/claude" }] },
@@ -27,7 +28,7 @@ test("Claude协作角色打开已检测Claude桌面版，不执行CLI或传提�
   assert.deepEqual(calls, [[path]]);
 }));
 
-test("Codex桌面版按bundle识别，支持实际名为ChatGPT.app的安装", () => fixture(async home => {
+test("Codex桌面版按bundle识别，支持实际名为ChatGPT.app的安装", macOnly(PLUTIL), () => fixture(async home => {
   const path = await app(home, "ChatGPT.app", "com.openai.codex"), calls = [];
   const service = createRelaySessions({ home, getAgents: () => [record("codex", path)], openApplication: async (...args) => calls.push(args) });
   assert.equal((await service.open({ agentId: "codex" })).opened, true);

@@ -8,6 +8,7 @@ import { parseCurrentOutline, parseCurrentStatus, withOutline } from "../server/
 import { startPrompt } from "../src/collab.js";
 import { continuableCurrent, projectRelayPrompt, readableCurrent } from "../src/projects-v16.js";
 import { projectLaunchSignature } from "../src/project-freshness.js";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 // 牛马之家格式：一级标题 + 说明，新节写在最上面；标题很长，节里先有表格再有正文。
 const LONG = "规矩改成工具：样式检查、发布回读脚本、LESSONS.md（2026-10-23，Claude，用户同意 3 批计划与 3 项推荐做法；三批均经用户确认后提交：`7c85fbf` / `b5c212d`，第 3 批见本节所在提交，另附很长的补充说明以超过标题上限）";
@@ -87,7 +88,7 @@ test("最近进展可继续但不算可读：不推断写入者、阶段、停�
   assert.notEqual(projectLaunchSignature(outlineItem), projectLaunchSignature(changed));
 });
 
-test("HTTP：没有状态表的合成项目，状态卡与协作板都给出最近进展，阶段与持笔者未知；手填下一步防覆盖", async () => {
+test("HTTP：没有状态表的合成项目，状态卡与协作板都给出最近进展，阶段与持笔者未知；手填下一步防覆盖", macOnly(VOLUME_UUID), async () => {
   const app = await projectStatusFixture();
   try {
     const noTable = NIUMA.replace("| 唯一下一步 | 不该被当成状态表字段之外的正文 |", "| 1 | 7c85fbf |");

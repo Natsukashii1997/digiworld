@@ -25,6 +25,7 @@ import {
   CURRENT_SAMPLE,
   projectStatusFixture,
 } from "./project-status-fixture.mjs";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 const DAY = 86400000;
 
@@ -372,7 +373,7 @@ async function tree(dir) {
   return out;
 }
 
-test("HTTP：标记在推进需要当前 revision，严格校验输入；超过 7 个只提示不阻止", async () => {
+test("HTTP：标记在推进需要当前 revision，严格校验输入；超过 7 个只提示不阻止", macOnly(VOLUME_UUID), async () => {
   const app = await projectStatusFixture();
   try {
     const id = await app.projectId("协同项目");
@@ -440,7 +441,7 @@ test("HTTP：停滞阈值可保存，非法值拒绝", async () => {
   }
 });
 
-test("HTTP：只读状态卡、停滞雷达与安全体检覆盖合成仓库，且不改任何项目文件", async () => {
+test("HTTP：只读状态卡、停滞雷达与安全体检覆盖合成仓库，且不改任何项目文件", macOnly(VOLUME_UUID), async () => {
   const app = await projectStatusFixture();
   try {
     const before = await tree(app.paths.projects);
@@ -505,7 +506,7 @@ test("HTTP：只读状态卡、停滞雷达与安全体检覆盖合成仓库，�
   }
 });
 
-test("HTTP：不能借体检读任意路径；目录不在扫描范围或已更换时如实报告", async () => {
+test("HTTP：不能借体检读任意路径；目录不在扫描范围或已更换时如实报告", macOnly(VOLUME_UUID), async () => {
   const app = await projectStatusFixture();
   try {
     assert.equal((await app.call("/project-status/inspect", { root: "/etc" })).status, 400);
@@ -556,7 +557,7 @@ test("HTTP：不能借体检读任意路径；目录不在扫描范围或已更�
   }
 });
 
-test("HTTP：gh 查询失败或抛错时远程私有性为未知，不报错", async () => {
+test("HTTP：gh 查询失败或抛错时远程私有性为未知，不报错", macOnly(VOLUME_UUID), async () => {
   const app = await projectStatusFixture({
     visibility: async () => {
       throw new Error("gh: not logged in");
