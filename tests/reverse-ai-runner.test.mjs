@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,realpath,writeFile,rm,mkdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';import {fileURLToPath} from 'node:url';import {randomUUID} from 'node:crypto';import {setTimeout as delay} from 'node:timers/promises';
 import {openRepository} from '../server/repository.mjs';import {createReverseRunner} from '../server/reverse-runner.mjs';import {createReaProcess} from '../server/reverse-process.mjs';import {createAiProcess} from '../server/reverse-ai-process.mjs';import {seed} from '../src/store.js';import {createSpecimen} from '../src/reverse-recipe.js';import {createReverseSkillV4} from '../server/reverse-skill-v4.mjs';import {validateReverseRecords} from '../server/schema.mjs';import {assetDeleteBlockers} from '../server/asset-delete.mjs';import {generateReplicaSkill} from '../src/reverse-v4.js';import {buildReplicaPack} from '../src/reverse-v4.js';
+import { macOnly, PLATFORM_GUARD } from "./mac-only.mjs";
 const fake=fileURLToPath(new URL('./fake-ai.mjs',import.meta.url));
 const executeAi=createAiProcess({commands:Object.fromEntries(['codex','claude'].map(x=>[x,{command:process.execPath,prefix:[fake,x]}]))});
 export async function setupAi(options={}){
@@ -12,7 +13,7 @@ export async function setupAi(options={}){
  return {directory,repository,record,runner,async start(executor){const {checkId}=await runner.check({path});return runner.start({executor,recordId:record.id,requestId:randomUUID(),checkId,expectedRevision:(await repository.read()).revision});},async close(){await runner.close();await repository.close();await rm(directory,{recursive:true,force:true});}};
 }
 export async function finished(app){for(let i=0;i<400;i++){const q=await app.runner.query({recordId:app.record.id});if(q.run?.status!=='running'&&!q.busy)return q.run;await delay(15);}throw Error('hung');}
-test('REA→AI原子留旧包，失败不覆盖，版本可回退且普通保存不能伪写',async()=>{
+test('REA→AI原子留旧包，失败不覆盖，版本可回退且普通保存不能伪写', macOnly(PLATFORM_GUARD),async()=>{
  let bad=false;const app=await setupAi({executeAi:(executor,opts)=>executeAi(executor,{...opts,...(bad?{prompt:'invalid'}:{})})});
  try{
   await app.start('rea');assert.equal((await finished(app)).status,'completed');const first=(await app.repository.read()).reverseRecords[0],old=buildReplicaPack(first);
@@ -24,7 +25,7 @@ test('REA→AI原子留旧包，失败不覆盖，版本可回退且普通保存
  }finally{await app.close();}
 });
 
-test('运行裁剪后REA证据与Skill保留，八版本切旧再生成仍可回切，固定资产不可变',async()=>{
+test('运行裁剪后REA证据与Skill保留，八版本切旧再生成仍可回切，固定资产不可变', macOnly(PLATFORM_GUARD),async()=>{
  let bad=false;const app=await setupAi({executeAi:(e,o)=>executeAi(e,{...o,...(bad?{prompt:'invalid'}:{})})});
  try{
   await app.start('rea');await finished(app);const original=(await app.repository.read()).reverseRecords[0],oldId=original.activePackVersionId;
@@ -39,7 +40,7 @@ test('运行裁剪后REA证据与Skill保留，八版本切旧再生成仍可回
   const queried=await svc.query({recordId:r.id,packVersionId:oldId});assert.equal(queried.saved.assetId,oldAsset.id);
  }finally{await app.close();}
 });
-test('导入AI成功必须绑定完整结果，版本选择要求revision与存在的记录',async()=>{
+test('导入AI成功必须绑定完整结果，版本选择要求revision与存在的记录', macOnly(PLATFORM_GUARD),async()=>{
  const app=await setupAi();try{
   await app.start('codex');await finished(app);const state=await app.repository.read(),r=state.reverseRecords[0];
   for(const change of [v=>delete v.packVersions,v=>v.reaRuns[0].packVersionId='missing',v=>v.packVersions[0].executor='claude',v=>v.packVersions[0].target.feature='wrong']){const altered=structuredClone(r);change(altered);assert.throws(()=>validateReverseRecords([altered]));}
@@ -48,7 +49,7 @@ test('导入AI成功必须绑定完整结果，版本选择要求revision与存�
   assert.match(r.reaRuns[0].log.at(-1).text,/用量/);
  }finally{await app.close();}
 });
-test('AI超时、REA与更新互斥、重启中断和原请求幂等',async()=>{
+test('AI超时、REA与更新互斥、重启中断和原请求幂等', macOnly(PLATFORM_GUARD),async()=>{
  let externalBusy=false;const app=await setupAi({aiTimeoutMs:180,externalBusy:()=>externalBusy,executeAi:(e,o)=>executeAi(e,{...o,prompt:'tree'})});
  try{
   externalBusy=true;await assert.rejects(app.start('codex'),/已有取证/);externalBusy=false;
@@ -57,7 +58,7 @@ test('AI超时、REA与更新互斥、重启中断和原请求幂等',async()=>{
  }finally{await app.close();}
 });
 
-test('确认期间切换版本不能误存或误回另一份固定Skill',async()=>{
+test('确认期间切换版本不能误存或误回另一份固定Skill', macOnly(PLATFORM_GUARD),async()=>{
  const app=await setupAi();try{
   const svc=createReverseSkillV4({repository:app.repository});await app.start('codex');await finished(app);let state=await app.repository.read();const recordId=app.record.id,b=state.reverseRecords[0].activePackVersionId;
   let preview=await svc.preview({recordId,expectedRevision:state.revision});await svc.confirm({recordId,token:preview.token,packVersionId:b});
@@ -71,7 +72,7 @@ test('确认期间切换版本不能误存或误回另一份固定Skill',async()
  }finally{await app.close();}
 });
 
-test('AI运行经正式runner传递目标保护范围，缓存内目标拒绝且不改目标',async()=>{
+test('AI运行经正式runner传递目标保护范围，缓存内目标拒绝且不改目标', macOnly(PLATFORM_GUARD),async()=>{
  const home=await realpath(await mkdtemp(join(tmpdir(),'ai-runner-home-'))),target=join(home,'.npm/fixture.asar');await mkdir(join(home,'.npm'));await writeFile(target,'synthetic');
  const app=await setupAi({executeAi:createAiProcess({home,commands:{codex:{command:process.execPath,prefix:[fake,'codex']}}})});
  try{

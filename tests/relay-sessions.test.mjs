@@ -8,6 +8,7 @@ import {
   parseRelayJsonl,
 } from "../server/relay-sessions.mjs";
 import { buildRelayPrompt, filterRelayText } from "../src/relay-prompt.js";
+import { macOnly, PLUTIL } from "./mac-only.mjs";
 const AT = "2026-10-05T04:12:00.000Z",
   PAGE = "fixture-page-00000001";
 test('内容搜索通过真实读取链找到早期正文、用户尾部与助手回复；只返回命中摘录', () => fixture(async home => {
@@ -400,7 +401,7 @@ test("CURRENT：不信会话cwd；只用已登记项目的身份解析器，受�
     assert.equal(projectCalls, 1);
     assert.match(p.prompt, /项目唯一下一步：已确认下一步/);
   }));
-test("应用：只打开重新核验的App，无CLI/提示词参数；未知/路径/跨Agent拒绝", () =>
+test("应用：只打开重新核验的App，无CLI/提示词参数；未知/路径/跨Agent拒绝", macOnly(PLUTIL), () =>
   fixture(async (home) => {
     const path = join(home, "Codex.app");
     await fs.mkdir(join(path, "Contents"), { recursive: true });

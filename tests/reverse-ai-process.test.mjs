@@ -8,9 +8,10 @@ import {fileURLToPath} from 'node:url';
 import {createAiProcess,aiArguments,aiPrompt} from '../server/reverse-ai-process.mjs';
 import {REA_READ_TOOLS} from '../src/reverse-ai.js';
 import {terminated,waitTerminated,processIdentity,killIdentified} from './process-terminated.mjs';
+import { macOnly, PLATFORM_GUARD } from "./mac-only.mjs";
 const fake=fileURLToPath(new URL('./fake-ai.mjs',import.meta.url));
 const execute=createAiProcess({commands:Object.fromEntries(['codex','claude'].map(x=>[x,{command:process.execPath,prefix:[fake,x]}])),killGraceMs:40});
-test('两个AI真实合成子进程：只读工具参数、流式日志、结构化结果、原始文件',async()=>{
+test('两个AI真实合成子进程：只读工具参数、流式日志、结构化结果、原始文件', macOnly(PLATFORM_GUARD),async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-process-')));
  try{for(const executor of ['codex','claude']){
   const folder=join(root,executor),logs=[];
@@ -30,7 +31,7 @@ test('Codex 在 -a never 下只预先批准白名单内的 REA 读工具',()=>{
  assert.ok(args.indexOf(approved.at(-1))<args.indexOf('exec'));
 });
 
-test('真实进程中文逐字节分块不损坏，认证/额度/权限/REA/格式分开失败',async()=>{
+test('真实进程中文逐字节分块不损坏，认证/额度/权限/REA/格式分开失败', macOnly(PLATFORM_GUARD),async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-errors-')));
  try{
   const split=await execute('claude',{folder:join(root,'split'),prompt:'split'});assert.equal(split.conclusions[0].text,'找到复制入口');
@@ -38,7 +39,7 @@ test('真实进程中文逐字节分块不损坏，认证/额度/权限/REA/格�
   const missing=createAiProcess({commands:{codex:{command:join(root,'not-installed')}}});await assert.rejects(missing('codex',{folder:join(root,'absent'),prompt:'success'}),e=>e.kind==='launch'&&e.status===503);
  }finally{await rm(root,{recursive:true,force:true});}
 });
-test('真实OS写入隔离拒绝目标改写',async()=>{
+test('真实OS写入隔离拒绝目标改写', macOnly(PLATFORM_GUARD),async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-readonly-'))),target=join(root,'project.txt');await writeFile(target,'unchanged');
  try{
   await execute('codex',{folder:join(root,'probe'),prompt:'write:'+target,signal:AbortSignal.timeout(30000)});assert.equal(await readFile(target,'utf8'),'unchanged');assert.equal(JSON.parse(await readFile(join(root,'probe/cwd/write-probe.json'),'utf8')).denied,true);
@@ -47,7 +48,7 @@ test('真实OS写入隔离拒绝目标改写',async()=>{
 // 整套并发时假AI与孙进程启动可能远超1秒；等待按截止时间而非固定次数。无论断言成败，finally 都会停止本次运行并强杀孙进程，失败也不留进程卡住整套测试。
 // 单条超时防止停止逻辑回退时整套卡住：超时时 node 中止 t.signal。兜底不依赖被测的停止逻辑：按记下的身份直接强杀假AI leader 与孙进程
 // （否则它们占着管道，测试文件仍不退出），并删临时目录。用例正常结束时 t.signal 也会中止，所以 finally 收尾完才摘掉监听；卡在 finally 的 await 里超时仍会清理。
-test('停止清理忽略TERM的孙进程',{timeout:60000},async(t)=>{
+test('停止清理忽略TERM的孙进程',{timeout:60000,...macOnly(PLATFORM_GUARD)},async(t)=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-tree-'))),folder=join(root,'tree'),controller=new AbortController(),stop=()=>controller.abort(new Error('synthetic stop'));
  const running=execute('codex',{folder,prompt:'tree',signal:controller.signal}),outcome=running.then(()=>null,e=>e);let pid,settled=false;outcome.then(()=>{settled=true;});
  const owned=[];const onTimeout=()=>{stop();owned.forEach(killIdentified);rm(root,{recursive:true,force:true,maxRetries:5}).catch(()=>{});};t.signal.addEventListener('abort',onTimeout,{once:true});
@@ -71,7 +72,7 @@ test('停止清理忽略TERM的孙进程',{timeout:60000},async(t)=>{
 });
 
 // All state/config probes are synthetic; never attempt a write to the user's actual configuration.
-test('真实OS允许客户端状态和npx缓存，配置直接写/删除/原子替换及项目写入仍拒绝',async()=>{
+test('真实OS允许客户端状态和npx缓存，配置直接写/删除/原子替换及项目写入仍拒绝', macOnly(PLATFORM_GUARD),async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-state-'))),home=join(root,'home');
  try{
   for(const dir of ['.codex','.npm','.claude','.codex/worktrees/project'])await mkdir(join(home,dir),{recursive:true});
@@ -128,7 +129,7 @@ test('目标落在可写缓存/状态中或包含可写根时，启动前拒绝'
  }finally{await rm(root,{recursive:true,force:true});}
 });
 
-test('中文运行路径中的真实Swift编译只使用本次临时目录和缓存，结束移除别名',async()=>{
+test('中文运行路径中的真实Swift编译只使用本次临时目录和缓存，结束移除别名', macOnly(PLATFORM_GUARD),async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-swift-'))),folder=join(root,'中文 路径/run');
  try{await execute('codex',{folder,prompt:'swift-temp',signal:AbortSignal.timeout(70000)});
   const probe=JSON.parse(await readFile(join(folder,'cwd/swift-probe.json'),'utf8'));assert.equal(probe.status,0,probe.stderr);assert.match(probe.tmp,/^[\x00-\x7f]+$/);
@@ -136,7 +137,7 @@ test('中文运行路径中的真实Swift编译只使用本次临时目录和缓
  }finally{await rm(root,{recursive:true,force:true});}
 });
 
-test('REA进程检查使用沙箱内无setuid的只读ps副本，确实读到自身进程',async()=>{
+test('REA进程检查使用沙箱内无setuid的只读ps副本，确实读到自身进程', macOnly(PLATFORM_GUARD),async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-ps-')));
  try{await execute('codex',{folder:root,prompt:'ps-probe',signal:AbortSignal.timeout(15000)});
   const p=JSON.parse(await readFile(join(root,'cwd/ps-probe.json'),'utf8'));assert.equal(p.status,0);assert.equal(p.denied,true);const fields=p.stdout.trim().split(/\s+/);assert.equal(Number(fields[0]),p.self);assert.equal(Number(fields[3]),p.uid);assert.ok(p.stdout.includes('fake-ai.mjs'));
@@ -144,7 +145,7 @@ test('REA进程检查使用沙箱内无setuid的只读ps副本，确实读到自
  }finally{await rm(root,{recursive:true,force:true});}
 });
 
-test('同一次CLI先报告线索再REA，最终可选clues通过校验；无单独AI调用',async()=>{
+test('同一次CLI先报告线索再REA，最终可选clues通过校验；无单独AI调用', macOnly(PLATFORM_GUARD),async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),'ai-clues-')));
  try{for(const executor of ['codex','claude']){
   const logs=[],result=await execute(executor,{folder:join(root,executor),prompt:'clues',onLine:t=>logs.push(t)});

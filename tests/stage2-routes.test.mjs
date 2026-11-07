@@ -9,6 +9,7 @@ import { openRepository } from "../server/repository.mjs";
 import { validateState } from "../server/schema.mjs";
 import { seed, makeAsset, revise, restore, current } from "../src/store.js";
 import { captureRouteIndex, pendingInbox, relayOf } from "../src/capture-routes.js";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 const AT = "2026-10-23T08:00:00.000Z";
 const SHA = "a".repeat(64);
@@ -72,7 +73,7 @@ test("焚决条目来源可以是收藏 ID，但不能同时指向逆向记录",
   assert.throws(() => validateState(scroll({ url: "https://example.test/x" })), /记录 ID/);
 });
 
-test("整库保存不能改项目桌；专用接口投递、重放不推进版本、撤回", async () => {
+test("整库保存不能改项目桌；专用接口投递、重放不推进版本、撤回", macOnly(VOLUME_UUID), async () => {
   const { app, slot, other } = await desk();
   try {
     const state = await app.workspace();
@@ -110,7 +111,7 @@ test("整库保存不能改项目桌；专用接口投递、重放不推进版�
   } finally { await app.close(); }
 });
 
-test("收藏条目可投递；收藏不存在则拒绝", async () => {
+test("收藏条目可投递；收藏不存在则拒绝", macOnly(VOLUME_UUID), async () => {
   const { app, slot } = await desk();
   try {
     const created = await app.call("/collection/notes/manual", { url: "https://example.test/dashboard", title: "6 种 dashboard 交互" });
@@ -123,7 +124,7 @@ test("收藏条目可投递；收藏不存在则拒绝", async () => {
   } finally { await app.close(); }
 });
 
-test("装备固定版本：换版本覆盖、同版本重放不写、卸下；资产或版本不存在被拒绝", async () => {
+test("装备固定版本：换版本覆盖、同版本重放不写、卸下；资产或版本不存在被拒绝", macOnly(VOLUME_UUID), async () => {
   const { app, slot, asset } = await desk();
   try {
     const v1 = asset.versions[0].id;
@@ -147,7 +148,7 @@ test("装备固定版本：换版本覆盖、同版本重放不写、卸下；�
   } finally { await app.close(); }
 });
 
-test("手填下一步：带修改前文字，别处改过则拒绝覆盖；清空即删除", async () => {
+test("手填下一步：带修改前文字，别处改过则拒绝覆盖；清空即删除", macOnly(VOLUME_UUID), async () => {
   const { app, slot } = await desk();
   try {
     const set = await app.call("/project-desk/next", { projectId: slot, text: " 把物料交付改读 NAS ", base: "" });
@@ -163,7 +164,7 @@ test("手填下一步：带修改前文字，别处改过则拒绝覆盖；清�
   } finally { await app.close(); }
 });
 
-test("随手记归档与收藏归档：幂等、可撤销、对象不存在 404", async () => {
+test("随手记归档与收藏归档：幂等、可撤销、对象不存在 404", macOnly(VOLUME_UUID), async () => {
   const { app } = await desk();
   try {
     const archived = await app.call("/notes/note-a/archive", { archived: true });
@@ -194,7 +195,7 @@ test("随手记归档与收藏归档：幂等、可撤销、对象不存在 404"
   } finally { await app.close(); }
 });
 
-test("继续口令留痕可带收件与装备引用；只限 start，重放必须同一内容", async () => {
+test("继续口令留痕可带收件与装备引用；只限 start，重放必须同一内容", macOnly(VOLUME_UUID), async () => {
   const { app, slot, asset } = await desk();
   try {
     const record = { id: "collab-relay-1", kind: "start", projectId: slot, agent: "codex", promptSha256: SHA,
@@ -210,7 +211,7 @@ test("继续口令留痕可带收件与装备引用；只限 start，重放必�
   } finally { await app.close(); }
 });
 
-test("备份恢复：恢复进空工作台带回项目桌；并入已有工作台保留当前项目桌", async () => {
+test("备份恢复：恢复进空工作台带回项目桌；并入已有工作台保留当前项目桌", macOnly(VOLUME_UUID), async () => {
   const { app, slot } = await desk();
   const dirs = [];
   try {

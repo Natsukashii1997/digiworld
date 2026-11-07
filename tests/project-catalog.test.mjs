@@ -5,8 +5,9 @@ import { join } from "node:path";
 import { projectStatusFixture } from "./project-status-fixture.mjs";
 import { manualProjectId } from "../server/project-catalog.mjs";
 import { groupPortfolioSections } from "../src/projects-v16.js";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
-test("项目展示名、手工目录和明确排除跨两次重扫保留，旧快照可读", async () => {
+test("项目展示名、手工目录和明确排除跨两次重扫保留，旧快照可读", macOnly(VOLUME_UUID), async () => {
   const app = await projectStatusFixture();
   try {
     const before = await app.workspace();
@@ -59,7 +60,7 @@ test("项目展示名、手工目录和明确排除跨两次重扫保留，旧�
   } finally { await app.close(); }
 });
 
-test("明确排除 GitHub 来源后远端扫描不会让项目复活", async () => {
+test("明确排除 GitHub 来源后远端扫描不会让项目复活", macOnly(VOLUME_UUID), async () => {
   const app = await projectStatusFixture();
   try {
     const before = await app.workspace();

@@ -34,6 +34,7 @@ import {
   HANDOFF_FILES,
   collabBoardFixture,
 } from "./collab-board-fixture.mjs";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 const sha = (text) => createHash("sha256").update(text).digest("hex");
 
@@ -485,7 +486,7 @@ async function tree(dir) {
   return out;
 }
 
-test("看板接口：只列在推进项目；阶段、笔、状态链与交接文档来自项目文件；不读交接正文；只读", async () => {
+test("看板接口：只列在推进项目；阶段、笔、状态链与交接文档来自项目文件；不读交接正文；只读", macOnly(VOLUME_UUID), async () => {
   const app = await collabBoardFixture();
   try {
     const before = await tree(app.paths.projects);
@@ -533,7 +534,7 @@ test("看板接口：只列在推进项目；阶段、笔、状态链与交接�
   }
 });
 
-test("留痕接口：复制成功后追加一条；同 ID 重放不重复；字段严格；项目必须已登记", async () => {
+test("留痕接口：复制成功后追加一条；同 ID 重放不重复；字段严格；项目必须已登记", macOnly(VOLUME_UUID), async () => {
   const app = await collabBoardFixture();
   try {
     await app.mark("协同项目");

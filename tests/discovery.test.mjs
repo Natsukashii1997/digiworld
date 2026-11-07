@@ -16,7 +16,8 @@ import {
   detectAgents,
   mergeProjects,
 } from "../server/discovery.mjs";
-test("扫描范围内自动发现项目，忽略依赖/符号链接；Agent 程序与配置痕迹区分", async () => {
+import { macOnly, PLUTIL, VOLUME_UUID } from "./mac-only.mjs";
+test("扫描范围内自动发现项目，忽略依赖/符号链接；Agent 程序与配置痕迹区分", macOnly(VOLUME_UUID), async () => {
   const dir = await mkdtemp(join(tmpdir(), "guiji-discovery-"));
   try {
     await mkdir(join(dir, "website"));
@@ -90,7 +91,7 @@ test("ChatGPT.app 错误、缺失或受阻的 bundle 身份不冒充任一品牌
   }
 });
 
-test("ChatGPT.app 的 Codex bundle 身份归入 Codex，原 ChatGPT 身份不变", async () => {
+test("ChatGPT.app 的 Codex bundle 身份归入 Codex，原 ChatGPT 身份不变", macOnly(PLUTIL), async () => {
   const dir = await realpath(await mkdtemp(join(tmpdir(), "guiji-app-alias-")));
   try {
     const app = join(dir, "ChatGPT.app");

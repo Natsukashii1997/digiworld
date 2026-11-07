@@ -20,6 +20,7 @@ import {
 } from "../server/project-scan.mjs";
 import { createProjectIdentity } from "../server/project-identity.mjs";
 import { createProjectContext } from "../server/project-context.mjs";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 async function fixture(run) {
   const base = await realpath(
@@ -80,7 +81,7 @@ async function fixture(run) {
   }
 }
 
-test("目录移动后明确重关联保留原项目 ID 与 Current 指针，重扫不产生重复", () =>
+test("目录移动后明确重关联保留原项目 ID 与 Current 指针，重扫不产生重复", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     const project = f.initial.connections.projects[0];
     const input = {
@@ -177,7 +178,7 @@ async function additional(f) {
   };
 }
 
-test("多目录关联保留两处文件，响应重放不重复写入，历史别名跨扫描保留", () =>
+test("多目录关联保留两处文件，响应重放不重复写入，历史别名跨扫描保留", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     const { input, candidate } = await additional(f);
     const preview = await f.manager.preview(input);
@@ -200,7 +201,7 @@ test("多目录关联保留两处文件，响应重放不重复写入，历史�
   }));
 const previewInput = (p) => ({ token: p.token, revision: p.revision });
 
-test("重新确认不能将另一个冲突或未核实目录一并改绑远端", () =>
+test("重新确认不能将另一个冲突或未核实目录一并改绑远端", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     const { input, path } = await additional(f);
     const p = await f.manager.preview(input);
@@ -233,7 +234,7 @@ test("重新确认不能将另一个冲突或未核实目录一并改绑远端",
     assert.equal((await f.repository.read()).revision, state.revision);
   }));
 
-test("重新确认更换目录明确展示并接受新远端，不要求无限重扫且保留原 ID", () =>
+test("重新确认更换目录明确展示并接受新远端，不要求无限重扫且保留原 ID", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     const original = f.initial.connections.projects[0];
     const state = await f.repository.updateConnections((c) => ({
@@ -271,7 +272,7 @@ test("重新确认更换目录明确展示并接受新远端，不要求无限�
     );
   }));
 
-test("尚未重新扫描的同路径目录替换，不能用直接保存 Current 绕过目录确认", () =>
+test("尚未重新扫描的同路径目录替换，不能用直接保存 Current 绕过目录确认", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     const project = f.initial.connections.projects[0];
     await rename(f.original, join(f.base, "原件保留"));
@@ -305,7 +306,7 @@ test("尚未重新扫描的同路径目录替换，不能用直接保存 Current
     );
   }));
 
-test("已有来源连接和已知不同远端拒绝吞并，原项目与指针完整保留", () =>
+test("已有来源连接和已知不同远端拒绝吞并，原项目与指针完整保留", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     const { input, path, candidate } = await additional(f);
     const binding = {
@@ -342,7 +343,7 @@ test("已有来源连接和已知不同远端拒绝吞并，原项目与指针�
     assert.equal((await f.repository.read()).revision, state.revision);
   }));
 
-test("只允许替换实际缺失的旧目录，未知、范围外、现存目录均不作为缺失", () =>
+test("只允许替换实际缺失的旧目录，未知、范围外、现存目录均不作为缺失", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     const { input } = await additional(f);
     await assert.rejects(
@@ -365,7 +366,7 @@ test("只允许替换实际缺失的旧目录，未知、范围外、现存目�
     assert.equal((await f.repository.read()).revision, input.revision);
   }));
 
-test("目录替换需显式接纳；旧预览遇相同路径新身份后失效", () =>
+test("目录替换需显式接纳；旧预览遇相同路径新身份后失效", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     const { input, path } = await additional(f);
     const preview = await f.manager.preview(input);
@@ -409,7 +410,7 @@ test("目录替换需显式接纳；旧预览遇相同路径新身份后失效",
     );
   }));
 
-test("五分钟过期、主库/范围变化、令牌驱逐与服务重启均拒绝旧确认", () =>
+test("五分钟过期、主库/范围变化、令牌驱逐与服务重启均拒绝旧确认", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     const { input } = await additional(f);
     const preview = await f.manager.preview(input);
@@ -428,7 +429,7 @@ test("五分钟过期、主库/范围变化、令牌驱逐与服务重启均拒�
     assert.equal((await f.repository.read()).connections.projects.length, 2);
   }));
 
-test("陌生字段、任意未登记目录和缺失版本被拒绝且不触发探测", () =>
+test("陌生字段、任意未登记目录和缺失版本被拒绝且不触发探测", macOnly(VOLUME_UUID), () =>
   fixture(async (f) => {
     let probes = 0;
     const manager = createProjectIdentity(f.repository, {

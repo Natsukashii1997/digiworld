@@ -17,6 +17,7 @@ import {
   scanLocalProjects,
   inspectProjectLocation,
 } from "../server/project-scan.mjs";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), "guiji-project-scan-"));
@@ -24,7 +25,7 @@ async function fixture(t) {
   return root;
 }
 
-test("项目扫描与单项目检查给出真实目录身份和兼容项目记录", async (t) => {
+test("项目扫描与单项目检查给出真实目录身份和兼容项目记录", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const path = join(root, "网站");
   await mkdir(path);
@@ -53,7 +54,7 @@ test("项目扫描与单项目检查给出真实目录身份和兼容项目记�
   );
 });
 
-test("范围外与排除目录不探测；已知符号链接为未知，不能借重叠根穿透链接", async (t) => {
+test("范围外与排除目录不探测；已知符号链接为未知，不能借重叠根穿透链接", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const project = join(root, "project");
   await mkdir(project);
@@ -98,7 +99,7 @@ test("范围外与排除目录不探测；已知符号链接为未知，不能�
   assert.equal(linkedRoot.locations[0].status, "unknown");
 });
 
-test("目录改名保留底层身份，新路径重新签名；旧目录仅实际检查后为缺失", async (t) => {
+test("目录改名保留底层身份，新路径重新签名；旧目录仅实际检查后为缺失", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const before = join(root, "before");
   const after = join(root, "after");
@@ -122,7 +123,7 @@ test("目录改名保留底层身份，新路径重新签名；旧目录仅实�
   assert.equal((await inspectProjectLocation([root], after)).status, "missing");
 });
 
-test("扫描截断与已知路径优先探测共享预算，未探测目录不冒充缺失", async (t) => {
+test("扫描截断与已知路径优先探测共享预算，未探测目录不冒充缺失", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const project = join(root, "project");
   const absent = join(root, "absent");
@@ -161,7 +162,7 @@ test("扫描截断与已知路径优先探测共享预算，未探测目录不�
   );
 });
 
-test("Git 远端已知为空与读取失败区分，GitHub 地址仅规范化而不访问远端", async (t) => {
+test("Git 远端已知为空与读取失败区分，GitHub 地址仅规范化而不访问远端", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const valid = join(root, "valid");
   const invalid = join(root, "invalid");
@@ -255,7 +256,7 @@ test("扫描拒绝过宽、相对或无界参数；所有参数在探测前校�
   assert.equal(zero.locations.at(-1).status, "unknown");
 });
 
-test("实际 ENOTDIR 可判缺失，读取受阻为未知；空目录为未识别而非缺失", async (t) => {
+test("实际 ENOTDIR 可判缺失，读取受阻为未知；空目录为未识别而非缺失", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const file = join(root, "file");
   await writeFile(file, "not a directory");
@@ -284,7 +285,7 @@ test("实际 ENOTDIR 可判缺失，读取受阻为未知；空目录为未识�
   assert.ok(!Object.hasOwn(denied, "identity"));
 });
 
-test("Git 标记是链接时不解析其目标，也不误报远端已知为空", async (t) => {
+test("Git 标记是链接时不解析其目标，也不误报远端已知为空", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const project = join(root, "project");
   const privateGit = join(root, ".outside-git");
@@ -303,7 +304,7 @@ test("Git 标记是链接时不解析其目标，也不误报远端已知为空"
   );
 });
 
-test("同一真实根的系统别名只扫描一次，同时容许根以上系统别名", async (t) => {
+test("同一真实根的系统别名只扫描一次，同时容许根以上系统别名", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const canonical = await filesystem.realpath(root);
   await mkdir(join(root, "project"));
@@ -317,7 +318,7 @@ test("同一真实根的系统别名只扫描一次，同时容许根以上系�
   );
 });
 
-test("检查期间祖先目录被替换，即使项目本身 inode 未变也只报告未知", async (t) => {
+test("检查期间祖先目录被替换，即使项目本身 inode 未变也只报告未知", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const parent = join(root, "parent");
   const path = join(parent, "project");
@@ -344,7 +345,7 @@ test("检查期间祖先目录被替换，即使项目本身 inode 未变也只�
   assert.match(observed.message, /变化/);
 });
 
-test("批准根以上别名变向后，即使根 inode 保持也使规范化范围签名失效", async (t) => {
+test("批准根以上别名变向后，即使根 inode 保持也使规范化范围签名失效", macOnly(VOLUME_UUID), async (t) => {
   const fixtureRoot = await fixture(t);
   const physical = join(fixtureRoot, "physical");
   const moved = join(fixtureRoot, "moved");

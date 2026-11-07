@@ -20,6 +20,7 @@ import {
   planRuleChange,
   createRuleTemplates,
 } from "../server/rule-templates.mjs";
+import { macOnly, PLATFORM_GUARD } from "./mac-only.mjs";
 
 const sha = (text) => createHash("sha256").update(text).digest("hex");
 const template = (body, versionId = "v-1") => ({
@@ -233,7 +234,7 @@ test("规则资产类型可以保存，复制记为 copy-rule 使用", async () 
   }
 });
 
-test("装入、升级、区块外手写内容不受影响，撤回恢复写入前字节", async () => {
+test("装入、升级、区块外手写内容不受影响，撤回恢复写入前字节", macOnly(PLATFORM_GUARD), async () => {
   const app = await contextFixture();
   try {
     const path = join(app.root, "AGENTS.md");
@@ -290,7 +291,7 @@ test("装入、升级、区块外手写内容不受影响，撤回恢复写入�
   }
 });
 
-test("区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容", async () => {
+test("区块手改默认拒绝；勾选覆盖后写入并可撤回到手改内容", macOnly(PLATFORM_GUARD), async () => {
   const app = await contextFixture();
   try {
     const path = join(app.root, "AGENTS.md");
@@ -393,7 +394,7 @@ test("预览后文件变化、主库变化或过期都拒绝写入，并声明�
   }
 });
 
-test("重复提交同一令牌只写一次，返回核对结果", async () => {
+test("重复提交同一令牌只写一次，返回核对结果", macOnly(PLATFORM_GUARD), async () => {
   const app = await contextFixture();
   try {
     const path = join(app.root, "AGENTS.md");
@@ -467,7 +468,7 @@ test("操作记录私有，只存区块片段，不存区块外正文", async ()
 
 // ---------- 返修 WB-20260929-73：Codex 复核 D-R4 / D-R5 / D-R6 ----------
 
-test("D-R4：写入中途失败的操作不替代已装版本，单独标为未确认", async () => {
+test("D-R4：写入中途失败的操作不替代已装版本，单独标为未确认", macOnly(PLATFORM_GUARD), async () => {
   const app = await contextFixture();
   try {
     const { asset, revision } = await withRule(app);
@@ -500,7 +501,7 @@ test("D-R4：写入中途失败的操作不替代已装版本，单独标为未�
   }
 });
 
-test("D-R5：核对等待在途写入完成，不会在 rename 前给出写入前结论", async () => {
+test("D-R5：核对等待在途写入完成，不会在 rename 前给出写入前结论", macOnly(PLATFORM_GUARD), async () => {
   const app = await contextFixture();
   let repository, release;
   try {
@@ -543,7 +544,7 @@ test("D-R5：核对等待在途写入完成，不会在 rename 前给出写入�
   }
 });
 
-test("D-R6：约 140 KiB 的模板两版升级后，记录仍可读、列表正常", async () => {
+test("D-R6：约 140 KiB 的模板两版升级后，记录仍可读、列表正常", macOnly(PLATFORM_GUARD), async () => {
   const app = await contextFixture();
   try {
     const big = (tag) =>

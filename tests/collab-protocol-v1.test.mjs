@@ -11,6 +11,7 @@ import {
 import { DESIGN_IMPLEMENTATION_V1 } from "../src/workflow-template.js";
 import { makeAsset } from "../src/store.js";
 import { collabV16Fixture } from "./collab-v16-fixture.mjs";
+import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 const at = (day) => `2026-10-${String(day).padStart(2, "0")}T10:00:00+08:00`;
 const doc = (eventId, phase, status, issueId = "", day = 6) =>
@@ -185,7 +186,7 @@ test("锁定阶段口令使用第九站，缺版本不生成伪阶段", () => {
   assert.match(runPrompt(item, missing, "codex"), /当前展示阶段：未知/);
 });
 
-test("HTTP 只读待议表、版本与运行设置纳入指纹；缺清单计数未知", async () => {
+test("HTTP 只读待议表、版本与运行设置纳入指纹；缺清单计数未知", macOnly(VOLUME_UUID), async () => {
   const app = await collabV16Fixture();
   try {
     const projectId = await app.projectId("协同项目");

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { readFile, writeFile, chmod, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { copyFixture } from "./copy-fixture.mjs";
+import { macOnly, PLATFORM_GUARD } from "./mac-only.mjs";
 
 const sentinel = "SYNTHETIC_PRIVATE_HTTP_SENTINEL";
 const original = `# 合成配置，保留注释\nmodel = "${sentinel}"\n[tui]\nanimations = true # 保留此注释\nshow_tooltips = false\n`;
@@ -93,7 +94,7 @@ test("配置 HTTP 显式概览与差异预览只返回白名单，不修改源�
   assert.deepEqual(await app.call("/workspace"), before);
 });
 
-test("配置 HTTP 确认后回读并保留历史，显式恢复原字节与权限且不宣称采用", async (t) => {
+test("配置 HTTP 确认后回读并保留历史，显式恢复原字节与权限且不宣称采用", macOnly(PLATFORM_GUARD), async (t) => {
   const app = await fixture(t);
   const before = await app.call("/workspace");
   const preview = await app.call("/agent-config/preview", {

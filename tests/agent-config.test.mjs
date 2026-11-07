@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { copyFixture } from "./copy-fixture.mjs";
 import { createAgentConfig } from "../server/agent-config.mjs";
 import { inspectAgentInventory } from "../server/agent-inventory.mjs";
+import { macOnly, PLATFORM_GUARD } from "./mac-only.mjs";
 
 async function fixture(t, options = {}) {
   const f = await copyFixture();
@@ -220,7 +221,7 @@ test("A preview expiring while its durable prepared record is saved never writes
   );
 });
 
-test("A changed binding and external edits block restoring an old operation", async (t) => {
+test("A changed binding and external edits block restoring an old operation", macOnly(PLATFORM_GUARD), async (t) => {
   const f = await fixture(t);
   const p = await f.manager.preview(f.input);
   await f.manager.apply({ token: p.token, revision: p.revision });
@@ -248,7 +249,7 @@ test("A changed binding and external edits block restoring an old operation", as
   );
 });
 
-test("A group-only permission change is drift and blocks restoring identical configuration bytes", async (t) => {
+test("A group-only permission change is drift and blocks restoring identical configuration bytes", macOnly(PLATFORM_GUARD), async (t) => {
   const f = await fixture(t);
   const original = await fs.stat(f.path);
   const otherGroup = process
@@ -302,7 +303,7 @@ test("A group-only permission change is drift and blocks restoring identical con
   assert.equal(row.gid, original.gid);
 });
 
-test("Replacing the actual Home inode with identical configuration bytes invalidates old previews and operations", async (t) => {
+test("Replacing the actual Home inode with identical configuration bytes invalidates old previews and operations", macOnly(PLATFORM_GUARD), async (t) => {
   const f = await fixture(t);
   const applied = await f.manager.preview(f.input);
   assert.equal(
@@ -336,7 +337,7 @@ test("Replacing the actual Home inode with identical configuration bytes invalid
   assert.deepEqual(await fs.readFile(f.path), bytes);
 });
 
-test("BOM, Unicode and CRLF survive applying and restoring an exact byte-offset patch", async (t) => {
+test("BOM, Unicode and CRLF survive applying and restoring an exact byte-offset patch", macOnly(PLATFORM_GUARD), async (t) => {
   const f = await fixture(t);
   const text =
     '\uFEFF# 中文😀\r\nmodel = "PRIVATE_SENTINEL_你好"\r\n[tui]\r\nanimations = true # 原注释\r\n';
@@ -374,7 +375,7 @@ test("BOM, Unicode and CRLF survive applying and restoring an exact byte-offset 
   assert.equal(journal.includes("原注释"), false);
 });
 
-test("A missing original journal record invalidates a restore preview with a safe conflict", async (t) => {
+test("A missing original journal record invalidates a restore preview with a safe conflict", macOnly(PLATFORM_GUARD), async (t) => {
   const f = await fixture(t);
   const p = await f.manager.preview(f.input);
   await f.manager.apply({ token: p.token, revision: p.revision });
@@ -525,7 +526,7 @@ test("Failure syncing the new journal directory's parent cannot reach a source-f
   assert.deepEqual(await fs.readdir(join(directory, "config-operations")), []);
 });
 
-test("A configuration rename followed by failure returns observed state without claiming operationNotStarted", async (t) => {
+test("A configuration rename followed by failure returns observed state without claiming operationNotStarted", macOnly(PLATFORM_GUARD), async (t) => {
   let configPath;
   const filesystem = new Proxy(fs, {
     get(target, key) {
@@ -563,7 +564,7 @@ test("A configuration rename followed by failure returns observed state without 
   assert.equal((await fs.stat(f.path)).ino, after.ino);
 });
 
-test("A saved Hermes target applies and restores YAML booleans while preserving unrelated bytes", async (t) => {
+test("A saved Hermes target applies and restores YAML booleans while preserving unrelated bytes", macOnly(PLATFORM_GUARD), async (t) => {
   const f = await fixture(t);
   const home = join(f.user, ".hermes"),
     path = join(home, "config.yaml");
@@ -627,7 +628,7 @@ test("A saved Hermes target applies and restores YAML booleans while preserving 
   assert.equal(await fs.readFile(f.path, "utf8"), f.text);
 });
 
-test("Receipt failure after file write stays recoverable and repeating the operation does not rewrite", async (t) => {
+test("Receipt failure after file write stays recoverable and repeating the operation does not rewrite", macOnly(PLATFORM_GUARD), async (t) => {
   let shouldFail = true;
   const filesystem = new Proxy(fs, {
     get(obj, key) {
@@ -675,7 +676,7 @@ test("Receipt failure after file write stays recoverable and repeating the opera
   assert.equal(await fs.readFile(f.path, "utf8"), f.text);
 });
 
-test("A forged inverse patch cannot authorize editing another boolean", async (t) => {
+test("A forged inverse patch cannot authorize editing another boolean", macOnly(PLATFORM_GUARD), async (t) => {
   const f = await fixture(t);
   const p = await f.manager.preview(f.input);
   await f.manager.apply({ token: p.token, revision: p.revision });
@@ -697,7 +698,7 @@ test("A forged inverse patch cannot authorize editing another boolean", async (t
   );
 });
 
-test("Restart recovery checks the same operation without replay; explicit restore returns original bytes", async (t) => {
+test("Restart recovery checks the same operation without replay; explicit restore returns original bytes", macOnly(PLATFORM_GUARD), async (t) => {
   const f = await fixture(t);
   const preview = await f.manager.preview({
     ...f.input,
@@ -732,7 +733,7 @@ test("Restart recovery checks the same operation without replay; explicit restor
   );
 });
 
-test("Confirmed apply persists a minimal journal, reads back the file and never increments the workspace revision", async (t) => {
+test("Confirmed apply persists a minimal journal, reads back the file and never increments the workspace revision", macOnly(PLATFORM_GUARD), async (t) => {
   const f = await fixture(t);
   const preview = await f.manager.preview(f.input);
   const result = await f.manager.apply({
