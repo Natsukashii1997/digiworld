@@ -46,19 +46,6 @@ export async function knowledgeQueryFixture({
       }),
       knowledgeQueryLimits: queryLimits,
       defaultRoots: () => [],
-      scanLocalProjects: async () => ({
-        items: [],
-        errors: [],
-        truncated: false,
-        at: new Date(clock()).toISOString(),
-      }),
-      scanGitHub: async () => ({
-        status: "not_connected",
-        items: [],
-        truncated: false,
-        message: "",
-        at: new Date(clock()).toISOString(),
-      }),
       detectAgents: async () => ({
         items: [],
         at: new Date(clock()).toISOString(),

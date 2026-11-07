@@ -13,10 +13,7 @@ import { tmpdir } from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import * as filesystem from "node:fs/promises";
-import {
-  scanLocalProjects,
-  inspectProjectLocation,
-} from "../server/project-scan.mjs";
+import { inspectProjectLocation } from "../server/project-scan.mjs";
 import { macOnly, VOLUME_UUID } from "./mac-only.mjs";
 
 async function fixture(t) {
@@ -25,7 +22,8 @@ async function fixture(t) {
   return root;
 }
 
-test("项目扫描与单项目检查给出真实目录身份和兼容项目记录", macOnly(VOLUME_UUID), async (t) => {
+// 全盘扫描（scanLocalProjects）已删除（#73）：本机登记改由名册同步派生，只复用单目录检查。
+test("单项目检查给出真实目录身份与项目元数据", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const path = join(root, "网站");
   await mkdir(path);
@@ -33,23 +31,16 @@ test("项目扫描与单项目检查给出真实目录身份和兼容项目记�
     join(path, "package.json"),
     "private project body not consumed",
   );
-  const scan = await scanLocalProjects([root]);
-  const observation = scan.locations.find((row) => row.path === path);
+  const observation = await inspectProjectLocation([root], path);
   assert.equal(observation.status, "present");
   assert.match(observation.identity, /^[a-f0-9]{64}$/);
   assert.match(observation.scopeSignature, /^[a-f0-9]{64}$/);
   assert.equal(observation.repoKey, "");
   assert.equal(observation.kind, "Node");
   assert.ok(!Number.isNaN(Date.parse(observation.checkedAt)));
-  assert.equal(scan.items.length, 1);
-  assert.match(scan.items[0].id, /^local-[a-f0-9]{24}$/);
-  assert.deepEqual(scan.items[0].localPaths, [path]);
-  assert.equal(scan.items[0].name, "网站");
-  assert.equal(scan.visited, 2);
-  assert.equal(scan.truncated, false);
-  assert.deepEqual(scan.errors, []);
+  assert.ok(!Object.hasOwn(observation, "recentUpdate"));
   assert.equal(
-    (await inspectProjectLocation([root], path)).identity,
+    (await inspectProjectLocation([path], path)).identity,
     observation.identity,
   );
 });
@@ -65,15 +56,7 @@ test("范围外与排除目录不探测；已知符号链接为未知，不能�
   }
   const alias = join(root, "alias");
   await symlink(project, alias);
-  const scan = await scanLocalProjects([root], { knownPaths: [alias] });
-  assert.deepEqual(
-    scan.items.map((row) => row.name),
-    ["project"],
-  );
-  assert.equal(
-    scan.locations.find((row) => row.path === alias)?.status,
-    "unknown",
-  );
+  assert.equal((await inspectProjectLocation([root], alias)).status, "unknown");
   assert.equal(
     (await inspectProjectLocation([root], join(root, ".hidden"))).status,
     "out_of_scope",
@@ -94,9 +77,6 @@ test("范围外与排除目录不探测；已知符号链接为未知，不能�
     (await inspectProjectLocation([root, alias], alias)).status,
     "unknown",
   );
-  const linkedRoot = await scanLocalProjects([alias]);
-  assert.equal(linkedRoot.items.length, 0);
-  assert.equal(linkedRoot.locations[0].status, "unknown");
 });
 
 test("目录改名保留底层身份，新路径重新签名；旧目录仅实际检查后为缺失", macOnly(VOLUME_UUID), async (t) => {
@@ -107,59 +87,15 @@ test("目录改名保留底层身份，新路径重新签名；旧目录仅实�
   await writeFile(join(before, "CURRENT.md"), "not read");
   const original = await inspectProjectLocation([root], before);
   await rename(before, after);
-  const scan = await scanLocalProjects([root], { knownPaths: [before] });
-  const moved = scan.locations.find((row) => row.path === after);
+  const moved = await inspectProjectLocation([root], after);
   assert.equal(moved.identity, original.identity);
   assert.notEqual(moved.scopeSignature, original.scopeSignature);
-  assert.equal(
-    scan.locations.find((row) => row.path === before)?.status,
-    "missing",
-  );
   assert.equal(
     (await inspectProjectLocation([root], before)).status,
     "missing",
   );
   await rm(after, { recursive: true });
   assert.equal((await inspectProjectLocation([root], after)).status, "missing");
-});
-
-test("扫描截断与已知路径优先探测共享预算，未探测目录不冒充缺失", macOnly(VOLUME_UUID), async (t) => {
-  const root = await fixture(t);
-  const project = join(root, "project");
-  const absent = join(root, "absent");
-  await mkdir(project);
-  await writeFile(join(project, "package.json"), "{}");
-  const scan = await scanLocalProjects([root], {
-    maxDirectories: 1,
-    knownPaths: [project, absent],
-  });
-  assert.equal(scan.visited, 1);
-  assert.equal(scan.truncated, true);
-  assert.equal(scan.items.length, 1);
-  assert.equal(
-    scan.locations.find((row) => row.path === absent)?.status,
-    "unknown",
-  );
-  assert.equal(
-    scan.locations.find((row) => row.path === project)?.status,
-    "present",
-  );
-  const shallow = await scanLocalProjects([root], {
-    maxDepth: 0,
-    maxDirectories: 2,
-    knownPaths: [project, absent],
-  });
-  assert.equal(shallow.visited, 2);
-  assert.equal(shallow.truncated, true);
-  assert.equal(
-    shallow.locations.find((row) => row.path === project)?.status,
-    "present",
-  );
-  assert.equal(shallow.items.length, 1);
-  assert.equal(
-    shallow.locations.find((row) => row.path === absent)?.status,
-    "missing",
-  );
 });
 
 test("Git 远端已知为空与读取失败区分，GitHub 地址仅规范化而不访问远端", macOnly(VOLUME_UUID), async (t) => {
@@ -181,24 +117,15 @@ test("Git 远端已知为空与读取失败区分，GitHub 地址仅规范化而
     "origin",
     "git@github.com:Example/Workbench.git",
   ]);
-  const scan = await scanLocalProjects([root]);
   assert.equal(
-    scan.locations.find((row) => row.path === valid)?.repoKey,
+    (await inspectProjectLocation([root], valid)).repoKey,
     "example/workbench",
   );
-  const broken = scan.locations.find((row) => row.path === invalid);
+  const broken = await inspectProjectLocation([root], invalid);
   assert.equal(broken.status, "present");
   assert.equal(broken.kind, "Git");
   assert.ok(!Object.hasOwn(broken, "repoKey"));
-  assert.ok(
-    !Object.hasOwn(
-      scan.items.find((row) => row.name === "invalid"),
-      "repoKey",
-    ),
-  );
-  assert.ok(
-    scan.errors.some((message) => message.includes("Git 远端读取失败")),
-  );
+  assert.match(broken.message, /Git 远端读取失败/);
   const { githubKey } = await import("../server/project-scan.mjs");
   assert.equal(
     githubKey("https://github.com/Example/Workbench.git"),
@@ -211,7 +138,7 @@ test("Git 远端已知为空与读取失败区分，GitHub 地址仅规范化而
   assert.equal(githubKey("https://not-github.com/Example/Workbench"), "");
 });
 
-test("扫描拒绝过宽、相对或无界参数；所有参数在探测前校验", async (t) => {
+test("检查拒绝过宽或相对的目录；参数在探测前校验", async (t) => {
   const root = await fixture(t);
   let probes = 0;
   const blocked = {
@@ -230,30 +157,12 @@ test("扫描拒绝过宽、相对或无界参数；所有参数在探测前校�
     Array(13).fill(root),
     [root, null],
   ]) {
-    await assert.rejects(scanLocalProjects(roots, { filesystem: blocked }));
+    await assert.rejects(inspectProjectLocation(roots, root, { filesystem: blocked }));
   }
-  for (const opts of [
-    { maxDirectories: Infinity },
-    { maxDirectories: -1 },
-    { maxDirectories: 0.5 },
-    { maxDepth: Infinity },
-    { maxDepth: -1 },
-    { knownPaths: "wrong" },
-    { knownPaths: [root, "relative"] },
-  ])
-    await assert.rejects(
-      scanLocalProjects([root], { ...opts, filesystem: blocked }),
-    );
   await assert.rejects(
     inspectProjectLocation([root], "relative", { filesystem: blocked }),
   );
   assert.equal(probes, 0);
-  const zero = await scanLocalProjects([root], {
-    maxDirectories: 0,
-    knownPaths: [join(root, "absent")],
-  });
-  assert.equal(zero.visited, 0);
-  assert.equal(zero.locations.at(-1).status, "unknown");
 });
 
 test("实际 ENOTDIR 可判缺失，读取受阻为未知；空目录为未识别而非缺失", macOnly(VOLUME_UUID), async (t) => {
@@ -304,14 +213,15 @@ test("Git 标记是链接时不解析其目标，也不误报远端已知为空"
   );
 });
 
-test("同一真实根的系统别名只扫描一次，同时容许根以上系统别名", macOnly(VOLUME_UUID), async (t) => {
+test("根以上的系统别名不影响检查：别名与真实路径都认得出项目", macOnly(VOLUME_UUID), async (t) => {
   const root = await fixture(t);
   const canonical = await filesystem.realpath(root);
   await mkdir(join(root, "project"));
   await writeFile(join(root, "project", "package.json"), "{}");
-  const scan = await scanLocalProjects([root, canonical]);
-  assert.equal(scan.items.length, 1);
-  assert.equal(scan.items[0].name, "project");
+  assert.equal(
+    (await inspectProjectLocation([canonical], join(canonical, "project"))).status,
+    "present",
+  );
   assert.equal(
     (await inspectProjectLocation([root], join(root, "project"))).status,
     "present",

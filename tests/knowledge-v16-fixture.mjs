@@ -15,7 +15,7 @@ export async function knowledge193Fixture({ empty = false, mcp = true, staticRoo
   await writeFile(join(roots[0], "个人上下文/关于我.md"), profile193);
   await writeFile(join(roots[0], "排除/私密.md"), "# 排除内容\n接力 私密合成\n");
   for (const [i, root] of roots.entries()) await writeFile(join(root, "方法/接力提示词.md"), `# 接力提示词${i}\n交接时提示词带上 CURRENT 与接力规则。\n<script>window.knowledgeExecuted=true</script>\n`);
-  const app = await startServer({ directory: join(base, "database"), port: 0, ...(mcp ? { mcpPort: 0 } : {}), ...(staticRoot ? { staticRoot } : {}), discovery: { defaultRoots: () => [], knowledgeFiles: createKnowledgeFiles(), ...(feishuKnowledge ? { feishuKnowledge } : {}), scanLocalProjects: async () => ({ items: [], errors: [], truncated: false, at: new Date().toISOString() }), detectAgents: async () => ({ items: [], at: new Date().toISOString() }) } });
+  const app = await startServer({ directory: join(base, "database"), port: 0, ...(mcp ? { mcpPort: 0 } : {}), ...(staticRoot ? { staticRoot } : {}), discovery: { defaultRoots: () => [], knowledgeFiles: createKnowledgeFiles(), ...(feishuKnowledge ? { feishuKnowledge } : {}), detectAgents: async () => ({ items: [], at: new Date().toISOString() }) } });
   const session = await (await fetch(app.url + "/api/session", { headers: { "x-workbench-client": "1" } })).json();
   const headers = { "content-type": "application/json", "x-workbench-token": session.token };
   async function call(path, body, method = body === undefined ? "GET" : "POST") {

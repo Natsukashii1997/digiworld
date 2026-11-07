@@ -1,5 +1,6 @@
 // 项目空间第二版（issue #8）：一次返回名册、置顶、每个项目的读数、现在 / 下一步、30 天提交。
-// 全部只读，唯一的写入是置顶（沿用 connections.projects[].active，最多 3 个，带 revision 检查并回读）。
+// 读数全部只读；写入只有置顶（沿用 connections.projects[].active，最多 3 个，带 revision 检查并回读），
+// 本机登记由名册同步（roster-sync.mjs，启动时与「按名册刷新」）派生。
 // GitHub、Git、项目卡各自失败时按项目单独标记，不让整页失败；读不到不当成 0。
 import fs from "node:fs/promises";
 import { resolve } from "node:path";
@@ -24,10 +25,13 @@ function exactKeys(input, allowed) {
 const shortDate = (iso) => (iso ? iso.slice(5, 10) : "");
 const dayGap = (from, to) => Math.round((Date.parse(to.slice(0, 10)) - Date.parse(from.slice(0, 10))) / DAY);
 
-// 名册条目对上已扫描登记的项目：按本机路径（含真实路径）比较。
+// 名册条目对上本机登记：先按名册 id（rosterId，#73 名册同步写入）；没有时按本机路径（含真实路径）兜底，
+// 兜底只认还没挂到别的名册项目上的记录。
 export function matchProject(entry, projects = [], realPath = null) {
+  const byId = entry.id ? projects.find((p) => p.rosterId === entry.id) : null;
+  if (byId) return byId;
   const wanted = new Set([entry.path, realPath].filter(Boolean).map((p) => resolve(p)));
-  return projects.find((p) => (p.localPaths || []).some((lp) => wanted.has(resolve(lp)))) || null;
+  return projects.find((p) => !p.rosterId && (p.localPaths || []).some((lp) => wanted.has(resolve(lp)))) || null;
 }
 
 // 下一步按简报 §4.2 的顺序取第一条；来自 CURRENT 且比最近提交早超过 3 天时标“可能过期”。
@@ -268,7 +272,7 @@ export function createProjectsSpace(repository, {
       const inRoster = (p) => roster.projects.some((r) => matchProject(r, [p]));
       await repository.updateConnections((c) => {
         const target = matchProject(entry, c?.projects, dir.real);
-        if (!target) throw failure("这个项目在数码世界没有本机登记记录，不能置顶（项目扫描已下线）", 409);
+        if (!target) throw failure("这个项目在数码世界没有本机登记记录，不能置顶；先点「按名册刷新」", 409);
         const others = (c.projects || []).filter((p) => p.id !== target.id && p.active === true && inRoster(p));
         if (input.pinned && others.length >= PIN_LIMIT) throw failure(`最多置顶 ${PIN_LIMIT} 个，先取消一个`, 409);
         return {

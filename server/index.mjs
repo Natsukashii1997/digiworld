@@ -13,6 +13,8 @@ const app = await startServer({
   port: Number(process.env.PORT || 5178),
   staticRoot: join(root, "dist"),
   enableCapabilityScheduler: true,
+  // 本机登记从数字分身名册派生（#73）：启动时同步一次；之后由项目空间「按名册刷新」触发。
+  syncRosterOnStart: true,
   mcpClientHealth: createKnowledgeAgentStatus(),
   // 个人说明 MCP 服务（切片 3.3）：默认 127.0.0.1:5179；WORKBENCH_MCP_PORT=off 关闭。
   mcpPort:

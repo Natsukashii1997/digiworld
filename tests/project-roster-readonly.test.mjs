@@ -3,7 +3,8 @@
 // 只用 fixture.mjs 的合成扫描结果和临时目录，不碰真实 data、名册与 Agent 配置。
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { fixture } from "./fixture.mjs";
@@ -20,8 +21,8 @@ const synthetic = async () => ({
   errors: [], truncated: false, at: new Date().toISOString(),
 });
 
-async function setup() {
-  const app = await fixture();
+async function setup(discovery) {
+  const app = await fixture({ discovery });
   const session = await (await fetch(app.url + "/api/session", { headers: { "x-workbench-client": "1" } })).json();
   const headers = { "x-workbench-token": session.token, "content-type": "application/json" };
   const call = async (path, data, method = data === undefined ? "GET" : "POST") => {
@@ -122,4 +123,33 @@ test("旧目录数据保留只读：展示名与分区照常用于旧版项目�
     assert.deepEqual(groupPortfolioSections(visible, connections.projectCatalog).map((g) => [g.label, g.items.map((p) => p.name)]),
       [["业务系统", ["网站（旧目录）"]]]);
   } finally { await app.close(); }
+});
+
+test("#73 名册同步写入的派生登记：整库 PUT 改 rosterId、删派生记录、伪造派生记录，都保留主库原值", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "roster-readonly-"));
+  const rosterPath = join(dir, "projects.json");
+  await writeFile(rosterPath, JSON.stringify({ projects: [
+    { id: "website", name: "我的网站", path: "/fixture/projects/website" },
+    { id: "fresh", name: "新项目", path: "/fixture/work/fresh" },
+  ] }));
+  const { app, call, workspace } = await setup({ projectsSpace: { rosterPath }, rosterSync: { inspect: async () => ({}) } });
+  try {
+    const synced = await call("/projects-space/sync", { revision: (await workspace()).revision });
+    assert.equal(synced.status, 200, JSON.stringify(synced.body));
+    assert.deepEqual([synced.body.linked, synced.body.added], [["website"], ["fresh"]]);
+    const before = await workspace();
+    assert.equal(before.connections.projects.find((p) => p.id === "project-a").rosterId, "website");
+    assert.equal(before.connections.projects.find((p) => p.id === "roster-fresh").rosterId, "fresh");
+
+    const forged = structuredClone(before);
+    forged.connections.projects = forged.connections.projects
+      .filter((p) => p.id !== "roster-fresh")
+      .map((p) => (p.rosterId === "website" ? { ...p, rosterId: "hijacked", rosterRemoved: true, active: true } : p))
+      .concat({ id: "roster-forged", rosterId: "forged", name: "伪造", localPaths: ["/fixture/forged"], active: true });
+    const saved = await call("/workspace", { state: forged }, "PUT");
+    assert.equal(saved.status, 200, JSON.stringify(saved.body));
+    assert.deepEqual(readonlyFields(await workspace()), readonlyFields(before));
+    // 再同步一次也没有变化：整库保存没有在名册派生上留下任何改动。
+    assert.equal((await call("/projects-space/sync", {})).body.state, "unchanged");
+  } finally { await app.close(); await rm(dir, { recursive: true, force: true }); }
 });

@@ -11,23 +11,11 @@ import {
 } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import {
-  scanLocalProjects,
-  detectAgents,
-  mergeProjects,
-} from "../server/discovery.mjs";
-import { macOnly, PLUTIL, VOLUME_UUID } from "./mac-only.mjs";
-test("扫描范围内自动发现项目，忽略依赖/符号链接；Agent 程序与配置痕迹区分", macOnly(VOLUME_UUID), async () => {
+import { detectAgents } from "../server/discovery.mjs";
+import { macOnly, PLUTIL } from "./mac-only.mjs";
+test("Agent 程序与配置痕迹区分", async () => {
   const dir = await mkdtemp(join(tmpdir(), "guiji-discovery-"));
   try {
-    await mkdir(join(dir, "website"));
-    await writeFile(join(dir, "website", "package.json"), "{}");
-    await mkdir(join(dir, "node_modules", "fake"), { recursive: true });
-    await writeFile(join(dir, "node_modules", "fake", "package.json"), "{}");
-    await symlink(join(dir, "website"), join(dir, "alias"));
-    const scan = await scanLocalProjects([dir]);
-    assert.equal(scan.items.length, 1);
-    assert.equal(scan.items[0].name, "website");
     await mkdir(join(dir, "bin"));
     await writeFile(join(dir, "bin", "codex"), "not executed");
     await chmod(join(dir, "bin", "codex"), 0o700);
@@ -137,64 +125,6 @@ test("ChatGPT.app 的 Codex bundle 身份归入 Codex，原 ChatGPT 身份不变
     await rm(dir, { recursive: true, force: true });
   }
 });
-test("本地 remote 与 GitHub 自动归并为一项；重新扫描保持稳定 ID", () => {
-  const local = {
-    id: "local-1",
-    name: "repo",
-    localPaths: ["/project/repo"],
-    repoKey: "owner/repo",
-    kind: "Git",
-    branch: "main",
-  };
-  const remote = {
-    name: "repo",
-    repoKey: "owner/repo",
-    githubUrl: "https://github.com/owner/repo",
-    private: true,
-  };
-  const result = mergeProjects([], [local], [remote]);
-  assert.equal(result.length, 1);
-  assert.equal(result[0].localPaths[0], "/project/repo");
-  assert.ok(result[0].githubUrl);
-  const repeated = mergeProjects(result, [local], [remote]);
-  assert.equal(repeated[0].id, result[0].id);
-  assert.equal(repeated.length, 1);
-});
-
-test("后续补 remote 合并已有两条记录；换 remote 解除旧关联", () => {
-  const local = {
-    id: "local-1",
-    name: "repo",
-    localPaths: ["/project/repo"],
-    repoKey: "",
-    kind: "Git",
-  };
-  const remote = {
-    name: "repo",
-    repoKey: "owner/repo",
-    githubUrl: "https://github.com/owner/repo",
-    private: true,
-  };
-  const first = mergeProjects([], [local], [remote]);
-  assert.equal(first.length, 2);
-  const linked = mergeProjects(
-    first,
-    [{ ...local, repoKey: "owner/repo" }],
-    [remote],
-  );
-  assert.equal(linked.length, 1);
-  const moved = mergeProjects(linked, [{ ...local, repoKey: "owner/new" }], []);
-  const current = moved.find((p) => p.localPaths.includes("/project/repo"));
-  assert.equal(current.repoKey, "owner/new");
-  assert.equal(current.githubUrl, undefined);
-  assert.equal(
-    moved.find((p) => p.githubUrl === remote.githubUrl).localPaths.length,
-    0,
-  );
-  const removed = mergeProjects(linked, [local], []);
-  assert.equal(removed.find((p) => p.localPaths.length).githubUrl, undefined);
-});
-
 test("不可读取的探测位置标记未知，不当作未安装", async () => {
   const dir = await mkdtemp(join(tmpdir(), "guiji-probe-error-"));
   try {
@@ -207,31 +137,6 @@ test("不可读取的探测位置标记未知，不当作未安装", async () =>
     const codex = detected.items.find((a) => a.id === "codex");
     assert.equal(codex.status, "unknown");
     assert.ok(codex.errors.length);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-});
-
-test("Git 元数据读取失败保留上次关联并报告未知", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "guiji-git-error-"));
-  try {
-    await mkdir(join(dir, ".git"));
-    const scan = await scanLocalProjects([dir]);
-    assert.ok(scan.errors.length);
-    const previous = [
-      {
-        id: "old",
-        name: "old",
-        repoKey: "owner/repo",
-        localPaths: [dir],
-        githubUrl: "https://github.com/owner/repo",
-      },
-    ];
-    const merged = mergeProjects(previous, scan.items, []);
-    assert.equal(
-      merged.find((p) => p.localPaths.includes(dir)).repoKey,
-      "owner/repo",
-    );
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

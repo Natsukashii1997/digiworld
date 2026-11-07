@@ -1,5 +1,5 @@
 // 项目空间第二版（电路卡带 7E，issue #10）浏览器回归：选卡带、置顶上限、实战未开启、名册读不到、
-// 编号按名册、置顶冲突自动重读、读取中先画卡带、只有 Codex 点名、1440 / 390 无横向溢出、控件不小于 44px、axe 无违规、减少动态效果时不跑流光、档案头只留文字、卡带文字在走线淡出带里。合成仓库与合成名册（projects-space-fixture.mjs）。
+// 编号按名册、置顶冲突自动重读、按名册刷新后能置顶、读取中先画卡带、只有 Codex 点名、1440 / 390 无横向溢出、控件不小于 44px、axe 无违规、减少动态效果时不跑流光、档案头只留文字、卡带文字在走线淡出带里。合成仓库与合成名册（projects-space-fixture.mjs）。
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
 import { mkdir, rm } from "node:fs/promises";
@@ -110,6 +110,22 @@ try {
     assert.ok(expected >= 0, "浏览器记下了那次 409");
     errors.splice(expected, 1);
     ok("主库在页面读数后变了：置顶被拒绝、自动重读、不覆盖");
+
+    // #73 按名册刷新：名册里没登记的项目补成本机登记，补完就能置顶；再点一次如实说已一致
+    await page.locator('[data-ps-cart="outside"]').click();
+    await screen.getByRole("heading", { name: /没扫描/ }).waitFor();
+    assert.match(await page.locator('[data-ps-cart="outside"] .flag').textContent(), /没有它的本机登记记录/);
+    assert.equal(await screen.getByRole("button", { name: "置顶" }).isDisabled(), true, "没登记时不能置顶");
+    await page.getByRole("button", { name: "按名册刷新" }).click();
+    await page.locator(".g5-receipt").filter({ hasText: "已按名册刷新：新登记 2 个、挂上旧登记 4 个" }).waitFor();
+    await screen.getByRole("heading", { name: /没扫描/ }).waitFor();
+    await screen.getByRole("button", { name: "置顶" }).click();
+    await screen.getByRole("button", { name: "已置顶" }).waitFor();
+    const pinnedOutside = (await app.call("/workspace")).body.connections.projects.find((p) => p.rosterId === "outside");
+    assert.deepEqual([pinnedOutside.id, pinnedOutside.active], ["roster-outside", true]);
+    await page.getByRole("button", { name: "按名册刷新" }).click();
+    await page.locator(".g5-receipt").filter({ hasText: "本机登记已和名册一致" }).waitFor();
+    ok("按名册刷新：没登记的项目补上登记后能置顶；再点一次不写库、提示已一致");
 
     await noOverflow(page, "1440");
     await bigEnough(page, "1440");

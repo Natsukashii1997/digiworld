@@ -41,11 +41,3 @@ export function createStableIdentityReader({ filesystem = fs, volumeUuid = diskV
     };
   };
 }
-
-// A scan is an observation, not permission to migrate existing registrations.
-export function observationForRegistration(observation, previous, accept = false) {
-  if (!observation) return observation;
-  if (!accept && previous?.identity && previous.identityVersion !== 2 && observation.identityVersion === 2)
-    return { ...observation, identity: observation.legacyIdentity, identityVersion: undefined };
-  return observation;
-}
