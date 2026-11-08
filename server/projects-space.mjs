@@ -6,6 +6,7 @@ import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import { failure } from "./repository.mjs";
 import { DEFAULT_ROSTER_PATH, readRoster as readRosterFile, displayPath } from "./project-roster.mjs";
+import { buildRelations, readAgentsFile, SANKEY_RULE } from "./project-relations.mjs";
 import {
   resolveProjectRoot, readCurrentFile, parseCurrentTop, gitRunner, notRepository, noCommits,
 } from "./project-status.mjs";
@@ -219,7 +220,7 @@ export function createProjectsSpace(repository, {
     return scanning ? { ...cached, scanning: true } : cached;
   }
 
-  return {
+  const api = {
     async inspect(input = {}) {
       exactKeys(input, ["refresh", "roster"]);
       if (input.refresh !== undefined && typeof input.refresh !== "boolean") throw failure("刷新参数必须是布尔值");
@@ -291,7 +292,27 @@ export function createProjectsSpace(repository, {
       if (!saved || pinned !== input.pinned) throw failure("置顶结果回读不一致，请刷新后再看", 500);
       return { id: entry.id, projectId: saved.id, pinned, revision: after.revision };
     },
+
+    // 项目关系（#78）：复用 inspect() 的读数（提交、状态、技能统计），另读名册的 type / relations 和各项目 AGENTS.md。只读。
+    async relations(input = {}) {
+      exactKeys(input, ["refresh"]);
+      if (input.refresh !== undefined && typeof input.refresh !== "boolean") throw failure("刷新参数必须是布尔值");
+      const space = await api.inspect(input.refresh === true ? { refresh: true } : {});
+      const empty = { nodes: [], edges: [], sankey: { rule: SANKEY_RULE, links: [], status: [], unusedBases: [] }, skipped: [] };
+      if (space.roster.state !== "ok") return { at: space.at, roster: space.roster, ...empty };
+      const roster = await readRoster(rosterPath);
+      if (roster.state !== "ok") return { at: space.at, roster: { state: "error", path: roster.path, message: roster.message }, ...empty };
+      const docs = await Promise.all(roster.projects.map((p) => readAgentsFile(p.path, { filesystem }).catch(() => ({ state: "error", reason: "AGENTS.md 读不到" }))));
+      const agents = Object.fromEntries(roster.projects.map((p, i) => [p.id, docs[i]]));
+      return {
+        at: space.at,
+        roster: { state: "ok", path: roster.path, ...(roster.version ? { version: roster.version } : {}), skipped: roster.skipped },
+        skillUsage: space.skillUsage,
+        ...buildRelations({ projects: roster.projects, items: space.items, agents }),
+      };
+    },
   };
+  return api;
 }
 
 function commitSummary(counts, days) {

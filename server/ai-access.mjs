@@ -81,6 +81,7 @@ export function createAiAccess({ readState, modelStatus, modelHistory, mcp = () 
         { name: 'MCP 注册自检', source: '调用 codex / claude / hermes 的 mcp 查询命令' },
         { name: 'AI HOT 资讯', source: '外部资讯源，不是 AI 替本应用产出的内容' },
         { name: '驾驶舱 Agent 页', source: '4 个 Agent 的全局指令（疑似密钥打码）、模型名、Skill 目录、MCP 与 hook 名字、网关状态、驿窗额度快照；只读，不读凭据与会话（#74）' },
+        { name: '项目关系页', source: '名册 type / relations、各项目 AGENTS.md 对底座的引用、Skill 使用统计、近 30 天提交与状态；只读（GET /api/projects-space/relations，#78）' },
         { name: '驾驶舱规则页', source: 'Vault 偏好表的编号与确认依据、agent-kit LESSONS 与自检、全局规则审核包、各项目 AGENTS/LESSONS/ADR 统计；只读（#74）' },
       ];
       const localModels = [

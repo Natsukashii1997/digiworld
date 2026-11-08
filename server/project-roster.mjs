@@ -8,6 +8,7 @@ import { selectedProfileSource } from "./knowledge-access-policy.mjs";
 export const DEFAULT_ROSTER_PATH = join(homedir(), "Documents/ChatGPT/个人/work/digital-twin/projects.json");
 const ROSTER_LIMIT = 256 * 1024;
 const ID = /^[A-Za-z0-9][\w.-]{0,79}$/;
+export const ROSTER_TYPES = ["product", "capability", "infrastructure"];
 const text = (v, n = 200) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 
 export function expandHome(path, home = homedir()) {
@@ -44,9 +45,12 @@ export function parseRoster(raw, { home = homedir() } = {}) {
       path,
       card: card && !card.startsWith("/") && !card.split("/").includes("..") ? card : "",
       github: /^[\w.-]+\/[\w.-]+$/.test(p.github || "") ? p.github : "",
+      // 项目关系页（#78）用：只在名册写了才带上，不改其他调用方看到的字段。type 不认识记 unknown；relations 原样留给关系模块校验。
+      ...(typeof p.type === "string" ? { type: ROSTER_TYPES.includes(p.type) ? p.type : "unknown" } : {}),
+      ...(Array.isArray(p.relations) ? { relations: p.relations.slice(0, 50) } : {}),
     });
   }
-  return { state: "ok", projects, skipped };
+  return { state: "ok", projects, skipped, ...(text(data?.version, 60) ? { version: text(data.version, 60) } : {}) };
 }
 
 export async function readRoster(path = DEFAULT_ROSTER_PATH, { filesystem = fs, home = homedir() } = {}) {
