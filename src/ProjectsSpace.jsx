@@ -408,6 +408,12 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
     if (!reduced) { setPressed(id); setTimeout(() => live.current && setPressed(null), 260); }
     if (matchMedia("(max-width: 760px)").matches) requestAnimationFrame(() => screen.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }));
   }
+  // 项目关系页「在项目总览打开 →」：切回总览并选中对应卡带。
+  function openInOverview(id) {
+    setPage("overview");
+    select(id);
+    requestAnimationFrame(() => document.getElementById(`ps-tab-${id}`)?.focus());
+  }
   function onCartKey(e) {
     const k = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
     if (!k || !items.length) return;
@@ -516,7 +522,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
         <button type="button" role="tab" id="ps-page-relations" aria-selected={!overview} aria-controls={overview ? undefined : "pr-panel"} onClick={() => setPage("relations")}>项目关系<span className="en">RELATIONS</span></button>
       </div>
 
-      {!overview && <ProjectRelations rel={rel} onSettings={goSettings} />}
+      {!overview && <ProjectRelations rel={rel} onSettings={goSettings} onOpen={openInOverview} />}
 
       {overview && <>
       <SourceReadError title="项目空间" error={error} retained={!!data} onRetry={() => load()} />
