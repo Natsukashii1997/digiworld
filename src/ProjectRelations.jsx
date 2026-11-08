@@ -70,7 +70,7 @@ const Tip = forwardRef(function Tip(_, ref) {
 });
 
 // ---------------- 关系轨道 ----------------
-const W = 1200, H = 660, C = { x: 430, y: 330 };
+const W = 900, H = 660, C = { x: 450, y: 330 }; // 左栏画布：轨道居中，信息卡在右侧信息轨
 const RING = { infrastructure: 104, capability: 200, product: 296 };
 const OFFSET = { product: -Math.PI / 2, capability: -Math.PI / 2 + 0.6, infrastructure: Math.PI / 6 };
 const RING_LABEL = { infrastructure: -30, capability: -122, product: -108 };
@@ -325,6 +325,8 @@ export function ProjectRelations({ rel, onSettings, onOpen }) {
       )}
       {ok && (
         <>
+        <div className="pr-duo">
+          <div className="pr-charts">
           <section className="pr-card pr-orbit-card" aria-label="项目关系图" ref={orbitCard}>
             <div className="pr-head"><h2>RELATION ORBIT</h2>
               <span className="crumb">项目之间 · {nodes.length} 个项目 · {visible} 条关系</span><span className="grow" />
@@ -341,10 +343,8 @@ export function ProjectRelations({ rel, onSettings, onOpen }) {
               <Orbit nodes={nodes} edges={edges} kinds={kinds} focus={focus} sel={sel} entered={entered} reduced={reduced}
                 onHover={setHov} onSelect={(id) => { setSel(id); setHov(null); }} tip={tip} />
             </div>
-            <Info focus={focus} nodes={nodes} edges={edges} kinds={kinds} onSelect={(id) => { setSel(id); setHov(null); }} onOpen={onOpen} />
             <span className="pr-hint">内圈基础设施 · 中圈能力 · 外圈产品 ｜ 悬停看关系 · 点击固定 · 点空白处还原</span>
           </section>
-          <p className="pr-foot">越靠里越是「底座」，连线向圆心弯；节点颜色＝名册类型，连线颜色＝关系类型，实线有原文出处，虚线是推断或「明确独立」。悬停或选中项目时连线上的光点沿方向流动，下面的支撑流同步高亮它的链路。</p>
 
           <section className="pr-card" aria-label="底座支撑桑基图">
             <div className="pr-head"><h2>SUPPORT FLOW</h2><span className="crumb">底座 → 产品 → 当前状态 · 宽度＝近 30 天提交</span><span className="grow" />
@@ -353,7 +353,13 @@ export function ProjectRelations({ rel, onSettings, onOpen }) {
             {sk ? <div className="pr-scroll"><Flow sk={sk} focus={focus} entered={entered} onPick={pickFromFlow} tip={tip} /></div>
               : <p className="pr-empty">名册里还没有标为产品（type: product）的项目，支撑流画不出来。</p>}
           </section>
-          <p className="pr-foot">{data.sankey.rule}；「引用」以各仓库 AGENTS.md、名册关系和技能调用统计为准。
+          </div>
+          <aside className="pr-rail" aria-label="信息轨">
+            <Info focus={focus} nodes={nodes} edges={edges} kinds={kinds} onSelect={(id) => { setSel(id); setHov(null); }} onOpen={onOpen} />
+          </aside>
+        </div>
+          <p className="pr-foot">上：越靠里越是「底座」，连线向圆心弯；节点颜色＝名册类型，连线颜色＝关系类型，实线有原文出处，虚线是推断或「明确独立」。
+            下：{data.sankey.rule}；「引用」以各仓库 AGENTS.md、名册关系和技能调用统计为准。右侧信息轨写当前悬停或选中的明细。
             {unused.length > 0 && <> {unused.map((n, i) => <React.Fragment key={n}>{i ? "、" : ""}<b>{n}</b></React.Fragment>)} 目前没有产品接入，所以不在左栏。</>}</p>
         </>
       )}

@@ -59,7 +59,7 @@ try {
     assert.match(await page.locator(".pr-info li").first().textContent(), /09 条agent-kit/);
     assert.match(await page.locator(".pr-flow + *, .pr-page .pr-foot").last().textContent(), /UI 设计体系、GET 索引 目前没有产品接入/);
     // 三圈：基础设施在内圈、能力中圈、产品外圈
-    const radius = async (id) => node(page, id).evaluate((g) => { const m = g.transform.baseVal.consolidate().matrix; return Math.round(Math.hypot(m.e - 430, m.f - 330)); });
+    const radius = async (id) => node(page, id).evaluate((g) => { const m = g.transform.baseVal.consolidate().matrix; return Math.round(Math.hypot(m.e - 450, m.f - 330)); });
     assert.deepEqual([await radius("agent-kit"), await radius("my-skills"), await radius("postpane")], [104, 200, 296]);
     ok("页签默认项目总览；切到项目关系后三圈 16 个项目、页头读数、枢纽排行、未接入底座说明");
     await pages(page).getByRole("tab", { name: /项目总览/ }).click();
