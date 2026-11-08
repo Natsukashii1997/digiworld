@@ -147,7 +147,9 @@ test("接口 GET /api/projects-space/relations：要令牌、只读、返回关�
     assert.deepEqual(r.body.nodes.map((n) => [n.id, n.type]), [["collab", "product"], ["bare", "product"], ["agent-kit", "infrastructure"]]);
     assert.deepEqual(r.body.edges.map((e) => `${e.from}>${e.to}:${e.origin}`), ["collab>bare:roster", "agent-kit>collab:agents"]);
     const collab = r.body.nodes.find((n) => n.id === "collab");
-    assert.equal(typeof collab.c30, "number");
+    // 近 30 天提交要先对上本机登记才读 git；非 macOS 登记不了项目（见 mac-only.mjs VOLUME_UUID），按设计是 null。
+    if (process.platform === "darwin") assert.equal(typeof collab.c30, "number");
+    else assert.equal(collab.c30, null);
     assert.ok(collab.status?.key);
     assert.deepEqual(r.body.sankey.links.map((l) => [l.base, l.project]), [["agent-kit", "collab"], ["none", "bare"]]);
     assert.ok(r.body.sankey.links.every((l) => typeof l.value === "number"));
