@@ -14,6 +14,7 @@ import { ProjectContext } from "./ProjectContext.jsx";
 import { ProjectRules } from "./RuleInstall.jsx";
 import { ProjectLaunch } from "./ProjectsV16.jsx";
 import { projectHue } from "./project-hues.js";
+import { ProjectRelations, RelationStats, useRelations } from "./ProjectRelations.jsx";
 import "./projects-space.css";
 
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -338,6 +339,9 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
   const [detail, setDetail] = useState(false), [launch, setLaunch] = useState(false), [syncBusy, setSyncBusy] = useState(false);
   const [collection, setCollection] = useState({ notes: [], state: "loading" }), [agent, setAgent] = useState("claude"), [openApp, setOpenApp] = useState(true);
   const screen = useRef(null), live = useRef(true), full = useRef(false);
+  // 页签（#79）：「项目总览」就是原来这页，内容一点不动；「项目关系」第一次切过去才读接口。
+  const [page, setPage] = useState("overview"), overview = page === "overview";
+  const rel = useRelations(page === "relations");
   useEffect(() => () => { live.current = false; }, []);
 
   const load = useCallback(async (refresh = false) => {
@@ -494,17 +498,27 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
     <div className="g5 projects-space" data-v="b" data-cart="5">
       <header className="bar">
         <h1>项目空间<span className="en">PROJECTS</span></h1>
-        <div className="counts">
+        {overview ? <div className="counts">
           <span className="cnt"><span className="lcd"><Count value={(totals?.projects ?? 0)} run={data?.at} px={3} /></span><small>项目</small></span>
           <span className="cnt"><span className="lcd cyan">{totals ? <Count value={(totals.issues)} run={data?.at} px={3} /> : <b className="dash">—</b>}</span><small>{totals?.issuesPartial ? "开着的 issue · 有项目读不到" : "开着的 issue"}</small></span>
           <span className="cnt"><span className="lcd violet">{totals?.skillCalls != null ? <Count value={(totals.skillCalls)} run={data?.at} px={3} /> : <b className="dash">—</b>}</span><small>近 30 天技能调用</small></span>
-        </div>
+        </div> : <RelationStats data={rel.data} />}
         <span className="grow" />
-        <button type="button" className="btn" title="按数字分身名册更新本机登记：新项目补登记，已有登记和置顶保留" disabled={!data || syncBusy || loading} onClick={syncRoster}>{syncBusy ? "刷新中…" : "按名册刷新"}</button>
-        <button type="button" className="ibtn" aria-label="刷新" title="重读名册、CURRENT、GitHub 与会话统计" disabled={loading} onClick={refresh}><RefreshCw /></button>
+        {overview && <button type="button" className="btn" title="按数字分身名册更新本机登记：新项目补登记，已有登记和置顶保留" disabled={!data || syncBusy || loading} onClick={syncRoster}>{syncBusy ? "刷新中…" : "按名册刷新"}</button>}
+        {overview
+          ? <button type="button" className="ibtn" aria-label="刷新" title="重读名册、CURRENT、GitHub 与会话统计" disabled={loading} onClick={refresh}><RefreshCw /></button>
+          : <button type="button" className="ibtn" aria-label="刷新" title="重读名册、各项目 AGENTS.md 与读数" disabled={rel.loading} onClick={() => rel.load(true)}><RefreshCw /></button>}
         <button type="button" className="ibtn" aria-label="设置" title="设置" onClick={goSettings}><Settings2 /></button>
       </header>
 
+      <div className="ps-pages" role="tablist" aria-label="项目空间页签">
+        <button type="button" role="tab" id="ps-page-overview" aria-selected={overview} onClick={() => setPage("overview")}>项目总览<span className="en">OVERVIEW</span></button>
+        <button type="button" role="tab" id="ps-page-relations" aria-selected={!overview} aria-controls={overview ? undefined : "pr-panel"} onClick={() => setPage("relations")}>项目关系<span className="en">RELATIONS</span></button>
+      </div>
+
+      {!overview && <ProjectRelations rel={rel} onSettings={goSettings} />}
+
+      {overview && <>
       <SourceReadError title="项目空间" error={error} retained={!!data} onRetry={() => load()} />
 
       {data?.roster?.state === "error" ? (
@@ -537,6 +551,7 @@ export function ProjectsSpace({ state, navigate, adoptState, notify, ruleInstall
         <span className="grow" />
         <span className="g5-receipt" role="status">{receipt}</span>
       </footer>
+      </>}
 
       {launch && item && (
         <Dialog title={`复制接手口令 · ${item.name}`} onClose={() => setLaunch(false)}>

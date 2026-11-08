@@ -1,0 +1,28 @@
+/* 项目空间页签条 + 「项目关系」页（#79），照定稿 docs/design/projects-space-v3/项目关系-定稿.html。
+   只新增，不改 projects-space.css 与 tokens.css。样式层只用令牌（tests/design-tokens.test.mjs）；
+   关系图的数据配色（项目类型、关系类型、当前状态、底座）照 project-hues.js 的先例放在 project-relations-palette.js，以 --c 等变量传进来。 */
+
+/* ---------- 页签条：项目总览 | 项目关系 ---------- */
+.ps-pages { display: flex; margin: 0 0 18px; border-bottom: 1px solid var(--line); }
+.ps-pages button { min-height: 44px; padding: 0 18px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font: 600 var(--fs-caption) var(--sans); cursor: pointer; }
+.ps-pages button .en { margin-left: 6px; font: 600 var(--fs-micro) var(--mono); letter-spacing: .14em; color: var(--muted); }
+.ps-pages button:hover { color: var(--text-2); }
+.ps-pages button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--orange); }
+
+/* ---------- 页头右侧读数（关系页签时替换项目总览的液晶读数） ---------- */
+.pr-stats { display: flex; flex-wrap: wrap; align-items: baseline; gap: 18px; font: 500 var(--fs-micro) var(--mono); color: var(--muted); }
+.pr-stats b { margin-right: 5px; font: 700 var(--fs-title) var(--mono); color: var(--text); font-variant-numeric: tabular-nums; }
+.pr-stats .src { align-self: center; padding: 2px 8px; border: 1px solid var(--line-2); border-radius: var(--r-pill); color: var(--muted); }
+
+/* ---------- 关系页：深色卡片 ---------- */
+.pr-page { --void-line: rgba(120, 140, 190, .14); }
+.pr-card { position: relative; border: 1px solid var(--void-line); border-radius: var(--r-floating); overflow: hidden;
+  background: radial-gradient(90% 70% at 50% 0%, rgba(80, 110, 200, .10), transparent 70%), var(--bg); }
+.pr-card + .pr-card, .pr-foot + .pr-card { margin-top: 16px; }
+.pr-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; padding: 12px 16px; border-bottom: 1px solid rgba(120, 140, 190, .12);
+  font: 500 var(--fs-micro) var(--mono); color: var(--muted); }
+.pr-head h2 { margin: 0; font: 700 var(--fs-small) var(--mono); letter-spacing: .14em; color: var(--text); }
+.pr-head .crumb { color: var(--muted); }
+.pr-empty { margin: 0; padding: 28px 16px; font-size: var(--fs-small); color: var(--text-2); }
+.pr-foot { margin: 10px 2px 0; font-size: var(--fs-small); line-height: 1.65; color: var(--muted); }
+.pr-foot b { color: var(--text-2); }

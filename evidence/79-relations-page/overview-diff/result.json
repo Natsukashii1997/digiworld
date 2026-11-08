@@ -1,0 +1,72 @@
+[
+  {
+    "state": "选中 collab",
+    "attempt": 1,
+    "shift": 63,
+    "head": {
+      "size": [
+        1144,
+        137
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    },
+    "bodySamePosition": {
+      "size": [
+        1144,
+        1284
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    },
+    "bodyShifted": {
+      "size": [
+        1144,
+        1284
+      ],
+      "diff": 101228,
+      "maxDelta": 10,
+      "rows": [
+        3,
+        1059
+      ]
+    }
+  },
+  {
+    "state": "选中 bare",
+    "attempt": 1,
+    "shift": 63,
+    "head": {
+      "size": [
+        1144,
+        137
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    },
+    "bodySamePosition": {
+      "size": [
+        1144,
+        1297
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    },
+    "bodyShifted": {
+      "size": [
+        1144,
+        1297
+      ],
+      "diff": 102757,
+      "maxDelta": 2,
+      "rows": [
+        3,
+        1072
+      ]
+    }
+  }
+]

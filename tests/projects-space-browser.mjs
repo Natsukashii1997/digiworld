@@ -14,7 +14,7 @@ const { chromium } = createRequire(import.meta.url)(
 const output = process.env.GUIJI_TEST_RESULTS || "test-results";
 await mkdir(output, { recursive: true });
 const app = await spaceFixture({ staticRoot: process.env.WORKBENCH_TEST_STATIC_ROOT || join(import.meta.dirname, "../dist") });
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM } : {});
 const errors = [];
 const ok = (s) => console.log("PASS", s);
 
@@ -45,7 +45,7 @@ try {
     const { page, context } = await open(1440);
     const carts = page.locator("[data-ps-cart]");
     assert.equal(await carts.count(), 6);
-    assert.equal(await page.getByRole("tab", { selected: true }).getAttribute("data-ps-cart"), "collab");
+    assert.equal(await page.getByRole("tablist", { name: "选择项目" }).getByRole("tab", { selected: true }).getAttribute("data-ps-cart"), "collab");
     const screen = page.locator("#ps-screen");
     await screen.getByRole("heading", { name: /协同项目/ }).waitFor();
     assert.match(await screen.locator(".one").textContent(), /合成一句话/);
