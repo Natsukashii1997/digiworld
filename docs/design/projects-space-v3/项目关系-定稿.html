@@ -1,0 +1,354 @@
+<title>项目关系定稿</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>
+/* 布局：数码世界外壳（左侧栏 + 主区）。项目空间页头下「项目总览 | 项目关系」，本稿是「项目关系」定稿：关系图用方案 2 轨道，桑基用方案 1 横向。
+   上：关系轨道（三圈同心 + 右侧信息卡）；下：支撑流桑基（底座 → 产品 → 当前状态）。两图联动。单一深色外观。 */
+:root{
+  color-scheme:dark;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --bg:#070b16;--bg-2:#0a1020;--line:rgba(140,178,255,.11);--line-2:rgba(140,178,255,.19);--line-3:rgba(140,178,255,.32);
+  --text:#e9eeff;--text-2:#b4bfda;--muted:#8b98b8;--faint:#5d6987;--orange:#ff8a24;--orange-2:#ffb35c;--cyan:#4de3ff;
+  --void:#060914;--void-line:rgba(120,140,190,.14);--void-ink:#aab4d4;--void-dim:#56628a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.shell{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;padding:18px 14px;border-right:1px solid var(--line);background:var(--bg-2)}
+.brand{display:flex;align-items:center;gap:10px;margin:0 4px 22px}
+.brand i{width:30px;height:30px;border-radius:8px;background:radial-gradient(circle at 40% 35%,var(--orange-2),var(--orange) 55%,#7a3200)}
+.brand b{display:block;font:800 17px/1.1 var(--sans)}.brand small{font:600 9px var(--mono);letter-spacing:.2em;color:var(--muted)}
+.side h6{margin:14px 6px 6px;font:600 11px var(--sans);color:var(--faint)}
+.side a{display:flex;align-items:center;min-height:38px;padding:0 10px;border-radius:9px;color:var(--text-2);text-decoration:none;font-size:13px}
+.side a.on{background:rgba(255,138,36,.12);color:var(--orange-2);box-shadow:inset 2px 0 0 var(--orange)}
+.main{min-width:0;padding:22px max(24px,env(safe-area-inset-right,0px)) 60px max(24px,env(safe-area-inset-left,0px))}
+.bar{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.bar h1{margin:0;font:800 20px var(--sans)}.bar h1 .en{margin-left:10px;font:600 11px var(--mono);letter-spacing:.16em;color:var(--muted)}
+.stats{display:flex;gap:18px;flex-wrap:wrap;font:500 11px var(--mono);color:var(--muted)}
+.stats b{margin-right:5px;font:700 18px var(--mono);color:var(--text);font-variant-numeric:tabular-nums}
+.stats .src{align-self:center;padding:2px 8px;border:1px solid var(--line-2);border-radius:999px;font-size:10.5px;color:var(--faint)}
+.grow{flex:1}
+.ptabs{display:flex;margin:16px 0 18px;border-bottom:1px solid var(--line)}
+.ptabs button{min-height:44px;padding:0 18px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font:600 13px var(--sans);cursor:pointer}
+.ptabs button .en{margin-left:6px;font:600 10px var(--mono);letter-spacing:.14em;color:var(--faint)}
+.ptabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--orange)}
+
+.card{position:relative;border:1px solid var(--void-line);border-radius:14px;background:radial-gradient(90% 70% at 50% 0%,rgba(80,110,200,.10),transparent 70%),var(--void);overflow:hidden}
+.card+.card{margin-top:16px}
+.chead{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid rgba(120,140,190,.12);font:500 11px var(--mono);color:#7d89aa}
+.chead h2{margin:0;font:700 12px var(--mono);letter-spacing:.14em;color:#e6ebff}
+.chead .crumb{color:var(--void-dim)}
+.tg{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 9px;border:1px solid transparent;border-radius:999px;background:none;color:#9aa6c8;font:500 11px var(--mono);cursor:pointer;white-space:nowrap}
+.tg:hover{border-color:var(--void-line)}
+.tg[aria-pressed="false"]{opacity:.38}
+.tg i{width:9px;height:9px;border-radius:2px;background:var(--c)}
+.tg s{width:18px;height:0;border-top:1.6px solid var(--c);text-decoration:none}
+.tg s.d{border-top-style:dashed}
+.sep{width:1px;height:16px;background:var(--void-line)}
+.act{min-height:28px;padding:0 10px;border:1px solid var(--void-line);border-radius:999px;background:rgba(120,140,190,.06);color:#c4cbe4;font:500 11px var(--mono);cursor:pointer}
+.act:hover{border-color:var(--line-3)}
+.act[aria-pressed="true"]{color:var(--orange-2);border-color:rgba(255,179,92,.45)}
+svg{display:block;width:100%;height:auto}
+
+/* 关系星图 */
+.g .lk{fill:none;stroke-width:1.4;opacity:.42;transition:opacity .25s,stroke-width .25s}
+.g .lk.d{stroke-dasharray:4 4}
+.g .lk.off{display:none}
+.g.focus .lk{opacity:.06}
+.g.focus .lk.hot{opacity:.95;stroke-width:2.2}
+.g .lk.draw{animation:draw 1.1s cubic-bezier(.2,.8,.2,1) both}
+@keyframes flow{to{stroke-dashoffset:-26}}
+@keyframes draw{from{stroke-dasharray:var(--len) var(--len);stroke-dashoffset:var(--len)}to{stroke-dasharray:var(--len) var(--len);stroke-dashoffset:0}}
+.g .ring{fill:none;stroke:rgba(255,255,255,.07)}
+.g .ring.spin{stroke-dasharray:2000;animation:ringin 1.2s cubic-bezier(.2,.8,.2,1) both}
+@keyframes ringin{from{stroke-dashoffset:2000}to{stroke-dashoffset:0}}
+.g .ringlab{font:600 10px var(--mono);letter-spacing:.2em;fill:rgba(255,255,255,.32)}
+.g .nd{cursor:pointer}
+.g .nd .glow{opacity:0;filter:blur(8px);transition:opacity .25s}
+.g .nd.hot .glow{opacity:.22}
+.g .nd.sel .glow{opacity:.4;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.18}}
+.g .nd .pill{transition:fill .25s}
+.g .nd:hover .pill,.g .nd.sel .pill{fill:#1c2540}
+.g .nd text{font:600 11.5px var(--sans);fill:#e9eeff}
+.g.focus .nd{opacity:.25;transition:opacity .25s}
+.g.focus .nd.hot{opacity:1}
+.g .nd.in{animation:pop .6s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes pop{from{opacity:0;transform:var(--t) scale(.3)}to{opacity:1;transform:var(--t) scale(1)}}
+.g .nd.new .pill{stroke:var(--orange-2);stroke-width:1.5;stroke-dasharray:4 3;stroke-opacity:1}
+.g .pt{pointer-events:none}
+.info{position:absolute;right:14px;top:62px;bottom:14px;width:276px;display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:12px;background:rgba(10,14,28,.9);border:1px solid rgba(120,140,190,.2);backdrop-filter:blur(6px);font-size:12px;color:var(--void-ink);overflow:auto}
+.info h3{margin:0;font:700 15px var(--sans);color:#fff;display:flex;align-items:center;gap:8px}
+.info h3 i{width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:none}
+.info .meta{font:500 10.5px var(--mono);color:var(--void-dim)}
+.info p{margin:0;line-height:1.6}
+.info .nums{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--void-line);border-radius:8px}
+.info .nums div{padding:7px 9px;display:grid;gap:1px}.info .nums div+div{border-left:1px solid var(--void-line)}
+.info .nums small{font:500 10px var(--mono);color:var(--void-dim)}.info .nums b{font:700 15px var(--mono);color:#fff}
+.info h4{margin:0;font:600 10px var(--mono);letter-spacing:.14em;color:var(--void-dim)}
+.info ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.info li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 8px;padding:6px 8px;border-radius:7px;cursor:pointer}
+.info li:hover{background:rgba(120,140,190,.08)}
+.info li em{font:600 10px/1.9 var(--mono);font-style:normal;color:var(--c);white-space:nowrap}
+.info li b{font-weight:600;color:#e6ebff}
+.info li span{grid-column:2;font-size:11px;color:#7d89aa;line-height:1.45}
+.info .go{margin-top:auto;min-height:36px;border:1px solid rgba(255,179,92,.4);border-radius:9px;background:rgba(255,138,36,.08);color:var(--orange-2);font:600 12px var(--sans);cursor:pointer}
+.info .draft{display:inline-block;margin-left:6px;padding:0 6px;border-radius:4px;background:rgba(255,138,36,.12);color:var(--orange-2);font:600 9.5px/1.7 var(--mono)}
+.hint{position:absolute;left:16px;bottom:12px;font:500 10.5px var(--mono);color:var(--void-dim)}
+
+/* 支撑流桑基 */
+.s .flow{fill:none;opacity:.34;mix-blend-mode:screen;transition:opacity .25s}
+.s.focus .flow{opacity:.06}
+.s.focus .flow.hot{opacity:.88}
+.s .shim{fill:none;stroke:#fff;stroke-opacity:0;pointer-events:none}
+.s.focus .shim.hot{stroke-opacity:.32;stroke-dasharray:10 34;animation:flow2 1.5s linear infinite}
+@keyframes flow2{to{stroke-dashoffset:-88}}
+.s .flow.grow{animation:grow 1s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{opacity:0}}
+.s .nd{cursor:pointer}
+.s .nd rect{transition:filter .25s}
+.s.focus .nd{opacity:.45}.s.focus .nd.hot{opacity:1}
+.s .nlab{font:600 12.5px var(--sans);fill:#e9eeff;paint-order:stroke;stroke:var(--void);stroke-width:4px;stroke-linejoin:round}
+.s .nval{font:500 10.5px var(--mono);fill:#8f9abb;paint-order:stroke;stroke:var(--void);stroke-width:4px}
+.s .colh{font:700 10.5px var(--mono);letter-spacing:.16em;fill:var(--void-dim)}
+.foot{margin:10px 2px 0;font-size:12px;color:var(--muted);line-height:1.65}
+.foot b{color:var(--text-2)}
+#tip{position:fixed;z-index:50;left:0;top:0;max-width:300px;padding:10px 12px;border-radius:10px;background:rgba(12,18,32,.97);border:1px solid var(--line-3);box-shadow:0 14px 40px -10px rgba(0,0,0,.8);font-size:12px;line-height:1.55;color:var(--text-2);pointer-events:none;opacity:0;transition:opacity .12s}
+#tip b{display:block;font-size:13px;color:var(--text);margin-bottom:2px}
+#tip .k{font:600 10px var(--mono);color:var(--muted)}#tip .n{font:700 12px var(--mono);color:var(--text)}
+#toast{position:fixed;left:50%;bottom:24px;z-index:60;transform:translateX(-50%);padding:9px 14px;border-radius:10px;background:#141c33;border:1px solid var(--line-3);font-size:12.5px;color:var(--text);opacity:0;transition:opacity .2s;pointer-events:none}
+
+@media (max-width:1100px){.info{position:static;width:auto;margin:0 14px 14px}.hint{display:none}}
+@media (max-width:760px){.shell{grid-template-columns:minmax(0,1fr)}.side{display:none}
+  .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .scroll{overflow-x:auto}.scroll svg{min-width:760px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="shell">
+  <aside class="side" aria-label="数码世界侧栏（示意）">
+    <div class="brand"><i></i><div><b>数码世界</b><small>DIGITAL·WORLD</small></div></div>
+    <h6>体系 · 只读</h6><a href="#p">世界总览</a><a class="on" href="#p">项目空间</a><a href="#p">Agent</a><a href="#p">规则</a>
+    <h6>我的素材 · 可写</h6><a href="#p">资产仓库</a><a href="#p">个人收藏</a><a href="#p">随手记</a><a href="#p">逆向工程</a>
+  </aside>
+  <main class="main">
+    <header class="bar"><h1>项目空间<span class="en">PROJECTS</span></h1><span class="grow"></span>
+      <div class="stats" id="stats"></div></header>
+    <div class="ptabs" role="tablist" aria-label="项目空间页签">
+      <button type="button" role="tab" aria-selected="false" id="tabOverview" title="现有页面，保持不动">项目总览<span class="en">OVERVIEW</span></button>
+      <button type="button" role="tab" aria-selected="true">项目关系<span class="en">RELATIONS</span></button>
+    </div>
+
+    <section class="card" aria-label="项目关系图">
+      <div class="chead"><h2>RELATION ORBIT</h2><span class="crumb" id="crumb"></span><span class="grow"></span><span id="kinds"></span>
+        <span class="sep"></span><button class="act" type="button" id="btnNew" aria-pressed="false">模拟新增项目</button></div>
+      <div class="scroll"><svg id="g" class="g" viewBox="0 0 1200 660"></svg></div>
+      <aside class="info" id="info" aria-live="polite"></aside>
+      <span class="hint">内圈基础设施 · 中圈能力 · 外圈产品 ｜ 悬停看关系 · 点击固定 · 点空白处还原</span>
+    </section>
+    <p class="foot">越靠里越是「底座」，连线向圆心弯；颜色＝名册类型，连线颜色＝关系类型，实线有原文出处，虚线是推断。悬停或选中项目时连线上的光点沿方向流动，下面的支撑流同步高亮它的链路。</p>
+
+    <section class="card" aria-label="底座支撑桑基图">
+      <div class="chead"><h2>SUPPORT FLOW</h2><span class="crumb">底座 → 产品 → 当前状态 · 宽度＝近 30 天提交</span><span class="grow"></span><span id="sts"></span></div>
+      <div class="scroll"><svg id="s" class="s" viewBox="0 0 1200 560"></svg></div>
+    </section>
+    <p class="foot">一个产品引用多个底座时，它的提交量平均分到各底座；「引用」以各仓库 AGENTS.md 和技能调用统计为准。<b>UI 设计体系</b>、<b>GET 索引</b>目前没有产品直接接入，所以不在左栏。</p>
+  </main>
+</div>
+<div id="tip" role="tooltip"></div><div id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<script>
+/* ---------------- 真实数据 ----------------
+   项目与类型：digital-twin/projects.json（名册 v1.6）；近 30 天提交与状态：5178 /api/projects-space（11-08 10:30）；
+   关系：名册备注、项目卡、各仓库 AGENTS.md 的引用与「边界」节、技能调用统计（每条带出处，手工整理的为草稿，待写进名册）。 */
+const N=[
+ {id:"personal-ai-workbench",name:"数码世界",type:"product",dom:"AI 体系",c30:131,st:"agent",one:"个人 AI 体系的信息驾驶舱：汇总各项目、Agent、资产并可视化。"},
+ {id:"digital-twin",name:"数字分身",type:"product",dom:"AI 体系",c30:158,st:"agent",one:"让 Hermes 成为飞书里唯一的「常浩的 AI」，派活给 Claude Code / Codex 并收回结果。"},
+ {id:"postpane",name:"驿窗",type:"product",dom:"AI 体系",c30:239,st:"pr",one:"屏幕边上的工作中枢：汇总 AI 助手的额度、状态、审批和回复。"},
+ {id:"github-center",name:"GitHub 中心",type:"product",dom:"AI 体系",c30:111,st:"human",one:"私人 GitHub 项目发现站：每天出榜单和中文简介。"},
+ {id:"chatgpt-clipper",name:"回答收藏器",type:"product",dom:"AI 体系",c30:23,st:"ok",one:"把 ChatGPT / Claude 回答存成长图、HTML、Markdown 放进 Obsidian。"},
+ {id:"work-desk",name:"牛马之家",type:"product",dom:"工作",c30:299,st:"ok",one:"个人工作台：营销策略、项目推进、带教、业务数据收进一个入口。"},
+ {id:"trainee-hub",name:"管培生工作台",type:"product",dom:"工作",c30:7,st:"human",one:"按期次和轮岗站组织带教、点评与待办。"},
+ {id:"carvomoto",name:"CarvoMOTO",type:"product",dom:"工作",c30:95,st:"noremote",one:"ATV/UTV 汽配出海获客，目标是海外 B2B 合格询盘。"},
+ {id:"disk-slim",name:"磁盘瘦身",type:"product",dom:"生活与本机",c30:3,st:"ok",one:"macOS 菜单栏工具：清下载、缓存与构建产物，空间暴涨时提醒。"},
+ {id:"little-steps",name:"Little Steps",type:"product",dom:"生活与本机",c30:12,st:"ok",one:"家庭育儿记录 PWA 与微信小程序。"},
+ {id:"my-skills",name:"自建技能库",type:"capability",c30:38,one:"自建 Claude / Codex skill 的唯一存放处。"},
+ {id:"multi-agent",name:"多 Agent 协同",type:"capability",c30:6,one:"思维评审、工程审查等协同模式的契约与评测。"},
+ {id:"ui-system",name:"UI 设计体系",type:"capability",c30:2,one:"跨项目设计原则、资产索引与界面验收标准。"},
+ {id:"obsidian-kb",name:"Obsidian 知识库",type:"infrastructure",c30:1,one:"让 Vault 成为常浩的知识库，主要给 AI 当上下文。"},
+ {id:"get-index",name:"GET 索引",type:"infrastructure",c30:0,one:"知识库 KB-04 的 GET NOTES 索引维护工具。"},
+ {id:"agent-kit",name:"agent-kit",type:"infrastructure",c30:31,one:"全局坑 LESSONS 与《工程流程》，各项目共用的协作底座。"}
+];
+const TYPE={product:["产品","#ffb35c"],capability:["能力","#a891ff"],infrastructure:["基础设施","#7fe0a0"]};
+const KIND={support:["引用底座","#8fa3ff"],data:["数据流","#4de3ff"],contract:["契约 → 实施","#c08bff"],part:["组成 · 挂载","#ffb35c"],apart:["明确独立","#ff7b7b"]};
+// [从, 到, 类型, 说明, 出处, 推断?, 自动?]   自动＝页面能从 AGENTS.md / 技能统计自己读出来；其余是手工整理的草稿
+const E=[
+ ["digital-twin","personal-ai-workbench","data","名册 projects.json 是项目空间的唯一来源","产品定义 v2.0"],
+ ["my-skills","personal-ai-workbench","data","自建 Skill 只读展示","产品定义 v2.0"],
+ ["personal-ai-workbench","my-skills","data","逆向产出的 Skill 进 my-skills 候选站","D-B"],
+ ["obsidian-kb","personal-ai-workbench","data","项目卡、个人说明经 Vault 只读接入","数码世界 AGENTS.md"],
+ ["obsidian-kb","digital-twin","data","Vault 是「常浩」唯一真源，Hermes vault 技能在知识库仓库","数字分身项目卡"],
+ ["chatgpt-clipper","obsidian-kb","data","回答存进 Obsidian","名册备注"],
+ ["digital-twin","postpane","data","Hermes 的状态、提问与回复汇总进驿窗","驿窗 README"],
+ ["digital-twin","github-center","data","每日榜单由 Hermes 发飞书日报","GitHub 中心项目卡"],
+ ["github-center","my-skills","data","发现的 Skill 决定要不要装进自己的 AI","GitHub 中心项目卡",true],
+ ["multi-agent","digital-twin","contract","Hermes 控制面与 Multica 实施引用模式契约","multi-agent 边界"],
+ ["multi-agent","postpane","contract","接力的界面、传信、回执归驿窗","multi-agent 边界"],
+ ["multi-agent","my-skills","contract","thinking-review 等可执行方法归 my-skills","multi-agent 边界"],
+ ["ui-system","my-skills","contract","ui-styles、excel-aura 正式版在 my-skills，只引用","ui-system 边界"],
+ ["get-index","obsidian-kb","part","知识库 KB-04 的索引维护工具","名册备注"],
+ ["disk-slim","postpane","part","已挂进驿窗侧栏","名册备注"],
+ ["my-skills","trainee-hub","support","会话里调用自建 skill（ai-landing-method）","技能调用统计",false,true],
+ ["my-skills","postpane","support","会话里调用自建 skill（thinking-review 等）","技能调用统计",false,true],
+ ...["work-desk","personal-ai-workbench","trainee-hub","github-center","digital-twin","postpane","chatgpt-clipper","disk-slim","little-steps"].map(t=>["agent-kit",t,"support","AGENTS 指向《工程流程》与全局坑","该项目 AGENTS.md",false,true]),
+ ["work-desk","personal-ai-workbench","apart","完全独立，不共享数据","牛马之家项目卡"],
+ ["work-desk","carvomoto","apart","不放进牛马之家，不用工作账号","两边项目卡"]
+];
+const SUP={"personal-ai-workbench":["agent-kit","my-skills","obsidian-kb"],"digital-twin":["agent-kit","multi-agent","obsidian-kb"],"postpane":["agent-kit","multi-agent","my-skills"],"github-center":["agent-kit"],"chatgpt-clipper":["agent-kit","obsidian-kb"],"work-desk":["agent-kit"],"trainee-hub":["agent-kit","my-skills"],"disk-slim":["agent-kit"],"little-steps":["agent-kit"],"carvomoto":["none"]};
+const ST={agent:["待 Agent 处理","#4de3ff"],human:["待人工验收","#ffd166"],pr:["PR 待合并","#c08bff"],ok:["正常推进","#7fe0a0"],noremote:["没有远端","#ff7b7b"]};
+const BASEHUE={"agent-kit":"#7fe0a0","my-skills":"#c8b6ff","obsidian-kb":"#5fd0c0","multi-agent":"#a891ff","none":"#6b7590"};
+const BASENAME={"agent-kit":"agent-kit · 工程流程","my-skills":"自建技能库","obsidian-kb":"Obsidian 知识库","multi-agent":"多 Agent 协同","none":"未接底座"};
+const DEMO={id:"demo-new",name:"新项目（示例）",type:"product",dom:"示例",c30:0,one:"名册里新增的一行：页面读到后自动出现在图里；它的 AGENTS.md 引用了 agent-kit，所以自动连上一条线。",demo:true};
+
+let nodesAll=[...N],edgesAll=[...E],kindOn=new Set(Object.keys(KIND)),sel=null,hov=null,demo=false;
+const byId=()=>Object.fromEntries(nodesAll.map(n=>[n.id,n]));
+const edges=()=>edgesAll.filter(e=>kindOn.has(e[2]));
+const deg=id=>edgesAll.filter(e=>e[0]===id||e[1]===id).length;
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const calm=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+const tip=document.getElementById("tip");
+function showTip(e,h){tip.innerHTML=h;tip.style.opacity=1;tip.style.left=Math.min(e.clientX+14,innerWidth-tip.offsetWidth-12)+"px";tip.style.top=Math.min(e.clientY+14,innerHeight-tip.offsetHeight-12)+"px"}
+function hideTip(){tip.style.opacity=0}
+function toast(t){const el=document.getElementById("toast");el.textContent=t;el.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>el.style.opacity=0,2200)}
+
+/* ---------------- 页头与开关 ---------------- */
+function header(){
+  const prod=nodesAll.filter(n=>n.type==="product"&&!n.demo);
+  document.getElementById("stats").innerHTML=`<span><b>${nodesAll.length}</b>项目</span><span><b>${edgesAll.length}</b>关系</span><span><b>${edgesAll.filter(e=>!e[6]).length}</b>待确认草稿</span><span><b>${prod.reduce((a,n)=>a+n.c30,0)}</b>近 30 天产品提交</span><span class="src">名册 v1.6 · 读取于 11-08 10:30</span>`;
+  document.getElementById("crumb").textContent=`项目之间 · ${nodesAll.length} 个项目 · ${edges().length} 条关系`;
+  document.getElementById("kinds").innerHTML=Object.entries(TYPE).map(([k,[n,c]])=>`<span class="tg" style="--c:${c};cursor:default"><i></i>${n}</span>`).join("")+`<span class="sep" style="display:inline-block;vertical-align:middle;margin:0 4px"></span>`+
+    Object.entries(KIND).map(([k,[n,c]])=>`<button type="button" class="tg" data-kind="${k}" aria-pressed="${kindOn.has(k)}" style="--c:${c}"><s class="${k==="apart"?"d":""}"></s>${n}</button>`).join("")+`<span class="tg" style="--c:#9aa6c8;cursor:default"><s class="d"></s>推断</span>`;
+  document.getElementById("sts").innerHTML=Object.values(ST).map(([n,c])=>`<span class="tg" style="--c:${c};cursor:default"><i></i>${n}</span>`).join("");
+}
+
+/* ---------------- 关系星图 ---------------- */
+const W=1200,H=660,C={x:430,y:330},R={infrastructure:104,capability:200,product:296},pos={};
+// 轨道布局：按名册类型放进三圈，每圈等分角度；名册新增项目时只是它所在那一圈重新等分
+function layout(){
+  const prev=new Set(Object.keys(pos)),off={product:-Math.PI/2,capability:-Math.PI/2+.6,infrastructure:Math.PI/6};
+  ["infrastructure","capability","product"].forEach(t=>{const ns=nodesAll.filter(n=>n.type===t);ns.forEach((n,i)=>{const a=off[t]+i*2*Math.PI/ns.length;pos[n.id]={x:C.x+R[t]*Math.cos(a),y:C.y+R[t]*Math.sin(a)}})});
+  Object.keys(pos).forEach(id=>{if(!nodesAll.some(n=>n.id===id))delete pos[id]});
+  return nodesAll.filter(n=>!prev.has(n.id));
+}
+function drawGraph(entering=[]){
+  const B=byId(),svg=document.getElementById("g"),es=edgesAll,first=!svg.dataset.drawn,enter=new Set(entering.map(n=>n.id));
+  const LA={infrastructure:-30,capability:-122,product:-108};
+  let h=`<defs><radialGradient id="core"><stop offset="0" stop-color="#7fe0a0" stop-opacity=".16"/><stop offset="1" stop-color="#7fe0a0" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="rgba(120,140,190,.04)"/></pattern></defs>
+    <rect id="bg" width="${W}" height="${H}" fill="url(#grid)"/><circle cx="${C.x}" cy="${C.y}" r="150" fill="url(#core)" pointer-events="none"/>`;
+  Object.entries(R).forEach(([t,r])=>{const a=LA[t]*Math.PI/180;h+=`<circle class="ring ${first&&!calm()?"spin":""}" cx="${C.x}" cy="${C.y}" r="${r}"/><text class="ringlab" x="${C.x+r*Math.cos(a)}" y="${C.y+r*Math.sin(a)+4}" text-anchor="middle">${TYPE[t][0]}</text>`});
+  es.forEach((e,i)=>{const [a,b,k,,,inf]=e,s=pos[a],t=pos[b],qx=C.x+((s.x+t.x)/2-C.x)*.25,qy=C.y+((s.y+t.y)/2-C.y)*.25,anim=(first||enter.has(a)||enter.has(b))&&!calm();
+    h+=`<path id="lk-${i}" class="lk ${inf||k==="apart"?"d":""} ${kindOn.has(k)?"":"off"} ${anim?"draw":""}" style="animation-delay:${first?350+i*22:150}ms" data-a="${a}" data-b="${b}" data-i="${i}" stroke="${KIND[k][1]}" d="M${s.x},${s.y}Q${qx},${qy} ${t.x},${t.y}"/>`});
+  h+=`<g id="pts"></g>`;
+  nodesAll.forEach((n,i)=>{const p=pos[n.id],c=TYPE[n.type][1],w=[...n.name].reduce((a,ch)=>a+(ch.charCodeAt(0)>255?12.5:7.2),0)+32,anim=(first||enter.has(n.id))&&!calm();
+    h+=`<g class="nd ${anim?"in":""} ${n.demo?"new":""}" style="--t:translate(${p.x}px,${p.y}px);animation-delay:${first?i*40:0}ms" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.name)}" transform="translate(${p.x},${p.y})">
+      <rect class="glow" x="${-w/2-4}" y="-17" width="${w+8}" height="34" rx="17" fill="${c}"/>
+      <rect class="pill" x="${-w/2}" y="-13" width="${w}" height="26" rx="13" fill="#141b30" stroke="${c}" stroke-opacity=".6"/>
+      <circle cx="${-w/2+12}" cy="0" r="4" fill="${c}"/><text x="${-w/2+21}" y="4">${esc(n.name)}</text></g>`});
+  svg.innerHTML=h;svg.dataset.drawn=1;
+  svg.querySelectorAll(".lk").forEach(p=>p.style.setProperty("--len",Math.ceil(p.getTotalLength())));
+  svg.querySelectorAll(".nd").forEach(el=>{const id=el.dataset.id;
+    el.addEventListener("mouseenter",e=>{hov=id;applyFocus();showTip(e,nodeTip(B[id]))});
+    el.addEventListener("mousemove",e=>showTip(e,nodeTip(B[id])));
+    el.addEventListener("mouseleave",()=>{hov=null;applyFocus();hideTip()});
+    el.addEventListener("click",e=>{e.stopPropagation();sel=sel===id?null:id;applyFocus()});
+    el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();sel=sel===id?null:id;applyFocus()}})});
+  svg.querySelectorAll(".lk").forEach(el=>{el.style.pointerEvents="stroke";el.addEventListener("mousemove",e=>showTip(e,linkTip(edgesAll[+el.dataset.i])));el.addEventListener("mouseleave",hideTip)});
+  svg.querySelector("#bg").addEventListener("click",()=>{sel=null;applyFocus()});
+  applyFocus();
+}
+function nodeTip(n){return `<b>${esc(n.name)}</b><span class="k">${TYPE[n.type][0]}${n.dom?" · "+n.dom:""}</span><div>${esc(n.one)}</div><div style="margin-top:6px"><span class="k">近 30 天提交</span> <span class="n">${n.c30}</span>　<span class="k">关系</span> <span class="n">${deg(n.id)}</span></div>`}
+function linkTip(e){const B=byId();return `<b>${esc(B[e[0]].name)} → ${esc(B[e[1]].name)}</b><span class="k">${KIND[e[2]][0]}${e[5]?" · 推断":""}${e[6]?" · 自动读取":" · 草稿"}</span><div>${esc(e[3])}</div><div class="k" style="margin-top:4px">出处：${esc(e[4])}</div>`}
+function applyFocus(){
+  const id=hov||sel,svg=document.getElementById("g");
+  svg.classList.toggle("focus",!!id);
+  const L=id?new Set([id,...edges().filter(e=>e[0]===id).map(e=>e[1]),...edges().filter(e=>e[1]===id).map(e=>e[0])]):null;
+  svg.querySelectorAll(".nd").forEach(el=>{el.classList.toggle("hot",!!L&&L.has(el.dataset.id));el.classList.toggle("sel",el.dataset.id===sel)});
+  let pts="";
+  svg.querySelectorAll(".lk").forEach(el=>{const hot=!!id&&!el.classList.contains("off")&&(el.dataset.a===id||el.dataset.b===id);el.classList.toggle("hot",hot);
+    if(hot){el.classList.remove("draw");if(!calm()){const c=el.getAttribute("stroke");for(let k=0;k<2;k++)pts+=`<circle class="pt" r="3" fill="${c}" style="filter:drop-shadow(0 0 4px ${c})"><animateMotion dur="${1.8+k*.3}s" begin="${k*.9}s" repeatCount="indefinite"><mpath href="#${el.id}"/></animateMotion></circle>`}}});
+  svg.querySelector("#pts").innerHTML=pts;
+  info(id);sankeyFocus(id);
+}
+function info(id){
+  const el=document.getElementById("info"),B=byId();
+  if(!id){const top=[...nodesAll].sort((a,b)=>deg(b.id)-deg(a.id)).slice(0,6);
+    el.innerHTML=`<h3 style="--c:#e9eeff"><i></i>枢纽排行</h3><p class="meta">按关系条数</p><ul>${top.map(n=>`<li data-pick="${n.id}" style="--c:${TYPE[n.type][1]}"><em>${String(deg(n.id)).padStart(2,"0")} 条</em><b>${esc(n.name)}</b><span>${TYPE[n.type][0]}${n.dom?" · "+n.dom:""}</span></li>`).join("")}</ul>
+      <p style="color:#7d89aa">点任一项目，这里换成它的定义、读数和全部关系；下面的支撑流同步高亮。</p>`;
+  }else{const n=B[id],c=TYPE[n.type][1],rows=edges().filter(e=>e[0]===id||e[1]===id);
+    el.innerHTML=`<div><h3 style="--c:${c}"><i></i>${esc(n.name)}</h3><div class="meta">${TYPE[n.type][0]}${n.dom?" · "+n.dom:""}${n.st?" · "+ST[n.st][0]:""}</div></div><p>${esc(n.one)}</p>
+      <div class="nums"><div><small>30 天提交</small><b>${n.c30}</b></div><div><small>上游</small><b>${rows.filter(e=>e[1]===id&&e[2]!=="apart").length}</b></div><div><small>下游</small><b>${rows.filter(e=>e[0]===id&&e[2]!=="apart").length}</b></div></div>
+      <h4>关系 · ${rows.length}</h4><ul>${rows.map(e=>{const out=e[0]===id,o=B[out?e[1]:e[0]];return `<li data-pick="${o.id}" style="--c:${KIND[e[2]][1]}"><em>${e[2]==="apart"?"↔":out?"→":"←"} ${KIND[e[2]][0]}</em><b>${esc(o.name)}${e[6]?"":`<span class="draft">草稿</span>`}</b><span>${esc(e[3])} · ${esc(e[4])}</span></li>`}).join("")||`<li style="cursor:default"><em>—</em><b>还没有关系</b><span>名册里补 relations，或它的 AGENTS.md 引用底座后自动连上</span></li>`}</ul>
+      ${n.demo?"":`<button type="button" class="go" data-open="${id}">在项目总览打开 →</button>`}`}
+  el.querySelectorAll("[data-pick]").forEach(li=>li.addEventListener("click",()=>{sel=li.dataset.pick;hov=null;applyFocus()}));
+  el.querySelector("[data-open]")?.addEventListener("click",()=>toast(`跳到「项目总览」并选中 ${B[id].name}（预览里只做提示）`));
+}
+
+/* ---------------- 支撑流桑基 ---------------- */
+let SK=null;
+function drawSankey(){
+  const nodes=[],idx={},add=(id,name,col,x)=>{idx[id]=nodes.length;nodes.push({id,name,col,...x})};
+  ["agent-kit","my-skills","obsidian-kb","multi-agent","none"].forEach(b=>add("b:"+b,BASENAME[b],0,{hue:BASEHUE[b],kind:"base",ref:b}));
+  N.filter(n=>n.type==="product").forEach(n=>add("p:"+n.id,n.name,1,{hue:TYPE.product[1],kind:"proj",ref:n.id}));
+  Object.keys(ST).forEach(s=>add("s:"+s,ST[s][0],2,{hue:ST[s][1],kind:"st",ref:s}));
+  const links=[];
+  N.filter(n=>n.type==="product").forEach(n=>{const bs=SUP[n.id],v=Math.max(n.c30,2);bs.forEach(b=>links.push({source:idx["b:"+b],target:idx["p:"+n.id],value:v/bs.length,p:n.id,b}));links.push({source:idx["p:"+n.id],target:idx["s:"+n.st],value:v,p:n.id})});
+  const sk=d3.sankey().nodeId(d=>d.index).nodeWidth(12).nodePadding(14).nodeAlign(d=>d.col).nodeSort(null).extent([[190,44],[1200-190,540]]);
+  SK=sk({nodes,links});
+  const L=SK.links,ND=SK.nodes;
+  let h=`<defs>${L.map((l,i)=>`<linearGradient id="sg-${i}" gradientUnits="userSpaceOnUse" x1="${l.source.x1}" x2="${l.target.x0}"><stop offset="0" stop-color="${l.source.hue}"/><stop offset="1" stop-color="${l.target.hue}"/></linearGradient>`).join("")}</defs>`;
+  const col=c=>ND.find(n=>n.col===c);
+  h+=`<text class="colh" x="${col(0).x1}" y="24" text-anchor="end">BASE 底座</text><text class="colh" x="${(col(1).x0+col(1).x1)/2}" y="24" text-anchor="middle">PRODUCT 产品</text><text class="colh" x="${col(2).x0}" y="24">STATUS 当前状态</text>`;
+  const path=d3.sankeyLinkHorizontal();
+  L.forEach((l,i)=>{const d=path(l);h+=`<path class="flow ${calm()?"":"grow"}" style="animation-delay:${400+i*20}ms" data-i="${i}" d="${d}" stroke="url(#sg-${i})" stroke-width="${Math.max(1,l.width)}"/><path class="shim" data-i="${i}" d="${d}" stroke-width="${Math.max(1,l.width*.5)}"/>`});
+  ND.forEach(n=>{const left=n.col===0,v=Math.round(n.value),mid=(n.y0+n.y1)/2,x=left?n.x0-10:n.x1+10,anc=left?"end":"start";
+    h+=`<g class="nd" data-n="${n.index}"><rect x="${n.x0}" y="${n.y0}" width="${n.x1-n.x0}" height="${Math.max(2,n.y1-n.y0)}" rx="2" fill="${n.hue}" style="filter:drop-shadow(0 0 6px ${n.hue}66)"/>`+
+      (n.y1-n.y0>26?`<text class="nlab" x="${x}" y="${mid-1}" text-anchor="${anc}">${esc(n.name)}</text><text class="nval" x="${x}" y="${mid+13}" text-anchor="${anc}">${v} 次提交</text>`:`<text class="nlab" x="${x}" y="${mid+4}" text-anchor="${anc}">${esc(n.name)}<tspan class="nval" dx="8">${v}</tspan></text>`)+`</g>`});
+  const svg=document.getElementById("s");svg.innerHTML=h;
+  svg.querySelectorAll(".nd").forEach(el=>{const n=ND[+el.dataset.n];
+    el.addEventListener("mouseenter",e=>{sankeyHot(chainOf(n));showTip(e,`<b>${esc(n.name)}</b><span class="k">${({base:"底座",proj:"产品",st:"当前状态"})[n.kind]}</span><div><span class="k">近 30 天提交</span> <span class="n">${Math.round(n.value)}</span></div>`)});
+    el.addEventListener("mouseleave",()=>{hideTip();sankeyFocus(hov||sel)});
+    el.addEventListener("click",()=>{if(n.kind==="proj"){sel=n.ref;applyFocus();document.getElementById("g").scrollIntoView({behavior:calm()?"auto":"smooth",block:"center"})}})});
+  svg.querySelectorAll(".flow").forEach(el=>{const l=L[+el.dataset.i],html=`<b>${esc(l.source.name)} → ${esc(l.target.name)}</b><div><span class="k">${l.source.kind==="base"?"分到的提交":"提交"}</span> <span class="n">${Math.round(l.value)}</span></div>`;
+    el.addEventListener("mouseenter",e=>{sankeyHot(new Set(L.filter(x=>x.p===l.p).map(x=>x.index)));showTip(e,html)});
+    el.addEventListener("mousemove",e=>showTip(e,html));el.addEventListener("mouseleave",()=>{hideTip();sankeyFocus(hov||sel)})});
+}
+function chainOf(n){const L=SK.links,s=new Set();
+  if(n.kind==="proj")L.forEach(l=>{if(l.p===n.ref)s.add(l.index)});
+  else if(n.kind==="base")n.sourceLinks.forEach(l=>{s.add(l.index);L.forEach(x=>{if(x.p===l.p&&x.source.kind==="proj")s.add(x.index)})});
+  else n.targetLinks.forEach(l=>L.forEach(x=>{if(x.p===l.p)s.add(x.index)}));return s}
+function sankeyHot(set){const svg=document.getElementById("s");svg.classList.toggle("focus",!!set&&set.size>0);
+  svg.querySelectorAll(".flow,.shim").forEach(p=>p.classList.toggle("hot",!!set&&set.has(+p.dataset.i)));
+  const on=new Set();if(set)SK.links.forEach(l=>{if(set.has(l.index)){on.add(l.source.index);on.add(l.target.index)}});
+  svg.querySelectorAll(".nd").forEach(g=>g.classList.toggle("hot",on.has(+g.dataset.n)))}
+// 星图选中项目 → 桑基同步：产品高亮整条链；底座高亮它支撑的全部；其他项目不高亮
+function sankeyFocus(id){if(!SK)return;if(!id){sankeyHot(null);return}
+  const n=SK.nodes.find(x=>x.ref===id||(x.kind==="base"&&x.ref===id));sankeyHot(n?chainOf(n):new Set())}
+
+/* ---------------- 交互：关系开关、模拟新增 ---------------- */
+document.addEventListener("click",e=>{const k=e.target.closest("[data-kind]");if(k){const id=k.dataset.kind;kindOn.has(id)?kindOn.delete(id):kindOn.add(id);header();
+  document.querySelectorAll("#g .lk").forEach(p=>{const ed=edgesAll[+p.dataset.i];p.classList.toggle("off",!kindOn.has(ed[2]))});applyFocus()}});
+document.getElementById("btnNew").addEventListener("click",e=>{demo=!demo;e.currentTarget.setAttribute("aria-pressed",demo);
+  if(demo){nodesAll=[...N,DEMO];edgesAll=[...E,["agent-kit","demo-new","support","AGENTS 指向《工程流程》与全局坑","该项目 AGENTS.md",false,true]];const fresh=layout();header();drawGraph(fresh);sel="demo-new";applyFocus();toast("名册新增一行：新项目落进它所属的那一圈，自动连上线")}
+  else{nodesAll=[...N];edgesAll=[...E];delete pos["demo-new"];sel=null;header();drawGraph()}});
+document.getElementById("tabOverview").addEventListener("click",()=>toast("「项目总览」是现有页面，保持不动"));
+
+if(window.d3&&d3.sankey){header();layout();drawGraph();drawSankey()}
+else document.querySelector(".main").insertAdjacentHTML("afterbegin",`<p class="foot">图表库没有加载成功，请刷新页面。</p>`);
+</script>
