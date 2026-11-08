@@ -1,0 +1,66 @@
+[
+  {
+    "state": "选中 collab",
+    "attempt": 1,
+    "shift": 0,
+    "head": {
+      "size": [
+        1144,
+        137
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    },
+    "bodySamePosition": {
+      "size": [
+        1144,
+        1284
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    },
+    "bodyShifted": {
+      "size": [
+        1144,
+        1284
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    }
+  },
+  {
+    "state": "选中 bare",
+    "attempt": 1,
+    "shift": 0,
+    "head": {
+      "size": [
+        1144,
+        137
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    },
+    "bodySamePosition": {
+      "size": [
+        1144,
+        1297
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    },
+    "bodyShifted": {
+      "size": [
+        1144,
+        1297
+      ],
+      "diff": 0,
+      "maxDelta": 0,
+      "rows": null
+    }
+  }
+]

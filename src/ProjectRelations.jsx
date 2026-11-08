@@ -7,7 +7,7 @@ import { sankey as d3sankey, sankeyLinkHorizontal } from "d3-sankey";
 import { SourceReadError } from "./components.jsx";
 import { request } from "./api.js";
 import { useReducedMotion } from "./v14.jsx";
-import { INFERRED, KIND, NONE_BASE, STATUS, TYPE, baseHue, statusOf, typeOf } from "./project-relations-palette.js";
+import { INFERRED, KIND, NONE_BASE, STATUS, SWEEP, TYPE, baseHue, statusOf, typeOf } from "./project-relations-palette.js";
 import "./project-relations.css";
 
 // 第一次切到「项目关系」才读；之后切回来沿用上次读数，点页头刷新才重读。
@@ -70,7 +70,7 @@ const Tip = forwardRef(function Tip(_, ref) {
 });
 
 // ---------------- 关系轨道 ----------------
-const W = 1200, H = 660, C = { x: 430, y: 330 };
+const W = 900, H = 660, C = { x: 450, y: 330 }; // 左栏画布：轨道居中，信息卡在右侧信息轨
 const RING = { infrastructure: 104, capability: 200, product: 296 };
 const OFFSET = { product: -Math.PI / 2, capability: -Math.PI / 2 + 0.6, infrastructure: Math.PI / 6 };
 const RING_LABEL = { infrastructure: -30, capability: -122, product: -108 };
@@ -109,9 +109,6 @@ function Orbit({ nodes, edges, kinds, focus, sel, entered, reduced, onHover, onS
     <b>{byId[e.from]?.name} → {byId[e.to]?.name}</b>
     <span className="k">{KIND[e.kind]?.label}{e.inferred ? " · 推断" : ""}{AUTO.has(e.origin) ? " · 自动读取" : ""}</span>
     {e.note && <div>{e.note}</div>}<div className="k">出处：{e.source}</div></>;
-  const nodeTip = (n) => <>
-    <b>{n.name}</b><span className="k">{typeOf(n.type).label}{n.status ? ` · ${n.status.text}` : ""}</span>
-    <div><span className="k">近 30 天提交</span> <span className="n">{n.c30 ?? "—"}</span>　<span className="k">关系</span> <span className="n">{n.degree}</span></div></>;
   const toggle = (id) => onSelect(sel === id ? null : id);
   return (
     <svg className={`pr-orbit${focus ? " focus" : ""}`} viewBox={`0 0 ${W} ${H}`} role="group" aria-label="关系轨道：内圈基础设施、中圈能力、外圈产品">
@@ -150,8 +147,7 @@ function Orbit({ nodes, edges, kinds, focus, sel, entered, reduced, onHover, onS
         return <g key={n.id} className={`nd${entered ? "" : " in"}${near?.has(n.id) ? " hot" : ""}${sel === n.id ? " sel" : ""}`} data-id={n.id}
           style={{ "--t": `translate(${p.x}px,${p.y}px)`, animationDelay: `${i * 40}ms` }} transform={`translate(${p.x},${p.y})`}
           tabIndex={0} role="button" aria-pressed={sel === n.id} aria-label={`${n.name}（${typeOf(n.type).label}）`}
-          onMouseEnter={(ev) => { onHover(n.id); tip.current?.show(ev, nodeTip(n)); }} onMouseMove={(ev) => tip.current?.show(ev, nodeTip(n))}
-          onMouseLeave={() => { onHover(null); tip.current?.hide(); }}
+          onMouseEnter={() => onHover(n.id)} onMouseLeave={() => onHover(null)}
           onClick={(ev) => { ev.stopPropagation(); toggle(n.id); }}
           onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(n.id); } else if (ev.key === "Escape") onSelect(null); }}>
           <rect className="glow" x={-w / 2 - 4} y="-17" width={w + 8} height="34" rx="17" fill={c} />
@@ -164,20 +160,64 @@ function Orbit({ nodes, edges, kinds, focus, sel, entered, reduced, onHover, onS
   );
 }
 
-// 右侧信息卡：没选中时是枢纽排行，选中（或悬停）时是项目的读数与全部关系。
-function Info({ focus, nodes, edges, kinds, onSelect, onOpen }) {
-  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
-  if (!focus || !byId[focus]) {
-    const top = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 6);
-    return <div className="pr-info" role="region" aria-label="项目信息" aria-live="polite">
-      <div><h3 style={{ "--c": "var(--text)" }}><i />枢纽排行</h3><p className="meta">按关系条数</p></div>
-      <ul>{top.map((n) => <li key={n.id} style={{ "--c": typeOf(n.type).color }}><button type="button" onClick={() => onSelect(n.id)}>
-        <em>{String(n.degree).padStart(2, "0")} 条</em><b>{n.name}</b><span>{typeOf(n.type).label}</span></button></li>)}</ul>
-      <p className="note">点任一项目，这里换成它的读数和全部关系；下面的支撑流同步高亮。</p>
-    </div>;
+// ---------------- 右侧信息轨 ----------------
+// 优先级：桑基里悬停的节点 → 轨道里悬停 / 选中的项目（读数、全部关系，再接它的支撑链）→ 全局概览。
+const Bar = ({ name, val, w, c }) => <div className="row" style={{ "--c": c }}><b>{name}</b><small>{val}</small>
+  <span className="track"><i style={{ width: `${Math.max(2, Math.min(100, w * 100))}%` }} /></span></div>;
+const totalOf = (sk) => sk.nodes.filter((x) => x.kind === "proj").reduce((a, x) => a + x.real, 0);
+const pctOf = (v, t) => (t ? `${Math.round((v / t) * 100)}%` : "—");
+
+// 桑基节点的明细：产品＝来自哪些底座、流向哪个状态；底座＝支撑的产品；状态＝处在这个状态的产品。head＝false 时只给链路部分（接在项目信息下面）。
+function FlowDetail({ n, sk, head = true }) {
+  const total = totalOf(sk);
+  if (n.kind === "proj") {
+    const ins = n.targetLinks, st = n.sourceLinks[0]?.target, bases = ins.filter((l) => l.source.ref !== "none").length;
+    return <>
+      {head && <><div><h3 style={{ "--c": n.hue }}><i />{n.name}</h3><p className="meta">产品{st ? ` · ${st.name}` : ""}</p></div>
+        <div className="nums"><div><small>30 天提交</small><b>{Math.round(n.real)}</b></div><div><small>占全部</small><b>{pctOf(n.real, total)}</b></div><div><small>底座</small><b>{bases}</b></div></div></>}
+      <h4>支撑来自</h4>
+      <div className="share">{ins.map((l) => <Bar key={l.index} name={l.source.name} val={fmt(l.real)} w={n.real ? l.real / n.real : 1 / ins.length} c={l.source.hue} />)}</div>
+      {st && <><h4>去向</h4><ul><li className="none" style={{ "--c": st.hue }}><em>→ 状态</em><b>{st.name}</b><span>{Math.round(n.real)} 次提交全部流向这里</span></li></ul></>}
+    </>;
   }
+  const kids = (n.kind === "base" ? n.sourceLinks.map((l) => ({ l, o: l.target })) : n.targetLinks.map((l) => ({ l, o: l.source }))).sort((a, b) => b.l.real - a.l.real);
+  return <>
+    {head && <div><h3 style={{ "--c": n.hue }}><i />{n.name}</h3><p className="meta">{n.kind === "base" ? `底座 · 支撑 ${kids.length} 个产品` : `当前状态 · ${kids.length} 个产品`}</p></div>}
+    <div className="big"><b>{Math.round(n.real)}</b><span>次提交 · {pctOf(n.real, total)}</span></div>
+    <h4>{n.kind === "base" ? "支撑的产品" : "处在这个状态的产品"}</h4>
+    <div className="share">{kids.map(({ l, o }) => <Bar key={l.index} name={o.name} val={fmt(l.real)} w={n.real ? l.real / n.real : 0} c={n.kind === "base" ? o.hue : n.hue} />)}</div>
+  </>;
+}
+
+// 全局概览：近 30 天提交、底座份额、状态分布、没有产品接入的底座、枢纽前三（点了选中）。
+function Overview({ sk, nodes, unused, onSelect }) {
+  const products = nodes.filter((n) => n.type === "product").length, top = [...nodes].sort((a, b) => b.degree - a.degree).slice(0, 3);
+  const total = sk ? totalOf(sk) : 0, bases = sk ? sk.nodes.filter((x) => x.kind === "base") : [], sts = sk ? sk.nodes.filter((x) => x.kind === "st") : [];
+  return <>
+    <div><h3 style={{ "--c": "var(--text)" }}><i />全局概览</h3><p className="meta">近 30 天 · {products} 个产品</p></div>
+    {sk && <>
+      <div className="big"><b>{Math.round(total)}</b><span>次产品提交</span></div>
+      <h4>底座份额</h4>
+      <div className="share">{bases.map((b) => <Bar key={b.key} name={b.name} val={`${Math.round(b.real)} · ${pctOf(b.real, total)}`} w={total ? b.real / total : 0} c={b.hue} />)}</div>
+      <h4>当前状态</h4>
+      <div className="stack">{sts.map((s) => <i key={s.key} style={{ "--c": s.hue, flexGrow: Math.max(1, s.real) }} />)}</div>
+      <div className="keys">{sts.map((s) => <span key={s.key} style={{ "--c": s.hue }}>{s.name} {s.targetLinks.length} 个</span>)}</div>
+    </>}
+    <p className="note">{unused.length > 0 && <>{unused.join("、")} 目前没有产品接入。</>}点任一项目看它的关系和支撑链；悬停桑基的底座、产品或状态看明细。</p>
+    <h4>枢纽</h4>
+    <ul>{top.map((n) => <li key={n.id} style={{ "--c": typeOf(n.type).color }}><button type="button" onClick={() => onSelect(n.id)}>
+      <em>{String(n.degree).padStart(2, "0")} 条</em><b>{n.name}</b><span>{typeOf(n.type).label}</span></button></li>)}</ul>
+  </>;
+}
+
+function Info({ focus, flowNode, sk, nodes, edges, kinds, unused, onSelect, onOpen }) {
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const wrap = (body) => <div className="pr-info" role="region" aria-label="项目信息" aria-live="polite">{body}</div>;
+  if (flowNode && sk) return wrap(<FlowDetail n={flowNode} sk={sk} />);
+  if (!focus || !byId[focus]) return wrap(<Overview sk={sk} nodes={nodes} unused={unused} onSelect={onSelect} />);
   const n = byId[focus], rows = edges.filter((e) => kinds.has(e.kind) && (e.from === focus || e.to === focus));
   const up = rows.filter((e) => e.to === focus && e.kind !== "apart").length, down = rows.filter((e) => e.from === focus && e.kind !== "apart").length;
+  const chain = sk?.nodes.find((x) => (x.kind === "proj" || x.kind === "base") && x.ref === focus);
   return <div className="pr-info" role="region" aria-label="项目信息" aria-live="polite">
     <div><h3 style={{ "--c": typeOf(n.type).color }}><i />{n.name}</h3>
       <div className="meta">{typeOf(n.type).label}{n.status ? ` · ${n.status.text}` : ""}</div></div>
@@ -191,12 +231,13 @@ function Info({ focus, nodes, edges, kinds, onSelect, onOpen }) {
         <b>{other.name}{AUTO.has(e.origin) && <span className="tag">自动读取</span>}{e.inferred && <span className="tag">推断</span>}</b>
         <span>{[e.note, e.source].filter(Boolean).join(" · ")}</span></button></li>;
     }) : <li className="none"><em>—</em><b>还没有关系</b><span>名册里补 relations，或它的 AGENTS.md 引用底座后自动连上</span></li>}</ul>
+    {chain && <><h4 className="chain">支撑链</h4><FlowDetail n={chain} sk={sk} head={false} /></>}
     <button type="button" className="go" onClick={() => onOpen(focus)}>在项目总览打开 →</button>
   </div>;
 }
 
 // ---------------- 支撑流桑基 ----------------
-const SW = 1200, SH = 560;
+const SW = 1200, SH = 600; // 与定稿 H（即 B 通栏长卷那张）同一几何：按比例缩进左栏，文字随之缩小，字号在画布里放大补偿
 function flowLayout(data) {
   const nodes = data.nodes, byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
   const links = data.sankey.links, products = nodes.filter((n) => n.type === "product" && links.some((l) => l.project === n.id));
@@ -221,7 +262,7 @@ function flowLayout(data) {
     own.forEach((l) => L.push({ source: idx[`b:${l.base}`], target: idx[`p:${p.id}`], value: shown(p.id) / own.length, real: l.value, p: p.id }));
     L.push({ source: idx[`p:${p.id}`], target: idx[`s:${statusOfProject[p.id] || "unknown"}`], value: shown(p.id), real: total[p.id], p: p.id });
   });
-  const layout = d3sankey().nodeId((d) => d.index).nodeWidth(12).nodePadding(14).nodeAlign((d) => d.col).nodeSort(null).extent([[190, 44], [SW - 190, SH - 20]]);
+  const layout = d3sankey().nodeId((d) => d.index).nodeWidth(12).nodePadding(14).nodeAlign((d) => d.col).nodeSort(null).extent([[150, 46], [SW - 140, SH - 20]]);
   return layout({ nodes: N, links: L });
 }
 // 一条链：产品＝它的整条链；底座＝它支撑的产品及这些产品的去向；状态＝流进它的全部链路。
@@ -234,7 +275,9 @@ function chainOf(sk, n) {
 }
 const fmt = (v) => (Math.round(v * 10) / 10).toString();
 
-function Flow({ sk, focus, entered, onPick, tip }) {
+// 节点悬停的明细写在右侧信息轨（onHoverNode），不再弹提示；流带悬停仍弹提示写这一段的提交数。
+// 质感：一道柔光从左往右扫过流带（渐变平移，4.2 秒一轮）；减少动态效果时不画。
+function Flow({ sk, focus, entered, reduced, onPick, onHoverNode, tip }) {
   const [local, setLocal] = useState(null);
   const hot = useMemo(() => {
     if (local) return local;
@@ -245,11 +288,14 @@ function Flow({ sk, focus, entered, onPick, tip }) {
   const lit = new Set();
   if (hot) sk.links.forEach((l) => { if (hot.has(l.index)) { lit.add(l.source.index); lit.add(l.target.index); } });
   const path = sankeyLinkHorizontal(), col = (c) => sk.nodes.find((n) => n.col === c);
-  const label = { base: "底座", proj: "产品", st: "当前状态" };
+  const projNode = (id) => sk.nodes.find((x) => x.kind === "proj" && x.ref === id);
   return (
     <svg className={`pr-flow${hot && hot.size ? " focus" : ""}`} viewBox={`0 0 ${SW} ${SH}`} role="group" aria-label="支撑流：底座 → 产品 → 当前状态">
       <defs>{sk.links.map((l) => <linearGradient key={l.index} id={`pr-sg-${l.index}`} gradientUnits="userSpaceOnUse" x1={l.source.x1} x2={l.target.x0}>
-        <stop offset="0" stopColor={l.source.hue} /><stop offset="1" stopColor={l.target.hue} /></linearGradient>)}</defs>
+        <stop offset="0" stopColor={l.source.hue} /><stop offset="1" stopColor={l.target.hue} /></linearGradient>)}
+        {!reduced && <linearGradient id="pr-sweep" gradientUnits="userSpaceOnUse" x1="0" x2="260" y1="0" y2="0">
+          <stop offset="0" stopColor={SWEEP} stopOpacity="0" /><stop offset=".5" stopColor={SWEEP} stopOpacity=".55" /><stop offset="1" stopColor={SWEEP} stopOpacity="0" />
+          <animateTransform attributeName="gradientTransform" type="translate" from="-300 0" to={`${SW} 0`} dur="4.2s" repeatCount="indefinite" /></linearGradient>}</defs>
       {col(0) && <text className="colh" x={col(0).x1} y="24" textAnchor="end">BASE 底座</text>}
       {col(1) && <text className="colh" x={(col(1).x0 + col(1).x1) / 2} y="24" textAnchor="middle">PRODUCT 产品</text>}
       {col(2) && <text className="colh" x={col(2).x0} y="24">STATUS 当前状态</text>}
@@ -260,21 +306,19 @@ function Flow({ sk, focus, entered, onPick, tip }) {
         return <g key={l.index}>
           <path className={`flow${entered ? "" : " grow"}${on ? " hot" : ""}`} style={{ animationDelay: `${400 + l.index * 20}ms` }} d={d}
             stroke={`url(#pr-sg-${l.index})`} strokeWidth={Math.max(1, l.width)} data-p={l.p}
-            onMouseEnter={(ev) => { setLocal(new Set(sk.links.filter((x) => x.p === l.p).map((x) => x.index))); show(ev); }}
-            onMouseMove={show} onMouseLeave={() => { setLocal(null); tip.current?.hide(); }} />
-          <path className={`shim${on ? " hot" : ""}`} d={d} strokeWidth={Math.max(1, l.width * 0.5)} />
+            onMouseEnter={(ev) => { setLocal(new Set(sk.links.filter((x) => x.p === l.p).map((x) => x.index))); onHoverNode(projNode(l.p)); show(ev); }}
+            onMouseMove={show} onMouseLeave={() => { setLocal(null); onHoverNode(null); tip.current?.hide(); }} />
+          {!reduced && <path className={`sweep${on ? " hot" : ""}`} d={d} stroke="url(#pr-sweep)" strokeWidth={Math.max(1, l.width)} />}
         </g>;
       })}
       {sk.nodes.map((n) => {
         const left = n.col === 0, mid = (n.y0 + n.y1) / 2, x = left ? n.x0 - 10 : n.x1 + 10, anchor = left ? "end" : "start", v = Math.round(n.real);
-        const show = (ev) => tip.current?.show(ev, <><b>{n.name}</b><span className="k">{label[n.kind]}</span>
-          <div><span className="k">近 30 天提交</span> <span className="n">{v}</span></div></>);
         return <g key={n.key} className={`nd${lit.has(n.index) ? " hot" : ""}${n.kind === "proj" ? " pick" : ""}`} data-node={n.key}
-          onMouseEnter={(ev) => { setLocal(chainOf(sk, n)); show(ev); }} onMouseMove={show} onMouseLeave={() => { setLocal(null); tip.current?.hide(); }}
+          onMouseEnter={() => { setLocal(chainOf(sk, n)); onHoverNode(n); }} onMouseLeave={() => { setLocal(null); onHoverNode(null); }}
           onClick={() => n.kind === "proj" && onPick(n.ref)}>
           <rect x={n.x0} y={n.y0} width={n.x1 - n.x0} height={Math.max(2, n.y1 - n.y0)} rx="2" fill={n.hue} style={{ filter: `drop-shadow(0 0 6px ${n.hue}66)` }} />
           {n.y1 - n.y0 > 26
-            ? <><text className="nlab" x={x} y={mid - 1} textAnchor={anchor}>{n.name}</text><text className="nval" x={x} y={mid + 13} textAnchor={anchor}>{v} 次提交</text></>
+            ? <><text className="nlab" x={x} y={mid - 3.5} textAnchor={anchor}>{n.name}</text><text className="nval" x={x} y={mid + 15.5} textAnchor={anchor}>{v} 次提交</text></>
             : <text className="nlab" x={x} y={mid + 4} textAnchor={anchor}>{n.name}<tspan className="nval" dx="8">{v}</tspan></text>}
         </g>;
       })}
@@ -287,7 +331,7 @@ export function ProjectRelations({ rel, onSettings, onOpen }) {
   const { data, error, loading, load } = rel;
   const reduced = useReducedMotion();
   const [kinds, setKinds] = useState(() => new Set(Object.keys(KIND)));
-  const [sel, setSel] = useState(null), [hov, setHov] = useState(null);
+  const [sel, setSel] = useState(null), [hov, setHov] = useState(null), [flowHov, setFlowHov] = useState(null);
   const [entered, setEntered] = useState(reduced);
   const tip = useRef(null), orbitCard = useRef(null);
   const ok = data?.roster?.state === "ok";
@@ -325,6 +369,8 @@ export function ProjectRelations({ rel, onSettings, onOpen }) {
       )}
       {ok && (
         <>
+        <div className="pr-duo">
+          <div className="pr-charts">
           <section className="pr-card pr-orbit-card" aria-label="项目关系图" ref={orbitCard}>
             <div className="pr-head"><h2>RELATION ORBIT</h2>
               <span className="crumb">项目之间 · {nodes.length} 个项目 · {visible} 条关系</span><span className="grow" />
@@ -341,19 +387,24 @@ export function ProjectRelations({ rel, onSettings, onOpen }) {
               <Orbit nodes={nodes} edges={edges} kinds={kinds} focus={focus} sel={sel} entered={entered} reduced={reduced}
                 onHover={setHov} onSelect={(id) => { setSel(id); setHov(null); }} tip={tip} />
             </div>
-            <Info focus={focus} nodes={nodes} edges={edges} kinds={kinds} onSelect={(id) => { setSel(id); setHov(null); }} onOpen={onOpen} />
             <span className="pr-hint">内圈基础设施 · 中圈能力 · 外圈产品 ｜ 悬停看关系 · 点击固定 · 点空白处还原</span>
           </section>
-          <p className="pr-foot">越靠里越是「底座」，连线向圆心弯；节点颜色＝名册类型，连线颜色＝关系类型，实线有原文出处，虚线是推断或「明确独立」。悬停或选中项目时连线上的光点沿方向流动，下面的支撑流同步高亮它的链路。</p>
 
           <section className="pr-card" aria-label="底座支撑桑基图">
             <div className="pr-head"><h2>SUPPORT FLOW</h2><span className="crumb">底座 → 产品 → 当前状态 · 宽度＝近 30 天提交</span><span className="grow" />
               <span className="pr-legend">{statusKeys.map((k) => <span key={k} className="tg" style={{ "--c": statusOf(k).color }}><span className="pill"><i />{statusOf(k).label}</span></span>)}</span>
             </div>
-            {sk ? <div className="pr-scroll"><Flow sk={sk} focus={focus} entered={entered} onPick={pickFromFlow} tip={tip} /></div>
+            {sk ? <div className="pr-scroll"><Flow sk={sk} focus={focus} entered={entered} reduced={reduced} onPick={pickFromFlow} onHoverNode={setFlowHov} tip={tip} /></div>
               : <p className="pr-empty">名册里还没有标为产品（type: product）的项目，支撑流画不出来。</p>}
           </section>
-          <p className="pr-foot">{data.sankey.rule}；「引用」以各仓库 AGENTS.md、名册关系和技能调用统计为准。
+          </div>
+          <aside className="pr-rail" aria-label="信息轨">
+            <Info focus={focus} flowNode={flowHov} sk={sk} nodes={nodes} edges={edges} kinds={kinds} unused={unused}
+              onSelect={(id) => { setSel(id); setHov(null); }} onOpen={onOpen} />
+          </aside>
+        </div>
+          <p className="pr-foot">上：越靠里越是「底座」，连线向圆心弯；节点颜色＝名册类型，连线颜色＝关系类型，实线有原文出处，虚线是推断或「明确独立」。
+            下：{data.sankey.rule}；「引用」以各仓库 AGENTS.md、名册关系和技能调用统计为准。右侧信息轨写当前悬停或选中的明细。
             {unused.length > 0 && <> {unused.map((n, i) => <React.Fragment key={n}>{i ? "、" : ""}<b>{n}</b></React.Fragment>)} 目前没有产品接入，所以不在左栏。</>}</p>
         </>
       )}

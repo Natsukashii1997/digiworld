@@ -1,0 +1,13 @@
+✖ 5000行无公共行的LCS最坏输入也完整精确且有界
+✖ 5000行精确LCS，重复行及混合换行无损，线性内存路径性能
+✖ C-10 5000行最坏路径原界限不放宽，计数与行内差异完全同口径
+✖ GET /api/projects-space：按名册列项目，读数、现在 / 下一步、30 天提交与要注意的事各自如实
+✖ HTTP 只读待议表、版本与运行设置纳入指纹；缺清单计数未知
+✖ HTTP：只读状态卡、停滞雷达与安全体检覆盖合成仓库，且不改任何项目文件
+✖ HTTP：标为已读写入主库；重复标记不增版本；内容变化后显示“有更新”；非法输入拒绝
+✖ failing tests:
+✖ stop asks adapter, probes original process and does not claim completion
+✖ stop request and a late execute result remain stopping until process probe confirms exit
+✖ 中文运行路径中的真实Swift编译只使用本次临时目录和缓存，结束移除别名
+✖ 本地 HTTP 供应当前构建的入口与资源
+✖ 生产factory具体接线仅合成文件：原生CLI登记、draft持久、EPUB完整正文、默认关零宿主动作
