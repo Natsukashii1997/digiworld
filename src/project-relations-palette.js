@@ -36,3 +36,6 @@ export const statusOf = (k) => STATUS[k] || STATUS.unknown;
 const BASE_HUE = { "agent-kit": "#7fe0a0", "my-skills": "#c8b6ff", "obsidian-kb": "#5fd0c0", "multi-agent": "#a891ff", "ui-system": "#b39dff", "get-index": "#9be7c4" };
 export const NONE_BASE = { name: "未接底座", color: "#6b7590" };
 export const baseHue = (id, type) => (id === "none" ? NONE_BASE.color : BASE_HUE[id] || typeOf(type).color);
+
+// 桑基流带上扫过的柔光（定稿 H 的质感），以 SVG 渐变色用到页面上。
+export const SWEEP = "#ffffff";

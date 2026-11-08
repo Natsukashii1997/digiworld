@@ -7,7 +7,7 @@ import { sankey as d3sankey, sankeyLinkHorizontal } from "d3-sankey";
 import { SourceReadError } from "./components.jsx";
 import { request } from "./api.js";
 import { useReducedMotion } from "./v14.jsx";
-import { INFERRED, KIND, NONE_BASE, STATUS, TYPE, baseHue, statusOf, typeOf } from "./project-relations-palette.js";
+import { INFERRED, KIND, NONE_BASE, STATUS, SWEEP, TYPE, baseHue, statusOf, typeOf } from "./project-relations-palette.js";
 import "./project-relations.css";
 
 // 第一次切到「项目关系」才读；之后切回来沿用上次读数，点页头刷新才重读。
@@ -237,7 +237,7 @@ function Info({ focus, flowNode, sk, nodes, edges, kinds, unused, onSelect, onOp
 }
 
 // ---------------- 支撑流桑基 ----------------
-const SW = 1200, SH = 560;
+const SW = 1200, SH = 600; // 与定稿 H（即 B 通栏长卷那张）同一几何：按比例缩进左栏，文字随之缩小，字号在画布里放大补偿
 function flowLayout(data) {
   const nodes = data.nodes, byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
   const links = data.sankey.links, products = nodes.filter((n) => n.type === "product" && links.some((l) => l.project === n.id));
@@ -262,7 +262,7 @@ function flowLayout(data) {
     own.forEach((l) => L.push({ source: idx[`b:${l.base}`], target: idx[`p:${p.id}`], value: shown(p.id) / own.length, real: l.value, p: p.id }));
     L.push({ source: idx[`p:${p.id}`], target: idx[`s:${statusOfProject[p.id] || "unknown"}`], value: shown(p.id), real: total[p.id], p: p.id });
   });
-  const layout = d3sankey().nodeId((d) => d.index).nodeWidth(12).nodePadding(14).nodeAlign((d) => d.col).nodeSort(null).extent([[190, 44], [SW - 190, SH - 20]]);
+  const layout = d3sankey().nodeId((d) => d.index).nodeWidth(12).nodePadding(14).nodeAlign((d) => d.col).nodeSort(null).extent([[150, 46], [SW - 140, SH - 20]]);
   return layout({ nodes: N, links: L });
 }
 // 一条链：产品＝它的整条链；底座＝它支撑的产品及这些产品的去向；状态＝流进它的全部链路。
@@ -276,7 +276,8 @@ function chainOf(sk, n) {
 const fmt = (v) => (Math.round(v * 10) / 10).toString();
 
 // 节点悬停的明细写在右侧信息轨（onHoverNode），不再弹提示；流带悬停仍弹提示写这一段的提交数。
-function Flow({ sk, focus, entered, onPick, onHoverNode, tip }) {
+// 质感：一道柔光从左往右扫过流带（渐变平移，4.2 秒一轮）；减少动态效果时不画。
+function Flow({ sk, focus, entered, reduced, onPick, onHoverNode, tip }) {
   const [local, setLocal] = useState(null);
   const hot = useMemo(() => {
     if (local) return local;
@@ -291,7 +292,10 @@ function Flow({ sk, focus, entered, onPick, onHoverNode, tip }) {
   return (
     <svg className={`pr-flow${hot && hot.size ? " focus" : ""}`} viewBox={`0 0 ${SW} ${SH}`} role="group" aria-label="支撑流：底座 → 产品 → 当前状态">
       <defs>{sk.links.map((l) => <linearGradient key={l.index} id={`pr-sg-${l.index}`} gradientUnits="userSpaceOnUse" x1={l.source.x1} x2={l.target.x0}>
-        <stop offset="0" stopColor={l.source.hue} /><stop offset="1" stopColor={l.target.hue} /></linearGradient>)}</defs>
+        <stop offset="0" stopColor={l.source.hue} /><stop offset="1" stopColor={l.target.hue} /></linearGradient>)}
+        {!reduced && <linearGradient id="pr-sweep" gradientUnits="userSpaceOnUse" x1="0" x2="260" y1="0" y2="0">
+          <stop offset="0" stopColor={SWEEP} stopOpacity="0" /><stop offset=".5" stopColor={SWEEP} stopOpacity=".55" /><stop offset="1" stopColor={SWEEP} stopOpacity="0" />
+          <animateTransform attributeName="gradientTransform" type="translate" from="-300 0" to={`${SW} 0`} dur="4.2s" repeatCount="indefinite" /></linearGradient>}</defs>
       {col(0) && <text className="colh" x={col(0).x1} y="24" textAnchor="end">BASE 底座</text>}
       {col(1) && <text className="colh" x={(col(1).x0 + col(1).x1) / 2} y="24" textAnchor="middle">PRODUCT 产品</text>}
       {col(2) && <text className="colh" x={col(2).x0} y="24">STATUS 当前状态</text>}
@@ -304,7 +308,7 @@ function Flow({ sk, focus, entered, onPick, onHoverNode, tip }) {
             stroke={`url(#pr-sg-${l.index})`} strokeWidth={Math.max(1, l.width)} data-p={l.p}
             onMouseEnter={(ev) => { setLocal(new Set(sk.links.filter((x) => x.p === l.p).map((x) => x.index))); onHoverNode(projNode(l.p)); show(ev); }}
             onMouseMove={show} onMouseLeave={() => { setLocal(null); onHoverNode(null); tip.current?.hide(); }} />
-          <path className={`shim${on ? " hot" : ""}`} d={d} strokeWidth={Math.max(1, l.width * 0.5)} />
+          {!reduced && <path className={`sweep${on ? " hot" : ""}`} d={d} stroke="url(#pr-sweep)" strokeWidth={Math.max(1, l.width)} />}
         </g>;
       })}
       {sk.nodes.map((n) => {
@@ -314,7 +318,7 @@ function Flow({ sk, focus, entered, onPick, onHoverNode, tip }) {
           onClick={() => n.kind === "proj" && onPick(n.ref)}>
           <rect x={n.x0} y={n.y0} width={n.x1 - n.x0} height={Math.max(2, n.y1 - n.y0)} rx="2" fill={n.hue} style={{ filter: `drop-shadow(0 0 6px ${n.hue}66)` }} />
           {n.y1 - n.y0 > 26
-            ? <><text className="nlab" x={x} y={mid - 1} textAnchor={anchor}>{n.name}</text><text className="nval" x={x} y={mid + 13} textAnchor={anchor}>{v} 次提交</text></>
+            ? <><text className="nlab" x={x} y={mid - 3.5} textAnchor={anchor}>{n.name}</text><text className="nval" x={x} y={mid + 15.5} textAnchor={anchor}>{v} 次提交</text></>
             : <text className="nlab" x={x} y={mid + 4} textAnchor={anchor}>{n.name}<tspan className="nval" dx="8">{v}</tspan></text>}
         </g>;
       })}
@@ -390,7 +394,7 @@ export function ProjectRelations({ rel, onSettings, onOpen }) {
             <div className="pr-head"><h2>SUPPORT FLOW</h2><span className="crumb">底座 → 产品 → 当前状态 · 宽度＝近 30 天提交</span><span className="grow" />
               <span className="pr-legend">{statusKeys.map((k) => <span key={k} className="tg" style={{ "--c": statusOf(k).color }}><span className="pill"><i />{statusOf(k).label}</span></span>)}</span>
             </div>
-            {sk ? <div className="pr-scroll"><Flow sk={sk} focus={focus} entered={entered} onPick={pickFromFlow} onHoverNode={setFlowHov} tip={tip} /></div>
+            {sk ? <div className="pr-scroll"><Flow sk={sk} focus={focus} entered={entered} reduced={reduced} onPick={pickFromFlow} onHoverNode={setFlowHov} tip={tip} /></div>
               : <p className="pr-empty">名册里还没有标为产品（type: product）的项目，支撑流画不出来。</p>}
           </section>
           </div>

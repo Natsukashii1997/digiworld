@@ -148,10 +148,10 @@ try {
     // ---- 动效：进场结束后去掉动画类；高亮流带上有细光 ----
     // 每次切到关系页签都会重放进场动效（约 2 秒），结束后去掉动画类
     await page.waitForFunction(() => !document.querySelector(".pr-orbit .lk.draw, .pr-orbit .nd.in, .pr-orbit .ring.spin, .pr-flow .flow.grow"), null, { timeout: 5000 });
-    assert.ok(await page.locator(".pr-flow .shim.hot").count() > 0);
-    assert.equal(await page.locator(".pr-flow .shim.hot").first().evaluate((el) => getComputedStyle(el).animationName), "pr-shim");
+    assert.ok(await page.locator(".pr-flow .sweep.hot").count() > 0, "高亮链路上的柔光照亮");
+    assert.equal(await page.locator(".pr-flow #pr-sweep animateTransform").count(), 1, "柔光从左往右扫过流带");
     assert.equal(await node(page, "github-center").locator(".glow").evaluate((el) => getComputedStyle(el).animationName), "pr-pulse", "选中节点呼吸");
-    ok("动效：进场后动画类移除；桑基高亮流带细光、选中节点呼吸");
+    ok("动效：进场后动画类移除；桑基柔光扫过、选中节点呼吸");
 
     // ---- 44px 与可访问性 ----
     const small = await page.evaluate(() => [...document.querySelectorAll(".ps-pages button, .pr-page button")]
@@ -172,6 +172,7 @@ try {
     assert.equal(await page.locator(".pr-orbit .lk.draw, .pr-orbit .nd.in, .pr-orbit .ring.spin, .pr-flow .flow.grow").count(), 0);
     await node(page, "postpane").click();
     assert.equal(await page.locator(".pr-orbit animateMotion").count(), 0, "不放光点");
+    assert.equal(await page.locator(".pr-flow animateTransform, .pr-flow .sweep").count(), 0, "不放柔光扫过");
     assert.equal(await page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running" && a.effect?.target?.closest?.(".pr-page")).length), 0, "关系页没有在跑的动画");
     assert.equal(await hotFlows(page), linksOf("postpane"), "高亮照常");
     ok("减少动态效果：直接显示终态，无光点、无动画，高亮照常");
