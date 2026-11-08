@@ -1,0 +1,2 @@
+✖ failing tests:
+✖ 生产factory具体接线仅合成文件：原生CLI登记、draft持久、EPUB完整正文、默认关零宿主动作

@@ -1,0 +1,488 @@
+<title>项目关系桑基三版</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>
+/* 项目关系页 · 桑基三版对比。单一深色外观（数码世界本身只有深色）。
+   上：方案切换条；下：页面原样（页头、页签、关系轨道卡、支撑流卡），只换支撑流部分的结构与质感。
+   A 镜像侧栏：桑基卡加和轨道卡同位置、同尺寸的右侧信息卡。B 通栏长卷：桑基拉满整行，上加读数条、下加三栏小结。
+   C 共享信息轨：两张图同宽叠放在左，右侧一条贯穿两张图的信息轨。 */
+:root{
+  color-scheme:dark;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --bg:#070b16;--bg-2:#0a1020;--line:rgba(140,178,255,.11);--line-2:rgba(140,178,255,.19);--line-3:rgba(140,178,255,.32);
+  --text:#e9eeff;--text-2:#b4bfda;--muted:#8b98b8;--faint:#5d6987;--orange:#ff8a24;--orange-2:#ffb35c;--cyan:#4de3ff;
+  --card:#0b1326;--card-line:rgba(120,140,190,.16);--panel:rgba(14,20,38,.92);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+/* 方案切换条 */
+.pick{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:rgba(7,11,22,.94);border-bottom:1px solid var(--line-2);backdrop-filter:blur(8px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:31;background:var(--bg)}
+.pick b{font:700 13px var(--sans)}
+.pick .seg{display:inline-flex;max-width:100%;overflow-x:auto;scrollbar-width:none;border:1px solid var(--line-2);border-radius:999px;padding:3px;gap:2px}
+.pick .seg button{flex:none;white-space:nowrap;min-height:38px;padding:0 14px;border:0;border-radius:999px;background:none;color:var(--muted);font:600 12.5px var(--sans);cursor:pointer}
+.pick .seg button[aria-pressed="true"]{background:rgba(255,138,36,.16);color:var(--orange-2)}
+.pick p{flex:1 1 320px;margin:0;font-size:12.5px;color:var(--text-2);min-width:0}
+
+.shell{display:grid;grid-template-columns:200px minmax(0,1fr)}
+.side{position:sticky;top:57px;height:calc(100vh - 57px);padding:18px 14px;border-right:1px solid var(--line);background:var(--bg-2)}
+.brand{display:flex;align-items:center;gap:10px;margin:0 4px 22px}
+.brand i{width:30px;height:30px;border-radius:8px;background:radial-gradient(circle at 40% 35%,var(--orange-2),var(--orange) 55%,#7a3200)}
+.brand b{display:block;font:800 17px/1.1 var(--sans)}.brand small{font:600 9px var(--mono);letter-spacing:.2em;color:var(--muted)}
+.side h6{margin:14px 6px 6px;font:600 11px var(--sans);color:var(--faint)}
+.side a{display:flex;align-items:center;min-height:38px;padding:0 10px;border-radius:9px;color:var(--text-2);text-decoration:none;font-size:13px}
+.side a.on{background:rgba(255,138,36,.12);color:var(--orange-2);box-shadow:inset 2px 0 0 var(--orange)}
+.main{min-width:0;padding-block:22px 60px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.bar{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.bar h1{margin:0;font:800 20px var(--sans)}.bar h1 .en{margin-left:10px;font:600 11px var(--mono);letter-spacing:.16em;color:var(--muted)}
+.stats{display:flex;gap:18px;flex-wrap:wrap;align-items:baseline;font:500 11px var(--mono);color:var(--muted)}
+.stats b{margin-right:5px;font:700 16px var(--mono);color:var(--text);font-variant-numeric:tabular-nums}
+.stats .src{align-self:center;padding:2px 8px;border:1px solid var(--line-2);border-radius:999px;font-size:10.5px}
+.ptabs{display:flex;margin:16px 0 18px;border-bottom:1px solid var(--line)}
+.ptabs span{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;white-space:nowrap;border-bottom:2px solid transparent;color:var(--muted);font:600 13px var(--sans)}
+.ptabs span .en{margin-left:6px;font:600 10px var(--mono);letter-spacing:.14em;color:var(--muted)}
+.ptabs span.on{color:var(--text);border-bottom-color:var(--orange)}
+
+/* 卡片（三版都调浅一档：卡底 #0b1326、顶部光晕更亮） */
+.card{position:relative;border:1px solid var(--card-line);border-radius:14px;background:radial-gradient(90% 80% at 50% 0%,rgba(90,125,220,.16),transparent 72%),var(--card);overflow:hidden}
+.chead{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid rgba(120,140,190,.14);font:500 11px var(--mono);color:var(--muted)}
+.chead h2{margin:0;font:700 12px var(--mono);letter-spacing:.14em;color:var(--text)}
+.grow{flex:1}
+.tg{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 8px;border-radius:999px;color:var(--muted);font:500 11px var(--mono);white-space:nowrap}
+.tg i{width:9px;height:9px;border-radius:2px;background:var(--c)}
+.tg s{width:18px;height:0;border-top:1.6px solid var(--c);text-decoration:none}.tg s.d{border-top-style:dashed}
+.foot{margin:10px 2px 16px;font-size:12px;color:var(--muted);line-height:1.65}
+.foot b{color:var(--text-2)}
+.scroll svg{display:block;width:100%;height:auto}
+
+/* 关系轨道（同现版） */
+.g .lk{fill:none;stroke-width:1.4;opacity:.45;transition:opacity .25s,stroke-width .25s}
+.g .lk.d{stroke-dasharray:4 4}
+.g.focus .lk{opacity:.07}.g.focus .lk.hot{opacity:.95;stroke-width:2.2}
+.g .ring{fill:none;stroke:rgba(255,255,255,.08)}
+.g .ringlab{font:600 10px var(--mono);letter-spacing:.2em;fill:rgba(255,255,255,.34)}
+.g .nd{cursor:pointer}
+.g .nd .glow{opacity:0;filter:blur(8px);transition:opacity .25s}
+.g .nd.hot .glow{opacity:.22}.g .nd.sel .glow{opacity:.4;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.18}}
+.g .nd:hover .pill,.g .nd.sel .pill{fill:#1e2846}
+.g .nd text{font:600 11.5px var(--sans);fill:var(--text)}
+.g.focus .nd{opacity:.25;transition:opacity .25s}.g.focus .nd.hot{opacity:1}
+
+/* 信息卡（轨道卡、A 版桑基卡、C 版信息轨共用） */
+.panel{display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:12px;background:var(--panel);border:1px solid rgba(120,140,190,.22);font-size:12px;color:var(--text-2)}
+.panel.float{position:absolute;right:14px;top:62px;bottom:14px;width:276px;overflow:auto;backdrop-filter:blur(6px)}
+.panel h3{margin:0;font:700 15px var(--sans);color:var(--text);display:flex;align-items:center;gap:8px}
+.panel h3 i{width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:none}
+.panel .meta{margin:0;font:500 10.5px var(--mono);color:var(--muted)}
+.panel p{margin:0;line-height:1.6}
+.panel h4{margin:0;font:600 10px var(--mono);letter-spacing:.14em;color:var(--muted)}
+.panel ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.panel li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 8px;padding:6px 8px;border-radius:7px}
+.panel li em{font:600 10px/1.9 var(--mono);font-style:normal;color:var(--c);white-space:nowrap}
+.panel li b{font-weight:600;color:var(--text)}
+.panel li span{grid-column:2;font-size:11px;color:var(--muted);line-height:1.45}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--card-line);border-radius:8px}
+.nums div{padding:7px 9px;display:grid;gap:1px}.nums div+div{border-left:1px solid var(--card-line)}
+.nums small{font:500 10px var(--mono);color:var(--muted)}.nums b{font:700 15px var(--mono);color:var(--text)}
+.big{display:flex;align-items:baseline;gap:8px}.big b{font:700 30px/1 var(--mono);color:var(--text);font-variant-numeric:tabular-nums}.big span{font:500 11px var(--mono);color:var(--muted)}
+.share{display:grid;gap:7px}
+.share .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;align-items:baseline}
+.share .row b{font-weight:600;color:var(--text);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.share .row small{font:600 11px var(--mono);color:var(--text-2);font-variant-numeric:tabular-nums}
+.share .row .track{grid-column:1/-1;height:6px;border-radius:3px;background:rgba(140,160,220,.12);overflow:hidden}
+.share .row .track i{display:block;height:100%;border-radius:3px;background:var(--c);box-shadow:0 0 8px var(--c)}
+.stack{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:2px}
+.stack i{display:block;background:var(--c)}
+.keys{display:flex;flex-wrap:wrap;gap:4px 12px;font:500 10.5px var(--mono);color:var(--text-2)}
+.keys span{display:inline-flex;align-items:center;gap:5px}.keys span::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--c)}
+.hint{position:absolute;left:16px;bottom:12px;max-width:300px;font:500 10.5px/1.6 var(--mono);color:var(--muted);pointer-events:none}
+
+/* 支撑流（三版共用的基础：流带调浅） */
+.s .flow{fill:none;opacity:.5;transition:opacity .25s}
+.s.focus .flow{opacity:.1}.s.focus .flow.hot{opacity:.95}
+.s .nd{cursor:pointer;transition:opacity .25s}.s.focus .nd{opacity:.45}.s.focus .nd.hot{opacity:1}
+.s .nlab{font:600 12.5px var(--sans);fill:var(--text);paint-order:stroke;stroke:rgba(11,19,38,.62);stroke-width:3px;stroke-linejoin:round}
+.s .nval{font:500 10.5px var(--mono);fill:var(--text-2);paint-order:stroke;stroke:rgba(11,19,38,.62);stroke-width:3px;stroke-linejoin:round}
+.s .colh{font:700 10.5px var(--mono);letter-spacing:.16em;fill:var(--muted)}
+.s .pt{pointer-events:none}
+.s.focus .pt{opacity:.15}.s.focus .pt.hot{opacity:1}
+.s .sweep{fill:none;pointer-events:none;mix-blend-mode:screen}
+.s.focus .sweep{opacity:.15}.s.focus .sweep.hot{opacity:1}
+.s .conv{fill:none;stroke:#fff;stroke-opacity:.1;stroke-dasharray:2 22;animation:conv 1.3s linear infinite;pointer-events:none}
+.s.focus .conv{stroke-opacity:.03}.s.focus .conv.hot{stroke-opacity:.3}
+@keyframes conv{to{stroke-dashoffset:-24}}
+
+/* B：读数条与三栏小结 */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:rgba(120,140,190,.14);border-bottom:1px solid rgba(120,140,190,.14)}
+.kpi{display:grid;gap:3px;padding:12px 16px;background:var(--card)}
+.kpi small{font:500 10.5px var(--mono);color:var(--muted)}
+.kpi b{font:700 22px/1.1 var(--mono);color:var(--text);font-variant-numeric:tabular-nums}
+.kpi span{font-size:11.5px;color:var(--text-2)}
+/* E：读数条即信息区（高度固定，悬停只换内容，不挤压、不遮挡图） */
+.kpis.ctx .kpi{min-width:0;transition:background .2s}
+.card.e .s:not(.focus) .flow{opacity:.8}
+/* H：B 的桑基按原比例缩进左栏，字号在画布里放大一点，缩放后仍看得清 */
+.card.h .s .nlab{font-size:16px}.card.h .s .nval{font-size:14px}.card.h .s .colh{font-size:13px}/* E：交叉少了，平时流带可以更亮，免得橙色压成棕色 */
+.kpis.ctx .kpi small,.kpis.ctx .kpi b,.kpis.ctx .kpi span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpis.ctx.on .kpi{background:#0e1730}
+.kpis.ctx.on .kpi:first-child{box-shadow:inset 3px 0 0 var(--c)}
+.kpi .dot{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);vertical-align:0}
+.kpi small b{font:inherit;color:var(--text)}
+/* G：卡片内的视图切换 */
+.vseg{display:inline-flex;max-width:100%;overflow-x:auto;scrollbar-width:none;border:1px solid var(--line-2);border-radius:999px;padding:3px;gap:2px}
+.vseg button{flex:none;min-height:38px;padding:0 16px;border:0;border-radius:999px;background:none;color:var(--muted);font:700 11.5px var(--mono);letter-spacing:.12em;cursor:pointer;white-space:nowrap}
+.vseg button[aria-pressed="true"]{background:rgba(255,138,36,.16);color:var(--orange-2)}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 16px 16px}
+.cols section{display:grid;gap:8px;align-content:start;padding:12px;border:1px solid var(--card-line);border-radius:10px;background:rgba(14,20,38,.6)}
+.cols h4{margin:0;font:600 10px var(--mono);letter-spacing:.14em;color:var(--muted)}
+.focusline{min-height:44px;display:flex;align-items:center;gap:10px;padding:0 16px 10px;font-size:12px;color:var(--text-2)}
+.focusline b{color:var(--text)}
+
+/* C：左两图、右信息轨 */
+.duo{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.duo .charts{display:grid;gap:16px;min-width:0}
+.duo .rail{align-self:stretch;display:block}
+.rail-in{position:sticky;top:76px;display:flex;flex-direction:column;gap:12px}
+.chead.two .grow{flex-basis:100%;height:0}
+
+#tip{position:fixed;z-index:50;left:0;top:0;max-width:300px;padding:10px 12px;border-radius:10px;background:rgba(12,18,32,.97);border:1px solid var(--line-3);box-shadow:0 14px 40px -10px rgba(0,0,0,.8);font-size:12px;line-height:1.55;color:var(--text-2);pointer-events:none;opacity:0;transition:opacity .12s}
+#tip b{display:block;font-size:13px;color:var(--text);margin-bottom:2px}
+#tip .k{font:600 10px var(--mono);color:var(--muted)}#tip .n{font:700 12px var(--mono);color:var(--text)}
+
+@media (max-width:1100px){.panel.float{position:static;width:auto;margin:0 14px 14px}.hint{display:none}.duo{grid-template-columns:minmax(0,1fr)}.rail-in{position:static}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cols{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.shell{grid-template-columns:minmax(0,1fr)}.side{display:none}.ptabs span{padding:0 12px}
+  .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .scroll{overflow-x:auto}.scroll svg{min-width:760px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="pick" role="group" aria-label="切换方案">
+  <b>支撑流 · 方案</b>
+  <span class="seg"><button type="button" data-v="h" aria-pressed="true">H 定稿候选</button><button type="button" data-v="f" aria-pressed="false">F 同构双卡</button><button type="button" data-v="g" aria-pressed="false">G 单画布切换</button><button type="button" data-v="e" aria-pressed="false">E 各自就近（推荐）</button><button type="button" data-v="d" aria-pressed="false">D＝C 版式＋B 桑基</button><button type="button" data-v="a" aria-pressed="false">A 镜像侧栏</button><button type="button" data-v="b" aria-pressed="false">B 通栏长卷</button><button type="button" data-v="c" aria-pressed="false">C 共享信息轨</button></span>
+  <p id="desc"></p>
+</div>
+<div class="shell">
+  <aside class="side" aria-label="数码世界侧栏（示意）">
+    <div class="brand"><i></i><div><b>数码世界</b><small>DIGITAL·WORLD</small></div></div>
+    <h6>体系 · 只读</h6><a href="#a">世界总览</a><a class="on" href="#a">项目空间</a><a href="#a">Agent</a><a href="#a">规则</a>
+    <h6>我的素材 · 可写</h6><a href="#a">资产仓库</a><a href="#a">个人收藏</a><a href="#a">随手记</a><a href="#a">逆向工程</a>
+  </aside>
+  <main class="main">
+    <header class="bar"><h1>项目空间<span class="en">PROJECTS</span></h1>
+      <div class="stats"><span><b>16</b>项目</span><span><b>28</b>关系</span><span><b>1078</b>近 30 天产品提交</span><span class="src">名册 v1.6 · 读取于 10:30</span></div></header>
+    <div class="ptabs"><span>项目总览<span class="en">OVERVIEW</span></span><span class="on">项目关系<span class="en">RELATIONS</span></span></div>
+    <div id="stage"></div>
+  </main>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3-array@2.12.1/dist/d3-array.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-path@1.0.9/dist/d3-path.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-shape@1.3.7/dist/d3-shape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<script>
+/* 示例数据：同定稿（名册 v1.6 的 16 个项目、近 30 天提交与状态；关系含名册手写草稿与自动读取） */
+const N=[
+ {id:"personal-ai-workbench",name:"数码世界",type:"product",c30:131,st:"agent"},{id:"digital-twin",name:"数字分身",type:"product",c30:158,st:"agent"},
+ {id:"postpane",name:"驿窗",type:"product",c30:239,st:"pr"},{id:"github-center",name:"GitHub 中心",type:"product",c30:111,st:"human"},
+ {id:"chatgpt-clipper",name:"回答收藏器",type:"product",c30:23,st:"ok"},{id:"work-desk",name:"牛马之家",type:"product",c30:299,st:"ok"},
+ {id:"trainee-hub",name:"管培生工作台",type:"product",c30:7,st:"human"},{id:"carvomoto",name:"CarvoMOTO",type:"product",c30:95,st:"noremote"},
+ {id:"disk-slim",name:"磁盘瘦身",type:"product",c30:3,st:"ok"},{id:"little-steps",name:"Little Steps",type:"product",c30:12,st:"ok"},
+ {id:"my-skills",name:"自建技能库",type:"capability",c30:38},{id:"multi-agent",name:"多 Agent 协同",type:"capability",c30:6},{id:"ui-system",name:"UI 设计体系",type:"capability",c30:2},
+ {id:"obsidian-kb",name:"Obsidian 知识库",type:"infrastructure",c30:1},{id:"get-index",name:"GET 索引",type:"infrastructure",c30:0},{id:"agent-kit",name:"agent-kit",type:"infrastructure",c30:31}];
+const TYPE={product:["产品","#ffb35c"],capability:["能力","#a891ff"],infrastructure:["基础设施","#7fe0a0"]};
+const KIND={support:["引用底座","#8fa3ff"],data:["数据流","#4de3ff"],contract:["契约 → 实施","#c08bff"],part:["组成 · 挂载","#ffb35c"],apart:["明确独立","#ff7b7b"]};
+const E=[["digital-twin","personal-ai-workbench","data"],["my-skills","personal-ai-workbench","data"],["personal-ai-workbench","my-skills","data"],["obsidian-kb","personal-ai-workbench","data"],["obsidian-kb","digital-twin","data"],["chatgpt-clipper","obsidian-kb","data"],["digital-twin","postpane","data"],["digital-twin","github-center","data"],["github-center","my-skills","data",1],["multi-agent","digital-twin","contract"],["multi-agent","postpane","contract"],["multi-agent","my-skills","contract"],["ui-system","my-skills","contract"],["get-index","obsidian-kb","part"],["disk-slim","postpane","part"],["my-skills","trainee-hub","support"],["my-skills","postpane","support"],
+ ...["work-desk","personal-ai-workbench","trainee-hub","github-center","digital-twin","postpane","chatgpt-clipper","disk-slim","little-steps"].map(t=>["agent-kit",t,"support"]),["work-desk","personal-ai-workbench","apart"],["work-desk","carvomoto","apart"]];
+const SUP={"personal-ai-workbench":["agent-kit","my-skills","obsidian-kb"],"digital-twin":["agent-kit","multi-agent","obsidian-kb"],"postpane":["agent-kit","multi-agent","my-skills"],"github-center":["agent-kit"],"chatgpt-clipper":["agent-kit","obsidian-kb"],"work-desk":["agent-kit"],"trainee-hub":["agent-kit","my-skills"],"disk-slim":["agent-kit"],"little-steps":["agent-kit"],"carvomoto":["none"]};
+const ST={agent:["待 Agent 处理","#4de3ff"],human:["待人工验收","#ffd166"],pr:["PR 待合并","#c08bff"],ok:["正常推进","#7fe0a0"],noremote:["没有远端","#ff7b7b"]};
+const BASEHUE={"agent-kit":"#7fe0a0","my-skills":"#c8b6ff","obsidian-kb":"#5fd0c0","multi-agent":"#a891ff","none":"#7d88a8"};
+const BASENAME={"agent-kit":"agent-kit","my-skills":"自建技能库","obsidian-kb":"Obsidian 知识库","multi-agent":"多 Agent 协同","none":"未接底座"};
+const DESC={h:"在 D 的基础上：去掉桑基上方的读数横栏；桑基换成 B 通栏长卷的那一张（节点顺序、比例、柔光扫过都一样），按原比例缩进左栏，所以更扁更长，文字随之缩小。右侧信息轨不变：悬停轨道或桑基都在这里写明细。",
+ f:"两张卡结构完全一样：卡头、顶部四格信息、下面整行大图。轨道居中、桑基拉满，信息都在各自卡片顶部，悬停哪里就写哪里，上下完全对称，也不需要侧栏。",
+ g:"只有一张大卡，卡头一键切换「关系」和「支撑流」，同一个框里一次看一张图，图最大（约 1190×680），一次专心看一张。顶部四格写明细；在关系里选中的项目切过去仍然高亮，联动不丢。",
+ e:"推荐版：轨道卡不变，信息卡放在轨道右侧本来就空着的地方；桑基拉满整行、加高，并让节点重新排序减少交叉。桑基不配侧栏，卡片顶部四格就是信息区：平时是全局读数，悬停底座、产品或状态就换成它的明细，高度固定，不挤压、不遮挡图。质感沿用 B 的浅色流带和柔光扫过。",
+ d:"你选的组合：C 的共享信息轨版式（两张图同宽叠在左，右侧信息轨贯穿上下，悬停任一张图都在这里写明细），桑基用 B 的样式：顶部 4 个读数、浅色流带、一道柔光从左往右扫过。B 底部的三栏小结与信息轨重复，没有带过来。",
+ a:"桑基卡加一块和轨道卡同位置、同尺寸的信息卡：平时看底座份额与状态分布，悬停看这条链的明细。上下两张卡左图右卡，完全对称。质感：流带上常驻小光点顺流而下。",
+ b:"桑基拉满整行，列间距拉开、流带更舒展；卡片顶部加 4 个读数，底部按三栏写小结。信息靠上下补，不占右侧。质感：一道柔光从左往右扫过整张图。",
+ c:"两张图同宽叠在左边，右边一条贯穿上下的信息轨，选中项目时同时写它的关系和支撑链。对称来自统一的版式。质感：流带上细密的流纹持续向前。"};
+const byId=Object.fromEntries(N.map(n=>[n.id,n]));
+const deg=id=>E.filter(e=>e[0]===id||e[1]===id).length;
+const calm=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tip=document.getElementById("tip");
+const showTip=(e,h)=>{tip.innerHTML=h;tip.style.opacity=1;tip.style.left=Math.min(e.clientX+14,innerWidth-tip.offsetWidth-12)+"px";tip.style.top=Math.min(e.clientY+14,innerHeight-tip.offsetHeight-12)+"px"};
+const hideTip=()=>tip.style.opacity=0;
+const PRODUCTS=N.filter(n=>n.type==="product"),TOTAL=PRODUCTS.reduce((a,n)=>a+n.c30,0);
+const legendTypes=()=>Object.values(TYPE).map(([n,c])=>`<span class="tg" style="--c:${c}"><i></i>${n}</span>`).join("")+Object.entries(KIND).map(([k,[n,c]])=>`<span class="tg" style="--c:${c}"><s class="${k==="apart"?"d":""}"></s>${n}</span>`).join("");
+const legendStatus=()=>Object.values(ST).map(([n,c])=>`<span class="tg" style="--c:${c}"><i></i>${n}</span>`).join("");
+
+let V="h",sel=null,hov=null,SK=null,flowHover=null;
+
+/* ---------------- 关系轨道（同现版） ---------------- */
+function orbit(W,Cx){
+  const H=660,C={x:Cx,y:330},R={infrastructure:104,capability:200,product:296},off={product:-Math.PI/2,capability:-Math.PI/2+.6,infrastructure:Math.PI/6},pos={};
+  ["infrastructure","capability","product"].forEach(t=>{const ns=N.filter(n=>n.type===t);ns.forEach((n,i)=>{const a=off[t]+i*2*Math.PI/ns.length;pos[n.id]={x:C.x+R[t]*Math.cos(a),y:C.y+R[t]*Math.sin(a)}})});
+  const LA={infrastructure:-30,capability:-122,product:-108};
+  let h=`<rect class="bgr" width="${W}" height="${H}" fill="transparent"/><circle cx="${C.x}" cy="${C.y}" r="150" fill="rgba(127,224,160,.07)" pointer-events="none"/>`;
+  Object.entries(R).forEach(([t,r])=>{const a=LA[t]*Math.PI/180;h+=`<circle class="ring" cx="${C.x}" cy="${C.y}" r="${r}"/><text class="ringlab" x="${C.x+r*Math.cos(a)}" y="${C.y+r*Math.sin(a)+4}" text-anchor="middle">${TYPE[t][0]}</text>`});
+  E.forEach((e,i)=>{const [a,b,k,inf]=e,s=pos[a],t=pos[b],qx=C.x+((s.x+t.x)/2-C.x)*.25,qy=C.y+((s.y+t.y)/2-C.y)*.25;
+    h+=`<path id="lk-${i}" class="lk ${inf||k==="apart"?"d":""}" data-a="${a}" data-b="${b}" stroke="${KIND[k][1]}" d="M${s.x},${s.y}Q${qx},${qy} ${t.x},${t.y}"/>`});
+  h+=`<g class="pts"></g>`;
+  N.forEach(n=>{const p=pos[n.id],c=TYPE[n.type][1],w=[...n.name].reduce((a,ch)=>a+(ch.charCodeAt(0)>255?12.5:7.2),0)+32;
+    h+=`<g class="nd" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.name)}" transform="translate(${p.x},${p.y})"><rect class="glow" x="${-w/2-4}" y="-17" width="${w+8}" height="34" rx="17" fill="${c}"/><rect class="pill" x="${-w/2}" y="-13" width="${w}" height="26" rx="13" fill="#151d34" stroke="${c}" stroke-opacity=".6"/><circle cx="${-w/2+12}" cy="0" r="4" fill="${c}"/><text x="${-w/2+21}" y="4">${esc(n.name)}</text></g>`});
+  return `<svg class="g" viewBox="0 0 ${W} ${H}" role="group" aria-label="关系轨道">${h}</svg>`;
+}
+function wireOrbit(svg){if(!svg)return;
+  svg.querySelectorAll(".nd").forEach(el=>{const id=el.dataset.id;
+    el.addEventListener("mouseenter",e=>{hov=id;focus();if(!document.getElementById("octx")&&!document.getElementById("rail"))showTip(e,`<b>${esc(byId[id].name)}</b><span class="k">${TYPE[byId[id].type][0]}</span><div><span class="k">近 30 天提交</span> <span class="n">${byId[id].c30}</span>　<span class="k">关系</span> <span class="n">${deg(id)}</span></div>`)});
+    el.addEventListener("mouseleave",()=>{hov=null;focus();hideTip()});
+    el.addEventListener("click",e=>{e.stopPropagation();sel=sel===id?null:id;focus()});
+    el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();sel=sel===id?null:id;focus()}})});
+  svg.querySelector(".bgr").addEventListener("click",()=>{sel=null;focus()});
+}
+
+/* ---------------- 支撑流 ---------------- */
+function buildSankey(ext,sorted){
+  const nodes=[],idx={},add=(id,name,col,x)=>{idx[id]=nodes.length;nodes.push({id,name,col,...x})};
+  ["agent-kit","my-skills","obsidian-kb","multi-agent","none"].forEach(b=>add("b:"+b,BASENAME[b],0,{hue:BASEHUE[b],kind:"base",ref:b}));
+  PRODUCTS.forEach(n=>add("p:"+n.id,n.name,1,{hue:TYPE.product[1],kind:"proj",ref:n.id}));
+  Object.keys(ST).forEach(s=>add("s:"+s,ST[s][0],2,{hue:ST[s][1],kind:"st",ref:s}));
+  const links=[];
+  PRODUCTS.forEach(n=>{const bs=SUP[n.id],v=Math.max(n.c30,2);bs.forEach(b=>links.push({source:idx["b:"+b],target:idx["p:"+n.id],value:v/bs.length,real:n.c30/bs.length,p:n.id,b}));links.push({source:idx["p:"+n.id],target:idx["s:"+n.st],value:v,real:n.c30,p:n.id})});
+  const sk=d3.sankey().nodeId(d=>d.index).nodeWidth(12).nodePadding(14).nodeAlign(d=>d.col).extent(ext);
+  return (sorted?sk.iterations(32):sk.nodeSort(null))({nodes,links});// sorted：交给 d3 排列同列节点，减少交叉
+}
+const realOf=n=>n.kind==="proj"?byId[n.ref].c30:n.kind==="base"?SK.links.filter(l=>l.source===n).reduce((a,l)=>a+l.real,0):SK.links.filter(l=>l.target===n).reduce((a,l)=>a+l.real,0);
+function flowSvg(W,H,ext,texture,sorted,gap=13){// gap：节点名与提交数两行的间距（画布单位）
+  SK=buildSankey(ext,sorted);const L=SK.links,ND=SK.nodes,path=d3.sankeyLinkHorizontal(),col=c=>ND.find(n=>n.col===c);
+  let defs=L.map((l,i)=>`<linearGradient id="sg-${i}" gradientUnits="userSpaceOnUse" x1="${l.source.x1}" x2="${l.target.x0}"><stop offset="0" stop-color="${l.source.hue}"/><stop offset="1" stop-color="${l.target.hue}"/></linearGradient>`).join("");
+  if(texture==="sweep")defs+=`<linearGradient id="sweep" gradientUnits="userSpaceOnUse" x1="0" x2="260" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>${calm()?"":`<animateTransform attributeName="gradientTransform" type="translate" from="-300 0" to="${W} 0" dur="4.2s" repeatCount="indefinite"/>`}</linearGradient>`;
+  let h=`<defs>${defs}</defs><text class="colh" x="${col(0).x1}" y="24" text-anchor="end">BASE 底座</text><text class="colh" x="${(col(1).x0+col(1).x1)/2}" y="24" text-anchor="middle">PRODUCT 产品</text><text class="colh" x="${col(2).x0}" y="24">STATUS 当前状态</text>`;
+  L.forEach((l,i)=>{const d=path(l);h+=`<path id="fl-${i}" class="flow" data-i="${i}" d="${d}" stroke="url(#sg-${i})" stroke-width="${Math.max(1,l.width)}"/>`;
+    if(texture==="sweep")h+=`<path class="sweep" data-i="${i}" d="${d}" stroke="url(#sweep)" stroke-width="${Math.max(1,l.width)}"/>`;
+    if(texture==="conv")h+=`<path class="conv" data-i="${i}" d="${d}" stroke-width="${Math.max(1,l.width*.7)}"/>`});
+  if(texture==="dots"&&!calm())L.forEach((l,i)=>{const n=1+(l.width>14)+(l.width>40),dur=((l.target.x0-l.source.x1)/80).toFixed(2),r=Math.min(2.8,Math.max(1.3,l.width*.07)).toFixed(1),c=l.target.hue;
+    for(let k=0;k<n;k++)h+=`<circle class="pt" data-i="${i}" r="${r}" fill="${c}" style="filter:drop-shadow(0 0 3px ${c})"><animateMotion dur="${dur}s" begin="-${(k/n*dur+((i*37)%10)/10).toFixed(2)}s" repeatCount="indefinite" path="${path(l)}"/></circle>`});
+  ND.forEach(n=>{const left=n.col===0,v=Math.round(realOf(n)),mid=(n.y0+n.y1)/2,x=left?n.x0-10:n.x1+10,anc=left?"end":"start";
+    h+=`<g class="nd" data-n="${n.index}"><rect x="${n.x0}" y="${n.y0}" width="${n.x1-n.x0}" height="${Math.max(2,n.y1-n.y0)}" rx="2" fill="${n.hue}" style="filter:drop-shadow(0 0 7px ${n.hue}88)"/>`+
+      (n.y1-n.y0>26?`<text class="nlab" x="${x}" y="${mid-1-(gap-13)/2}" text-anchor="${anc}">${esc(n.name)}</text><text class="nval" x="${x}" y="${mid+13+(gap-13)/2}" text-anchor="${anc}">${v} 次提交</text>`:`<text class="nlab" x="${x}" y="${mid+4}" text-anchor="${anc}">${esc(n.name)}<tspan class="nval" dx="8">${v}</tspan></text>`)+`</g>`});
+  return `<svg class="s" viewBox="0 0 ${W} ${H}" role="group" aria-label="支撑流：底座 → 产品 → 当前状态">${h}</svg>`;
+}
+function chainOf(n){const L=SK.links,s=new Set();
+  if(n.kind==="proj")L.forEach(l=>{if(l.p===n.ref)s.add(l.index)});
+  else if(n.kind==="base")n.sourceLinks.forEach(l=>{s.add(l.index);L.forEach(x=>{if(x.p===l.p&&x.source.kind==="proj")s.add(x.index)})});
+  else n.targetLinks.forEach(l=>L.forEach(x=>{if(x.p===l.p)s.add(x.index)}));return s}
+function wireFlow(svg){if(!svg)return;
+  svg.querySelectorAll(".nd").forEach(el=>{const n=SK.nodes[+el.dataset.n];
+    el.addEventListener("mouseenter",e=>{flowHover=n;paintFlow();if(!document.getElementById("ctx")&&!document.getElementById("rail"))showTip(e,`<b>${esc(n.name)}</b><span class="k">${({base:"底座",proj:"产品",st:"当前状态"})[n.kind]}</span><div><span class="k">近 30 天提交</span> <span class="n">${Math.round(realOf(n))}</span></div>`)});
+    el.addEventListener("mouseleave",()=>{flowHover=null;hideTip();paintFlow()});
+    el.addEventListener("click",()=>{if(n.kind==="proj"){sel=n.ref;focus()}})});
+  svg.querySelectorAll(".flow").forEach(el=>{const l=SK.links[+el.dataset.i];
+    el.addEventListener("mouseenter",e=>{flowHover=SK.nodes.find(x=>x.kind==="proj"&&x.ref===l.p);paintFlow();showTip(e,`<b>${esc(l.source.name)} → ${esc(l.target.name)}</b><div><span class="k">${l.source.kind==="base"?"分到的提交":"提交"}</span> <span class="n">${Math.round(l.real)}</span></div>`)});
+    el.addEventListener("mouseleave",()=>{flowHover=null;hideTip();paintFlow()})});
+}
+// 当前桑基焦点：桑基里悬停的节点优先；否则跟随轨道的悬停 / 选中（产品、底座才有链）
+function flowFocus(){if(flowHover)return flowHover;const id=hov||sel;return id?SK.nodes.find(x=>(x.kind==="proj"||x.kind==="base")&&x.ref===id)||null:null}
+function paintFlow(){
+  const svg=document.querySelector("svg.s");if(!svg)return;const n=flowFocus(),set=n?chainOf(n):null;
+  svg.classList.toggle("focus",!!set);
+  svg.querySelectorAll(".flow,.sweep,.conv,.pt").forEach(p=>p.classList.toggle("hot",!!set&&set.has(+p.dataset.i)));
+  const on=new Set();if(set)SK.links.forEach(l=>{if(set.has(l.index)){on.add(l.source.index);on.add(l.target.index)}});
+  svg.querySelectorAll(".nd").forEach(g=>g.classList.toggle("hot",on.has(+g.dataset.n)));
+  const fp=document.getElementById("flowInfo");if(fp)fp.innerHTML=flowInfo(n);
+  const fl=document.getElementById("focusline");if(fl)fl.innerHTML=focusLine(n);
+  const cx=document.getElementById("ctx");if(cx){cx.innerHTML=ctxStrip(n);cx.classList.toggle("on",!!n)}
+  const rail=document.getElementById("rail");if(rail)rail.innerHTML=flowHover?flowInfo(flowHover):railHtml();
+}
+
+/* ---------------- 信息内容 ---------------- */
+const pct=v=>Math.round(v/TOTAL*100)+"%";
+const f1=v=>Number.isInteger(v)?String(v):v.toFixed(1);
+function baseShares(){return ["agent-kit","my-skills","multi-agent","obsidian-kb","none"].map(b=>({b,v:SK.links.filter(l=>l.b===b).reduce((a,l)=>a+l.real,0)}))}
+function overview(){
+  const bars=baseShares().map(({b,v})=>`<div class="row" style="--c:${BASEHUE[b]}"><b>${BASENAME[b]}</b><small>${Math.round(v)} · ${pct(v)}</small><span class="track"><i style="width:${Math.max(2,v/TOTAL*100)}%"></i></span></div>`).join("");
+  const st=Object.entries(ST).map(([k,[n,c]])=>({k,n,c,v:PRODUCTS.filter(p=>p.st===k).reduce((a,p)=>a+p.c30,0),cnt:PRODUCTS.filter(p=>p.st===k).length}));
+  return `<div><h3 style="--c:var(--text)"><i></i>支撑概览</h3><p class="meta">近 30 天 · 10 个产品</p></div>
+    <div class="big"><b>${TOTAL}</b><span>次产品提交</span></div>
+    <h4>底座份额</h4><div class="share">${bars}</div>
+    <h4>当前状态</h4><div class="stack">${st.map(s=>`<i style="--c:${s.c};flex:${s.v}"></i>`).join("")}</div>
+    <div class="keys">${st.map(s=>`<span style="--c:${s.c}">${s.n} ${s.cnt} 个</span>`).join("")}</div>
+    <p class="meta">UI 设计体系、GET 索引目前没有产品接入。悬停任一底座、产品或状态看明细。</p>`;
+}
+function flowInfo(n){
+  if(!n)return overview();
+  if(n.kind==="proj"){const p=byId[n.ref],bs=SUP[p.id];
+    return `<div><h3 style="--c:${TYPE.product[1]}"><i></i>${esc(p.name)}</h3><p class="meta">产品 · ${ST[p.st][0]}</p></div>
+      <div class="nums"><div><small>30 天提交</small><b>${p.c30}</b></div><div><small>占全部</small><b>${pct(p.c30)}</b></div><div><small>底座</small><b>${bs[0]==="none"?0:bs.length}</b></div></div>
+      <h4>支撑来自</h4><div class="share">${bs.map(b=>`<div class="row" style="--c:${BASEHUE[b]}"><b>${BASENAME[b]}</b><small>${f1(p.c30/bs.length)}</small><span class="track"><i style="width:${100/bs.length}%"></i></span></div>`).join("")}</div>
+      <h4>去向</h4><ul><li style="--c:${ST[p.st][1]}"><em>→ 状态</em><b>${ST[p.st][0]}</b><span>${p.c30} 次提交全部流向这里</span></li></ul>`}
+  if(n.kind==="base"){const rows=SK.links.filter(l=>l.b===n.ref).sort((a,b)=>b.real-a.real),tot=rows.reduce((a,l)=>a+l.real,0);
+    return `<div><h3 style="--c:${n.hue}"><i></i>${esc(n.name)}</h3><p class="meta">底座 · 支撑 ${rows.length} 个产品</p></div>
+      <div class="big"><b>${Math.round(tot)}</b><span>次提交 · ${pct(tot)}</span></div>
+      <h4>支撑的产品</h4><div class="share">${rows.map(l=>`<div class="row" style="--c:${TYPE.product[1]}"><b>${esc(byId[l.p].name)}</b><small>${f1(l.real)}</small><span class="track"><i style="width:${l.real/tot*100}%"></i></span></div>`).join("")}</div>`}
+  const ps=PRODUCTS.filter(p=>p.st===n.ref),tot=ps.reduce((a,p)=>a+p.c30,0);
+  return `<div><h3 style="--c:${n.hue}"><i></i>${esc(n.name)}</h3><p class="meta">当前状态 · ${ps.length} 个产品</p></div>
+    <div class="big"><b>${tot}</b><span>次提交 · ${pct(tot)}</span></div>
+    <h4>处在这个状态的产品</h4><div class="share">${ps.map(p=>`<div class="row" style="--c:${n.hue}"><b>${esc(p.name)}</b><small>${p.c30}</small><span class="track"><i style="width:${p.c30/tot*100}%"></i></span></div>`).join("")}</div>`;
+}
+function hubs(){const top=[...N].sort((a,b)=>deg(b.id)-deg(a.id)).slice(0,6);
+  return `<div><h3 style="--c:var(--text)"><i></i>枢纽排行</h3><p class="meta">按关系条数</p></div><ul>${top.map(n=>`<li style="--c:${TYPE[n.type][1]}"><em>${String(deg(n.id)).padStart(2,"0")} 条</em><b>${esc(n.name)}</b><span>${TYPE[n.type][0]}</span></li>`).join("")}</ul>`}
+function projectInfo(id){const n=byId[id],rows=E.filter(e=>e[0]===id||e[1]===id);
+  return `<div><h3 style="--c:${TYPE[n.type][1]}"><i></i>${esc(n.name)}</h3><p class="meta">${TYPE[n.type][0]}${n.st?" · "+ST[n.st][0]:""}</p></div>
+    <div class="nums"><div><small>30 天提交</small><b>${n.c30}</b></div><div><small>上游</small><b>${rows.filter(e=>e[1]===id&&e[2]!=="apart").length}</b></div><div><small>下游</small><b>${rows.filter(e=>e[0]===id&&e[2]!=="apart").length}</b></div></div>
+    <h4>关系 · ${rows.length}</h4><ul>${rows.slice(0,7).map(e=>{const out=e[0]===id,o=byId[out?e[1]:e[0]];return `<li style="--c:${KIND[e[2]][1]}"><em>${e[2]==="apart"?"↔":out?"→":"←"} ${KIND[e[2]][0]}</em><b>${esc(o.name)}</b></li>`}).join("")}</ul>`}
+function focusLine(n){
+  if(!n)return `<span>悬停底座、产品或状态，这里写它的明细；点产品节点，上面的轨道同步选中。</span>`;
+  if(n.kind==="proj"){const p=byId[n.ref];return `<b>${esc(p.name)}</b><span>${p.c30} 次提交（占 ${pct(p.c30)}），来自 ${SUP[p.id].map(b=>BASENAME[b]).join("、")}，流向「${ST[p.st][0]}」</span>`}
+  if(n.kind==="base"){const rows=SK.links.filter(l=>l.b===n.ref),t=rows.reduce((a,l)=>a+l.real,0);return `<b>${esc(n.name)}</b><span>支撑 ${rows.length} 个产品，分到 ${Math.round(t)} 次提交（占 ${pct(t)}）</span>`}
+  const ps=PRODUCTS.filter(p=>p.st===n.ref);return `<b>${esc(n.name)}</b><span>${ps.map(p=>p.name).join("、")}，共 ${ps.reduce((a,p)=>a+p.c30,0)} 次提交</span>`;
+}
+
+// 桑基卡顶部 4 个读数（B、D 共用；调用前桑基 SK 必须已生成）
+function kpiStrip(){
+  const big=baseShares().sort((a,b)=>b.v-a.v)[0],human=PRODUCTS.filter(p=>p.st==="human"),none=PRODUCTS.filter(p=>SUP[p.id][0]==="none");
+  return `<div class="kpis"><div class="kpi"><small>近 30 天产品提交</small><b>${TOTAL}</b><span>10 个产品</span></div>
+          <div class="kpi"><small>最大底座</small><b>${pct(big.v)}</b><span>${BASENAME[big.b]} 支撑 ${PRODUCTS.filter(p=>SUP[p.id].includes(big.b)).length} 个产品</span></div>
+          <div class="kpi"><small>待人工验收</small><b>${human.length} 个</b><span>${human.map(p=>p.name).join("、")}</span></div>
+          <div class="kpi"><small>未接底座</small><b>${none.length} 个</b><span>${none.map(p=>p.name).join("、")}</span></div></div>`;
+}
+// E：桑基卡顶部四格。平时是全局读数；悬停（或轨道里选中）底座 / 产品 / 状态时换成它的明细。
+// 桑基里亮起的链路本身就是「名单」，这里只补图上读不出来的数：总量、占比、个数、去向。
+function ctxStrip(n){
+  const cell=(sm,b,sp,c)=>`<div class="kpi"${c?` style="--c:${c}"`:""}><small>${sm}</small><b>${b}</b><span>${sp}</span></div>`;
+  if(!n){const big=baseShares().sort((a,b)=>b.v-a.v)[0],human=PRODUCTS.filter(p=>p.st==="human"),none=PRODUCTS.filter(p=>SUP[p.id][0]==="none");
+    return cell("近 30 天产品提交",TOTAL,"10 个产品 · 悬停任一节点看明细")+cell("最大底座",pct(big.v),`${BASENAME[big.b]} 支撑 ${PRODUCTS.filter(p=>SUP[p.id].includes(big.b)).length} 个产品`)
+      +cell("待人工验收",`${human.length} 个`,human.map(p=>p.name).join("、"))+cell("未接底座",`${none.length} 个`,none.map(p=>p.name).join("、"))}
+  const who=k=>`<i class="dot"></i><b>${esc(n.name)}</b> · ${k}`;
+  if(n.kind==="base"){const rows=SK.links.filter(l=>l.b===n.ref).sort((a,b)=>b.real-a.real),t=rows.reduce((a,l)=>a+l.real,0),bySt={};
+    rows.forEach(l=>{const k=byId[l.p].st;bySt[k]=(bySt[k]||0)+l.real});const top=Object.entries(bySt).sort((a,b)=>b[1]-a[1])[0];
+    return cell(who("底座"),Math.round(t),`次提交 · 占全部 ${pct(t)}`,n.hue)+cell("支撑产品",`${rows.length} 个`,rows.map(l=>byId[l.p].name).join("、"))
+      +cell("最大受益",esc(byId[rows[0].p].name),`分到 ${f1(rows[0].real)} 次`)+cell("主要去向",ST[top[0]][0],`${Math.round(top[1]/t*100)}% 的提交流向这里`)}
+  if(n.kind==="proj"){const p=byId[n.ref],bs=SUP[p.id].filter(b=>b!=="none"),rows=E.filter(e=>e[0]===p.id||e[1]===p.id);
+    return cell(who("产品"),p.c30,`次提交 · 占全部 ${pct(p.c30)}`,n.hue)+cell("来自底座",`${bs.length} 个`,bs.length?bs.map(b=>BASENAME[b]).join("、"):"没有接入任何底座")
+      +cell("去向",ST[p.st][0],`${p.c30} 次全部流向这里`)+cell("关系",`${rows.length} 条`,`上游 ${rows.filter(e=>e[1]===p.id&&e[2]!=="apart").length} · 下游 ${rows.filter(e=>e[0]===p.id&&e[2]!=="apart").length}`)}
+  const ps=PRODUCTS.filter(p=>p.st===n.ref).sort((a,b)=>b.c30-a.c30),t=ps.reduce((a,p)=>a+p.c30,0),byB={};
+  SK.links.forEach(l=>{if(l.b&&byId[l.p].st===n.ref)byB[l.b]=(byB[l.b]||0)+l.real});const mb=Object.entries(byB).sort((a,b)=>b[1]-a[1])[0];
+  return cell(who("当前状态"),t,`次提交 · 占全部 ${pct(t)}`,n.hue)+cell("产品",`${ps.length} 个`,ps.map(p=>p.name).join("、"))
+    +cell("提交最多",esc(ps[0].name),`${ps[0].c30} 次`)+cell("主要底座",BASENAME[mb[0]],`占这一状态的 ${Math.round(mb[1]/t*100)}%`);
+}
+// F / G：轨道卡顶部四格。平时是全局读数；悬停或选中项目时换成它的上下游。图里亮起的连线就是名单，这里只补个数和名字。
+function octxStrip(id){
+  const cell=(sm,b,sp,c)=>`<div class="kpi"${c?` style="--c:${c}"`:""}><small>${sm}</small><b>${b}</b><span>${sp}</span></div>`,cnt=t=>N.filter(x=>x.type===t).length;
+  if(!id||!byId[id]){const hub=[...N].sort((a,b)=>deg(b.id)-deg(a.id))[0],ap=E.filter(e=>e[2]==="apart");
+    return cell("项目",N.length,`产品 ${cnt("product")} · 能力 ${cnt("capability")} · 基础设施 ${cnt("infrastructure")}`)
+      +cell("关系",`${E.length} 条`,`${E.filter(e=>e[3]).length} 条推断 · 悬停任一项目看明细`)
+      +cell("最大枢纽",esc(hub.name),`${deg(hub.id)} 条关系`)
+      +cell("明确独立",`${ap.length} 对`,ap.map(e=>`${byId[e[0]].name} ↔ ${byId[e[1]].name}`).join("、"))}
+  const n=byId[id],nm=x=>byId[x].name,
+    ups=E.filter(e=>e[1]===id&&e[2]!=="apart").map(e=>nm(e[0])),downs=E.filter(e=>e[0]===id&&e[2]!=="apart").map(e=>nm(e[1])),
+    ap=E.filter(e=>e[2]==="apart"&&(e[0]===id||e[1]===id)).map(e=>nm(e[0]===id?e[1]:e[0])),
+    sup=n.type==="product"?SUP[id].filter(b=>b!=="none").map(b=>BASENAME[b]):null;
+  return cell(`<i class="dot"></i><b>${esc(n.name)}</b> · ${TYPE[n.type][0]}`,n.c30,`次提交${n.st?" · "+ST[n.st][0]:""}`,TYPE[n.type][1])
+    +cell("上游",`${ups.length} 个`,ups.join("、")||"没有")+cell("下游",`${downs.length} 个`,downs.join("、")||"没有")
+    +(sup?cell("接入底座",`${sup.length} 个`,sup.join("、")||"没有接入任何底座"):cell("明确独立",`${ap.length} 个`,ap.join("、")||"没有"));
+}
+let GV="orbit";// G 版当前视图
+/* ---------------- 三版版式 ---------------- */
+function render(){
+  const st=document.getElementById("stage");flowHover=null;
+  document.querySelectorAll(".pick [data-v]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===V));
+  document.getElementById("desc").textContent=DESC[V];
+  const orbitHead=`<div class="chead"><h2>RELATION ORBIT</h2><span>项目之间 · 16 个项目 · 28 条关系</span><span class="grow"></span>${legendTypes()}</div>`;
+  const flowHead=`<div class="chead"><h2>SUPPORT FLOW</h2><span>底座 → 产品 → 当前状态 · 宽度＝近 30 天提交</span><span class="grow"></span>${legendStatus()}</div>`;
+  const hint=`<span class="hint">内圈基础设施 · 中圈能力 · 外圈产品 ｜ 悬停看关系 · 点击固定 · 点空白处还原</span>`;
+  if(V==="h"){
+    const two=h=>h.replace('class="chead"','class="chead two"'),flowH=flowSvg(1200,600,[[150,46],[1060,580]],"sweep",false,18);// 与 B 完全同一张桑基
+    st.innerHTML=`<div class="duo"><div class="charts">
+        <section class="card">${two(orbitHead)}<div class="scroll">${orbit(900,450)}</div></section>
+        <section class="card h">${two(flowHead)}<div class="scroll">${flowH}</div></section></div>
+      <aside class="panel rail"><div class="rail-in" id="rail"></div></aside></div>
+      <p class="foot">上：越靠里越是「底座」；下：宽度＝近 30 天提交，一个产品连着几个底座就平均分。右侧信息轨同时写选中项目的关系和支撑链，悬停桑基时写它的明细。<b>UI 设计体系</b>、<b>GET 索引</b>目前没有产品接入。</p>`;
+  }else if(V==="f"){
+    const flowF=flowSvg(1200,680,[[150,46],[1060,660]],"sweep",true);
+    st.innerHTML=`<section class="card">${orbitHead}<div class="kpis ctx" id="octx" aria-live="polite"></div><div class="scroll">${orbit(1200,600)}</div></section>
+      <p class="foot">越靠里越是「底座」，连线向圆心弯；节点颜色＝名册类型，连线颜色＝关系类型，虚线是推断或「明确独立」。悬停项目，顶部四格换成它的上下游，下面的支撑流同步高亮。</p>
+      <section class="card e">${flowHead}<div class="kpis ctx" id="ctx" aria-live="polite"></div><div class="scroll">${flowF}</div></section>
+      <p class="foot">宽度＝近 30 天提交，一个产品连着几个底座就平均分给这几个底座。悬停底座、产品或状态，顶部四格换成它的明细。<b>UI 设计体系</b>、<b>GET 索引</b>目前没有产品接入。</p>`;
+  }else if(V==="g"){
+    const isO=GV==="orbit",flowG=isO?"":flowSvg(1200,680,[[150,46],[1060,660]],"sweep",true);
+    st.innerHTML=`<section class="card${isO?"":" e"}"><div class="chead two"><span class="vseg" role="group" aria-label="切换视图"><button type="button" data-gv="orbit" aria-pressed="${isO}">RELATION ORBIT · 关系</button><button type="button" data-gv="flow" aria-pressed="${!isO}">SUPPORT FLOW · 支撑流</button></span>
+        <span>${isO?"项目之间 · 16 个项目 · 28 条关系":"底座 → 产品 → 当前状态 · 宽度＝近 30 天提交"}</span><span class="grow"></span>${isO?legendTypes():legendStatus()}</div>
+        <div class="kpis ctx" id="${isO?"octx":"ctx"}" aria-live="polite"></div>
+        <div class="scroll">${isO?orbit(1200,600):flowG}</div></section>
+      <p class="foot">一张画布两种看法：「关系」看项目之间怎么连，「支撑流」看提交从哪个底座流到哪个产品、停在什么状态。在关系里点选一个项目再切到支撑流，它的链路已经高亮；顶部四格始终写当前悬停或选中的明细。</p>`;
+    st.querySelectorAll("[data-gv]").forEach(b=>b.addEventListener("click",()=>{GV=b.dataset.gv;hov=null;render()}));
+  }else if(V==="a"){
+    st.innerHTML=`<section class="card">${orbitHead}<div class="scroll">${orbit(1200,430)}</div><aside class="panel float" id="orbitInfo"></aside>${hint}</section>
+      <p class="foot">越靠里越是「底座」，连线向圆心弯；节点颜色＝名册类型，连线颜色＝关系类型，虚线是推断或「明确独立」。</p>
+      <section class="card">${flowHead}<div class="scroll">${flowSvg(1200,600,[[160,46],[770,580]],"dots")}</div><aside class="panel float" id="flowInfo"></aside></section>
+      <p class="foot">宽度＝近 30 天提交；一个产品连着几个底座就平均分给这几个底座。</p>`;
+  }else if(V==="b"){
+    const flowB=flowSvg(1200,600,[[150,46],[1060,580]],"sweep");// 先生成桑基（SK），下面的份额读数都依赖它
+    const colBase=baseShares().map(({b,v})=>`<div class="row" style="--c:${BASEHUE[b]}"><b>${BASENAME[b]}</b><small>${pct(v)}</small><span class="track"><i style="width:${v/TOTAL*100}%"></i></span></div>`).join("");
+    const top3=[...PRODUCTS].sort((a,b)=>b.c30-a.c30).slice(0,3).map(p=>`<div class="row" style="--c:${TYPE.product[1]}"><b>${esc(p.name)}</b><small>${p.c30}</small><span class="track"><i style="width:${p.c30/299*100}%"></i></span></div>`).join("");
+    const sts=Object.entries(ST).map(([k,[n,c]])=>({k,n,c,v:PRODUCTS.filter(p=>p.st===k).reduce((a,p)=>a+p.c30,0)}));
+    st.innerHTML=`<section class="card">${orbitHead}<div class="scroll">${orbit(1200,430)}</div><aside class="panel float" id="orbitInfo"></aside>${hint}</section>
+      <p class="foot">越靠里越是「底座」，连线向圆心弯；节点颜色＝名册类型，连线颜色＝关系类型，虚线是推断或「明确独立」。</p>
+      <section class="card">${flowHead}
+        ${kpiStrip()}
+        <div class="scroll">${flowB}</div>
+        <div class="focusline" id="focusline"></div>
+        <div class="cols"><section><h4>底座份额</h4><div class="share">${colBase}</div></section>
+          <section><h4>提交最多的产品</h4><div class="share">${top3}</div></section>
+          <section><h4>状态分布</h4><div class="stack">${sts.map(s=>`<i style="--c:${s.c};flex:${s.v}"></i>`).join("")}</div><div class="keys">${sts.map(s=>`<span style="--c:${s.c}">${s.n} ${pct(s.v)}</span>`).join("")}</div></section></div>
+      </section>
+      <p class="foot">宽度＝近 30 天提交；一个产品连着几个底座就平均分给这几个底座。<b>UI 设计体系</b>、<b>GET 索引</b>目前没有产品接入。</p>`;
+  }else if(V==="e"){
+    const flowE=flowSvg(1200,680,[[150,46],[1060,660]],"sweep",true);
+    st.innerHTML=`<section class="card">${orbitHead}<div class="scroll">${orbit(1200,430)}</div><aside class="panel float" id="orbitInfo"></aside>${hint}</section>
+      <p class="foot">越靠里越是「底座」，连线向圆心弯；节点颜色＝名册类型，连线颜色＝关系类型，虚线是推断或「明确独立」。悬停项目时，下面的支撑流同步高亮它的链路。</p>
+      <section class="card e">${flowHead}<div class="kpis ctx" id="ctx" aria-live="polite"></div><div class="scroll">${flowE}</div></section>
+      <p class="foot">宽度＝近 30 天提交，一个产品连着几个底座就平均分给这几个底座。悬停底座、产品或状态，卡片顶部四格换成它的明细。<b>UI 设计体系</b>、<b>GET 索引</b>目前没有产品接入。</p>`;
+  }else if(V==="d"){
+    const two=h=>h.replace('class="chead"','class="chead two"'),flowD=flowSvg(900,600,[[150,46],[750,580]],"sweep");
+    st.innerHTML=`<div class="duo"><div class="charts">
+        <section class="card">${two(orbitHead)}<div class="scroll">${orbit(900,450)}</div></section>
+        <section class="card">${two(flowHead)}${kpiStrip()}<div class="scroll">${flowD}</div></section></div>
+      <aside class="panel rail"><div class="rail-in" id="rail"></div></aside></div>
+      <p class="foot">上：越靠里越是「底座」；下：宽度＝近 30 天提交，一个产品连着几个底座就平均分。右侧信息轨同时写选中项目的关系和支撑链。<b>UI 设计体系</b>、<b>GET 索引</b>目前没有产品接入。</p>`;
+  }else{
+    const two=h=>h.replace('class="chead"','class="chead two"');
+    st.innerHTML=`<div class="duo"><div class="charts">
+        <section class="card">${two(orbitHead)}<div class="scroll">${orbit(900,450)}</div></section>
+        <section class="card">${two(flowHead)}<div class="scroll">${flowSvg(900,600,[[150,46],[750,580]],"conv")}</div></section></div>
+      <aside class="panel rail"><div class="rail-in" id="rail"></div></aside></div>
+      <p class="foot">上：越靠里越是「底座」；下：宽度＝近 30 天提交，一个产品连着几个底座就平均分。右侧信息轨同时写选中项目的关系和支撑链。</p>`;
+  }
+  wireOrbit(st.querySelector("svg.g"));wireFlow(st.querySelector("svg.s"));focus();
+}
+// 轨道 + 信息卡 + 桑基联动
+function focus(){
+  const id=hov||sel,svg=document.querySelector("svg.g");
+  const oc=document.getElementById("octx");if(oc){oc.innerHTML=octxStrip(id);oc.classList.toggle("on",!!id)}
+  if(svg){svg.classList.toggle("focus",!!id);
+  const L=id?new Set([id,...E.filter(e=>e[0]===id).map(e=>e[1]),...E.filter(e=>e[1]===id).map(e=>e[0])]):null;
+  svg.querySelectorAll(".nd").forEach(el=>{el.classList.toggle("hot",!!L&&L.has(el.dataset.id));el.classList.toggle("sel",el.dataset.id===sel)});
+  let pts="";svg.querySelectorAll(".lk").forEach(el=>{const hot=!!id&&(el.dataset.a===id||el.dataset.b===id);el.classList.toggle("hot",hot);
+    if(hot&&!calm()){const c=el.getAttribute("stroke");for(let k=0;k<2;k++)pts+=`<circle r="3" fill="${c}" style="filter:drop-shadow(0 0 4px ${c})" pointer-events="none"><animateMotion dur="${1.8+k*.3}s" begin="${k*.9}s" repeatCount="indefinite"><mpath href="#${el.id}"/></animateMotion></circle>`}});
+  svg.querySelector(".pts").innerHTML=pts;}
+  const oi=document.getElementById("orbitInfo");if(oi)oi.innerHTML=id?projectInfo(id):hubs();
+  paintFlow();
+}
+// C 版信息轨：桑基里悬停的节点优先（在 paintFlow 里处理），否则跟随轨道的悬停 / 选中
+function railHtml(){const id=hov||sel;
+  {const n=id?SK.nodes.find(x=>(x.kind==="proj"||x.kind==="base")&&x.ref===id):null;
+    return id?projectInfo(id)+(n?`<h4 style="margin-top:4px">支撑链</h4>`+flowInfo(n).replace(/<div><h3[\s\S]*?<\/div>/,"").replace(/<div class="nums">[\s\S]*?<\/div><\/div>/,""):`<p class="meta">它不在支撑流里（只有产品和接入的底座才在）。</p>`):overview().replace("支撑概览","全局概览")+`<h4>枢纽</h4><ul>${[...N].sort((a,b)=>deg(b.id)-deg(a.id)).slice(0,3).map(n=>`<li style="--c:${TYPE[n.type][1]}"><em>${deg(n.id)} 条</em><b>${esc(n.name)}</b></li>`).join("")}</ul>`}
+}
+document.querySelectorAll(".pick [data-v]").forEach(b=>b.addEventListener("click",()=>{V=b.dataset.v;sel=null;hov=null;try{history.replaceState(null,"","#"+V)}catch{}render()}));
+const h=location.hash.slice(1);if(["a","b","c","d","e","f","g","h"].includes(h))V=h;
+if(window.d3&&d3.sankey)render();else document.getElementById("stage").innerHTML=`<p class="foot">图表库没有加载成功，请刷新页面。</p>`;
+</script>
