@@ -55,13 +55,15 @@ try {
     assert.equal(await page.locator(".pr-orbit .nd").count(), 16);
     assert.match(await page.locator(".pr-stats").textContent(), /16项目28关系1078近 30 天产品提交名册 v1\.6 · 读取于 \d\d:\d\d/);
     assert.equal(await page.getByRole("button", { name: "按名册刷新" }).count(), 0, "按名册刷新只在项目总览");
-    assert.equal(await infoTitle(page), "枢纽排行");
+    assert.equal(await infoTitle(page), "全局概览", "信息轨默认是全局概览");
+    assert.match(await page.locator(".pr-info .big").textContent(), /1078次产品提交/);
+    assert.equal(await page.locator(".pr-info .share .row").count(), new Set(sample.sankey.links.map((l) => l.base)).size, "每个底座一行份额");
     assert.match(await page.locator(".pr-info li").first().textContent(), /09 条agent-kit/);
     assert.match(await page.locator(".pr-flow + *, .pr-page .pr-foot").last().textContent(), /UI 设计体系、GET 索引 目前没有产品接入/);
     // 三圈：基础设施在内圈、能力中圈、产品外圈
     const radius = async (id) => node(page, id).evaluate((g) => { const m = g.transform.baseVal.consolidate().matrix; return Math.round(Math.hypot(m.e - 450, m.f - 330)); });
     assert.deepEqual([await radius("agent-kit"), await radius("my-skills"), await radius("postpane")], [104, 200, 296]);
-    ok("页签默认项目总览；切到项目关系后三圈 16 个项目、页头读数、枢纽排行、未接入底座说明");
+    ok("页签默认项目总览；切到项目关系后三圈 16 个项目、页头读数、信息轨全局概览、未接入底座说明");
     await pages(page).getByRole("tab", { name: /项目总览/ }).click();
     await page.locator("#ps-screen").waitFor();
     assert.equal(await page.locator("#pr-panel").count(), 0);
@@ -80,19 +82,21 @@ try {
     assert.equal(await page.locator(".pr-orbit .lk.hot").count(), 5);
     assert.equal(await page.locator(".pr-orbit animateMotion").count(), 10, "每条高亮连线 2 个光点");
     assert.equal(await hotFlows(page), linksOf("postpane"), "轨道选中产品 → 桑基高亮它的整条链");
+    assert.equal(await page.locator(".pr-info h4.chain").count(), 1, "选中产品时信息轨接上它的支撑链");
+    assert.equal(await page.locator(".pr-info .share .row").count(), linksOf("postpane") - 1, "支撑来自：每个底座一行");
     await node(page, "postpane").click();
     await page.mouse.move(5, 5);
-    assert.equal(await infoTitle(page), "枢纽排行", "再点一次取消");
+    assert.equal(await infoTitle(page), "全局概览", "再点一次取消");
     await node(page, "digital-twin").click();
     await page.locator(".pr-orbit .pr-bg").click({ position: { x: 30, y: 30 } });
     await page.mouse.move(5, 5);
-    assert.equal(await infoTitle(page), "枢纽排行", "点空白处取消");
+    assert.equal(await infoTitle(page), "全局概览", "点空白处取消");
     await node(page, "agent-kit").focus();
     await page.keyboard.press("Enter");
     assert.equal(await infoTitle(page), "agent-kit");
     assert.equal(await hotFlows(page), sample.sankey.links.filter((l) => l.base === "agent-kit").length * 2, "轨道选中底座 → 桑基高亮它支撑的产品与去向");
     await page.keyboard.press("Escape");
-    assert.equal(await infoTitle(page), "枢纽排行");
+    assert.equal(await infoTitle(page), "全局概览");
     await node(page, "multi-agent").focus();
     await page.keyboard.press(" ");
     assert.equal(await infoTitle(page), "多 Agent 协同");
@@ -116,17 +120,30 @@ try {
     await page.locator(".pr-orbit .pr-bg").click({ position: { x: 30, y: 30 } });
     await page.locator('.pr-flow .nd[data-node="b:agent-kit"] rect').hover();
     assert.equal(await hotFlows(page), sample.sankey.links.filter((l) => l.base === "agent-kit").length * 2, "悬停底座：它支撑的产品及去向");
+    assert.equal(await infoTitle(page), "agent-kit");
+    assert.match(await page.locator(".pr-info .meta").textContent(), new RegExp(`底座 · 支撑 ${sample.sankey.links.filter((l) => l.base === "agent-kit").length} 个产品`));
     await page.locator('.pr-flow .nd[data-node="s:human"] rect').hover();
     const human = sample.sankey.status.filter((s) => s.key === "human").map((s) => s.project);
     assert.equal(await hotFlows(page), human.reduce((a, id) => a + linksOf(id), 0), "悬停状态：流进它的全部链路");
     await page.locator('.pr-flow .nd[data-node="p:work-desk"] rect').hover();
     assert.equal(await hotFlows(page), linksOf("work-desk"), "悬停产品：整条链");
-    assert.ok(await page.locator(".pr-tip.on").isVisible(), "悬停有提示");
+    assert.equal(await infoTitle(page), "牛马之家", "悬停桑基节点：信息轨写它的明细");
+    assert.equal(await page.locator(".pr-tip.on").count(), 0, "节点悬停不再弹提示（信息轨已经写了）");
+    // 流带悬停仍弹提示：鼠标放到 work-desk 流带路径中点
+    const mid = await page.locator('.pr-flow .flow[data-p="work-desk"]').first().evaluate((el) => {
+      const pt = el.getPointAtLength(el.getTotalLength() / 2), m = el.getScreenCTM();
+      return { x: pt.x * m.a + pt.y * m.c + m.e, y: pt.x * m.b + pt.y * m.d + m.f };
+    });
+    await page.mouse.move(mid.x, mid.y);
+    assert.ok(await page.locator(".pr-tip.on").isVisible(), "流带悬停有提示");
+    assert.equal(await infoTitle(page), "牛马之家", "悬停流带：信息轨写这条链的产品");
+    await page.mouse.move(5, 5);
+    assert.equal(await infoTitle(page), "全局概览", "移开后信息轨回到全局概览");
     await page.locator('.pr-flow .nd[data-node="p:github-center"] rect').click();
     await page.mouse.move(5, 5);
     assert.equal(await node(page, "github-center").getAttribute("aria-pressed"), "true", "点桑基产品 → 轨道选中");
     await page.waitForFunction(() => { const r = document.querySelector(".pr-orbit-card").getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; });
-    ok("桑基悬停底座 / 状态 / 产品各自高亮对应链路；点产品节点轨道选中并滚到可见");
+    ok("桑基悬停底座 / 状态 / 产品各自高亮对应链路并写进信息轨；节点不弹提示、流带弹；点产品节点轨道选中并滚到可见");
 
     // ---- 动效：进场结束后去掉动画类；高亮流带上有细光 ----
     // 每次切到关系页签都会重放进场动效（约 2 秒），结束后去掉动画类

@@ -97,6 +97,21 @@
 .pr-info li b { font-weight: 600; color: var(--text); }
 .pr-info li span { grid-column: 2; font-size: var(--fs-label); line-height: 1.45; color: var(--muted); }
 .pr-info .tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: var(--r-xs); background: rgba(77, 227, 255, .1); color: var(--cyan); font: 600 var(--fs-micro)/1.7 var(--mono); }
+.pr-info h4.chain { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--void-line); }
+.pr-info .big { display: flex; align-items: baseline; gap: 8px; }
+.pr-info .big b { font: 700 var(--fs-display-s)/1 var(--mono); color: var(--text); font-variant-numeric: tabular-nums; }
+.pr-info .big span { font: 500 var(--fs-micro) var(--mono); color: var(--muted); }
+.pr-info .share { display: grid; gap: 7px; }
+.pr-info .share .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; align-items: baseline; }
+.pr-info .share .row b { overflow: hidden; font-weight: 600; color: var(--text); text-overflow: ellipsis; white-space: nowrap; }
+.pr-info .share .row small { font: 600 var(--fs-label) var(--mono); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.pr-info .share .track { grid-column: 1 / -1; height: 6px; overflow: hidden; border-radius: 3px; background: rgba(140, 160, 220, .12); }
+.pr-info .share .track i { display: block; height: 100%; border-radius: 3px; background: var(--c); box-shadow: 0 0 8px var(--c); }
+.pr-info .stack { display: flex; gap: 2px; height: 10px; overflow: hidden; border-radius: var(--r-xs); }
+.pr-info .stack i { display: block; flex-basis: 0; background: var(--c); }
+.pr-info .keys { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 500 var(--fs-micro) var(--mono); color: var(--text-2); }
+.pr-info .keys span { display: inline-flex; align-items: center; gap: 5px; }
+.pr-info .keys span::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--c); }
 .pr-info .go { flex: none; margin-top: auto; min-height: 44px; border: 1px solid rgba(255, 179, 92, .4); border-radius: var(--r-s); background: rgba(255, 138, 36, .08);
   color: var(--orange-2); font: 600 var(--fs-small) var(--sans); cursor: pointer; }
 .pr-info .go:hover { background: rgba(255, 138, 36, .16); }
