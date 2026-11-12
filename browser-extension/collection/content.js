@@ -271,7 +271,8 @@ function installButton() {
     document.dispatchEvent(new CustomEvent(PAGE_DATA_REQUEST_EVENT));
   });
 
-  button.addEventListener('click', async () => {
+  button.addEventListener('click', async (event) => {
+    if(!event.isTrusted)return;
     if(button.disabled)return;
     const lock=value=>group.querySelectorAll('button').forEach(item=>item.disabled=value);
     lock(true);
