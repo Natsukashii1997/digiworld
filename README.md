@@ -98,9 +98,17 @@ Skill ZIP 上限 10 MB，解压上限 25 MB / 300 文件与目录；保留隐藏
 
 ## 验证
 
+先构建再测：`npm test` 里有用例读取当前构建（`dist/`），没构建或构建过期会失败。不加 `pretest` 自动构建，因为 `dist/` 是协作共享面，不在每次测试时自动重写。
+
+在干净副本里验证时，用 `git worktree` 建在 `~/Sandbox/<日期>-<主题>/` 下，不放 `/tmp`。常驻能力测试会逐级检查副本真实路径链上的每一级目录，任一级对组或他人可写（如 `/private/tmp` 的 1777、副本目录本身是 775）就会拒绝，capability-daemon 两个文件会挂 21 条。建好后先检查，每行权限的第 6、9 位都应为 `-`：
+
 ```sh
-npm test
+p=$(pwd -P); while :; do ls -ld "$p"; [ "$p" = / ] && break; p=$(dirname "$p"); done
+```
+
+```sh
 npm run build
+npm test
 node tests/browser.mjs
 node tests/migration.mjs
 node tests/accessibility.mjs
