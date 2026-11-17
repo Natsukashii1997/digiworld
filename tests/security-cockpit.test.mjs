@@ -239,3 +239,9 @@ test("2MiB 边界与超限文件读取保持有界", async (t) => {
   await fs.appendFile(file, "x");
   assert.equal(await reader.text(file), null);
 });
+
+for (const quote of ['"', "'"]) test(`不完整凭据行的 ${quote} 引号值以孤立反斜杠结尾仍完整遮罩`, () => {
+  const input = `password=${quote}SYNTHETIC` + String.fromCharCode(92);
+  assert.equal(maskSecrets(input), `password=${quote}${MASK}`);
+  assert.equal(maskSecrets(input + '\r\n普通正文'), `password=${quote}${MASK}\r\n普通正文`);
+});

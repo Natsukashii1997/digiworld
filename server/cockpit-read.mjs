@@ -148,7 +148,7 @@ export function tilde(path, home) {
 }
 
 // 正文里疑似密钥的值打码：键名像 token/secret/key/password，或值本身像密钥。
-const SECRET_KEY = /((?:api[_-]?key|token|secret|password|passwd|app[_-]?secret|access[_-]?key|client[_-]?secret|authorization)["']?\s*[:=]\s*)("(?:\\[^\r\n]|[^"\\\r\n])*(?:"|(?=\r?$))|'(?:\\[^\r\n]|[^'\\\r\n])*(?:'|(?=\r?$))|(?:Bearer[\t ]+)?[^\s"',}]+)/gim;
+const SECRET_KEY = /((?:api[_-]?key|token|secret|password|passwd|app[_-]?secret|access[_-]?key|client[_-]?secret|authorization)["']?\s*[:=]\s*)("(?:\\[^\r\n]|[^"\\\r\n])*(?:"|\\?(?=\r?$))|'(?:\\[^\r\n]|[^'\\\r\n])*(?:'|\\?(?=\r?$))|(?:Bearer[\t ]+)?[^\s"',}]+)/gim;
 const SECRET_VALUE = /\b(?:sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{16,}|xox[abpr]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+|[A-Fa-f0-9]{40,}|cli_[A-Za-z0-9]{12,})\b/g;
 export const MASK = "••••••••";
 export function maskSecrets(text) {
