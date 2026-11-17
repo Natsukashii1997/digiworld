@@ -268,11 +268,19 @@ export function createKnowledgeWriteback(
       identifier(input.versionId);
       identifier(input.targetSourceId);
       const path = candidatePath(input.domain, input.filename);
-      return repository.withSnapshot({}, async (state) => {
-        const { task, version } = chosen(state, input.taskId, input.versionId);
+      const captured = await repository.withSnapshot({}, async (state) => {
+        const { task } = chosen(state, input.taskId, input.versionId);
         const source = sourceOf(state, input.targetSourceId);
-        const authorization=await authorizeVault(state,source);
-        await evidence(task);
+        const authorization = await authorizeVault(state, source);
+        return { task, source, authorization, revision: state.revision };
+      });
+      // Policy reads can persist source revocation through the repository queue.
+      // Keep them outside that queue, then revalidate the captured revision.
+      await evidence(captured.task);
+      return repository.withSnapshot({ expectedRevision: captured.revision }, async (state) => {
+        const { task, version } = chosen(state, input.taskId, input.versionId);
+        const { source, authorization } = captured;
+        await authorizeVault(state, source, { ...authorization, expires: Infinity });
         await noPendingTarget(source, path);
         const target = await writer.preview(source, path);
         const createdAt = stamp(),
@@ -305,12 +313,17 @@ export function createKnowledgeWriteback(
     async apply(input) {
       const plan = consume(input, "apply"),
         { row } = plan;
-      return repository.withSnapshot({}, async (state) => {
+      const captured = await repository.withSnapshot({}, async (state) => {
         const { task, version } = chosen(state, row.taskId, row.versionId);
         if (version.sha256 !== row.versionHash)
           throw failure("候选版本已变化", 409);
-        await authorizeVault(state,row.source,plan);
-        await evidence(task);
+        await authorizeVault(state, row.source, plan);
+        return { task, revision: state.revision };
+      });
+      await evidence(captured.task);
+      const written = await repository.withSnapshot({ expectedRevision: captured.revision }, async (state) => {
+        chosen(state, row.taskId, row.versionId);
+        await authorizeVault(state, row.source, plan);
         await noPendingTarget(row.source, row.path);
         const target = await writer.preview(row.source, row.path);
         if (
@@ -321,15 +334,19 @@ export function createKnowledgeWriteback(
         await journal.prepare(row);
         if (clock() >= plan.expires)
           throw failure("持久化准备期间预览过期，请核对记录；未写入候选", 409);
-        const written = await writer.create(row.source, target, row.content,{guard:()=>authorizeVault(state,row.source,plan)});
-        try {
-          await evidence(task);
-        } catch {
-          throw failure(
-            "候选已写入但来源复核失败，请先核对记录；未认定保存成功",
-            503,
-          );
-        }
+        return writer.create(row.source, target, row.content,{guard:()=>authorizeVault(state,row.source,plan)});
+      });
+      try {
+        await evidence(captured.task);
+      } catch {
+        throw failure(
+          "候选已写入但来源复核失败，请先核对记录；未认定保存成功",
+          503,
+        );
+      }
+      return repository.withSnapshot({ expectedRevision: captured.revision }, async (state) => {
+        chosen(state, row.taskId, row.versionId);
+        await authorizeVault(state, row.source, plan);
         await journal.receipt(row.id, "applied", stamp(), written.fingerprint);
         const result = await observe(await operation(row.id), state);
         if (result.status !== "applied")

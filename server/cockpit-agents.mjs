@@ -64,13 +64,14 @@ async function instructions(reader, path, syncFor) {
   const file = await reader.text(path);
   const display = tilde(path, reader.paths.home);
   if (!file) return { path: display, state: "missing" };
-  const toc = outline(file.text);
+  const text = maskSecrets(file.text);
+  const toc = outline(text);
   const prefs = [...new Set(toc.flatMap((t) => t.prefs))].sort();
   return {
     path: display, state: "ok", lines: file.text.split("\n").length, updatedAt: file.mtime,
     origin: ORIGIN[syncFor] || "本机文件，没有进任何仓库",
     sync: syncFor ? await instructionSync(reader, syncFor) : { level: "unk", text: "没有仓库版，无从比对" },
-    prefs, toc, text: maskSecrets(file.text),
+    prefs, toc, text,
   };
 }
 

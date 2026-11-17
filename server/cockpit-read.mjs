@@ -2,8 +2,9 @@
 // 前端不能传路径；配置原文不出本模块，只交出调用方挑过的键。
 import filesystem from "node:fs/promises";
 import { execFile } from "node:child_process";
+import { constants } from "node:fs";
 import { homedir } from "node:os";
-import { join, sep } from "node:path";
+import { dirname, join, sep } from "node:path";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 
@@ -56,6 +57,30 @@ export function createSafeReader({ home = homedir(), fs = filesystem } = {}) {
     const ok = (await roots()).some((root) => real === root || real.startsWith(root + sep));
     return ok ? real : null;
   }
+  const sameIdentity = (before, after) => before.dev === after.dev && before.ino === after.ino;
+  const sameFile = (before, after) => sameIdentity(before, after)
+    && before.size === after.size && before.mtimeMs === after.mtimeMs
+    && before.ctimeMs === after.ctimeMs && before.mode === after.mode && before.nlink === after.nlink;
+  async function parentIdentities(real) {
+    const root = (await roots()).filter((entry) => real === entry || real.startsWith(entry + sep))
+      .sort((left, right) => right.length - left.length)[0];
+    const boundary = real === root ? dirname(root) : root;
+    const parents = [];
+    for (let path = dirname(real); ; path = dirname(path)) {
+      const info = await fs.lstat(path);
+      if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("读取目录身份变化");
+      parents.push({ path, info });
+      if (path === boundary) return parents;
+    }
+  }
+  async function unchangedPath(real, info, parents) {
+    if (await fs.realpath(real) !== real || !sameFile(info, await fs.lstat(real))) return false;
+    for (const parent of parents) {
+      const current = await fs.lstat(parent.path);
+      if (!current.isDirectory() || current.isSymbolicLink() || !sameIdentity(parent.info, current)) return false;
+    }
+    return true;
+  }
   return {
     paths,
     resolveAllowed,
@@ -63,11 +88,29 @@ export function createSafeReader({ home = homedir(), fs = filesystem } = {}) {
     async text(path) {
       const real = await resolveAllowed(path);
       if (!real) return null;
+      let handle;
       try {
-        const info = await fs.stat(real);
-        if (!info.isFile() || info.size > MAX_BYTES) return null;
-        return { text: await fs.readFile(real, "utf8"), mtime: info.mtime.toISOString() };
+        const parents = await parentIdentities(real);
+        const info = await fs.lstat(real);
+        if (!info.isFile() || info.isSymbolicLink() || info.size > MAX_BYTES) return null;
+        // Bind the checked leaf to the descriptor before reading any bytes.
+        // NONBLOCK also prevents a raced-in FIFO from blocking this read-only API.
+        handle = await fs.open(real, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+        if (!sameFile(info, await handle.stat()) || !await unchangedPath(real, info, parents)) return null;
+        const chunks = [];
+        let bytes = 0;
+        while (bytes <= MAX_BYTES) {
+          const buffer = Buffer.alloc(Math.min(64 * 1024, MAX_BYTES + 1 - bytes));
+          const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+          if (!bytesRead) break;
+          bytes += bytesRead;
+          if (bytes > MAX_BYTES) return null;
+          chunks.push(buffer.subarray(0, bytesRead));
+        }
+        if (bytes !== info.size || !sameFile(info, await handle.stat()) || !await unchangedPath(real, info, parents)) return null;
+        return { text: Buffer.concat(chunks, bytes).toString("utf8"), mtime: info.mtime.toISOString() };
       } catch { return null; }
+      finally { await handle?.close().catch(() => {}); }
     },
     async json(path) {
       const file = await this.text(path);
@@ -105,12 +148,15 @@ export function tilde(path, home) {
 }
 
 // 正文里疑似密钥的值打码：键名像 token/secret/key/password，或值本身像密钥。
-const SECRET_KEY = /((?:api[_-]?key|token|secret|password|passwd|app[_-]?secret|access[_-]?key|client[_-]?secret|authorization)["']?\s*[:=]\s*)(["']?)[^\s"',}]+/gi;
+const SECRET_KEY = /((?:api[_-]?key|token|secret|password|passwd|app[_-]?secret|access[_-]?key|client[_-]?secret|authorization)["']?\s*[:=]\s*)("(?:\\[^\r\n]|[^"\\\r\n])*(?:"|(?=\r?$))|'(?:\\[^\r\n]|[^'\\\r\n])*(?:'|(?=\r?$))|(?:Bearer[\t ]+)?[^\s"',}]+)/gim;
 const SECRET_VALUE = /\b(?:sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9]{16,}|xox[abpr]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+|[A-Fa-f0-9]{40,}|cli_[A-Za-z0-9]{12,})\b/g;
 export const MASK = "••••••••";
 export function maskSecrets(text) {
   return String(text)
-    .replace(SECRET_KEY, (_, head, quote) => `${head}${quote}${MASK}`)
+    .replace(SECRET_KEY, (_, head, value) => {
+      const quote = /^["']/.test(value) ? value[0] : "";
+      return `${head}${quote}${MASK}${quote && value.endsWith(quote) ? quote : ""}`;
+    })
     .replace(SECRET_VALUE, MASK);
 }
 
