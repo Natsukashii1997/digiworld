@@ -2708,9 +2708,9 @@ CSS只补编辑态空行尺寸，三类红绿和精确保存、完整1377/1377�
 
 - 隔离交接编号：`WB-20261118-CODEX-AUDIT-1118`。输入状态 `WB-20261108-699`；本节只在 `codex/audit-fix-1118` 分支，不改主目录既有认领，不表示 Claude 或正式服务已采用。
 - 用户范围：安全审计、修高危与小范围行为不变的中危、推分支开 PR，不合并。正式 5178/5179、launchd、本机配置、真实数据均未改。
-- 主线：审计取证 ✅（报告逐项证据）；9组修复 ✅（代码 `a2a74b5`，48项新增回归）；全量/报告/PR ▶；最后删除本轮worktree ⏳。PR和清理完成后由外部审计报告登记回执。
+- 主线：审计取证 ✅（报告逐项证据）；9组修复 ✅（代码 `a2a74b5`，48项新增回归）；全量/报告/PR ✅（[草稿PR #85](https://github.com/Natsukashii1997/digiworld/pull/85)）；最后删除本轮worktree为本会话收尾动作，实际清理回执以本机主报告为准。
 - 已修：D01 source-map-js、D02 Vite、D03 SQLite硬链接、D04快照目录链接、D05写回死锁、D06完整凭据脱敏/目录标题、D07同句柄白名单读取、D08 GET回显Key拒绝、D19钥匙串exists类型回读。
 - 最终固定代码 `a2a74b55fefab4839e78f0f761e047ebdacf0a1f`；`npm test`：1677 tests / 1676 pass / 0 fail / 1 skipped（仓库外wiki-local集成未具备）；独立Standards/Spec均PASS。构建成功，仅本worktree产物。后续文档提交不改变15个源码/测试/依赖文件指纹。
-- 报告：[安全审计11-18](docs/security/2026-11-18-audit.md)；本机要求的主报告 `/Users/nat/Sandbox/2026-11-17-codex-quota/audits/digiworld.md`；日志及SHA清单在同级 `evidence/digiworld/`；关联 issue #84。
+- 报告：[安全审计11-18](docs/security/2026-11-18-audit.md)；本机要求的主报告 `/Users/nat/Sandbox/2026-11-17-codex-quota/audits/digiworld.md`；日志及SHA清单在同级 `evidence/digiworld/`；关联 issue #84、草稿PR #85（不合并）；分支通过Git Data API逐个保留本地提交SHA上传，原因是GitHub主站Git连接超时，API正常。
 - 未修与原因：D09/D10高风险读取边界、D11多Vault保护、D12覆盖顺序、D13诊断保留、D14新建原子可见性、D16媒体保留、D18 MCP身份、D20/D21 synthetic夜巡隔离/恢复需单独决定；D15低危未修，D17待核实。上轮收藏点击高危已有独立PR #83，不在本轮重复或合并。
 - 唯一下一步：常浩审阅报告的“需常浩决定”，先确定D09/D10/D11/D18的读取信任模型；本PR不自动合并，不推main，不运行采用。
