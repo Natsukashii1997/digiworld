@@ -11,6 +11,7 @@ export function createKeychainAdapter({ runHelper }) {
     if(["set","create","delete"].includes(action)&&guard)await guard();
     try { result = await runHelper(payload); } catch (e) { throw unavailable(e?.reasonCode); }
     if (!result || result.ok !== true) { if (["CREDENTIAL_MISSING", "BACKUP_CONFLICT", "INVALID_CREDENTIAL"].includes(result?.code)) throw Object.assign(new Error("钥匙串操作未确认"), {code:result.code}); throw unavailable(result?.reasonCode); }
+    if (action === "has" && typeof result.exists !== "boolean") throw unavailable("HELPER_READBACK");
     return result;
   }
   return {
