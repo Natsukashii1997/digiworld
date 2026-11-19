@@ -48,6 +48,31 @@ test("知识根目录稳定身份变化进入专用待处理，撤权并在本�
   assert.equal((await f.connections.scan({ sourceId:f.one.id })).status, "complete");
 });
 
+test("重启后卷的 dev 号变了但目录没变：不进待确认、不撤共享，个人说明照常开放（L-08）", async (t) => {
+  const reboot = { devShift: 0 };
+  const f = await fixture(t, { reboot });
+  await f.policy(f.one, true);
+  await f.share(true);
+  reboot.devShift = 1;
+  assert.equal((await f.connections.scan({ sourceId:f.one.id })).status, "complete");
+  let state = await f.repo.read();
+  assert.equal((state.connections.knowledgeSourceHealth || []).some((h) => h.status === "needs_reconfirmation"), false);
+  assert.equal(state.connections.knowledgeSources.find((s) => s.id === f.one.id).agentSharing, true);
+  assert.equal(state.knowledgeZones.profileSharing, true);
+  await f.share(false);
+  await f.share(true);
+  state = await f.repo.read();
+  assert.equal(state.knowledgeZones.profileSharing, true);
+  // 真的换了目录：dev 不变也要重新确认
+  await fs.rename(f.roots[0], `${f.roots[0]}-old`);
+  await fs.mkdir(f.roots[0]);
+  await fs.writeFile(join(f.roots[0], "replacement.md"), "合成替换目录");
+  await assert.rejects(f.connections.scan({ sourceId:f.one.id }), (e) => e.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED" && e.status === 409);
+  state = await f.repo.read();
+  assert.equal(state.connections.knowledgeSourceHealth.find((h) => h.sourceId === f.one.id).status, "needs_reconfirmation");
+  assert.equal(state.knowledgeZones.profileSharing, false);
+});
+
 test("父子重叠知识源中子源待确认时，父源不能重新开放或绕道读取", async (t) => {
   const f = await fixture(t);
   const nested = join(f.roots[0], "嵌套来源");
@@ -78,6 +103,7 @@ async function fixture(
     bytes = 40,
     scanStatus = "complete",
     clock = Date.now,
+    reboot = { devShift: 0 },
   } = {},
 ) {
   const base = await fs.realpath(
@@ -144,6 +170,12 @@ async function fixture(
     : createKnowledgeFiles({
         fs: {
           ...fs,
+          // 模拟 macOS 重启后同一个卷换了 dev 号（L-08）：目录本身没变。
+          lstat: async (p, o) => {
+            const info = await fs.lstat(p, o);
+            if (reboot.devShift) info.dev += reboot.devShift;
+            return info;
+          },
           opendir: async (p, o) => {
             io.push(["opendir", p]);
             return fs.opendir(p, o);

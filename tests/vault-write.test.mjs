@@ -6,11 +6,12 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createHash,randomUUID} from 'node:crypto';
 import {createVaultWrite} from '../server/vault-write.mjs';
+import {knowledgeRootIdentity} from '../server/knowledge-files.mjs';
 const sha=v=>createHash('sha256').update(v).digest('hex');
 async function fixture(t,extra={}){
  const raw=await fs.mkdtemp(join(tmpdir(),'guiji-vault-write-')),root=await fs.realpath(raw),vault=join(root,'synthetic-vault'),data=join(root,'synthetic-data');
  await fs.mkdir(vault);await fs.mkdir(data);await fs.mkdir(join(vault,'随手记'));await fs.mkdir(join(vault,'个人上下文'));
- const stat=await fs.lstat(vault),source={id:'source-synthetic',name:'合成知识源',kind:'obsidian',root:vault,identity:sha(JSON.stringify([vault,stat.dev,stat.ino,stat.birthtimeMs])),generation:'source-gen-1'};
+ const stat=await fs.lstat(vault),source={id:'source-synthetic',name:'合成知识源',kind:'obsidian',root:vault,identity:knowledgeRootIdentity(vault,stat),generation:'source-gen-1'};
  const note={id:'note-1',text:'## 合成随手记\n\n保留原文字节 English🙂\n',at:'2026-10-04T00:00:00.000Z',format:'md1'};
  const state={revision:1,notes:[note],connections:{knowledgeSources:[source]},profileProposals:[],knowledgeZones:{rules:[{pattern:'个人上下文/**',zone:'profile'}]}};
  let configuration={enabled:false,generation:'initial',options:{sourceId:source.id,notesFolder:'随手记',profileFolders:['个人上下文']}};

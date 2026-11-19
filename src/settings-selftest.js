@@ -31,6 +31,13 @@ function capabilityRow(id, label, settings, usage, history) {
   return { id, label, mark: bad ? "warn" : "ok", result, on, capability: id, ackKey: bad?.key };
 }
 
+// 目录身份变化、等本人重新确认的知识来源；有一个就挡住读取、共享和个人说明开放。
+export function reconfirmSources(state) {
+  const c = state?.connections || {}, sources = c.knowledgeSources || [];
+  return (c.knowledgeSourceHealth || []).filter((h) => h.status === "needs_reconfirmation")
+    .map((h) => sources.find((s) => s.id === h.sourceId)).filter(Boolean);
+}
+
 // downloaded：本页刚下载过恢复包（生成记录不证明文件已存到磁盘）
 export function selfTestRows({ state, settings, history, calendar, usage, aihot, aihotError, storage, downloaded = false, acks = {} }) {
   const c = state.connections || {}, sources = c.knowledgeSources || [];
@@ -50,8 +57,9 @@ export function selfTestRows({ state, settings, history, calendar, usage, aihot,
   // 知识开放：任一来源开放给 Agent 或个人说明开放就算开着
   {
     const shared = sources.filter((s) => s.agentSharing).map((s) => s.name), profile = state.knowledgeZones?.profileSharing === true;
-    const bad = anomaly("knowledge", usage, history), last = latestUse(usage, "knowledge");
-    if (shared.length || profile) rows.push({ id: "knowledge", label: "知识开放", mark: "net", result: `已开放：${[...shared, ...(profile ? ["个人说明"] : [])].join("、")} · ${last}` });
+    const bad = anomaly("knowledge", usage, history), last = latestUse(usage, "knowledge"), reconfirm = reconfirmSources(state);
+    if (reconfirm.length) rows.push({ id: "knowledge", label: "知识开放", mark: "bad", result: `${reconfirm.map((s) => `「${s.name}」`).join("、")}需重新确认目录 · 读取与共享已暂停，点「管理」处理` });
+    else if (shared.length || profile) rows.push({ id: "knowledge", label: "知识开放", mark: "net", result: `已开放：${[...shared, ...(profile ? ["个人说明"] : [])].join("、")} · ${last}` });
     else if (!sources.length) rows.push({ id: "knowledge", label: "知识开放", mark: "idle", result: "尚未连接知识来源" });
     else rows.push({ id: "knowledge", label: "知识开放", mark: usage?.error || history?.error ? "unknown" : !usage || !history ? "loading" : bad ? "warn" : "ok", result: `${sources.length} 个来源与个人说明都关闭 · ${last}`, ackKey: bad?.key });
   }

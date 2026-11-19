@@ -209,12 +209,12 @@ export function pendingItems(
     const source = c.knowledgeSources?.find((item) => item.id === health.sourceId);
     if (!source) continue;
     items.push({ id:`knowledge-source-reconfirm-${source.id}`, kind:"知识", sourceId:source.id,
-      title:`${source.name}：需重新确认目录`, detail:"目录身份已变化；相关 Agent 共享已关闭。前往知识仓库核对并重新确认。",
-      to:"knowledge", foundAt:health.detectedAt });
+      title:`${source.name}：需重新确认目录`, detail:"目录身份已变化；相关 Agent 共享已关闭。前往设置 → 知识开放核对并重新确认。",
+      to:"settings", foundAt:health.detectedAt });
   }
   if (knowledge?.loaded && !knowledge.loadError && knowledge.mcp?.url === null) items.push({
     id: "profile-mcp-stopped", kind: "知识", title: "个人说明 MCP 未运行",
-    detail: knowledge.mcp.error || "前往知识仓库查看本机 MCP 状态。", to: "knowledge", foundAt: knowledge.observedAt,
+    detail: knowledge.mcp.error || "前往设置 → 知识开放查看本机 MCP 状态。", to: "settings", foundAt: knowledge.observedAt,
   });
   const collab = sources.collabStatus;
   if (collab?.error) items.push({id:'collab-read-error',kind:'协同',title:'协同协议读取失败',detail:collab.error,to:'collab'});

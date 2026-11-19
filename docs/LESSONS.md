@@ -88,3 +88,18 @@
 - 升级：〔提醒〕不升级（2026-11-07，agent-kit#15，常浩确认 G-16 只保留关键词提醒）。
 - 提升：已提升为全局 G-16（2026-10-28）。
 - 触发：`Cache-Control`、`no-store`
+
+## L-08 目录身份把 `stat.dev` 和祖先目录的完整 `mode` 存了下来，重启或 `chmod 700` 家目录后，个人说明 MCP 与四项能力授权全失效，界面上还找不到重新确认的入口（2026-11-12 至 11-19）
+
+- 现象：11-12 重启后，Obsidian 来源被判「目录身份已变化」，进了 needs_reconfirmation，Agent 共享和个人说明开放被一起关掉；11-19 常浩开个人说明 MCP 被「重叠知识目录需重新确认」挡住。设置页自检另报「授权状态读取失败：能力设置目录身份已变化」，Vault 写入、Agent 配置、模型 / API、常驻服务四项显示「未知」。重新确认的界面只在知识仓库页里，而这个页面 10-23 起已经没有路由；待处理列表（`pendingItems`）随 InboxDrawer 一起删掉后（`5361d68`）也没有地方显示。
+- 根因：
+  - 知识来源身份是 `hash(路径, dev, inode, 创建时间)`，并且持久保存。macOS 每次开机可能给同一个卷换 dev 号：Obsidian 目录的登记身份只有把 dev 换回 16777229 才算得上，现在是 16777230，inode 和创建时间都没变；git 索引里同一个 Data 卷先后记过 16777229、16777230、16777231 三个 dev 值。
+  - 能力设置把数据目录的祖先链 `[dev, inode, 创建时间, uid, 完整 mode]` 记在内存里，每次读取都比对；持久日志里还存了包含 `/` 的同一条链。11-17 按 digital-twin 加固方案执行了 `chmod 700 /Users/nat`，运行中的服务从此每次读取都 409；`/` 的创建时间会随系统更新变化（11-06），dev 会随重启变化，所以旧授权日志也对不上了。
+  - 界面改造删页面、删抽屉时，没核对还有哪些状态只能从被删的页面处理。
+- 正确做法：
+  - 要持久保存的目录身份不放 dev（dev 只在一次开机内有意义），用路径 + inode + 创建时间（项目目录用的是卷 UUID + inode + 纳秒创建时间，见 `server/directory-identity.mjs`）；同一次操作里前后两次 `lstat` 的比对仍可以带 dev。
+  - 祖先链只记跨重启稳定、又跟安全有关的字段：不记 `/`；权限只看「组 / 其他人可写」两位，收紧权限不算变化。
+  - 删页面、删入口前，先搜一遍会把用户带到那里的状态（needs_reconfirmation、`to:` 链接、帮助文案），每个状态都要在现有界面里留一条能点到的路。
+- 证据：本条 PR；只读核对见 PR 正文「根因证据」；新用例 `tests/knowledge-files.test.mjs`、`tests/knowledge-access.test.mjs`、`tests/capability-settings.test.mjs` 里标 L-08 的三条，在旧代码上全部失败，在新代码上全部通过；`tests/knowledge-reconfirm-browser.mjs` 按现行界面实测。
+- 升级：〔机检〕部分升级（2026-11-19，本条 PR）：三处身份口径各有单测守住「dev 变了不误报、真换目录仍要求确认」。其余模块里内存中的 dev 比对（`capability-usage`、`collection`、`backup-records` 等）只在一次进程内有效，未改；「删入口前查遗留状态」只到〔文字〕。
+- 触发：`birthtimeMs`、`info.dev`、`stat.dev`、`身份已变化`、`needs_reconfirmation`、`chmod 700`
