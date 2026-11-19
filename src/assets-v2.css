@@ -1,0 +1,244 @@
+/* 资产仓库改版（#93，用户 2026-11-19 定稿，预览 docs/design/asset-library-v2 第 7 版）。
+   卡片：上方显示屏（像素图标 + 使用次数；左上状态标识、右上置顶 / 删除常驻、右下分类标签），
+   下方标题荧光笔下划 + 正文最多 7 行，底部来源·日期与常驻「复制全文」。
+   分类色（--tc）只用在图标、分类标签、荧光笔三处；其余中性色或状态色。只做电脑版。 */
+
+/* ---------- 分类芯片 ---------- */
+.page-assets .ac2-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0 0 var(--s-4); }
+.page-assets .ac2-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  cursor: pointer;
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+}
+.page-assets .ac2-chip i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tc, var(--muted));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--tc, transparent) 70%, transparent);
+}
+.page-assets .ac2-chip em { font: 500 var(--fs-micro) var(--mono); font-style: normal; color: var(--muted); }
+.page-assets .ac2-chip:hover { color: var(--text); border-color: var(--line-3); }
+.page-assets button.ac2-chip[aria-pressed="true"] {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--tc, var(--cyan)) 70%, transparent);
+  background: color-mix(in srgb, var(--tc, var(--cyan)) 14%, transparent);
+}
+.page-assets .ac2-chip.wait { border-style: dashed; }
+.page-assets .ac2-chip:disabled { opacity: .45; cursor: default; }
+
+/* ---------- 网格与卡片外框 ---------- */
+.page-assets .asset-grid.ac2-grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-auto-rows: auto;
+  align-items: stretch;
+  gap: 18px;
+}
+.page-assets .ac2 {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 5%, transparent), var(--shadow);
+  transition: transform .35s var(--ease), border-color .3s;
+}
+.page-assets .ac2:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--tc) 40%, transparent); }
+/* 整卡外框画在 article 上；点开详情的按钮只负责显示屏与正文，不再自带边框。 */
+/* 旧的 .type-Prompt 等会把 --tc 改成类型色；卡内一律跟随分类色。 */
+.page-assets .ac2 > .card-open {
+  --tc: inherit;
+  flex: 1 0 auto;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-2);
+  background: none;
+  box-shadow: none;
+  transform: none;
+  color: inherit;
+}
+.page-assets .ac2 > .card-open:hover { transform: none; box-shadow: none; }
+.page-assets .ac2 > .card-open:focus-visible { outline: none; box-shadow: var(--focus); }
+
+/* ---------- 显示屏 ---------- */
+.page-assets .ac2-screen {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 132px;
+  overflow: hidden;
+  border-radius: var(--r-2);
+  color: var(--tc);
+  background: radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--tc) 12%, transparent), transparent 62%), var(--bg-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-3) 25%, transparent), inset 0 10px 30px color-mix(in srgb, #000 45%, transparent);
+}
+.page-assets .ac2-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(color-mix(in srgb, var(--line-3) 45%, transparent) 1px, transparent 1.2px);
+  background-size: 8px 8px;
+}
+.page-assets .ac2-glyph { position: relative; line-height: 0; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tc) 55%, transparent)); }
+.page-assets .ac2-uses {
+  position: absolute;
+  left: 11px;
+  bottom: 6px;
+  z-index: 1;
+  font: 600 var(--fs-display-s)/1 var(--mono);
+  color: var(--text);
+}
+.page-assets .ac2-uses small { margin-left: 3px; font: 500 var(--fs-micro) var(--sans); color: var(--muted); }
+.page-assets .ac2-uses.zero { color: var(--faint); }
+.page-assets .ac2-uses.hot { color: color-mix(in srgb, var(--red) 80%, #fff); text-shadow: 0 0 12px color-mix(in srgb, var(--red) 60%, transparent); }
+
+/* 左上状态标识：颜色固定，不随分类变。 */
+.page-assets .ac2-badges { position: absolute; left: 20px; top: 20px; z-index: 2; display: flex; gap: 6px; pointer-events: auto; }
+.page-assets .ac2-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 17px;
+  padding: 0 6px;
+  border-radius: var(--r-xs);
+  font: 700 var(--fs-micro)/1 var(--mono);
+  letter-spacing: .08em;
+  color: var(--bg);
+  cursor: default;
+}
+.page-assets .ac2-badge.b-new { background: var(--cyan); box-shadow: 0 0 8px color-mix(in srgb, var(--cyan) 45%, transparent); }
+.page-assets .ac2-badge.b-hot { background: var(--red); box-shadow: 0 0 8px color-mix(in srgb, var(--red) 45%, transparent); }
+.page-assets .ac2-badge.b-upd { background: var(--yellow); }
+.page-assets .ac2-badge.b-idle { background: transparent; color: var(--muted); border: 1px solid var(--line-3); }
+
+/* 右上置顶 / 删除：常驻（原来悬停才出现，#93 改为一直显示）。 */
+.page-assets .ac2-acts { position: absolute; right: 18px; top: 17px; z-index: 3; display: flex; gap: 6px; }
+.page-assets .ac2 .ac2-acts .pin-button,
+.page-assets .ac2 .ac2-acts .asset-delete {
+  position: static;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-s);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  color: var(--muted);
+  opacity: 1;
+  transform: none;
+  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+}
+.page-assets .ac2 .ac2-acts svg { width: 14px; height: 14px; }
+.page-assets .ac2 .ac2-acts button.pin-button[aria-pressed]:hover,
+.page-assets .ac2 .ac2-acts .pin-button:focus-visible { color: var(--orange-2); border-color: var(--orange-2); }
+.page-assets .ac2 .ac2-acts .pin-button.is-pinned { color: var(--orange-ink); background: var(--orange); border-color: var(--orange); }
+.page-assets .ac2 .ac2-acts .asset-delete:hover,
+.page-assets .ac2 .ac2-acts .asset-delete:focus-visible { color: var(--red); border-color: var(--red); }
+.page-assets .ac2 .ac2-acts .asset-delete:disabled { cursor: wait; opacity: .5; }
+
+/* 右下分类标签：贴在显示屏右下角（屏幕上沿 10px、高 132px）；Prompt / Skill 可点开改分类。 */
+.page-assets .ac2-cat {
+  position: absolute;
+  right: 20px;
+  top: 133px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--r-1);
+  font: 600 var(--fs-label) var(--sans);
+  color: color-mix(in srgb, var(--tc) 35%, #fff);
+  background: color-mix(in srgb, var(--tc) 22%, color-mix(in srgb, var(--bg) 85%, transparent));
+  border: 1px solid color-mix(in srgb, var(--tc) 55%, transparent);
+  transform: translateY(-100%);
+  cursor: pointer;
+}
+.page-assets .ac2-cat i { width: 7px; height: 7px; border-radius: 2px; background: var(--tc); box-shadow: 0 0 6px var(--tc); }
+.page-assets .ac2-cat.static { cursor: default; }
+.page-assets .ac2-cat select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.page-assets .ac2-cat:focus-within { box-shadow: var(--focus); }
+
+/* ---------- 标题与正文 ---------- */
+.page-assets .ac2-body { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 14px 6px 2px; text-align: left; }
+.page-assets .ac2-body h3 { margin: 0; font-size: var(--fs-title); font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; color: var(--text); }
+.page-assets .ac2-hl {
+  padding: 0 3px;
+  margin: 0 -3px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  border-radius: 2px;
+  background: linear-gradient(176deg, transparent 50%, color-mix(in srgb, var(--tc) 62%, transparent) 50%, color-mix(in srgb, var(--tc) 48%, transparent) 94%, transparent 94%);
+}
+.page-assets .ac2-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 7;
+  overflow: hidden;
+  min-height: calc(var(--fs-caption) * 1.72 * 3);
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-size: var(--fs-caption);
+  line-height: 1.72;
+  color: var(--text-2);
+}
+.page-assets .ac2-text.empty { color: var(--faint); }
+
+/* ---------- 底部：来源 · 日期 + 常驻复制 ---------- */
+.page-assets .ac2-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: var(--s-2) 6px 0;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.page-assets .ac2-from { font-size: var(--fs-small); color: var(--muted); }
+.page-assets .asset-copy-labeled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line-3);
+  border-radius: var(--r-2);
+  background: var(--panel-3);
+  color: var(--text);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--t-fast), border-color var(--t-fast);
+}
+.page-assets .asset-copy-labeled svg { width: 14px; height: 14px; }
+.page-assets .asset-copy-labeled:hover,
+.page-assets .asset-copy-labeled:focus-visible { color: var(--cyan); border-color: var(--cyan); }
+.page-assets .asset-copy-labeled:disabled { cursor: wait; opacity: .6; }
+.page-assets .ac2-foot .asset-copy-recovery { width: 100%; padding: var(--s-2) 0 0; border-top: 0; }

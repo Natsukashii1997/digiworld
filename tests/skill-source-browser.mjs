@@ -75,6 +75,8 @@ try {
   assert.equal(original.origin.kind, "local");
   assert.equal(current(original).content, entry);
   await page.reload();
+  // #93 资产仓库默认停在 Prompt 页，Skill 卡要先切到 Skill 页签才会显示。
+  await page.getByRole("group", { name: "资产类型" }).getByRole("button", { name: /^Skill/ }).click();
   await page.getByRole("button", { name: "查看 本机收录验收" }).click();
   const detail = page.getByRole("dialog", { name: "资产详情" });
   await detail.waitFor();

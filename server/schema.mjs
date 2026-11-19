@@ -12,6 +12,7 @@ import { validateDesignVersion } from "../src/design-asset.js";
 import { safePath } from "../src/store.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
 import { validateMcpVersion } from "../src/mcp-config.js";
+import { categoriesOf, hasCategory, validateAssetCategories } from "../src/asset-categories.js";
 import { validateInstallUrl } from "../src/skill-install.js";
 import { stringify } from "../src/serialization.js";
 import {planSkillVersion} from "../src/skill-version.js";
@@ -423,9 +424,15 @@ export function validateState(state) {
     "revisionCandidates",
     "skillSourceAdoptions",
     "projectDesk",
+    "assetCategories",
   ]);
   if (state.skillSourceAdoptions !== undefined) validateSkillSourceAdoptions(state.skillSourceAdoptions,state.assets);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
+  // 资产分类表（#93）：可选；缺省时用默认六类。
+  if (state.assetCategories !== undefined) {
+    try { validateAssetCategories(state.assetCategories); } catch (error) { invalid(error.message); }
+  }
+  const categoryIds = new Set(categoriesOf(state).map((c) => c.id));
   if (state.learning !== undefined) validateLearning(state.learning);
   if (state.knowledgeZones !== undefined)
     validateKnowledgeZones(state.knowledgeZones);
@@ -466,8 +473,14 @@ export function validateState(state) {
       "versions",
       "cover",
       "origin",
+      "category",
     ]);
     id(a.id);
+    // 主分类（#93）：只给 Prompt 与 Skill；挂在资产上不进版本，改分类不产生新版本。
+    if (a.category !== undefined) {
+      if (!hasCategory(a.type)) invalid("只有 Prompt 与 Skill 可设置分类");
+      if (typeof a.category !== "string" || !categoryIds.has(a.category)) invalid("分类不存在");
+    }
     date(a.createdAt);
     if (a.origin !== undefined) {
       if (a.type !== "Skill") invalid("只有 Skill 支持来源关系");

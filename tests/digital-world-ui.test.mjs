@@ -64,22 +64,26 @@ test("资产卡片、编号、版本与迭代阶段都由真实资产数据派�
     if (p.id === 'collab') assert.equal(p.lead, '多 Agent 工作流的全过程：谁做了什么、交给了谁、过没过关。');
     else assert.ok([...p.lead].length <= 30 || p.id === 'assets' || p.id === 'calendar', `${p.id} 导语不超过 30 字`);
   }
+  // #93（用户 2026-11-19）：只留 Prompt / Design / Skill 三页，默认 Prompt；卡片去掉编号与进化阶段。
   const html = render(Assets);
-  assert.equal((html.match(/class="asset-card"/g) || []).length, 6);
-  assert.match(html, /class="asset-grid"/);
+  assert.equal((html.match(/class="asset-card ac2"/g) || []).length, 2, "默认 Prompt 页 = 2 份演示 Prompt");
+  assert.match(html, /class="asset-grid ac2-grid"/);
   assert.doesNotMatch(html, /aria-label="(?:网格视图|列表视图|视图模式)"|list-layout/);
-  for (const code of ["SKL.01", "SKL.02", "PRM.01", "WFL.02"])
-    assert.ok(html.includes(code), code);
-  assert.equal((html.match(/class="stage-bar"/g) || []).length, 6);
+  for (const code of ["SKL.01", "PRM.01", "WFL.02"]) assert.ok(!html.includes(code), `不再显示编号 ${code}`);
+  assert.doesNotMatch(html, /class="stage-bar"/);
   assert.match(html, />新建<\/button>/);
   assert.doesNotMatch(html, /收录本机 Skill|MCP 配置|已归档/);
-  assert.equal((html.match(/class="asset-delete"/g) || []).length, 6);
+  assert.equal((html.match(/class="asset-delete"/g) || []).length, 2);
+  assert.equal((html.match(/class="asset-copy-labeled"/g) || []).length, 2);
   assert.doesNotMatch(html, /class="cover-version"/);
-  for (const filter of ["Skill", "Prompt", "Workflow"])
-    assert.equal(
-      (render(Assets, { filter }).match(/class="asset-card"/g) || []).length,
-      2,
-    );
+  const SKILLS = /设计的最后一公里|有依据的深度研究/, PROMPTS = /把模糊想法，变成清晰问题|一次真正有用的复盘/;
+  for (const [filter, want, not] of [["Skill", SKILLS, PROMPTS], ["Prompt", PROMPTS, SKILLS], ["Workflow", PROMPTS, SKILLS]]) {
+    const tab = render(Assets, { filter });
+    assert.equal((tab.match(/class="asset-card ac2"/g) || []).length, 2, filter);
+    assert.match(tab, want, `${filter} 页的卡片`);
+    assert.doesNotMatch(tab, not, `${filter} 页不混入别的类型`);
+  }
+  assert.doesNotMatch(render(Assets, { filter: "Workflow" }), /从灵感到上线|把经验，留在知识里/, "工作流不在资产仓库显示");
   const empty = render(Assets, { state: { ...seed(), assets: [] } });
   assert.match(empty, /还没有符合条件的资产/);
   assert.match(empty, />新建<\/button>/);
@@ -224,40 +228,23 @@ test("切片 1.2：兼容分组元数据保持有效，规划中页面如实标�
   for (const id of ["collab","calendar","health"]) assert.equal(PAGES.some(p=>p.id===id),false);
 });
 
-test("切片 1.3b：焚决是资产仓库第五种类型，#scrolls 旧链接落到资产仓库焚决标签", async () => {
+test("#93：焚决不再出现在资产仓库，#scrolls 旧链接落到 Prompt 页；卷数据不受影响", async () => {
   const { resolveRoute } = await import("../src/pages.js");
-  // 用户 2026-09-30 纠正：焚决不再是独立页面。
+  // 用户 2026-09-30 纠正：焚决不再是独立页面；2026-11-19（#93）资产仓库只留 Prompt / Design / Skill，焚决页签去掉，数据保留。
   assert.equal(PAGES.some((p) => p.id === "scrolls"), false);
-  assert.deepEqual(resolveRoute("scrolls"), { route: "assets", anchor: null, filter: "Scroll" });
-  const scroll = (id, name, entries, extra = {}) => ({
-    id,
-    name,
-    pinned: false,
-    createdAt: "2026-09-30T00:00:00.000Z",
-    entries,
-    ...extra,
-  });
-  const entry = (id, text, tags, uses) => ({ id, text, tags, uses, createdAt: "2026-09-30T00:00:00.000Z" });
+  assert.deepEqual(resolveRoute("scrolls"), { route: "assets", anchor: null, filter: "Prompt" });
+  const entry = (id, text) => ({ id, text, tags: [], uses: 3, createdAt: "2026-09-30T00:00:00.000Z" });
   const state = {
     ...seed(),
-    scrolls: [
-      scroll("s1", "心法", [entry("e1", "先定义问题", ["判断", "核心"], 3), entry("e2", "小步可逆", ["判断"], 1)]),
-      scroll("s2", "已删卷", [], { deletedAt: "2026-09-30T01:00:00.000Z" }),
-    ],
+    scrolls: [{ id: "s1", name: "心法", pinned: false, createdAt: "2026-09-30T00:00:00.000Z", entries: [entry("e1", "先定义问题")] }],
   };
-  const all = render(Assets, { state });
-  assert.equal((all.match(/class="asset-card(?:\s[^"]*)?"/g) || []).length, 7, "全部 = 6 份资产 + 1 张焚决卡");
-  assert.match(all, /title="焚决 · 心法"/);
-  assert.match(all, /data-scroll-entry-id="e1"/);
-  assert.match(all, /data-scroll-entry-id="e2"/);
-  assert.match(all, /打开卷 心法/);
-  assert.doesNotMatch(all, /已删卷/);
-  const tab = render(Assets, { state, filter: "Scroll" });
-  assert.equal((tab.match(/class="asset-card(?:\s[^"]*)?"/g) || []).length, 1);
-  assert.match(tab, /复制 3 次/);
-  assert.match(tab, /复制 1 次/);
-  assert.match(tab, /回收区/);
+  for (const filter of [undefined, "Scroll"]) {
+    const html = render(Assets, filter ? { state, filter } : { state });
+    assert.equal((html.match(/class="asset-card(?:\s[^"]*)?"/g) || []).length, 2, "只有 2 份演示 Prompt");
+    assert.doesNotMatch(html, /焚决|心法|打开卷|data-scroll-entry-id|回收区/);
+  }
 });
+
 
 test("UI v16：侧栏名称与首页中枢轻入口按用户决定", () => {
   // 用户 2026-09-29：夜间值守改名“夜巡”，搜索只在右上角。用户 2026-10-26：首页改叫“世界总览”。

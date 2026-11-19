@@ -85,9 +85,10 @@ test('读 ZIP 略过 Mac 压缩自带的 __MACOSX 与 .DS_Store', () => {
   assert.deepEqual(files.map((f) => f.path), ['weekly/SKILL.md']);
 });
 
-test('新建弹窗不再出现 MCP；设计图标只留画面本身', () => {
+test('新建弹窗只给 Prompt / Design / Skill（#93）；设计图标只留画面本身', () => {
   const source = readFileSync(new URL('../src/Assets.jsx', import.meta.url), 'utf8');
-  assert.match(source, /t !== "MCP" \|\| asset\?\.type === "MCP"/);
+  // 新建只剩三种；编辑已有的工作流、规则、MCP 时只显示它自己的类型。
+  assert.match(source, /asset && !\["Prompt", "Design", "Skill"\]\.includes\(asset\.type\) \? \[asset\.type\] : \["Prompt", "Design", "Skill"\]/);
   assert.match(source, /aria-label="Skill 来源"/);
   const pixel = readFileSync(new URL('../src/pixel.jsx', import.meta.url), 'utf8');
   const block = pixel.slice(pixel.indexOf('  Design: {'), pixel.indexOf('  seal: {'));
