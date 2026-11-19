@@ -77,12 +77,17 @@ test("资产卡片、编号、版本与迭代阶段都由真实资产数据派�
   assert.equal((html.match(/class="asset-copy-labeled"/g) || []).length, 2);
   assert.doesNotMatch(html, /class="cover-version"/);
   const SKILLS = /设计的最后一公里|有依据的深度研究/, PROMPTS = /把模糊想法，变成清晰问题|一次真正有用的复盘/;
-  for (const [filter, want, not] of [["Skill", SKILLS, PROMPTS], ["Prompt", PROMPTS, SKILLS], ["Workflow", PROMPTS, SKILLS]]) {
+  for (const [filter, want, not] of [["Prompt", PROMPTS, SKILLS], ["Workflow", PROMPTS, SKILLS]]) {
     const tab = render(Assets, { filter });
     assert.equal((tab.match(/class="asset-card ac2"/g) || []).length, 2, filter);
     assert.match(tab, want, `${filter} 页的卡片`);
     assert.doesNotMatch(tab, not, `${filter} 页不混入别的类型`);
   }
+  // #93 第二批：Skill 页只读 my-skills（打开后才读），数码世界里的 Skill 资产不在这里显示。
+  const skillTab = render(Assets, { filter: "Skill" });
+  assert.equal((skillTab.match(/class="asset-card ac2/g) || []).length, 0);
+  assert.doesNotMatch(skillTab, SKILLS);
+  assert.match(skillTab, /正在读取 my-skills/);
   assert.doesNotMatch(render(Assets, { filter: "Workflow" }), /从灵感到上线|把经验，留在知识里/, "工作流不在资产仓库显示");
   const empty = render(Assets, { state: { ...seed(), assets: [] } });
   assert.match(empty, /还没有符合条件的资产/);

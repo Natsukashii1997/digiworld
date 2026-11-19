@@ -2,8 +2,7 @@
 // 标题取自审核包第 3 节的「内容（简）」，审核包之后新增的编号从 CLAUDE.md 对应节标题补。
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { execFile } from "node:child_process";
-import { createSafeReader, tilde, freshness, instructionSync } from "./cockpit-read.mjs";
+import { createSafeReader, tilde, freshness, instructionSync, runGit } from "./cockpit-read.mjs";
 
 const DOCTOR_MAX_MS = 7 * 24 * 60 * 60 * 1000;
 const REVIEW_FILE = "2026-11-07-全局规则审核包.md";
@@ -136,11 +135,6 @@ const GUARDS = [
   { id: "weekly", title: "每周汇总与再犯统计", what: "每周汇总 LESSONS 命中和 Skill 调用", who: ["Claude", "Codex"], keeps: "复盘" },
 ];
 
-function runGit(args) {
-  return new Promise((resolve) => {
-    execFile("/usr/bin/git", args, { timeout: 5000, maxBuffer: 256 * 1024 }, (error, stdout) => resolve(error ? null : stdout));
-  });
-}
 
 async function projectRules(reader, roster) {
   const list = roster?.value?.projects;

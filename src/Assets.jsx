@@ -1,5 +1,5 @@
 import { copyText } from './data-flight.js';
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Search,
   Plus,
@@ -12,6 +12,7 @@ import {
   Upload,
   PenLine,
   Folder,
+  RefreshCw,
 } from "lucide-react";
 import { strToU8 } from "fflate";
 import { request } from "./api.js";
@@ -62,7 +63,8 @@ import { usageByAsset } from "./asset-usage.js";
 import { removeAssetFromWarehouse } from "./asset-delete.js";
 import { assetHit, terms } from "./search.js";
 import { stageOf, glyphOf, Pixel } from "./pixel.jsx";
-import { BADGES, DEFAULT_CATEGORIES, UNSORTED, UNSORTED_NAME, badgesOf, categoriesOf, categoryColor, categoryOf, hasCategory } from "./asset-categories.js";
+import { BADGES, DEFAULT_CATEGORIES, UNSORTED, UNSORTED_NAME, badgesOf, categoriesOf, categoryColor, categoryOf, hasCategory, shortDay, skillBadgesOf, skillCategoryOf } from "./asset-categories.js";
+import { useCockpit } from "./cockpit-ui.jsx";
 
 export function download(name, bytes, type = "application/octet-stream") {
   const url = URL.createObjectURL(new Blob([bytes], { type }));
@@ -184,7 +186,7 @@ export const ASSET_TABS = [
   ["Skill", "Skill"],
 ];
 const TAB_IDS = ASSET_TABS.map(([id]) => id);
-const DAY_FMT = (at) => (at ? `${Number(at.slice(5, 7))}-${at.slice(8, 10)}` : "");
+
 
 const TYPE_COLOR = { Design: "var(--pink)", Skill: "var(--orange)", Workflow: "var(--violet)", Rule: "var(--lcd)", MCP: "var(--violet)" };
 function cardBody(asset, version) {
@@ -264,8 +266,65 @@ function AssetCard({ asset: a, index, state, save, adoptState, notify, select, c
         <span className="ac2-cat static"><i aria-hidden="true" /><span>{label}</span></span>
       )}
       <div className="ac2-foot">
-        <span className="ac2-from">{originLabel(a)} · {DAY_FMT(v.at)}</span>
+        <span className="ac2-from">{originLabel(a)} · {shortDay(v.at)}</span>
         <AssetCopyButton asset={a} state={state} adoptState={adoptState} notify={notify} disabled={deleting} labeled />
+      </div>
+    </article>
+  );
+}
+
+// Skill 页（#93 第二批）：只读 my-skills 登记的 skill。没有详情、没有删除；分类与置顶按名字存在 skillMeta。
+const SKILL_BADGE_RULE = { NEW: "首次登记 7 天内", HOT: "近 30 天调用 ≥ 5 次（只记 Claude 端）", UPD: "7 天内有提交", IDLE: "登记超过 30 天、近 30 天没调用" };
+function SkillCard({ item, index, meta, categories, usageSince, onMeta, notify }) {
+  const cat = skillCategoryOf(item, meta, categories);
+  const catInfo = categories.find((c) => c.id === cat.id);
+  const label = catInfo?.name || UNSORTED_NAME;
+  const badges = skillBadgesOf(item, usageSince);
+  const total = item.uses?.total || 0;
+  // 调用记录只记 Claude 端：没有记录文件，或只给了 Codex 且 0 次时显示「–」，不冒充 0。
+  const unrecorded = !item.uses || (total === 0 && !item.agents.includes("Claude"));
+  const pinned = !!meta?.pinned;
+  return (
+    <article className="asset-card ac2 ac2-skill" style={{ "--i": Math.min(index, 12), "--tc": catInfo ? categoryColor(catInfo) : "var(--muted)" }}>
+      <div className="card-open">
+        <span className="ac2-screen" aria-hidden="true">
+          <span className="ac2-glyph"><HoloEgg sprite={glyphOf({ type: "Skill", id: item.name })} size={64} tint /></span>
+          <span className={`ac2-uses${unrecorded ? " none" : badges.includes("HOT") ? " hot" : total ? "" : " zero"}`}>
+            {unrecorded ? "–" : <Odometer value={total} />}<small>次</small>
+          </span>
+        </span>
+        <span className="sr-only">{unrecorded ? "调用次数未记录" : `调用 ${total} 次`}</span>
+        <span className="ac2-body">
+          <h3 className="mono"><span className="ac2-hl">{item.name}</span></h3>
+          <span className={`ac2-text${item.description ? "" : " empty"}`}>{item.description || (item.missing ? "没读到 SKILL.md 的说明。" : "SKILL.md 里没有说明。")}</span>
+          {item.agents.length > 0 && <span className="ac2-agents">{item.agents.map((a) => <span key={a}>{a}</span>)}</span>}
+        </span>
+      </div>
+      {badges.length > 0 && (
+        <span className="ac2-badges">
+          {badges.map((b) => <span key={b} className={`ac2-badge b-${b.toLowerCase()}`} title={`${BADGES[b].name}：${SKILL_BADGE_RULE[b]}`}>{b}</span>)}
+        </span>
+      )}
+      <span className="ac2-acts">
+        <button type="button" aria-label={`${pinned ? "取消置顶" : "置顶"} ${item.name}`} aria-pressed={pinned} title={pinned ? "取消置顶" : "置顶"}
+          className={`pin-button ${pinned ? "is-pinned" : ""}`} onClick={() => onMeta(item.name, { pinned: pinned ? undefined : true })}>
+          <Pin size={14} fill={pinned ? "currentColor" : "none"} />
+        </button>
+      </span>
+      <label className="ac2-cat" title={cat.inferred ? "按内容自动归组；选一个分类就固定下来" : "分类"}>
+        <i aria-hidden="true" />
+        <span>{label}</span>
+        <select aria-label={`${item.name} 的分类`} value={cat.inferred ? "" : cat.id} onChange={(e) => onMeta(item.name, { category: e.target.value || undefined })}>
+          <option value="">{cat.inferred ? `自动：${label}` : "改回自动归组"}</option>
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </label>
+      <div className="ac2-foot">
+        <span className="ac2-from">{item.version ? `v${item.version}` : "未定版本"} · {shortDay(item.updatedAt) || "日期未知"}</span>
+        <button type="button" className="asset-copy-labeled" aria-label={`复制调用名 ${item.name}`} title={`复制 /${item.name}；Codex 里用 $${item.name}`}
+          onClick={() => copy(`/${item.name}`, notify)}>
+          <Copy size={15} aria-hidden="true" /><span>复制调用名</span>
+        </button>
       </div>
     </article>
   );
@@ -280,6 +339,7 @@ export function Assets({
   openCreate,
   select,
   onFilter,
+  onSkillCount,
 }) {
   const [search, setSearch] = useState(""),
     [sort, setSort] = useState("recent"),
@@ -297,16 +357,35 @@ export function Assets({
     for (const r of state.assetActivity || []) if (r.kind === "use") (m.get(r.assetId) || m.set(r.assetId, []).get(r.assetId)).push(r);
     return m;
   }, [state.assetActivity]);
-  const ofType = assets.filter((a) => a.type === tab);
-  const catOf = (a) => categoryOf(a, categories, current(a)).id;
+  // Skill 页数据来自 my-skills（只读）；打开资产仓库时读一次，点「刷新」现读。
+  const skillsRead = useCockpit("/my-skills");
+  const skillItems = skillsRead.data?.available ? skillsRead.data.items : [];
+  const skillMeta = state.skillMeta || {};
+  useEffect(() => { if (skillsRead.data) onSkillCount?.(skillItems.length); }, [skillsRead.data]);
+  const skillTab = tab === "Skill";
+  const ofType = skillTab ? skillItems : assets.filter((a) => a.type === tab);
+  const catOf = skillTab
+    ? (x) => skillCategoryOf(x, skillMeta[x.name], categories).id
+    : (a) => categoryOf(a, categories, current(a)).id;
+  const skillHit = (x) => { const hay = `${x.name} ${x.description}`.toLowerCase(); return words.every((w) => hay.includes(w)); };
+  function saveSkillMeta(name, patch) {
+    const next = { ...(skillMeta[name] || {}), ...patch };
+    for (const k of Object.keys(next)) if (next[k] === undefined) delete next[k];
+    const all = { ...skillMeta };
+    if (Object.keys(next).length) all[name] = next;
+    else delete all[name];
+    return save({ ...state, skillMeta: all });
+  }
   const catCounts = new Map();
   if (hasCategory(tab)) for (const a of ofType) catCounts.set(catOf(a), (catCounts.get(catOf(a)) || 0) + 1);
   const activeCat = hasCategory(tab) && (cat === UNSORTED || catCounts.has(cat)) ? cat : "all";
   const narrowed = !!(words.length || activeCat !== "all");
   // 置顶项在任何排序下都排最前，置顶项之间按使用次数降序，再按最近使用。
   const items = ofType
-    .filter((a) => (activeCat === "all" || catOf(a) === activeCat) && (!words.length || assetHit(a, words)))
+    .filter((a) => (activeCat === "all" || catOf(a) === activeCat) && (!words.length || (skillTab ? skillHit(a) : assetHit(a, words))))
     .map((a) => {
+      if (skillTab)
+        return { item: a, pinned: !!skillMeta[a.name]?.pinned, count: a.uses?.total || 0, lastAt: a.uses?.lastAt || "", at: a.updatedAt || "", title: a.name };
       const u = usage.get(a.id);
       return { item: a, pinned: !!a.pinned, count: u.count, lastAt: u.lastAt, at: current(a).at, title: current(a).title };
     });
@@ -357,19 +436,26 @@ export function Assets({
           <div className="asset-heading-actions">
             <label className="inline-search">
               <Search size={15} />
-              <input placeholder="搜索标题、说明、正文" aria-label="在资产中搜索" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input placeholder={skillTab ? "搜索 skill 名、说明" : "搜索标题、说明、正文"} aria-label="在资产中搜索" value={search} onChange={(e) => setSearch(e.target.value)} />
             </label>
-            <Button onClick={() => openCreate(tab)}>
-              <Plus size={16} />
-              新建
-            </Button>
+            {skillTab ? (
+              <Button secondary disabled={skillsRead.busy} onClick={skillsRead.reload}>
+                <RefreshCw size={16} />
+                {skillsRead.busy ? "正在读取…" : "刷新"}
+              </Button>
+            ) : (
+              <Button onClick={() => openCreate(tab)}>
+                <Plus size={16} />
+                新建
+              </Button>
+            )}
           </div>
         }
       />
       <div className="asset-toolbar">
         <FilterTabs
           label="资产类型"
-          items={ASSET_TABS.map(([id, label]) => ({ id, label, count: assets.filter((a) => a.type === id).length }))}
+          items={ASSET_TABS.map(([id, label]) => ({ id, label, count: id === "Skill" ? skillItems.length : assets.filter((a) => a.type === id).length }))}
           value={tab}
           onChange={(id) => { setCat("all"); onFilter(id); }}
         />
@@ -387,10 +473,14 @@ export function Assets({
         <span>
           当前结果 · <b>{shown.length}</b>
           {pinnedCount > 0 && <>{" "}· 置顶 <b>{pinnedCount}</b></>}
+          {skillTab && skillsRead.data?.available && <>{" "}· 只读 my-skills</>}
         </span>
       </div>
       <div className="asset-grid ac2-grid">
-        {shown.map(({ item: a }, i) => (
+        {shown.map(({ item: a }, i) => skillTab ? (
+          <SkillCard key={a.name} item={a} index={i} meta={skillMeta[a.name]} categories={categories}
+            usageSince={skillsRead.data?.usageSince} onMeta={saveSkillMeta} notify={notify} />
+        ) : (
           <AssetCard
             key={a.id}
             asset={a}
@@ -416,19 +506,31 @@ export function Assets({
           {words.length ? `没有资产同时匹配“${words.join(" ")}”和当前筛选条件。` : "当前分类下没有资产。"}
         </Empty>
       )}
-      {shown.length === 0 && !narrowed && (
+      {skillTab && shown.length === 0 && !narrowed && (
+        <Empty
+          sprite="numemon"
+          title={!skillsRead.data ? (skillsRead.error ? "读不到 my-skills" : "正在读取 my-skills…") : skillsRead.data.available ? "my-skills 里还没有登记的 skill" : "读不到 my-skills"}
+          action={<Button secondary disabled={skillsRead.busy} onClick={skillsRead.reload}><RefreshCw size={16} />刷新</Button>}
+        >
+          {skillsRead.error ? (skillsRead.error.message || "读取失败，请稍后刷新。")
+            : skillsRead.data && !skillsRead.data.available ? `${skillsRead.data.error}（${skillsRead.data.sources.registry}）。`
+              : "在 my-skills 的 links.tsv 登记一个 skill，刷新后这里就多一颗蛋。"}
+        </Empty>
+      )}
+      {!skillTab && shown.length === 0 && !narrowed && (
         <Empty
           sprite="numemon"
           title="还没有符合条件的资产"
           action={<Button secondary onClick={() => openCreate(tab)}><Plus size={16} />新建</Button>}
         >
-          {tab === "Prompt" ? "新建一条 Prompt，或让猛鬼兽批量导入。" : tab === "Design" ? "新建一个设计：贴上确认过的设计 Prompt，或登记一个设计 Skill。" : "从一份新的 Skill 开始。"}
+          {tab === "Prompt" ? "新建一条 Prompt，或让猛鬼兽批量导入。" : "新建一个设计：贴上确认过的设计 Prompt，或登记一个设计 Skill。"}
         </Empty>
       )}
       {helpOpen && (
         <Dialog recoverFocus title="资产仓库 · 这页怎么用" onClose={() => setHelpOpen(false)}>
           <p>资产仓库分 Prompt、Design、Skill 三页。Prompt 与 Skill 共用一套分类筛选；没选过分类的按内容自动归组，在卡片右下角选一个分类就固定下来。</p>
           <p>左上角的小标识按数据自动点亮：NEW 入库 7 天内，HOT 近 30 天复制 ≥ 5 次，UPD 7 天内改过，IDLE 入库超过 30 天一次没用过。</p>
+          <p>Skill 页只读展示 my-skills 登记的 skill（以 links.tsv 为准），在 my-skills 新登记一个，下次打开或点「刷新」就多一颗蛋。「复制调用名」复制 /名称，粘贴给 Claude Code；在 Codex 里改用 $名称。次数来自 agent-kit 的调用记录，只记 Claude 端（11-07 起）；NEW 是首次登记 7 天内，UPD 是 7 天内有提交，IDLE 等调用记录攒满 30 天后才判断。</p>
           <p>复制后的实际采用与运行结果，以接收方回执和项目协议为准。</p>
         </Dialog>
       )}
@@ -665,8 +767,8 @@ export function AssetEditor({
           </p>
         </div>}
         <div className="type-picker" role="radiogroup" aria-label="资产类型">
-          {/* 新建只剩 Prompt / Design / Skill 三种（#93，用户 2026-11-19）；编辑已有的工作流、规则、MCP 时只显示它自己的类型。 */}
-          {(asset && !["Prompt", "Design", "Skill"].includes(asset.type) ? [asset.type] : ["Prompt", "Design", "Skill"]).map((t, index, types) => (
+          {/* 新建只给 Prompt / Design（#93：Skill 页改为只读 my-skills，用户 2026-11-19）；编辑已有资产时类型不变，原有的三类照旧显示，其他类型只显示它自己。 */}
+          {(asset ? (["Prompt", "Design", "Skill"].includes(asset.type) ? ["Prompt", "Design", "Skill"] : [asset.type]) : ["Prompt", "Design"]).map((t, index, types) => (
             <button
               type="button"
               role="radio"

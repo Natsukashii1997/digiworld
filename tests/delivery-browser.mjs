@@ -28,10 +28,27 @@ try {
       .getByRole("group", { name: "资产类型" })
       .getByRole("button", { name: /^Skill/ })
       .click();
-  await skillTab();
-  await page
-    .getByRole("button", { name: "查看 设计的最后一公里", exact: true })
-    .click();
+  // #93 第二批：Skill 页只读展示 my-skills 登记的 skill，数码世界原有 Skill 资产不再出现在 Skill 页（数据保留）；
+  // 先断言它不在 Skill 页网格里，再从全局搜索（⌘K）打开它的详情抽屉，交付链接断言不变。
+  const openSkillDetail = async () => {
+    await skillTab();
+    assert.equal(
+      await page
+        .getByRole("button", { name: "查看 设计的最后一公里", exact: true })
+        .count(),
+      0,
+      "原有 Skill 资产不应出现在 Skill 页网格",
+    );
+    await page.keyboard.press("Meta+k");
+    await page.getByLabel("全局搜索").fill("设计的最后一公里");
+    await page.locator('.search-results[aria-busy="false"]').waitFor();
+    await page
+      .getByRole("dialog", { name: "搜索工作台" })
+      .getByRole("button", { name: /设计的最后一公里/ })
+      .click();
+    await page.getByRole("dialog", { name: "资产详情", exact: true }).waitFor();
+  };
+  await openSkillDetail();
   await page
     .getByRole("button", { name: "复制本机安装口令", exact: true })
     .click();
@@ -63,10 +80,8 @@ try {
     [],
   );
   await page.reload();
-  await skillTab(); // #93 刷新后回到默认 Prompt 页，先切到 Skill 页签
-  await page
-    .getByRole("button", { name: "查看 设计的最后一公里", exact: true })
-    .click();
+  await page.locator(".asset-card").first().waitFor();
+  await openSkillDetail(); // #93 第二批：刷新后同样先断言不在 Skill 页，再从全局搜索打开详情
   await page.getByText(/本机有效链接/).click();
   await page.getByRole("button", { name: "撤销链接", exact: true }).click();
   assert.equal((await fetch(url)).status, 410);

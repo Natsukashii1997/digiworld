@@ -76,8 +76,15 @@ try {
   assert.equal(current(original).content, entry);
   await page.reload();
   // #93 资产仓库默认停在 Prompt 页，Skill 卡要先切到 Skill 页签才会显示。
+  await page.getByRole("heading", { name: "资产仓库" }).waitFor();
   await page.getByRole("group", { name: "资产类型" }).getByRole("button", { name: /^Skill/ }).click();
-  await page.getByRole("button", { name: "查看 本机收录验收" }).click();
+  // #93 第二批：Skill 页只读展示 my-skills 登记的 skill，收录来的历史 Skill 资产不再出现在 Skill 页（数据保留）；
+  // 先断言它不在 Skill 页网格里，再从全局搜索（⌘K）打开它的详情抽屉，之后的来源、导出、改版断言不变。
+  assert.equal(await page.getByRole("button", { name: "查看 本机收录验收" }).count(), 0, "历史 Skill 资产不应出现在 Skill 页网格");
+  await page.keyboard.press("Meta+k");
+  await page.getByLabel("全局搜索").fill("本机收录验收");
+  await page.locator('.search-results[aria-busy="false"]').waitFor();
+  await page.getByRole("dialog", { name: "搜索工作台" }).getByRole("button", { name: /本机收录验收/ }).click();
   const detail = page.getByRole("dialog", { name: "资产详情" });
   await detail.waitFor();
   const origin = detail.getByRole("region", { name: "Skill 来源与改版" });

@@ -83,6 +83,7 @@ import { promisify } from "node:util";
 import { stat } from "node:fs/promises";
 import { readCockpitAgents } from "./cockpit-agents.mjs";
 import { readCockpitRules } from "./cockpit-rules.mjs";
+import { readMySkills } from "./my-skills.mjs";
 import { cachedRead } from "./cockpit-read.mjs";
 const exec = promisify(execFile);
 // 项目名册只读（#71）：这些写接口已下线，统一回 410；整库保存时这三项保留主库原值。
@@ -1076,6 +1077,14 @@ export async function startServer({
         if (url.pathname === "/api/cockpit/rules" && request.method === "GET") {
           adapters.cockpitRules ??= cachedRead(() => readCockpitRules());
           return send(response, 200, await adapters.cockpitRules({ refresh: url.searchParams.get("refresh") === "1" }));
+        }
+        // 资产仓库 Skill 页（#93 第二批）：只读 my-skills 登记与 agent-kit 调用记录。
+        // 只有正式入口（server/index.mjs）传 discovery.mySkills.home；测试里直接起的服务默认不读本机，页面显示「读不到 my-skills」。
+        if (url.pathname === "/api/my-skills" && request.method === "GET") {
+          adapters.mySkillsRead ??= cachedRead(() => adapters.mySkills?.home
+            ? readMySkills(adapters.mySkills)
+            : Promise.resolve({ at: new Date().toISOString(), available: false, items: [], usageSince: null, sources: { registry: "未配置", usage: "未配置" }, error: "本服务未配置 my-skills 读取" }));
+          return send(response, 200, await adapters.mySkillsRead({ refresh: url.searchParams.get("refresh") === "1" }));
         }
         throw failure("接口不存在", 404);
       }

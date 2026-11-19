@@ -32,16 +32,22 @@ const records = async () => (await app.repository.read()).assetActivity || [];
 const uses = async (a = prompt) =>
   (await records()).filter((r) => r.kind === "use" && r.assetId === a.id)
     .length;
-// #93：资产仓库只剩 Prompt / Design / Skill 三页，默认 Prompt；Skill 要先切页签，
+// #93：资产仓库只剩 Prompt / Design / Skill 三页，默认 Prompt；
 // 工作流不在资产仓库，详情只能从顶栏全局搜索打开。
+// #93 第二批：Skill 页改为只读 my-skills，原有 Skill 资产不再出现在 Skill 页（数据保留），
+// 先断言它不在 Skill 页网格里，再和工作流一样从全局搜索打开详情。
 const typeTab = (p, name) =>
   p.getByRole("group", { name: "资产类型", exact: true }).getByRole("button", { name: new RegExp(`^${name}`) });
 async function openFrom(p, a) {
   const title = current(a).title;
-  if (["Prompt", "Design", "Skill"].includes(a.type)) {
+  if (["Prompt", "Design"].includes(a.type)) {
     await typeTab(p, a.type).click();
     await p.getByRole("button", { name: `查看 ${title}`, exact: true }).click();
     return;
+  }
+  if (a.type === "Skill") {
+    await typeTab(p, "Skill").click();
+    assert.equal(await p.getByRole("button", { name: `查看 ${title}`, exact: true }).count(), 0, `${title} 不应出现在 Skill 页`);
   }
   await p.locator(".topbar").getByRole("button", { name: "搜索", exact: true }).click();
   const palette = p.getByRole("dialog", { name: "搜索工作台" });
@@ -69,12 +75,16 @@ try {
   await page.locator(".asset-card").first().waitFor();
   assert.equal((await app.repository.read()).revision, initial.revision);
   // 切片 1.1：卡片计次改为封面数字，“从未使用”一行已去掉。
-  // #93：次数改在显示屏 .ac2-uses（「0次」），按页签分开数：Prompt 2 张、Skill 2 张；演示里的 2 个工作流不在资产仓库出现。
+  // #93：次数改在显示屏 .ac2-uses（「0次」），按页签分开数：Prompt 2 张；演示里的 2 个工作流不在资产仓库出现。
+  // #93 第二批：Skill 页只读 my-skills（测试 fixture 下为空），演示里的 2 个 Skill 资产不再出现，Skill 页没有次数显示屏；
+  // 它们的计次改在详情里核对（下面 open(skill) 走全局搜索）。
   const zeros = async () => (await page.locator(".ac2-uses").allInnerTexts()).map((t) => t.replace(/\s/g, ""));
   assert.equal(await typeTab(page, "Prompt").getAttribute("aria-pressed"), "true");
   assert.deepEqual(await zeros(), Array(2).fill("0次"));
   await typeTab(page, "Skill").click();
-  assert.deepEqual(await zeros(), Array(2).fill("0次"));
+  assert.deepEqual(await zeros(), []);
+  for (const s of initial.assets.filter((a) => a.type === "Skill"))
+    assert.equal(await page.getByRole("button", { name: `查看 ${current(s).title}`, exact: true }).count(), 0, "Skill 资产不在 Skill 页出现");
   for (const tab of ["Prompt", "Design", "Skill"]) {
     await typeTab(page, tab).click();
     for (const w of initial.assets.filter((a) => a.type === "Workflow"))
@@ -432,7 +442,7 @@ try {
       });
     try {
       await p.goto(isolated.url + "/#assets");
-      await openFrom(p, a); // #93：Skill 要先切到 Skill 页
+      await openFrom(p, a); // #93 第二批：Skill 资产从全局搜索打开
       await p.route("**/api/asset-activity", async (route) => {
         payload = route.request().postDataJSON();
         failed = true;

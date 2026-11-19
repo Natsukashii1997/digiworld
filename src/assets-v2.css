@@ -242,3 +242,22 @@
 .page-assets .asset-copy-labeled:focus-visible { color: var(--cyan); border-color: var(--cyan); }
 .page-assets .asset-copy-labeled:disabled { cursor: wait; opacity: .6; }
 .page-assets .ac2-foot .asset-copy-recovery { width: 100%; padding: var(--s-2) 0 0; border-top: 0; }
+
+/* ---------- Skill 页（#93 第二批）：只读 my-skills ---------- */
+/* 全息蛋按分类色染色（定稿第 7 版）：光锥、扫描线、投影台光晕跟着 --tc。 */
+.page-assets .holo-tint .holo-ghost { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tc) 80%, transparent)); }
+.page-assets .holo-tint .holo-scan { background: color-mix(in srgb, var(--tc) 50%, #fff); box-shadow: 0 0 6px 2px color-mix(in srgb, var(--tc) 80%, transparent); }
+.page-assets .holo-tint .holo-pad { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tc) 60%, transparent)); }
+.page-assets .holo-tint .holo-cone { background: linear-gradient(to top, color-mix(in srgb, var(--tc) 42%, transparent), color-mix(in srgb, var(--tc) 8%, transparent) 70%, transparent); }
+.page-assets .ac2-skill > .card-open { cursor: default; }
+.page-assets .ac2-body h3.mono { font-family: var(--mono); font-size: var(--fs-read); font-weight: 600; }
+.page-assets .ac2-agents { display: flex; gap: 5px; margin-top: -2px; }
+.page-assets .ac2-agents span {
+  padding: 1px 6px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-1);
+  font: 500 var(--fs-micro) var(--mono);
+  color: var(--text-2);
+}
+.page-assets .ac2-uses.none { color: var(--faint); }
+.page-assets .ac2-readonly { display: inline-flex; align-items: center; gap: var(--s-2); }

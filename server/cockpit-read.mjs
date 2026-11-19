@@ -1,6 +1,7 @@
 // 驾驶舱只读读取的公共部分（#74）：路径都由 home 推出，读文件前按 realpath 核对白名单根目录，
 // 前端不能传路径；配置原文不出本模块，只交出调用方挑过的键。
 import filesystem from "node:fs/promises";
+import { execFile } from "node:child_process";
 import { homedir } from "node:os";
 import { join, sep } from "node:path";
 
@@ -89,6 +90,13 @@ export function createSafeReader({ home = homedir(), fs = filesystem } = {}) {
       try { return await fs.realpath(path); } catch { return null; }
     },
   };
+}
+
+// 只读 git（规则页的 agent-kit 提交、Skill 页的 my-skills 登记日期共用）：失败或超时返回 null，测试可注入替身。
+export function runGit(args, { maxBuffer = 256 * 1024 } = {}) {
+  return new Promise((resolve) => {
+    execFile("/usr/bin/git", args, { timeout: 5000, maxBuffer }, (error, stdout) => resolve(error ? null : stdout));
+  });
 }
 
 // 显示用路径：把 home 换成 ~。
