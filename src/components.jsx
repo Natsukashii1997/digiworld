@@ -335,16 +335,17 @@ export function Dialog({ title, children, onClose, drawer = false, recoverFocus 
 // version 为 null 时不显示版本（焚决卷不做版本）。
 // 自建 Skill 的封面（V6 全息构建，用户 2026-10-27 选定）：平时是投影台上的青色全息蛋，扫描线往上走；
 // 悬停时从底往上逐行打印，打完一闪变成真身颜色。
-export function HoloEgg({ sprite, size }) {
+const HOLO_PAD_TINT = { C: "var(--tc)", L: "color-mix(in srgb, var(--tc) 55%, #fff)", M: "color-mix(in srgb, var(--tc) 30%, #0a1222)" };
+export function HoloEgg({ sprite, size, tint = false }) {
   return (
-    <span className="holo-scene" style={{ "--egg": `${(size * 16) / 14}px`, "--px": `${size / 14}px` }}>
+    <span className={`holo-scene${tint ? " holo-tint" : ""}`} style={{ "--egg": `${(size * 16) / 14}px`, "--px": `${size / 14}px` }}>
       <span className="holo-cone" />
       <span className="holo-egg">
-        <span className="holo-ghost"><Pixel sprite={sprite} size={size} palette={holoPalette(sprite)} /></span>
+        <span className="holo-ghost"><Pixel sprite={sprite} size={size} palette={holoPalette(sprite, tint)} /></span>
         <span className="holo-real"><Pixel sprite={sprite} size={size} /></span>
         <span className="holo-scan" />
       </span>
-      <span className="holo-pad"><Pixel sprite="holo_pad" size={(size * 16 * 0.8) / 14} /></span>
+      <span className="holo-pad"><Pixel sprite="holo_pad" size={(size * 16 * 0.8) / 14} palette={tint ? HOLO_PAD_TINT : undefined} /></span>
     </span>
   );
 }

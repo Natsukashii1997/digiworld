@@ -728,8 +728,12 @@ for (const key of ["bakemon", "mecha"])
 // Skill 用八颗数码蛋之一：按资产 ID 稳定取值，同一资产在各处显示同一颗蛋。
 // 把数码蛋换成青色全息像：轮廓用亮青，其余颜色轮流落到几档青色上。
 const HOLO = ["var(--cyan)", "color-mix(in srgb, var(--cyan) 55%, #0a1222)", "color-mix(in srgb, var(--cyan-2) 70%, #fff)", "color-mix(in srgb, var(--cyan) 80%, #0a1222)", "color-mix(in srgb, var(--cyan) 30%, #0a1222)"];
-export function holoPalette(sprite) {
-  return Object.fromEntries(Object.keys(SPRITES[sprite].palette).map((k, i) => [k, k === "K" ? "var(--cyan-2)" : HOLO[i % HOLO.length]]));
+// tint：资产仓库 Skill 页（#93 第二批）按分类色染色，颜色取自卡片上的 --tc（定稿预览第 7 版同一配方）。
+const HOLO_TINT = ["var(--tc)", "color-mix(in srgb, var(--tc) 55%, #0a1222)", "color-mix(in srgb, var(--tc) 50%, #fff)", "color-mix(in srgb, var(--tc) 80%, #0a1222)", "color-mix(in srgb, var(--tc) 30%, #0a1222)"];
+export function holoPalette(sprite, tint = false) {
+  const tones = tint ? HOLO_TINT : HOLO;
+  const outline = tint ? "color-mix(in srgb, var(--tc) 60%, #fff)" : "var(--cyan-2)";
+  return Object.fromEntries(Object.keys(SPRITES[sprite].palette).map((k, i) => [k, k === "K" ? outline : tones[i % tones.length]]));
 }
 export function glyphOf(asset) {
   if (asset.type === "MCP") return "Workflow";
