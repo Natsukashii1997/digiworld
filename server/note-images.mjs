@@ -1,4 +1,5 @@
 // 便签图片只保存在当前数据根内；正文和恢复草稿仅引用内容寻址 ID。
+// 设计效果图（#93 第三批）复用同一套写法：folder 换成 design-images，提示里的「便签图片」换成 label。
 import fs from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join, resolve, parse } from 'node:path';
@@ -13,8 +14,8 @@ const identity = value => [value.dev, value.ino, value.birthtimeMs].join(':');
 const digest = data => createHash('sha256').update(data).digest('hex');
 const metadata = ({ id, type, size }) => ({ id, type, size });
 
-export function createNoteImages(directory, { filesystem = fs } = {}) {
-  const dataRoot = resolve(directory), root = join(dataRoot, 'note-images');
+export function createNoteImages(directory, { filesystem = fs, folder = 'note-images', label = '便签图片' } = {}) {
+  const dataRoot = resolve(directory), root = join(dataRoot, folder);
   let dataChain, imagesIdentity;
   const pending = new Map();
 
@@ -22,7 +23,7 @@ export function createNoteImages(directory, { filesystem = fs } = {}) {
     for (const item of items) {
       const info = await filesystem.lstat(item.path);
       if (!info.isDirectory() || info.isSymbolicLink() || identity(info) !== item.id)
-        throw failure('便签图片目录身份已变化', 409);
+        throw failure(`${label}目录身份已变化`, 409);
     }
   }
 
@@ -33,7 +34,7 @@ export function createNoteImages(directory, { filesystem = fs } = {}) {
       cursor = join(cursor, part);
       const info = await filesystem.lstat(cursor);
       if (!info.isDirectory() || info.isSymbolicLink())
-        throw failure('便签图片祖先不能是链接或非目录', 409);
+        throw failure(`${label}祖先不能是链接或非目录`, 409);
       ancestors.push({ path: cursor, id: identity(info) });
     }
     if (!ancestors.length) {
@@ -54,15 +55,15 @@ export function createNoteImages(directory, { filesystem = fs } = {}) {
     try { info = await filesystem.lstat(root); }
     catch (error) {
       if (error.code === 'ENOENT' && imagesIdentity)
-        throw failure('便签图片目录身份已变化', 409);
+        throw failure(`${label}目录身份已变化`, 409);
       throw error;
     }
     if (!info.isDirectory() || info.isSymbolicLink() ||
         (info.mode & 0o777) !== 0o700 ||
-        await filesystem.realpath(root) !== join(dataRoot, 'note-images'))
-      throw failure('便签图片目录身份或权限无效', 409);
+        await filesystem.realpath(root) !== join(dataRoot, folder))
+      throw failure(`${label}目录身份或权限无效`, 409);
     if (imagesIdentity && identity(info) !== imagesIdentity)
-      throw failure('便签图片目录身份已变化', 409);
+      throw failure(`${label}目录身份已变化`, 409);
     imagesIdentity = identity(info);
     await unchanged(ancestors);
     return [...ancestors, { path: root, id: imagesIdentity }];
@@ -70,7 +71,7 @@ export function createNoteImages(directory, { filesystem = fs } = {}) {
 
   async function read(id) {
     const match = typeof id === 'string' && ID.exec(id);
-    if (!match) throw failure('便签图片编号无效');
+    if (!match) throw failure(`${label}编号无效`);
     let handle;
     try {
       const guards = await chain(), path = join(root, id);
@@ -78,12 +79,12 @@ export function createNoteImages(directory, { filesystem = fs } = {}) {
       const before = await filesystem.lstat(path);
       if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 ||
           before.size <= 0 || before.size > MAX_BYTES || (before.mode & 0o777) !== 0o600)
-        throw failure('便签图片身份、权限或大小不符', 409);
+        throw failure(`${label}身份、权限或大小不符`, 409);
       await unchanged(guards);
       handle = await filesystem.open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
       const opened = await handle.stat();
       if (!opened.isFile() || opened.nlink !== 1 || identity(opened) !== identity(before))
-        throw failure('便签图片读取时身份变化', 409);
+        throw failure(`${label}读取时身份变化`, 409);
       await unchanged(guards);
       const bytes = new Uint8Array(before.size + 1);
       let count = 0;
@@ -96,14 +97,14 @@ export function createNoteImages(directory, { filesystem = fs } = {}) {
       if (count !== before.size || identity(after) !== identity(before) ||
           identity(named) !== identity(before) || after.mtimeMs !== before.mtimeMs ||
           after.size !== before.size || named.nlink !== 1 || (named.mode & 0o777) !== 0o600)
-        throw failure('便签图片读取期间变化', 409);
+        throw failure(`${label}读取期间变化`, 409);
       const data = bytes.slice(0, count);
       if (sniffImage(data) !== match[2] || digest(data) !== match[1])
-        throw failure('便签图片格式或 SHA256 校验失败', 409);
+        throw failure(`${label}格式或 SHA256 校验失败`, 409);
       await unchanged(guards);
       return { id, type: MIME[match[2]], size: count, data };
     } catch (error) {
-      if (error.code === 'ENOENT') throw failure('本机便签图片不存在，请恢复完整备份或重新粘贴', 404);
+      if (error.code === 'ENOENT') throw failure(`本机${label}不存在，请恢复完整备份或重新粘贴`, 404);
       throw error;
     } finally { await handle?.close(); }
   }
@@ -119,7 +120,7 @@ export function createNoteImages(directory, { filesystem = fs } = {}) {
       await unchanged(guards);
       const info = await filesystem.lstat(temp);
       if (!info.isFile() || info.isSymbolicLink() || identity(info) !== tempIdentity)
-        throw failure('临时便签图片所有权变化，保留现场待核对', 409);
+        throw failure(`临时${label}所有权变化，保留现场待核对`, 409);
     }
     try {
       await unchanged(guards);
@@ -137,7 +138,7 @@ export function createNoteImages(directory, { filesystem = fs } = {}) {
       await filesystem.unlink(temp); removed = true;
       const stored = await read(id);
       if (stored.size !== result.size || stored.type !== result.type)
-        throw failure('便签图片保存回读不符', 409);
+        throw failure(`${label}保存回读不符`, 409);
       return result;
     } finally {
       await handle?.close();
@@ -148,9 +149,9 @@ export function createNoteImages(directory, { filesystem = fs } = {}) {
   async function store(input) {
     if (!input || typeof input !== 'object' || Array.isArray(input) ||
         Object.keys(input).some(key => key !== 'data') || !(input.data instanceof Uint8Array))
-      throw failure('便签图片请求无效');
-    if (!input.data.length) throw failure('便签图片不能为空');
-    if (input.data.length > MAX_BYTES) throw failure('单张便签图片不能超过 8 MB', 413);
+      throw failure(`${label}请求无效`);
+    if (!input.data.length) throw failure(`${label}不能为空`);
+    if (input.data.length > MAX_BYTES) throw failure(`单张${label}不能超过 8 MB`, 413);
     const data = new Uint8Array(input.data), kind = sniffImage(data);
     if (!kind) throw failure('只支持 PNG、JPG、WebP 图片');
     const id = `${digest(data)}.${kind}`;
