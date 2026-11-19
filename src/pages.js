@@ -55,7 +55,7 @@ export const PAGES = [
     "title": "资产仓库",
     "eyebrow": "ASSET LIBRARY",
     "maturity": "ready",
-    "lead": "Skill、Prompt、工作流、规则模板与焚决在这里收录与迭代，复制后交给任意 Agent，规则还能装进项目。",
+    "lead": "Prompt、Design、Skill 在这里收录与迭代；按分类找，复制后交给任意 Agent。",
     "stage": "收集 · 迭代 · 交付"
   },
   {
@@ -118,7 +118,7 @@ export const ZONES = [
 ];
 // 焚决仍属于资产仓库；撤下的独立页面与未知地址一律回世界总览。
 export function resolveRoute(id) {
- if (id === "scrolls") return {route:"assets",anchor:null,filter:"Scroll"};
+ if (id === "scrolls") return {route:"assets",anchor:null,filter:"Prompt"}; // #93 焚决页签已去掉，旧链接落到 Prompt
  return {route:page(id)?.id || "home",anchor:null};
 }
 export const LAYERS = [

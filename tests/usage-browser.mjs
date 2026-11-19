@@ -32,8 +32,24 @@ const records = async () => (await app.repository.read()).assetActivity || [];
 const uses = async (a = prompt) =>
   (await records()).filter((r) => r.kind === "use" && r.assetId === a.id)
     .length;
+// #93：资产仓库只剩 Prompt / Design / Skill 三页，默认 Prompt；Skill 要先切页签，
+// 工作流不在资产仓库，详情只能从顶栏全局搜索打开。
+const typeTab = (p, name) =>
+  p.getByRole("group", { name: "资产类型", exact: true }).getByRole("button", { name: new RegExp(`^${name}`) });
+async function openFrom(p, a) {
+  const title = current(a).title;
+  if (["Prompt", "Design", "Skill"].includes(a.type)) {
+    await typeTab(p, a.type).click();
+    await p.getByRole("button", { name: `查看 ${title}`, exact: true }).click();
+    return;
+  }
+  await p.locator(".topbar").getByRole("button", { name: "搜索", exact: true }).click();
+  const palette = p.getByRole("dialog", { name: "搜索工作台" });
+  await palette.getByLabel("全局搜索").fill(title);
+  await palette.getByRole("button").filter({ hasText: title }).first().click();
+}
 async function open(a) {
-  await button(`查看 ${current(a).title}`).click();
+  await openFrom(page, a);
   await page.getByRole("region", { name: "使用记录与反馈" }).waitFor();
 }
 async function close() {
@@ -52,9 +68,19 @@ try {
   await page.goto(app.url + "/#assets");
   await page.locator(".asset-card").first().waitFor();
   assert.equal((await app.repository.read()).revision, initial.revision);
-  // 切片 1.1：卡片计次改为封面数字 + 读屏文字，“从未使用”一行已去掉。
-  assert.equal(await page.getByText("使用 0 次", { exact: true }).count(), 6);
-  assert.deepEqual(await page.locator(".cover-uses").allInnerTexts(), Array(6).fill("0"));
+  // 切片 1.1：卡片计次改为封面数字，“从未使用”一行已去掉。
+  // #93：次数改在显示屏 .ac2-uses（「0次」），按页签分开数：Prompt 2 张、Skill 2 张；演示里的 2 个工作流不在资产仓库出现。
+  const zeros = async () => (await page.locator(".ac2-uses").allInnerTexts()).map((t) => t.replace(/\s/g, ""));
+  assert.equal(await typeTab(page, "Prompt").getAttribute("aria-pressed"), "true");
+  assert.deepEqual(await zeros(), Array(2).fill("0次"));
+  await typeTab(page, "Skill").click();
+  assert.deepEqual(await zeros(), Array(2).fill("0次"));
+  for (const tab of ["Prompt", "Design", "Skill"]) {
+    await typeTab(page, tab).click();
+    for (const w of initial.assets.filter((a) => a.type === "Workflow"))
+      assert.equal(await page.getByRole("button", { name: `查看 ${current(w).title}`, exact: true }).count(), 0, `${tab} 页不应出现工作流`);
+  }
+  assert.equal((await app.repository.read()).revision, initial.revision, "切页签不写主库");
   await open(prompt);
   await button("复制全文").click();
   await page.getByText("使用记录已保存", { exact: true }).waitFor();
@@ -204,6 +230,7 @@ try {
   await (await downloading).cancel();
   assert.equal((await records()).length, count);
   await close();
+  await typeTab(page, "Prompt").click(); // #93：最近使用排序在 Prompt 页核对
   await page.getByLabel("排序方式").selectOption("used");
   assert.equal(
     await page.locator(".asset-card h3").first().innerText(),
@@ -405,7 +432,7 @@ try {
       });
     try {
       await p.goto(isolated.url + "/#assets");
-      await b(`查看 ${current(a).title}`).click();
+      await openFrom(p, a); // #93：Skill 要先切到 Skill 页
       await p.route("**/api/asset-activity", async (route) => {
         payload = route.request().postDataJSON();
         failed = true;
@@ -496,7 +523,7 @@ try {
           "id",
         ]);
         await p.reload();
-        await b(`查看 ${current(a).title}`).click();
+        await openFrom(p, a); // #93
         await recoveryDetail.getByText(/记录结果未知/).waitFor();
         await p.unroute("**/api/asset-activity?*");
         await p.unroute("**/api/asset-activity");

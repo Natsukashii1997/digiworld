@@ -22,6 +22,13 @@ page.on("pageerror", (e) => errors.push(e.message));
 try {
   await page.goto(app.url + "/#assets");
   await page.locator(".asset-card").first().waitFor();
+  // #93 资产仓库默认停在 Prompt 页；「设计的最后一公里」是 Skill，先切到 Skill 页签。
+  const skillTab = () =>
+    page
+      .getByRole("group", { name: "资产类型" })
+      .getByRole("button", { name: /^Skill/ })
+      .click();
+  await skillTab();
   await page
     .getByRole("button", { name: "查看 设计的最后一公里", exact: true })
     .click();
@@ -56,6 +63,7 @@ try {
     [],
   );
   await page.reload();
+  await skillTab(); // #93 刷新后回到默认 Prompt 页，先切到 Skill 页签
   await page
     .getByRole("button", { name: "查看 设计的最后一公里", exact: true })
     .click();

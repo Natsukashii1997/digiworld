@@ -28,12 +28,21 @@
 - 发布后常浩要做的：① 设置 → 自检「知识开放」点「管理」→ 个人说明 MCP「接入与授权」→「去重新确认」，勾选并点「确认重新连接」；② 回到「接入与授权」，勾选后点「开启 MCP 读取」；③ 自检里 Vault 写入、Agent 配置、模型 / API、常驻服务四项，要用的逐项重新开启（旧授权日志的身份口径对不上，这是一次性的）。
 - 本轮新坑：L-08。
 
+## Claude：#93 资产仓库改版第一批（2026-11-19，PR 待合并）
+
+由会话 local_e3148c06 执行（local_d5913f60 交接）。只登记本节，没有改动「当前写入者」和状态编号。
+
+- **改动**：分支 `claude/93-asset-library-v2`，提交 `fe30dc4`（分类与状态标识）、`8369dc4`（三页 + 定稿新卡片）、`1572d8a`（浏览器测试适配）。资产仓库只留 Prompt / Design / Skill，工作流、规则、焚决、MCP 数据保留但不在仓库显示；Prompt / Skill 共用分类芯片；NEW / HOT / UPD / IDLE 自动点亮；置顶 / 删除 / 复制常驻。行为变化与验证见 `docs/agents/handoffs/2026-11-19-claude-93-asset-library-batch1.md`。
+- **验证**：`npm test` 1639/1644（2 条基线已知失败 + 2 条高负载偶发，单跑通过）；资产相关浏览器测试与基线对照，基线通过的全部通过；1440 实测截图在 `evidence/93-asset-library/shots/`（只在 Chromium 验过）。
+- **未发布**：正式 5178 未动。
+- **待常浩**：审 PR，回复「合并」；之后排第二批（Skill 页接 my-skills）。
+
 ## Claude：随手记行距收紧与 5178 发布 pr89（2026-11-19）
 
 由常浩直接安排（会话 local_b468e8e0）。只登记本节，没有改动「当前写入者」和状态编号。
 
 - **改动**：常浩反馈随手记待办条目间隔太宽、便签栏头部「钉住」「收起」两个按钮要紧凑些。PR #89 squash 合并 `148df4b`：待办行去掉 32px 最小行高（单行行距 36 → 27px，点击区 32 → 28 高，勾选框仍对齐首行）；头部两个按钮 44 → 36 宽并去掉 8px 间隔（间距 52 → 36px，点击高度仍 44）。随手记页和悬浮便签栏共用这条样式。`npm test` 1628 通过 / 1 跳过 / 0 失败；改前改后截图在 `evidence/2026-11-19-随手记待办行距/`。
-- **发布**：常浩 11-19 回复「你来合并并重建」。新建只读发布目录 `releases/wb-20261119-pr89`（main `148df4b` 的 server、src、public、browser-extension 等 + 新构建 dist；`node_modules` 链到 `deps-20261108-pr81`）。与上一版 `wb-20261108-pr82` 相比只差 `src/floating-notes.css`、`src/notes-types.css` 和 dist，server 与依赖逐文件一致；没有发 data 快照，未核对重启后的 data revision。plist 只改 `ProgramArguments[1]` 和 `WorkingDirectory` 两处路径；一次 bootout，等卸载完成后 bootstrap，新 pid 5340，首页 200，5178 / 5179 都已启动。之后重开 `~/Applications/随手记.app`（重启前它没在运行）。
+- **发布**：常浩 11-19 回复「你来合并并重建」。新建只读发布目录 `releases/wb-20261119-pr89`（main `148df4b` 的 server、src、public、browser-extension 等 + 新构建 dist；`node_modules` 链到 `deps-20261108-pr81`）。与上一版 `wb-20261108-pr82` 相比只差 `src/floating-notes.css`、`src/notes-types.css` 和 dist，server 与依赖逐文件一致；没有发 data 快照，未核对重启后的 data revision。plist 只改 `ProgramArguments[1]` 和 `WorkingDirectory` 两处路径；一次 bootout，等卸载完成后 bootstrap，新 pid 5340，首页 200，5178 / 5179 都已启动。之后曾重开独立的 `~/Applications/随手记.app`（重启前它没在运行），结果在菜单栏多出图标、桌面多出一个悬浮球；常浩日常用的是驿窗程序坞自带的随手记，11-19 已把这个独立 App 退出，它没有 launchd 任务，不会被自动拉起。以后发布不要重开它。
 - **已核对**：在 5178 悬浮便签栏（380 宽、真实便签）实测：单行待办行距 27px，两个按钮间距 36px，未注入任何样式。截图与改前 plist、10-28 旧 dist 备份在 `~/Sandbox/2026-11-19-digiworld-dist备份/`。
 - **发布中处理的两处问题**：① 直接复制工作区时带进了被 git 忽略的扩展私钥 `browser-extension/collection.pem` 和 `.DS_Store`，已从发布目录删除（pr82 也没有这两个文件）；下次发布建议用 `git archive` 或按已跟踪文件复制。② `plutil -replace ProgramArguments.1` 对数组是插入而不是替换，参数列表多出一项旧路径，已 `-remove` 掉并重新加载（cp74 那次记录的「参数列表多带一个旧路径」很可能也是这个原因）。
 - **回滚**：用 `~/Sandbox/2026-11-19-digiworld-dist备份/cn.personal-ai-workbench.server.before-pr89.plist` 覆盖 `~/Library/LaunchAgents/cn.personal-ai-workbench.server.plist`，bootout 并等卸载完成再 bootstrap，再重开悬浮窗；server 代码与 pr82 相同，不需要恢复 data。

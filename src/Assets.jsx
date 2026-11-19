@@ -17,6 +17,7 @@ import { strToU8 } from "fflate";
 import { request } from "./api.js";
 import "./assets-detail.css";
 import "./assets-quick-copy.css";
+import "./assets-v2.css";
 import { hasSkillPackage, designPromptText } from "./design-asset.js";
 import { readSkillZip, buildSkillZip } from "./skill-package.js";
 import { isInstallSkill, isSelfSkill, skillInstallText, validateInstallUrl } from "./skill-install.js";
@@ -49,6 +50,7 @@ import {
   PageHeading,
   Dialog,
   Cover,
+  HoloEgg,
   TypeIcon,
   typeLabel,
 } from "./components.jsx";
@@ -58,21 +60,9 @@ import { RuleInstall } from "./RuleInstall.jsx";
 import { Odometer } from "./Odometer.jsx";
 import { usageByAsset } from "./asset-usage.js";
 import { removeAssetFromWarehouse } from "./asset-delete.js";
-import { assetHit, tagCounts, terms } from "./search.js";
-import { StageBar, stageOf, glyphOf } from "./pixel.jsx";
-import { ScrollRecycle } from "./Scrolls.jsx";
-import {
-  scrollsOf,
-  liveEntries,
-  entryName,
-  scrollSerials,
-  scrollStats,
-  scrollHit,
-  pinScroll,
-  deleteScroll,
-  scrollDeleteBlockers,
-  NAME_MAX as SCROLL_NAME_MAX,
-} from "./scrolls.js";
+import { assetHit, terms } from "./search.js";
+import { stageOf, glyphOf, Pixel } from "./pixel.jsx";
+import { BADGES, DEFAULT_CATEGORIES, UNSORTED, UNSORTED_NAME, badgesOf, categoriesOf, categoryColor, categoryOf, hasCategory } from "./asset-categories.js";
 
 export function download(name, bytes, type = "application/octet-stream") {
   const url = URL.createObjectURL(new Blob([bytes], { type }));
@@ -124,16 +114,18 @@ async function copyAssetVersion(asset, version, activity, notify) {
     activity.endCopy();
   }
 }
-export function AssetCopyButton({ asset, state, adoptState, notify, disabled }) {
+// labeled：资产卡底部常驻的带字按钮（#93）；不带时是原来的图标按钮。
+export function AssetCopyButton({ asset, state, adoptState, notify, disabled, labeled = false }) {
   const version = current(asset);
   const activity = useAssetActivity(asset, state, adoptState);
   const label = asset.type === "Design" ? "复制生图提示词" : asset.type === "Skill" ? (isInstallSkill(version) ? "复制安装话术" : "复制安装口令") : asset.type === "MCP" ? "复制配置定义" : "复制全文";
   return <>
-    <button type="button" className="asset-copy"
+    <button type="button" className={labeled ? "asset-copy-labeled" : "asset-copy"}
       aria-label={`${label} ${version.title}`} title={activity.pending ? "记录待核对" : label}
       disabled={disabled || activity.busy || !!activity.pending}
       onClick={(event) => { if (event.detail <= 1) copyAssetVersion(asset, version, activity, notify); }}>
-      <Copy size={17} aria-hidden="true" />
+      <Copy size={labeled ? 15 : 17} aria-hidden="true" />
+      {labeled && <span>{label}</span>}
     </button>
     {activity.pending && <div className="asset-copy-recovery">
       <p role="status">{activity.message || (activity.pending.kind === "use" ? "全文已复制，使用记录待核对" : "记录结果待核对，请先查询记录")}</p>
@@ -185,121 +177,147 @@ function originLabel(a) {
         ? "本机收录"
         : "我的";
 }
-// 页面会话持有复制门禁；筛选或切页卸载卷卡不解除锁，刷新后才重读主库。
-const scrollCopySessions = new Map();
-function scrollCopySession(id, state) {
-  let session = scrollCopySessions.get(id);
-  if (!session) {
-    const listeners = new Set();
-    session = {
-      state,
-      status: { locked: false, busy: false, message: "" },
-      subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-      getSnapshot() { return session.status; },
-      update(status) { session.status = status; listeners.forEach(listener => listener()); },
-    };
-    scrollCopySessions.set(id, session);
-  }
-  session.state = state;
-  return session;
+// 资产仓库只留三页（#93，用户 2026-11-19）：工作流、规则、焚决、MCP 的数据保留，但不在这里显示。
+export const ASSET_TABS = [
+  ["Prompt", "Prompt"],
+  ["Design", "Design"],
+  ["Skill", "Skill"],
+];
+const TAB_IDS = ASSET_TABS.map(([id]) => id);
+const DAY_FMT = (at) => (at ? `${Number(at.slice(5, 7))}-${at.slice(8, 10)}` : "");
+
+const TYPE_COLOR = { Design: "var(--pink)", Skill: "var(--orange)", Workflow: "var(--violet)", Rule: "var(--lcd)", MCP: "var(--violet)" };
+function cardBody(asset, version) {
+  if (asset.type === "Prompt") return version.content || version.description;
+  return version.description || version.content;
 }
+
+function AssetCard({ asset: a, index, state, save, adoptState, notify, select, categories, deleting, onDelete, usage }) {
+  const v = current(a);
+  const sorted = hasCategory(a.type);
+  const cat = sorted ? categoryOf(a, categories, v) : null;
+  const catInfo = cat && categories.find((c) => c.id === cat.id);
+  const color = sorted ? (catInfo ? categoryColor(catInfo) : "var(--muted)") : TYPE_COLOR[a.type];
+  const badges = badgesOf(a, usage.uses);
+  const label = sorted ? (catInfo?.name || UNSORTED_NAME) : typeLabel[a.type];
+  async function changeCategory(value) {
+    await save({
+      ...state,
+      assets: state.assets.map((x) => {
+        if (x.id !== a.id) return x;
+        const { category: _old, ...rest } = x;
+        return value ? { ...rest, category: value } : rest;
+      }),
+    });
+  }
+  return (
+    <article className="asset-card ac2" style={{ "--i": Math.min(index, 12), "--tc": color }}>
+      <button className={`card-open type-${a.type}`} onClick={() => select(a.id)} aria-label={`查看 ${v.title}`}>
+        <span className="ac2-screen" aria-hidden="true">
+          {/* 自建 Skill 保留全息蛋（定稿卡片同样是投影台上的蛋）；按分类色染色在第二批。 */}
+          {a.type === "Skill" && isSelfSkill(a) && /^egg\d$/.test(glyphOf(a) || "")
+            ? <span className="ac2-glyph"><HoloEgg sprite={glyphOf(a)} size={64} /></span>
+            : <Pixel sprite={glyphOf(a)} size={64} className="ac2-glyph" />}
+          {/* 次数变化时像里程表一样滚到新值（R87-S1）。 */}
+          <span className={`ac2-uses${badges.includes("HOT") ? " hot" : usage.count ? "" : " zero"}`}>
+            <Odometer value={usage.count} /><small>次</small>
+          </span>
+        </span>
+        <span className="sr-only">使用 {usage.count} 次</span>
+        <span className="ac2-body">
+          <h3><span className="ac2-hl">{v.title}</span></h3>
+          <span className={`ac2-text${cardBody(a, v) ? "" : " empty"}`}>{cardBody(a, v) || "还没有正文。"}</span>
+        </span>
+      </button>
+      {badges.length > 0 && (
+        <span className="ac2-badges">
+          {badges.map((b) => (
+            <span key={b} className={`ac2-badge b-${b.toLowerCase()}`} title={`${BADGES[b].name}：${BADGES[b].rule}`}>{b}</span>
+          ))}
+        </span>
+      )}
+      <span className="ac2-acts">
+        <button
+          type="button"
+          aria-label={`${a.pinned ? "取消置顶" : "置顶"} ${v.title}`}
+          aria-pressed={!!a.pinned}
+          title={a.pinned ? "取消置顶" : "置顶"}
+          className={`pin-button ${a.pinned ? "is-pinned" : ""}`}
+          onClick={() => save({ ...state, assets: state.assets.map((x) => (x.id === a.id ? { ...x, pinned: !x.pinned } : x)) })}
+        >
+          <Pin size={14} fill={a.pinned ? "currentColor" : "none"} />
+        </button>
+        <button type="button" className="asset-delete" aria-label={`删除 ${v.title}`} title={`删除 ${v.title}`} disabled={deleting} onClick={() => onDelete(a)}>
+          <Trash2 size={14} aria-hidden="true" />
+        </button>
+      </span>
+      {sorted ? (
+        <label className={`ac2-cat${cat.inferred ? " inferred" : ""}`} title={cat.inferred ? "按内容自动归组；选一个分类就固定下来" : "分类"}>
+          <i aria-hidden="true" />
+          <span>{label}</span>
+          <select aria-label={`${v.title} 的分类`} value={cat.inferred ? "" : cat.id} onChange={(e) => changeCategory(e.target.value)}>
+            <option value="">{cat.inferred ? `自动：${label}` : "改回自动归组"}</option>
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </label>
+      ) : (
+        <span className="ac2-cat static"><i aria-hidden="true" /><span>{label}</span></span>
+      )}
+      <div className="ac2-foot">
+        <span className="ac2-from">{originLabel(a)} · {DAY_FMT(v.at)}</span>
+        <AssetCopyButton asset={a} state={state} adoptState={adoptState} notify={notify} disabled={deleting} labeled />
+      </div>
+    </article>
+  );
+}
+
 export function Assets({
   state,
   save,
   adoptState,
   notify,
-  filter = "all",
+  filter = "Prompt",
   openCreate,
   select,
   onFilter,
-  navigate,
-  openScroll,
 }) {
   const [search, setSearch] = useState(""),
     [sort, setSort] = useState("recent"),
-    [tag, setTag] = useState(""),
+    [cat, setCat] = useState("all"),
     [helpOpen, setHelpOpen] = useState(false);
   const [deleting, setDeleting] = useState(""),
     [blockedDelete, setBlockedDelete] = useState(null);
-  const activeFilter = ["Archived", "MCP"].includes(filter) ? "all" : filter;
-  const activeTag = activeFilter === "Scroll" ? "" : tag;
+  const tab = TAB_IDS.includes(filter) ? filter : "Prompt";
   const words = terms(search);
-  const tags = useMemo(() => tagCounts(state.assets.filter(a => !a.archived)), [state.assets]);
+  const categories = categoriesOf(state);
   const assets = state.assets.filter((a) => !a.archived);
-  const serials = serialsOf(state.assets);
   const usage = usageByAsset(assets, state.assetActivity);
-  // 焚决（切片 1.3b）：卷以卡片出现在“全部”和“焚决”标签下；数据仍在主库顶层 scrolls。
-  const allScrolls = scrollsOf(state);
-  for (const scroll of allScrolls) {
-    const session = scrollCopySessions.get(scroll.id);
-    if (session) session.state = state;
-  }
-  const scrolls = allScrolls.filter((s) => !s.deletedAt);
-  const scrollSerial = scrollSerials(allScrolls);
-  const ofType = activeFilter === "Scroll" ? [] : assets.filter((a) => activeFilter === "all" || a.type === activeFilter);
-  const scrollsOfType = activeFilter === "all" || activeFilter === "Scroll" ? scrolls : [];
-  const narrowed = !!(words.length || activeTag);
-  const clearFilters = () => {
-    setSearch("");
-    setTag("");
-  };
-  // 置顶（切片 1.1）：置顶项在任何类型标签与排序下都排最前，置顶项之间按使用次数降序，再按最近使用。
-  // favorite 字段仅作旧数据兼容，界面不再读取；演示资产默认 favorite=true，不能当成置顶。
-  // 资产与焚决卷统一成同一组排序键：焚决的次数是卷内条目复制次数之和，更新时间用卷的 updatedAt/createdAt。
-  const items = [
-    ...ofType
-      .filter(
-        (a) =>
-          (!activeTag || current(a).tags.includes(activeTag)) &&
-          (!words.length || assetHit(a, words)),
-      )
-      .map((a) => {
-        const u = usage.get(a.id);
-        return {
-          kind: "asset",
-          item: a,
-          pinned: !!a.pinned,
-          count: u.count,
-          lastAt: u.lastAt,
-          at: current(a).at,
-          title: current(a).title,
-        };
-      }),
-    ...scrollsOfType
-      .map((s) => ({ s, stats: scrollStats(s) }))
-      .filter(
-        ({ s, stats }) =>
-          !activeTag && (!words.length || scrollHit(s, words)),
-      )
-      .map(({ s, stats }) => ({
-        kind: "scroll",
-        item: s,
-        stats,
-        pinned: !!s.pinned,
-        count: stats.uses,
-        lastAt: stats.lastAt,
-        at: s.updatedAt || s.createdAt,
-        title: s.name,
-      })),
-  ];
+  const uses = useMemo(() => {
+    const m = new Map();
+    for (const r of state.assetActivity || []) if (r.kind === "use") (m.get(r.assetId) || m.set(r.assetId, []).get(r.assetId)).push(r);
+    return m;
+  }, [state.assetActivity]);
+  const ofType = assets.filter((a) => a.type === tab);
+  const catOf = (a) => categoryOf(a, categories, current(a)).id;
+  const catCounts = new Map();
+  if (hasCategory(tab)) for (const a of ofType) catCounts.set(catOf(a), (catCounts.get(catOf(a)) || 0) + 1);
+  const activeCat = hasCategory(tab) && (cat === UNSORTED || catCounts.has(cat)) ? cat : "all";
+  const narrowed = !!(words.length || activeCat !== "all");
+  // 置顶项在任何排序下都排最前，置顶项之间按使用次数降序，再按最近使用。
+  const items = ofType
+    .filter((a) => (activeCat === "all" || catOf(a) === activeCat) && (!words.length || assetHit(a, words)))
+    .map((a) => {
+      const u = usage.get(a.id);
+      return { item: a, pinned: !!a.pinned, count: u.count, lastAt: u.lastAt, at: current(a).at, title: current(a).title };
+    });
   const byUse = (a, b) => b.count - a.count || b.lastAt.localeCompare(a.lastAt);
   const bySort = (a, b) =>
-    sort === "name"
-      ? a.title.localeCompare(b.title, "zh")
-      : sort === "most"
-        ? byUse(a, b) || b.at.localeCompare(a.at)
-        : sort === "used"
-          ? b.lastAt.localeCompare(a.lastAt) || b.at.localeCompare(a.at)
+    sort === "name" ? a.title.localeCompare(b.title, "zh")
+      : sort === "most" ? byUse(a, b) || b.at.localeCompare(a.at)
+        : sort === "used" ? b.lastAt.localeCompare(a.lastAt) || b.at.localeCompare(a.at)
           : b.at.localeCompare(a.at);
-  const shown = items.sort(
-    (a, b) =>
-      b.pinned - a.pinned ||
-      (a.pinned && b.pinned && byUse(a, b)) ||
-      bySort(a, b),
-  );
+  const shown = items.sort((a, b) => b.pinned - a.pinned || (a.pinned && b.pinned && byUse(a, b)) || bySort(a, b));
   const pinnedCount = shown.filter((x) => x.pinned).length;
-  const typeCount = { all: state.assets.filter(a=>!a.archived).length + scrolls.length, Scroll: scrolls.length };
-  const hasAny = ofType.length + scrollsOfType.length > 0;
   async function deleteAsset(asset) {
     if (deleting) return;
     setDeleting(asset.id);
@@ -307,30 +325,29 @@ export function Assets({
       const result = await removeAssetFromWarehouse(asset.id, state.revision, adoptState);
       if (result.deleted) {
         notify("资产已从仓库删除");
-        const position = shown.findIndex(item => item.kind === "asset" && item.item.id === asset.id);
+        const position = shown.findIndex((item) => item.item.id === asset.id);
         requestAnimationFrame(() => {
           const controls = [...document.querySelectorAll(".asset-grid .asset-delete")];
           (controls[Math.min(position, controls.length - 1)] || document.querySelector(".asset-heading-actions input"))?.focus();
         });
-      }
-      else setBlockedDelete({ title: current(asset).title, blockers: result.blockers });
+      } else setBlockedDelete({ title: current(asset).title, blockers: result.blockers });
     } catch (error) {
       notify(error.message || "删除结果未确认，请刷新后核对", "error");
     } finally { setDeleting(""); }
   }
-  async function deleteScrollCard(scroll) {
-    if (deleting) return;
-    const blockers = scrollDeleteBlockers(state, scroll.id);
-    if (blockers.length) {
-      setBlockedDelete({ title: scroll.name, blockers });
-      return;
-    }
-    setDeleting(scroll.id);
-    try {
-      if (await save({ ...state, scrolls: deleteScroll(allScrolls, scroll.id) }))
-        notify("卷已从仓库删除");
-    } finally { setDeleting(""); }
-  }
+  const chips = hasCategory(tab) && ofType.length > 0 && (
+    <div className="ac2-chips" role="group" aria-label="按分类筛选">
+      <button type="button" className="ac2-chip" aria-pressed={activeCat === "all"} onClick={() => setCat("all")}>全部<em>{ofType.length}</em></button>
+      {categories.filter((c) => catCounts.has(c.id)).map((c) => (
+        <button type="button" key={c.id} className="ac2-chip" style={{ "--tc": categoryColor(c) }} aria-pressed={activeCat === c.id} onClick={() => setCat(c.id)}>
+          <i aria-hidden="true" />{c.name}<em>{catCounts.get(c.id)}</em>
+        </button>
+      ))}
+      <button type="button" className="ac2-chip wait" aria-pressed={activeCat === UNSORTED} disabled={!catCounts.has(UNSORTED)} onClick={() => setCat(UNSORTED)}>
+        {UNSORTED_NAME}<em>{catCounts.get(UNSORTED) || 0}</em>
+      </button>
+    </div>
+  );
   return (
     <>
       <PageHeading
@@ -340,16 +357,9 @@ export function Assets({
           <div className="asset-heading-actions">
             <label className="inline-search">
               <Search size={15} />
-              <input
-                placeholder="搜索标题、说明、正文、卷名"
-                aria-label="在资产中搜索"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <input placeholder="搜索标题、说明、正文" aria-label="在资产中搜索" value={search} onChange={(e) => setSearch(e.target.value)} />
             </label>
-            <Button
-              onClick={() => openCreate(activeFilter === "all" ? "Prompt" : activeFilter)}
-            >
+            <Button onClick={() => openCreate(tab)}>
               <Plus size={16} />
               新建
             </Button>
@@ -359,41 +369,12 @@ export function Assets({
       <div className="asset-toolbar">
         <FilterTabs
           label="资产类型"
-          items={[
-            ["all", "全部"],
-            ["Prompt", "Prompts"],
-            ["Skill", "Skills"],
-            ["Workflow", "工作流"],
-            ["Rule", "规则"],
-            ["Scroll", "焚决"],
-            ["Design", "设计"],
-          ].map(([id, label]) => ({ id, label, count: typeCount[id] ?? assets.filter((a) => a.type === id).length }))}
-          value={activeFilter}
-          onChange={(id) => { if (id === "Scroll") setTag(""); onFilter(id); }}
+          items={ASSET_TABS.map(([id, label]) => ({ id, label, count: assets.filter((a) => a.type === id).length }))}
+          value={tab}
+          onChange={(id) => { setCat("all"); onFilter(id); }}
         />
         <div className="toolbar-right">
-          {activeFilter !== "Scroll" && (tags.length > 0 || tag) && (
-            <select
-              aria-label="按标签筛选"
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
-            >
-              <option value="">全部标签</option>
-              {tag && !tags.some(([name]) => name === tag) && (
-                <option value={tag}>{tag} · 0</option>
-              )}
-              {tags.map(([name, count]) => (
-                <option key={name} value={name}>
-                  {name} · {count}
-                </option>
-              ))}
-            </select>
-          )}
-          <select
-            aria-label="排序方式"
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-          >
+          <select aria-label="排序方式" value={sort} onChange={(e) => setSort(e.target.value)}>
             <option value="recent">最近更新</option>
             <option value="most">最常用</option>
             <option value="used">最近使用</option>
@@ -401,154 +382,54 @@ export function Assets({
           </select>
         </div>
       </div>
-      {activeFilter === "Scroll" && <ScrollRecycle state={state} save={save} />}
+      {chips}
       <div className="collection-meta">
         <span>
           当前结果 · <b>{shown.length}</b>
-          {pinnedCount > 0 && (
-            <>
-              {" "}· 置顶 <b>{pinnedCount}</b>
-            </>
-          )}
+          {pinnedCount > 0 && <>{" "}· 置顶 <b>{pinnedCount}</b></>}
         </span>
       </div>
-      <div className="asset-grid">
-        {shown.map(({ kind, item: a, stats }, i) => {
-          if (kind === "scroll")
-            return (
-              <ScrollCard
-                key={a.id}
-                scroll={a}
-                stats={stats}
-                serial={scrollSerial[a.id]}
-                index={i}
-                onOpen={() => openScroll(a.id)}
-                onPin={() => save({ ...state, scrolls: pinScroll(allScrolls, a.id, !a.pinned) })}
-                onDelete={() => deleteScrollCard(a)}
-                deleting={!!deleting}
-                state={state}
-                save={save}
-                notify={notify}
-              />
-            );
-          const v = current(a);
-          return (
-            <article
-              key={a.id}
-              className="asset-card"
-              style={{ "--i": Math.min(i, 12) }}
-            >
-              <button
-                className={`card-open type-${a.type}`}
-                onClick={() => select(a.id)}
-                aria-label={`查看 ${v.title}`}
-              >
-                <span className="lock" aria-hidden="true">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
-                </span>
-                <Cover
-                  type={a.type}
-                  sprite={glyphOf(a)}
-                  serial={serials[a.id]}
-                  version={null}
-                  uses={usage.get(a.id).count}
-                  self={isSelfSkill(a)}
-                />
-                <div className="card-body">
-                  <div className="card-type">
-                    <TypeIcon type={a.type} size={13} self={isSelfSkill(a)} />
-                    {typeLabel[a.type]}
-                    {isSelfSkill(a) && <b className="self-tag">自建</b>}
-                    <span>{originLabel(a)}</span>
-                  </div>
-                  <h3>{v.title}</h3>
-                  <p className={!v.description && a.type !== "MCP" ? "asset-description-empty" : undefined}>{a.type === "MCP" ? `${v.mcpConfig.origin}${v.mcpConfig.path}` : v.description || "还没有一句话说明。"}</p>
-                  <span className="sr-only">使用 {usage.get(a.id).count} 次</span>
-                  <div className="card-bottom">
-                    <div className="card-tags">
-                      {v.tags.slice(0, 2).map((t) => (
-                        <span key={t}>{t}</span>
-                      ))}
-                    </div>
-                    <StageBar stage={usage.get(a.id).stage} />
-                  </div>
-                </div>
-              </button>
-              <AssetCopyButton asset={a} state={state} adoptState={adoptState} notify={notify} disabled={!!deleting} />
-              <button type="button" className="asset-delete" aria-label={`删除 ${v.title}`} title={`删除 ${v.title}`}
-                disabled={!!deleting} onClick={() => deleteAsset(a)}>
-                <Trash2 size={17} aria-hidden="true" />
-              </button>
-              <button
-                aria-label={`${a.pinned ? "取消置顶" : "置顶"} ${v.title}`}
-                aria-pressed={!!a.pinned}
-                title={a.pinned ? "取消置顶" : "置顶"}
-                className={`pin-button ${a.pinned ? "is-pinned" : ""}`}
-                onClick={() =>
-                  save({
-                    ...state,
-                    assets: state.assets.map((x) =>
-                      x.id === a.id ? { ...x, pinned: !x.pinned } : x,
-                    ),
-                  })
-                }
-              >
-                <Pin size={16} fill={a.pinned ? "currentColor" : "none"} />
-              </button>
-            </article>
-          );
-        })}
+      <div className="asset-grid ac2-grid">
+        {shown.map(({ item: a }, i) => (
+          <AssetCard
+            key={a.id}
+            asset={a}
+            index={i}
+            state={state}
+            save={save}
+            adoptState={adoptState}
+            notify={notify}
+            select={select}
+            categories={categories}
+            deleting={!!deleting}
+            onDelete={deleteAsset}
+            usage={{ count: usage.get(a.id).count, uses: uses.get(a.id) || [] }}
+          />
+        ))}
       </div>
       {shown.length === 0 && narrowed && (
         <Empty
           sprite="numemon"
           title="没有匹配的资产"
-          action={
-            <div className="empty-actions">
-              {!hasAny && activeFilter !== "all" && (
-                <Button secondary onClick={() => onFilter("all")}>
-                  查看全部类型
-                </Button>
-              )}
-              <Button secondary onClick={clearFilters}>
-                清除筛选
-              </Button>
-            </div>
-          }
+          action={<div className="empty-actions"><Button secondary onClick={() => { setSearch(""); setCat("all"); }}>清除筛选</Button></div>}
         >
-          {!hasAny
-            ? "当前类型还没有资产，清除筛选后这里仍会是空的。"
-            : words.length
-              ? `没有资产同时匹配“${words.join(" ")}”和当前筛选条件。`
-              : "当前筛选条件下没有资产。"}
+          {words.length ? `没有资产同时匹配“${words.join(" ")}”和当前筛选条件。` : "当前分类下没有资产。"}
         </Empty>
       )}
       {shown.length === 0 && !narrowed && (
         <Empty
           sprite="numemon"
-          title={activeFilter === "Scroll" ? "还没有卷" : "还没有符合条件的资产"}
-          action={
-            <Button
-              secondary
-              onClick={() => openCreate(activeFilter === "all" ? "Prompt" : activeFilter)}
-            >
-              <Plus size={16} />
-              新建
-            </Button>
-          }
+          title="还没有符合条件的资产"
+          action={<Button secondary onClick={() => openCreate(tab)}><Plus size={16} />新建</Button>}
         >
-          {activeFilter === "Scroll"
-            ? "先建一卷，比如“心法”或“prompt 碎片”，把提炼过、会反复用的碎片放进去。"
-            : "从一份新的 Skill、Prompt、工作流、规则或焚决开始。"}
+          {tab === "Prompt" ? "新建一条 Prompt，或让猛鬼兽批量导入。" : tab === "Design" ? "新建一个设计：贴上确认过的设计 Prompt，或登记一个设计 Skill。" : "从一份新的 Skill 开始。"}
         </Empty>
       )}
       {helpOpen && (
         <Dialog recoverFocus title="资产仓库 · 这页怎么用" onClose={() => setHelpOpen(false)}>
-          <p>按类型、关键词和标签查找资产；可调整排序。新建和修订的资产会保留版本。</p>
-          <p>进化阶段结合当前版本的复制记录与本人反馈，版本数单独保留。复制后的实际采用与运行结果，以接收方回执和项目协议为准。</p>
+          <p>资产仓库分 Prompt、Design、Skill 三页。Prompt 与 Skill 共用一套分类筛选；没选过分类的按内容自动归组，在卡片右下角选一个分类就固定下来。</p>
+          <p>左上角的小标识按数据自动点亮：NEW 入库 7 天内，HOT 近 30 天复制 ≥ 5 次，UPD 7 天内改过，IDLE 入库超过 30 天一次没用过。</p>
+          <p>复制后的实际采用与运行结果，以接收方回执和项目协议为准。</p>
         </Dialog>
       )}
       {blockedDelete && <Dialog recoverFocus title="无法删除资产" onClose={() => setBlockedDelete(null)}>
@@ -559,143 +440,7 @@ export function Assets({
     </>
   );
 }
-// 外层逐条与整卷复制共享同一个锁，保存未知后须刷新核对，不能重放。
-function ScrollCopyButton({ scroll, onCopy, disabled }) {
-  return (
-    <button type="button" className="asset-copy" aria-label={`复制卷全文 ${scroll.name}`} title="复制卷全文"
-      disabled={disabled} onClick={event => { if (event.detail <= 1) onCopy(); }}>
-      <Copy size={14} aria-hidden="true" />
-    </button>
-  );
-}
-// 焚决卡四角：包住拐角的静态像素火苗——焰心压在拐角上，火尾沿侧边往下拖，火舌向上并朝卡内窜。
-// 以左上角为基准（拐角约在第 4.5 列、第 7 行），右侧由样式水平翻转。R 红边、O 橙、Y 黄、W 焰心白。
-const CORNER_FLAME = [
-  ".....R.....",
-  "....ROR....",
-  "....ROR..R.",
-  "...ROYOR.RR",
-  "..ROYYORROR",
-  "..ROYWYOOOR",
-  ".ROYWWWYOR.",
-  ".ROYWWYOR..",
-  "ROYYWYOR...",
-  "ROYYYOR....",
-  "RYYYOR.....",
-  "RYYOR......",
-  ".YYOR......",
-  ".YOR.......",
-  ".YOR.......",
-  "..OR.......",
-  "..R........",
-];
-const CORNER_FLAME_COLORS = { R: "#e8452c", O: "#ff8a24", Y: "#ffd166", W: "#fff4d6" };
-function CornerFlame() {
-  return (
-    <svg className="scroll-corner-flame" viewBox="0 0 11 17" width="22" height="34" shapeRendering="crispEdges">
-      {CORNER_FLAME.flatMap((row, y) => [...row].map((cell, x) => cell === "." ? null :
-        <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill={CORNER_FLAME_COLORS[cell]} />))}
-    </svg>
-  );
-}
-function ScrollCard({ scroll, stats, serial, index, onOpen, onPin, onDelete, deleting, state, save, notify }) {
-  const session = scrollCopySession(scroll.id, state);
-  const { busy, message } = React.useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
-  const entries = liveEntries(scroll);
-  const copyDisabled = deleting || busy || !!message;
-  async function copyEntries(entryId) {
-    if (session.status.locked || deleting) return;
-    const currentScroll = scrollsOf(session.state).find(item => item.id === scroll.id && !item.deletedAt);
-    const selected = currentScroll ? liveEntries(currentScroll).filter(entry => !entryId || entry.id === entryId) : [];
-    if (!selected.length) { notify("这卷还没有可复制的内容", "info"); return; }
-    session.update({ locked: true, busy: true, message: "" });
-    let unconfirmed = false;
-    const uncertain = () => {
-      unconfirmed = true;
-      const text = entryId ? "焚决正文已复制，使用次数未确认，请刷新核对" : "卷内正文已复制，使用次数未确认，请刷新核对";
-      session.update({ locked: true, busy: true, message: text }); notify(text, "error");
-    };
-    try {
-      if (!(await copy(selected.map(entry => entry.text).join("\n\n"), notify))) return;
-      const snapshot = session.state;
-      const target = scrollsOf(snapshot).find(item => item.id === scroll.id && !item.deletedAt);
-      if (!target || selected.some(entry => !liveEntries(target).some(value => value.id === entry.id && value.text === entry.text))) {
-        uncertain(); return;
-      }
-      const ids = new Set(selected.map(entry => entry.id));
-      const at = new Date().toISOString();
-      const scrolls = scrollsOf(snapshot).map(item => item.id !== scroll.id ? item : {
-        ...item, entries: item.entries.map(entry => ids.has(entry.id) ? { ...entry, uses: entry.uses + 1, lastUsedAt: at } : entry),
-      });
-      if (!(await save({ ...snapshot, scrolls }, { motion: false }))) uncertain();
-    } finally { session.update({ locked: unconfirmed, busy: false, message: session.status.message }); }
-  }
-  return (
-    <article className="asset-card scroll-card" style={{ "--i": Math.min(index, 12) }}>
-      {/* 四角放在整卡上：普通卡悬停亮蓝色锁定角，焚决卡换成沿边燃烧的火焰角 */}
-      <span className="lock" aria-hidden="true">
-        {[0, 1, 2, 3].map(corner => <i key={corner}><CornerFlame /></i>)}
-      </span>
-      <button
-        className="card-open type-Scroll"
-        onClick={onOpen}
-        disabled={busy || deleting}
-        aria-label={`打开卷 ${scroll.name}`}
-      >
-        <Cover type="Scroll" serial={serial} version={null} uses={stats.uses} />
-        <div className="card-body">
-          <div className="card-type">
-            <h3 className="scroll-card-title" title={`${typeLabel.Scroll} · ${scroll.name}`}>
-              <TypeIcon type="Scroll" size={14} />
-              <span className="scroll-card-name"><span className="scroll-card-label">{typeLabel.Scroll} · </span>{scroll.name}</span>
-            </h3>
-            <span className="scroll-card-count">{entries.length} 条</span>
-          </div>
-          <span className="sr-only">使用 {stats.uses} 次</span>
-        </div>
-      </button>
-      <div className="scroll-preview" role="region" aria-label={`${scroll.name} · 焚决内容`} tabIndex={0}>
-        {entries.length ? <ol className="scroll-preview-list">
-          {entries.map((entry, at) => {
-            const firstLine = entryName(entry);
-            const name = firstLine.length > 48 ? firstLine.slice(0, 48) + "…" : firstLine;
-            const index = String(at + 1).padStart(2, "0");
-            return <li className="scroll-preview-entry" key={entry.id} data-scroll-entry-id={entry.id}>
-              {/* 一行：编号 + 名称 + 复制；正文与计次在下方通栏 */}
-              <div className="scroll-preview-heading">
-                <span className="scroll-preview-index" aria-hidden="true">{index}</span>
-                {entry.name ? <h4 title={firstLine}>{name}</h4> : <span className="scroll-preview-spacer" />}
-                <button type="button" className="scroll-preview-copy" disabled={copyDisabled}
-                  aria-label={`复制焚决 ${index}：${name}`} title="复制这条焚决"
-                  onClick={event => { if (event.detail <= 1) copyEntries(entry.id); }}>
-                  <Copy size={14} aria-hidden="true" /><span aria-hidden="true">复制</span>
-                </button>
-              </div>
-              <p className="scroll-preview-text">{entry.text}</p>
-              <span className="scroll-preview-uses">已复制 {entry.uses} 次</span>
-            </li>;
-          })}
-        </ol> : <div className="scroll-preview-empty"><b>这一卷还是空的</b><p>打开卷，加入第一条高价值提示词。</p></div>}
-      </div>
-      {message && <div className="asset-copy-recovery"><p role="status">{message}</p></div>}
-      <ScrollCopyButton scroll={scroll} onCopy={() => copyEntries()} disabled={copyDisabled} />
-      <button type="button" className="asset-delete" aria-label={`删除 ${scroll.name}`} title={`删除 ${scroll.name}`}
-        disabled={deleting || busy} onClick={onDelete}>
-        <Trash2 size={17} aria-hidden="true" />
-      </button>
-      <button
-        aria-label={`${scroll.pinned ? "取消置顶" : "置顶"} ${scroll.name}`}
-        aria-pressed={!!scroll.pinned}
-        title={scroll.pinned ? "取消置顶" : "置顶"}
-        className={`pin-button ${scroll.pinned ? "is-pinned" : ""}`}
-        disabled={deleting || busy}
-        onClick={onPin}
-      >
-        <Pin size={16} fill={scroll.pinned ? "currentColor" : "none"} />
-      </button>
-    </article>
-  );
-}
+
 function WorkflowTemplateEditor({ value, onChange, disabled }) {
   const changeStage = (index, key, next) =>
     onChange({
@@ -803,10 +548,10 @@ function WorkflowTemplateDetail({ value }) {
 export function AssetEditor({
   asset,
   assets = [],
+  categories = DEFAULT_CATEGORIES,
   type: initialType,
   onClose,
   onSave,
-  onCreateScroll,
   notify,
   draft,
 }) {
@@ -829,6 +574,7 @@ export function AssetEditor({
     [mcpOrigin, setMcpOrigin] = useState(old?.mcpConfig?.origin || ""),
     [mcpPath, setMcpPath] = useState(old?.mcpConfig?.path || "/mcp"),
     [mcpCredentialEnvVar, setMcpCredentialEnvVar] = useState(old?.mcpConfig?.credentialEnvVar || ""),
+    [category, setCategory] = useState(asset?.category || ""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   async function importZip(file) {
@@ -849,26 +595,10 @@ export function AssetEditor({
       setError(e.message || "无法读取 ZIP，请检查文件格式");
     } finally { setUploading(false); }
   }
-  // 焚决（切片 1.3b）：只需卷名，创建后由调用方直接打开该卷；不生成资产版本。
-  const scroll = type === "Scroll";
   async function submit(e) {
     e.preventDefault();
     if (busy || uploading) return;
     setError("");
-    if (scroll) {
-      if (!title.trim() || busy) return;
-      setBusy(true);
-      try {
-        if (!(await onCreateScroll(title))) {
-          setError("本次未保存。请查看保存提示，卷名仍在。");
-          return;
-        }
-        onClose();
-      } finally {
-        setBusy(false);
-      }
-      return;
-    }
     setBusy(true);
     try {
       const parsedTemplate = type === "Workflow" && workflowTemplate
@@ -902,9 +632,13 @@ export function AssetEditor({
         ...(type === "Workflow" ? { references } : {}),
         ...(type === "Workflow" ? { workflowTemplate: parsedTemplate } : {}),
       };
-      const success = await onSave(
-        asset ? revise(asset, values) : makeAsset(draft?.hatchedFrom ? { ...values, hatchedFrom: draft.hatchedFrom } : values),
-      );
+      const saved = asset ? revise(asset, values) : makeAsset(draft?.hatchedFrom ? { ...values, hatchedFrom: draft.hatchedFrom } : values);
+      // 分类挂在资产上（#93）；空值表示按内容自动归组。
+      if (hasCategory(type)) {
+        delete saved.category;
+        if (category) saved.category = category;
+      }
+      const success = await onSave(saved);
       if (!success) {
         setError("本次未保存。请查看保存提示，表单内容仍在。");
         return;
@@ -923,7 +657,6 @@ export function AssetEditor({
       onClose={onClose}
     >
       <form onSubmit={submit} className={asset ? "asset-form" : "asset-form asset-create"}>
-        {/* 焚决说明挪到卷名下方（用户 2026-10-27）：切类型时类型栏位置不动。 */}
         {(asset || draft) && <div className="form-intro">
           <p>
             {asset
@@ -932,8 +665,8 @@ export function AssetEditor({
           </p>
         </div>}
         <div className="type-picker" role="radiogroup" aria-label="资产类型">
-          {/* MCP 不再新建（用户 2026-10-27）；只在编辑已有 MCP 资产时保留这一格。 */}
-          {["Prompt", "Skill", "Workflow", "Rule", "MCP", "Scroll", "Design"].filter((t) => (t !== "MCP" || asset?.type === "MCP") && (!draft || t !== "Scroll")).map((t, index, types) => (
+          {/* 新建只剩 Prompt / Design / Skill 三种（#93，用户 2026-11-19）；编辑已有的工作流、规则、MCP 时只显示它自己的类型。 */}
+          {(asset && !["Prompt", "Design", "Skill"].includes(asset.type) ? [asset.type] : ["Prompt", "Design", "Skill"]).map((t, index, types) => (
             <button
               type="button"
               role="radio"
@@ -972,21 +705,7 @@ export function AssetEditor({
             ))}
           </div>
         )}
-        {scroll ? (
-          <>
-          <label>
-            卷名
-            <input
-              required
-              maxLength={SCROLL_NAME_MAX}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="例如：心法、prompt 碎片、判断准则"
-            />
-          </label>
-          <p className="helper">焚决是一卷有序的碎片：心法、prompt 碎片、判断准则。先起个卷名，建好后直接在卷里添加条目。</p>
-          </>
-        ) : type === "MCP" ? (
+        {type === "MCP" ? (
           <>
             <p>只保存公开 HTTP MCP 地址与可选环境变量名引用。首版仅生成 Codex CLI 的 TOML 配置片段；不保存 token、header 值、stdio 命令、Hook 或任意 JSON。</p>
             <label>服务标识<input required maxLength={40} value={mcpServerId} onChange={(e) => setMcpServerId(e.target.value)} placeholder="例如 openai_docs" /></label>
@@ -1016,6 +735,15 @@ export function AssetEditor({
                 placeholder="它解决什么问题？什么时候用？"
               />
             </label>
+            {hasCategory(type) && (
+              <label>
+                分类
+                <select aria-label="分类" value={category} disabled={busy || uploading} onChange={(e) => setCategory(e.target.value)}>
+                  <option value="">按内容自动归组</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </label>
+            )}
             {type === "Design" && <>
               <label>内容形式
                 <select value={designKind} disabled={busy || uploading} onChange={e => setDesignKind(e.target.value)}>
@@ -1117,8 +845,8 @@ export function AssetEditor({
           <Button type="button" secondary onClick={onClose}>
             取消
           </Button>
-          <Button type="submit" disabled={busy || uploading || (scroll && !title.trim())}>
-            {busy ? "正在保存…" : asset ? "保存新版本" : scroll ? "新建卷" : "保存资产"}
+          <Button type="submit" disabled={busy || uploading}>
+            {busy ? "正在保存…" : asset ? "保存新版本" : "保存资产"}
           </Button>
         </div>
       </form>
