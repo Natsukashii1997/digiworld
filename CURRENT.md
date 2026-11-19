@@ -1,5 +1,18 @@
 # 个人 AI 工作台 · 唯一当前状态
 
+## 本 worktree 审计修复（2026-11-12）
+
+- state_id：`WB-20261112-CODEX-AUDIT-FIX-02`；当前写入者：无（本轮修复交付结束，完整验证受阻）。
+- 常浩本轮点名授权在 `codex/audit-fix-1112` 独立 worktree 修复收藏扩展高危项。输入为下方 main 状态快照 `WB-20261108-699`；不接管主目录 Claude 的任务。
+- 基线：`a23e411937e5f4b5cca9b613d997f9484b0501ad`，开工时工作区干净。
+- 范围：`browser-extension/collection/content.js`、收藏扩展回归测试、当前状态和交接；先复现失败，再最小修复，再全量测试。
+- 测试边界：网页按钮事件 → 扩展消息；合成网页数据不能单独发起导入，非可信点击不能锁按钮或请求数据，可信点击仍能发送原有消息。沿用审计报告与本轮明确要求的边界，不新增确认界面。
+- 结果：高危成立；修前新增 14 条测试 4 过 / 10 失败，修后新增与原扩展测试 18/18 通过。点击回调在异步工作前拒绝非可信事件，无顺手改动或待确认行为变化。
+- 全量测试：1643 条，1404 过 / 238 失败 / 1 跳过；215 条 listen EPERM、9 条明确 sandbox-exec 拒绝，其他 14 条未独立诊断。浏览器缺少 Playwright 可执行文件，页面断言未运行。未提交、未部署、未读取或修改真实数据。
+- 最新交接：[本轮修复交接](docs/agents/handoffs/2026-11-12-codex-collection-trusted-click.md)；完整总结与原样日志：`/Users/nat/Library/Application Support/digiworld/evidence/2026-11-12-codex-fix/summary.md`。
+- 唯一下一步：接手者在允许测试 loopback / sandbox-exec 且已有匹配 Playwright 浏览器的本机开发环境，于本 worktree 复跑全量与浏览器回归，再决定提交或采用。未向 Claude 发送消息，未取得已读回执。
+- 下方协作表保留 main 的交接快照；本节仅记录此独立 worktree 的本轮工作。
+
 当前阶段目标：信息驾驶舱改造（#67，V1.3 批 3）完成，正式 5178 发布并经常浩终验。（2026-11-08 常浩确认，digital-twin#114）
 
 ## 协作状态
