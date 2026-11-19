@@ -43,12 +43,11 @@
 
 正式 5178 未发布、未重启；没有写 my-skills；不用 `catalog/skills.json`（11-07 旧快照，只有 15 个）。
 
-## 待常浩定
+## 已定：vault-backup 保持现状
 
-`vault-backup` 卡片显示「没读到 SKILL.md 的说明」：只读读取器的安全规则 `DENIED`（`server/cockpit-read.mjs`，#74 定）排除路径里带「backup」的文件，本批没有放宽。三个选项：保持现状 / 只对 my-skills 的 `SKILL.md` 放行 / 给 skill 改名。
+`vault-backup` 卡片显示「没读到 SKILL.md 的说明」：只读读取器的安全规则 `DENIED`（`server/cockpit-read.mjs`，#74 定）排除路径里带「backup」的文件。常浩 11-19 在会话 local_8883061c 里选「保持现状」：不放宽 `DENIED`，不改 skill 名，卡片照旧显示这句提示。
 
 ## 未完成与下一步
 
 1. 常浩审 PR，回复「合并」后合并；发布到 5178 另行安排。
-2. `vault-backup` 读取规则待定（见上）。
-3. 第三批：Design 页两种形式；第四批：猛鬼兽批量导入 `create_prompts`；清理票（焚决回收区等）照第一批交接。
+2. 第三批：Design 页两种形式；第四批：猛鬼兽批量导入 `create_prompts`；清理票（焚决回收区等）照第一批交接。

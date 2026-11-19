@@ -25,7 +25,8 @@
 - **改动**：分支 `claude/93-skill-page`（基于 `9acb852`），提交 `0f29401`（my-skills 只读读取与 `/api/my-skills`）、`8e048b3`（`skillMeta` 与标识）、`4d80568`（Skill 页界面）及测试 / 证据 / 文档提交。Skill 页只读展示 my-skills（本机 17 个），卡片只有置顶和「复制调用名」，没有详情和删除；原 Skill 资产不在 Skill 页显示（数据保留，可从全局搜索打开）；新建只给 Prompt / 设计；导航计数按 my-skills。行为变化与验证见 `docs/agents/handoffs/2026-11-19-claude-93-skill-page-batch2.md`。
 - **验证**：`npm test` 1655 条，1653 过 / 1 败（基线已知：生产 factory 接线）/ 1 跳过；浏览器测试与第一批结果对照（`evidence/93-skill-page/compare-final.txt`），第一批通过的 14 个全过，新测试通过；1440 合成数据截图在 `evidence/93-skill-page/shots/`（只在 Chromium 验过）。
 - **未发布**：正式 5178 未动；没有写 my-skills。
-- **待常浩**：审 PR，回复「合并」；定 `vault-backup` 的 SKILL.md 读取（`DENIED` 排除「backup」路径）：保持现状 / 只对 my-skills 放行 / 改 skill 名。
+- **已定**：`vault-backup` 的 SKILL.md 读不到（`DENIED` 排除「backup」路径），常浩 11-19 选保持现状，不放宽 #74 安全规则。
+- **待常浩**：审 PR，回复「合并」。
 
 ## Claude：#93 资产仓库改版第一批（2026-11-19，PR 待合并）
 
