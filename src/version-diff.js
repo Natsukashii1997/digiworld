@@ -1,4 +1,5 @@
 import { fileBytes } from "./skill-package.js";
+import { designKindLabel } from "./design-asset.js";
 
 const mcpComparable = value => JSON.stringify(value ? Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])) : null);
 
@@ -21,9 +22,9 @@ export function compareVersions(before, after) {
       : after[key] || "";
     if (left !== right) fields.push({ key, label, before: left, after: right });
   }
-  for (const [key, label] of [["kind", "设计形式"]]) {
-    const display = value => key === "kind" ? ({ skill: "Skill 包", prompt: "Prompt" }[value] || "") : value || "";
-    const left = display(before.design?.[key]), right = display(after.design?.[key]);
+  for (const [key, label] of [["kind", "设计形式"], ["skillName", "Skill 名称"], ["repo", "GitHub 地址"], ["path", "仓库子目录"], ["image", "效果图"]]) {
+    const display = (version) => key === "kind" ? (version?.design ? designKindLabel(version) : "") : version?.design?.[key] || "";
+    const left = display(before), right = display(after);
     if (left !== right) fields.push({ key: `design.${key}`, label, before: left, after: right });
   }
   const contentChanged = (before.content || "") !== (after.content || "");

@@ -223,6 +223,8 @@ export async function startServer({
   reaUpdater = await createReaUpdater({ directory: repository.directory, ...reaUpdate, externalBusy: () => reverseRunner.busy || nativeReverse.busy });
   const reverseMedia=createReverseMedia(await realpath(repository.directory));
   const noteImages=createNoteImages(await realpath(repository.directory));
+  // 设计效果图（#93 第三批）：同一套内容寻址存储，单独放 design-images。
+  const designImages=createNoteImages(await realpath(repository.directory),{folder:'design-images',label:'效果图'});
   const reverseSkillV4 = createReverseSkillV4({ repository, readMedia: reverseMedia.read });
   const reverseReports = createReverseReports(repository, { clock: clock ?? Date.now });
   const deliveries = createDeliveries(repository, clock);
@@ -534,6 +536,9 @@ export async function startServer({
         if(url.pathname==='/api/note-images'&&request.method==='POST')return send(response,200,await noteImages.store(await body(request,12*1024*1024)));
         const imageRead=url.pathname.match(/^\/api\/note-images\/([a-f0-9]{64}\.(?:png|jpg|webp))\/read$/);
         if(imageRead&&request.method==='POST'){const input=await body(request,1024);if(!input||Object.keys(input).length)throw failure('图片读取请求无效');return send(response,200,await noteImages.read(imageRead[1]));}
+        if(url.pathname==='/api/design-images'&&request.method==='POST')return send(response,200,await designImages.store(await body(request,12*1024*1024)));
+        const designImageRead=url.pathname.match(/^\/api\/design-images\/([a-f0-9]{64}\.(?:png|jpg|webp))\/read$/);
+        if(designImageRead&&request.method==='POST'){const input=await body(request,1024);if(!input||Object.keys(input).length)throw failure('图片读取请求无效');return send(response,200,await designImages.read(designImageRead[1]));}
         const noteRoute = url.pathname.match(/^\/api\/notes\/([^/]+)$/);
         if (url.pathname === '/api/notes' && request.method === 'GET') {
           const state = await repository.read();

@@ -1,4 +1,4 @@
-import { hasSkillPackage } from "./design-asset.js";
+import { hasSkillPackage, designKindLabel } from "./design-asset.js";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { Button, Badge } from "./components.jsx";
@@ -302,7 +302,7 @@ export function AssetHistory({
           </div>
         </dl>
         {asset.type === "Design" && <dl className="history-fields">
-          <div><dt>内容形式</dt><dd>{selected.design.kind === "skill" ? "Skill 包" : "Prompt"}</dd></div>
+          <div><dt>内容形式</dt><dd>{designKindLabel(selected)}</dd></div>
         </dl>}
         {asset.type === "MCP" ? (
           <dl className="history-fields" aria-label="MCP 版本结构">
