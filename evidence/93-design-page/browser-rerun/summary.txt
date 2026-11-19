@@ -1,0 +1,5 @@
+PASS tests/assets-actions-browser.mjs
+PASS tests/assets-copy-browser.mjs
+PASS tests/assets-v2-browser.mjs
+PASS tests/partner-browser.mjs
+PASS tests/transfer-reduce-browser.mjs
