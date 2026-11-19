@@ -1,0 +1,15 @@
+ℹ tests 1680
+ℹ suites 0
+ℹ pass 1677
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 1
+ℹ todo 0
+ℹ duration_ms 120530.552583
+✖ C-10 5000行最坏路径原界限不放宽，计数与行内差异完全同口径 (2227.1385ms)
+✖ failing tests:
+✖ 停止清理忽略TERM的孙进程 (229.494334ms)
+--- 机器重启 10 分钟内、load 约 91 时跑的；以上两条失败串行重跑：
+ℹ tests 18
+ℹ pass 18
+ℹ fail 0

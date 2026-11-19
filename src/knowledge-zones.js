@@ -71,6 +71,29 @@ export function zoneOf(path, rules) {
 export const profileFolders = (rules) =>
   rules.filter((r) => r.zone === "profile").map((r) => r.pattern.slice(0, -3));
 
+// 知识源重叠判定（前后端共用，服务端开放个人说明前也按这里拦截）：
+// 同一飞书空间，或本机目录互相包含（不区分大小写，按 NFC 归一）。
+export const foldedPath = (value) => value.normalize("NFC").toLowerCase();
+export const inside = (path, root) =>
+  foldedPath(path) === foldedPath(root) || foldedPath(path).startsWith(foldedPath(root) + "/");
+const spaceOf = (source) => source?.kind === "feishu"
+  ? source.feishuSpaceId || /^feishu:\/\/space\/([0-9]{1,30})$/.exec(source.root)?.[1]
+  : null;
+export const sourcesOverlap = (a, b) => {
+  const aSpace = spaceOf(a), bSpace = spaceOf(b);
+  if (aSpace && bSpace) return aSpace === bSpace;
+  return inside(a.root, b.root) || inside(b.root, a.root);
+};
+// 与 source 重叠、目录身份变化后还没重新确认的知识源；非空时不能开放个人说明。
+export function pendingReconfirmFor(state, source) {
+  if (!source) return [];
+  const sources = state?.connections?.knowledgeSources || [];
+  return (state?.connections?.knowledgeSourceHealth || [])
+    .filter((h) => h.status === "needs_reconfirmation")
+    .map((h) => sources.find((s) => s.id === h.sourceId))
+    .filter((pending) => pending && sourcesOverlap(source, pending));
+}
+
 // 本周：本机时区周一 00:00 起。
 export function weekStart(now) {
   const day = new Date(now);

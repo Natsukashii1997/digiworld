@@ -9,6 +9,7 @@ import {
   zoneStats,
   weekStart,
   profileFolders,
+  pendingReconfirmFor,
 } from "../src/knowledge-zones.js";
 import { validateState, validateHistory } from "../server/schema.mjs";
 import { seed } from "../src/store.js";
@@ -242,4 +243,21 @@ test("备份导入不恢复个人说明共享授权；已有主库时保留当�
   const merged = mergeBackup(current, backup).state;
   assert.deepEqual(merged.knowledgeZones, current.knowledgeZones);
   assert.equal(merged.profileProposals, undefined);
+});
+
+test("pendingReconfirmFor 只列与个人说明来源重叠、待重新确认的知识源（前端拦截与服务端同口径）", () => {
+  const vault = { id: "v", kind: "obsidian", name: "主库", root: "/Users/a/Vault" };
+  const sub = { id: "s", kind: "markdown", name: "子目录", root: "/users/a/vault/项目" };
+  const other = { id: "o", kind: "markdown", name: "别处", root: "/Users/a/Other" };
+  const feishu = { id: "f", kind: "feishu", name: "飞书", root: "feishu://space/1" };
+  const state = (pending) => ({ connections: {
+    knowledgeSources: [vault, sub, other, feishu],
+    knowledgeSourceHealth: pending.map((sourceId) => ({ sourceId, status: "needs_reconfirmation" })),
+  } });
+  assert.deepEqual(pendingReconfirmFor(state(["v"]), vault).map((s) => s.id), ["v"]);
+  assert.deepEqual(pendingReconfirmFor(state(["s"]), vault).map((s) => s.id), ["s"], "大小写不同的子目录也算重叠");
+  assert.deepEqual(pendingReconfirmFor(state(["o", "f"]), vault), [], "不重叠的来源不拦");
+  assert.deepEqual(pendingReconfirmFor({ connections: { knowledgeSources: [vault],
+    knowledgeSourceHealth: [{ sourceId: "v", status: "confirmed" }] } }, vault), [], "已确认不拦");
+  assert.deepEqual(pendingReconfirmFor(state(["v"]), null), []);
 });

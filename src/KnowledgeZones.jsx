@@ -13,6 +13,7 @@ import {
   DEFAULT_ZONE_RULES,
   validateZoneRules,
   profileFolders,
+  pendingReconfirmFor,
 } from "./knowledge-zones.js";
 import "./knowledge-zones.css";
 
@@ -425,13 +426,16 @@ export function mcpExamples(url) {
     },
   ];
 }
-export function ProfilePanel({ state, config, vault, mcp, adoptState, notify, navigate, blocked }) {
+// onReconfirm：调用方能打开重新确认表单时传入，参数是待确认的知识源。
+export function ProfilePanel({ state, config, vault, mcp, adoptState, notify, navigate, blocked, onReconfirm }) {
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const folders = profileFolders(config.rules);
   const pending = (state.profileProposals || []).filter((p) => p.status === "pending").length;
   const url = mcp?.url || DEFAULT_MCP_URL;
+  // 与服务端同一判定：重叠目录待重新确认时，开启会被拒绝，所以先不让勾选和点击。
+  const reconfirm = config.profileSharing ? [] : pendingReconfirmFor(state, vault);
   async function toggle(enabled) {
     const from=motionOrigin();
     if (busy) return;
@@ -502,15 +506,32 @@ export function ProfilePanel({ state, config, vault, mcp, adoptState, notify, na
           {busy ? "处理中…" : "关闭 MCP 读取"}
         </Button>
       ) : (
-        <div className="profile-share">
-          <label className="knowledge-confirm">
-            <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-            我确认允许本机 Agent 通过 MCP 读取“个人上下文”正文
-          </label>
-          <Button disabled={!agreed || busy || blocked || !vault} onClick={() => toggle(true)}>
-            {busy ? "处理中…" : "开启 MCP 读取"}
-          </Button>
-        </div>
+        <>
+          {reconfirm.length > 0 && (
+            <div className="profile-reconfirm" role="status">
+              <p>
+                {reconfirm.map((s) => `「${s.name}」`).join("、")}目录身份已变化，需先重新确认目录，才能开启个人说明 MCP。
+              </p>
+              {onReconfirm && (
+                <Button secondary onClick={() => onReconfirm(reconfirm[0])}>去重新确认</Button>
+              )}
+            </div>
+          )}
+          <div className="profile-share">
+            <label className="knowledge-confirm">
+              <input
+                type="checkbox"
+                checked={agreed && !reconfirm.length}
+                disabled={reconfirm.length > 0}
+                onChange={(e) => setAgreed(e.target.checked)}
+              />
+              我确认允许本机 Agent 通过 MCP 读取“个人上下文”正文
+            </label>
+            <Button disabled={!agreed || busy || blocked || !vault || reconfirm.length > 0} onClick={() => toggle(true)}>
+              {busy ? "处理中…" : "开启 MCP 读取"}
+            </Button>
+          </div>
+        </>
       )}
       {error && (
         <p className="inline-error" role="alert">

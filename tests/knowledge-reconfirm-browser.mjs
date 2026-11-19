@@ -46,7 +46,10 @@ try {
     const dialog = page.getByRole("dialog");
     await dialog.getByText("需重新确认").first().waitFor();
     await dialog.getByRole("button", { name: "接入与授权" }).click();
-    await dialog.getByText(/需重新确认目录，确认前不能开启个人说明 MCP/).waitFor();
+    await dialog.getByText(/目录身份已变化，需先重新确认目录，才能开启个人说明 MCP/).waitFor();
+    // 确认前开启被拦在界面上：勾选框和按钮都不可用，入口紧挨着它们。
+    assert.equal(await dialog.getByRole("checkbox", { name: /我确认允许本机 Agent 通过 MCP 读取/ }).isDisabled(), true);
+    assert.equal(await dialog.getByRole("button", { name: "开启 MCP 读取" }).isDisabled(), true);
     await snap("2-profile-hint");
     await dialog.getByRole("button", { name: "去重新确认" }).click();
     const form = dialog.getByRole("region", { name: "重新确认目录" });

@@ -1,29 +1,21 @@
 import { randomUUID, createHash } from "node:crypto";
 import { join } from "node:path";
-import { DEFAULT_ZONE_RULES, profileFolders } from "../src/knowledge-zones.js";
+import {
+  DEFAULT_ZONE_RULES,
+  profileFolders,
+  foldedPath as folded,
+  inside,
+  sourcesOverlap as overlaps,
+  pendingReconfirmFor,
+} from "../src/knowledge-zones.js";
 import { failure } from "./repository.mjs";
 
-const folded = (value) => value.normalize("NFC").toLowerCase();
-export const inside = (path, root) =>
-  folded(path) === folded(root) || folded(path).startsWith(folded(root) + "/");
-const spaceOf = (source) => source?.kind === "feishu"
-  ? source.feishuSpaceId || /^feishu:\/\/space\/([0-9]{1,30})$/.exec(source.root)?.[1]
-  : null;
-const overlaps = (a, b) => {
-  const aSpace = spaceOf(a), bSpace = spaceOf(b);
-  if (aSpace && bSpace) return aSpace === bSpace;
-  return inside(a.root, b.root) || inside(b.root, a.root);
-};
+export { inside };
+
 export const knowledgeSources = (state) =>
   state?.connections?.knowledgeSources || [];
-export function pendingIdentityOverlap(state, source) {
-  if (!source) return false;
-  return (state?.connections?.knowledgeSourceHealth || []).some((health) => {
-    if (health.status !== "needs_reconfirmation") return false;
-    const pending = knowledgeSources(state).find((item) => item.id === health.sourceId);
-    return pending && overlaps(source, pending);
-  });
-}
+export const pendingIdentityOverlap = (state, source) =>
+  pendingReconfirmFor(state, source).length > 0;
 export function policyKey(state) {
   return createHash("sha256")
     .update(
