@@ -42,6 +42,7 @@
 - **合并与发布**：常浩 11-19 在「人机协作｜减轻认知负担方案」会话里对拍板清单回复「全部按推荐」，#88 一项的推荐是「合并并发布」，由该会话转达。PR #88 squash 合并为 `b164572`。发布目录 `releases/wb-20261119-pr88`＝线上 pr89（`148df4b`）+ #88 的 7 个代码文件，**没有**带上已合并、但还没发布的 #93 第一到第三批（#94、#95、#97）；用 `git archive` 取已跟踪文件，依赖仍是 `deps-20261108-pr81`。plist 用 PlistBuddy `Set` 只改两处路径；bootout 等卸载完成后 bootstrap，pid 5340 → 78711，5178 返回 200，5179 在监听。启动时 revision 1109 → 1110，只有名册同步（`connections.projects`），知识来源和授权都没动。线上只读回读：自检「知识开放」标要处理，能力设置读取恢复正常，Vault 写入、Agent 配置、常驻服务显示「申请未生效」。发布说明、回滚步骤和备份（改前 plist、data-before.tgz）在 `~/Library/Application Support/PersonalAIWorkbench/evidence/release-pr88-20261119/`。发布源码的全量测试在高负载下有 21 条超时类失败，负载降下来以后串行重跑全部通过。
 - **待常浩**：按上面「发布后常浩要做的」三步，恢复个人说明 MCP 和要用的能力。
 - 本轮新坑：L-08。
+- **11-20 补丁（PR 待合并，未发布）**：常浩在线上直接点了「开启 MCP 读取」，被拦下才发现提示在面板顶部、离按钮太远。他回复「改一下」后：个人说明面板在重叠目录待确认时，把提示和「去重新确认」放在勾选框正上方，勾选框和开启按钮不可用；判定和服务端同一口径（`pendingReconfirmFor` 移到前后端共用的 `src/knowledge-zones.js`，服务端 `pendingIdentityOverlap` 改为调用它）。证据在 `evidence/I-profile-guard-20261120/`。
 
 ## Claude：#93 资产仓库改版第三批 Design 页两种形式（2026-11-19，PR #97，CI 通过后合并）
 

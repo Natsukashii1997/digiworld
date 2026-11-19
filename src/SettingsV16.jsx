@@ -443,12 +443,6 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
             ) : (
               <p>该来源已移除，请关闭后重新核对。</p>
             ))}
-          {panel.type === "profile" && reconfirm.length > 0 && (
-            <div className="st-reconfirm" role="status">
-              <p>{reconfirm.map((s) => `「${s.name}」`).join("、")}需重新确认目录，确认前不能开启个人说明 MCP。</p>
-              <Button secondary onClick={() => { setPolicyError(""); setPanel({ type: "source", id: reconfirm[0].id, revision: state.revision }); }}>去重新确认</Button>
-            </div>
-          )}
           {panel.type === "profile" && (
             <ProfilePanel
               state={state}
@@ -458,6 +452,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
               blocked={policyPending || policyBusy}
               adoptState={adoptState}
               notify={notify}
+              onReconfirm={(source) => { setPolicyError(""); setPanel({ type: "source", id: source.id, revision: state.revision }); }}
             />
           )}
           {["source", "profile"].includes(panel.type) && policyError && (
