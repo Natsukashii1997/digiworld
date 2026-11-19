@@ -19,7 +19,8 @@ import { request } from "./api.js";
 import "./assets-detail.css";
 import "./assets-quick-copy.css";
 import "./assets-v2.css";
-import { hasSkillPackage, designPromptText } from "./design-asset.js";
+import { hasSkillPackage, designCopyText, designCallTemplate, designKindLabel, isLinkedDesignSkill, normalizeDesignRepo, normalizeRepoPath } from "./design-asset.js";
+import { uploadDesignImage, readDesignImage } from "./design-images.js";
 import { readSkillZip, buildSkillZip } from "./skill-package.js";
 import { isInstallSkill, isSelfSkill, skillInstallText, validateInstallUrl } from "./skill-install.js";
 import { SkillDelivery } from "./SkillDelivery.jsx";
@@ -98,7 +99,7 @@ async function copyAssetVersion(asset, version, activity, notify) {
       delivery = await request("/deliveries", { assetId: asset.id, versionId: version.id });
       text = delivery.instructions;
     } else if (asset.type === "Design") {
-      text = designPromptText(version);
+      text = designCopyText(version);
     } else if (asset.type === "MCP") {
       text = JSON.stringify(validateMcpVersion(version), null, 2) + "\n";
     }
@@ -120,7 +121,7 @@ async function copyAssetVersion(asset, version, activity, notify) {
 export function AssetCopyButton({ asset, state, adoptState, notify, disabled, labeled = false }) {
   const version = current(asset);
   const activity = useAssetActivity(asset, state, adoptState);
-  const label = asset.type === "Design" ? "复制生图提示词" : asset.type === "Skill" ? (isInstallSkill(version) ? "复制安装话术" : "复制安装口令") : asset.type === "MCP" ? "复制配置定义" : "复制全文";
+  const label = copyLabel(asset, version);
   return <>
     <button type="button" className={labeled ? "asset-copy-labeled" : "asset-copy"}
       aria-label={`${label} ${version.title}`} title={activity.pending ? "记录待核对" : label}
@@ -139,6 +140,12 @@ export function AssetCopyButton({ asset, state, adoptState, notify, disabled, la
     </div>}
   </>;
 }
+// 复制按钮文字（#93 第三批）：设计 Skill「复制调用指令」，设计 Prompt「复制全文」；旧版 ZIP 设计仍走交付。
+function copyLabel(asset, version) {
+  if (asset.type === "Design") return hasSkillPackage(asset, version) ? "复制生图提示词" : isLinkedDesignSkill(version) ? "复制调用指令" : "复制全文";
+  if (asset.type === "Skill") return isInstallSkill(version) ? "复制安装话术" : "复制安装口令";
+  return asset.type === "MCP" ? "复制配置定义" : "复制全文";
+}
 // 未删除的同类资产按创建先后连续编号，例如 SKL.01；筛选与排序不改编号。
 export function serialsOf(assets) {
   const out = {};
@@ -150,7 +157,7 @@ export function serialsOf(assets) {
   return out;
 }
 const HANDOFF = {
-  Design: ["复制生图提示词", "粘贴到 ChatGPT，按需补充本次需求", "Prompt 直接生图；Skill 包需导出并作为附件上传"],
+  Design: ["复制设计 Prompt 全文或设计 Skill 调用指令", "粘贴给 GPT 或任意 Agent，在最后补本次需求", "设计 Skill 会先检查有没有装，没装就从 GitHub 装"],
   Skill: ["复制口令（含 10 分钟下载链接）", "粘贴给任意 Agent", "由它下载完整包并确认安装范围"],
   InstallSkill: ["复制安装话术", "粘贴给 Claude Code 或 Codex", "它按安装地址里的文档装好并试用一次"],
   Prompt: ["复制完整提示词", "粘贴到 Agent 对话", "按需补充本次背景"],
@@ -159,13 +166,13 @@ const HANDOFF = {
   MCP: ["选择已登记的 Codex CLI 目标", "复制或下载该固定版本的 TOML 片段", "配置到目标后在新会话核验连接与采用"],
 };
 const CONTENT_LABEL = {
-  Design: "生图提示词",
+  Design: "设计 Prompt 正文",
   Prompt: "提示词全文",
   Workflow: "工作流内容",
   Rule: "规则正文",
 };
 const CONTENT_HINT = {
-  Design: "画面主题、风格、比例、文字和交付要求……",
+  Design: "你确认过的设计指令：风格、配色、字体、版式和不要做的事……",
   Prompt: "角色、背景、任务、约束、期望输出……",
   Workflow: "目标、输入、步骤、检查点、人工确认点、交付标准……",
   Rule: "入口文件、CURRENT 格式、认领与交接规则、验证与证据要求……",
@@ -191,7 +198,32 @@ const TAB_IDS = ASSET_TABS.map(([id]) => id);
 const TYPE_COLOR = { Design: "var(--pink)", Skill: "var(--orange)", Workflow: "var(--violet)", Rule: "var(--lcd)", MCP: "var(--violet)" };
 function cardBody(asset, version) {
   if (asset.type === "Prompt") return version.content || version.description;
+  if (asset.type === "Design") return version.description;
   return version.description || version.content;
+}
+// Design 页两种形式各一种固定色（定稿第 7 版）：设计 Skill 橙、设计 Prompt 粉。
+const DESIGN_KINDS = [["skill", "设计 Skill", "var(--orange)"], ["prompt", "设计 Prompt", "var(--pink)"]];
+const designKindOf = (version) => (version.design?.kind === "prompt" ? "prompt" : "skill");
+const designColor = (version) => DESIGN_KINDS.find(([id]) => id === designKindOf(version))[2];
+
+// 效果图：按 ID 从本机 design-images 读回；没有图时显示定稿里的占位。
+function DesignShot({ image, title }) {
+  const [state, setState] = useState({});
+  useEffect(() => {
+    if (!image) return setState({});
+    let live = true, url;
+    setState({});
+    readDesignImage(image).then((blob) => { if (live) { url = URL.createObjectURL(blob); setState({ url }); } })
+      .catch((error) => { if (live) setState({ error: error.message }); });
+    return () => { live = false; if (url) URL.revokeObjectURL(url); };
+  }, [image]);
+  if (state.url) return <img className="ac2-shot-img" src={state.url} alt={`${title} 效果图`} />;
+  return (
+    <span className="ac2-noimg">
+      <b>{!image ? "还没有效果图" : state.error ? "效果图暂时读不到" : "正在读取效果图…"}</b>
+      <small>{!image ? "上传一张，让人一眼看到这个风格" : state.error || ""}</small>
+    </span>
+  );
 }
 
 function AssetCard({ asset: a, index, state, save, adoptState, notify, select, categories, deleting, onDelete, usage }) {
@@ -199,9 +231,10 @@ function AssetCard({ asset: a, index, state, save, adoptState, notify, select, c
   const sorted = hasCategory(a.type);
   const cat = sorted ? categoryOf(a, categories, v) : null;
   const catInfo = cat && categories.find((c) => c.id === cat.id);
-  const color = sorted ? (catInfo ? categoryColor(catInfo) : "var(--muted)") : TYPE_COLOR[a.type];
+  const design = a.type === "Design";
+  const color = sorted ? (catInfo ? categoryColor(catInfo) : "var(--muted)") : design ? designColor(v) : TYPE_COLOR[a.type];
   const badges = badgesOf(a, usage.uses);
-  const label = sorted ? (catInfo?.name || UNSORTED_NAME) : typeLabel[a.type];
+  const label = sorted ? (catInfo?.name || UNSORTED_NAME) : design ? designKindLabel(v) : typeLabel[a.type];
   async function changeCategory(value) {
     await save({
       ...state,
@@ -213,9 +246,11 @@ function AssetCard({ asset: a, index, state, save, adoptState, notify, select, c
     });
   }
   return (
-    <article className="asset-card ac2" style={{ "--i": Math.min(index, 12), "--tc": color }}>
+    <article className={`asset-card ac2${design ? " ac2-design" : ""}`} style={{ "--i": Math.min(index, 12), "--tc": color }}>
       <button className={`card-open type-${a.type}`} onClick={() => select(a.id)} aria-label={`查看 ${v.title}`}>
-        <span className="ac2-screen" aria-hidden="true">
+        {design ? (
+          <span className="ac2-screen ac2-shot"><DesignShot image={v.design.image} title={v.title} /></span>
+        ) : <span className="ac2-screen" aria-hidden="true">
           {/* 自建 Skill 保留全息蛋（定稿卡片同样是投影台上的蛋）；按分类色染色在第二批。 */}
           {a.type === "Skill" && isSelfSkill(a) && /^egg\d$/.test(glyphOf(a) || "")
             ? <span className="ac2-glyph"><HoloEgg sprite={glyphOf(a)} size={64} /></span>
@@ -224,11 +259,14 @@ function AssetCard({ asset: a, index, state, save, adoptState, notify, select, c
           <span className={`ac2-uses${badges.includes("HOT") ? " hot" : usage.count ? "" : " zero"}`}>
             <Odometer value={usage.count} /><small>次</small>
           </span>
-        </span>
+        </span>}
         <span className="sr-only">使用 {usage.count} 次</span>
         <span className="ac2-body">
-          <h3><span className="ac2-hl">{v.title}</span></h3>
-          <span className={`ac2-text${cardBody(a, v) ? "" : " empty"}`}>{cardBody(a, v) || "还没有正文。"}</span>
+          <h3 className={design && isLinkedDesignSkill(v) ? "mono" : ""}><span className="ac2-hl">{v.title}</span></h3>
+          <span className={`ac2-text${cardBody(a, v) ? "" : " empty"}`}>{cardBody(a, v) || (design ? "还没有风格说明。" : "还没有正文。")}</span>
+          {design && isLinkedDesignSkill(v) && (
+            <span className="ac2-repo">{v.design.repo.replace("https://", "")}{v.design.path ? ` · ${v.design.path}` : ""}</span>
+          )}
         </span>
       </button>
       {badges.length > 0 && (
@@ -266,7 +304,8 @@ function AssetCard({ asset: a, index, state, save, adoptState, notify, select, c
         <span className="ac2-cat static"><i aria-hidden="true" /><span>{label}</span></span>
       )}
       <div className="ac2-foot">
-        <span className="ac2-from">{originLabel(a)} · {shortDay(v.at)}</span>
+        {/* 设计卡底部只写来源（定稿第 7 版），其余卡是来源 · 日期。 */}
+        <span className="ac2-from">{design ? (isLinkedDesignSkill(v) ? "从 GitHub 安装" : originLabel(a) === "示例" ? "示例" : "我确认过的") : `${originLabel(a)} · ${shortDay(v.at)}`}</span>
         <AssetCopyButton asset={a} state={state} adoptState={adoptState} notify={notify} disabled={deleting} labeled />
       </div>
     </article>
@@ -344,6 +383,7 @@ export function Assets({
   const [search, setSearch] = useState(""),
     [sort, setSort] = useState("recent"),
     [cat, setCat] = useState("all"),
+    [designKind, setDesignKind] = useState("all"),
     [helpOpen, setHelpOpen] = useState(false);
   const [deleting, setDeleting] = useState(""),
     [blockedDelete, setBlockedDelete] = useState(null);
@@ -379,10 +419,14 @@ export function Assets({
   const catCounts = new Map();
   if (hasCategory(tab)) for (const a of ofType) catCounts.set(catOf(a), (catCounts.get(catOf(a)) || 0) + 1);
   const activeCat = hasCategory(tab) && (cat === UNSORTED || catCounts.has(cat)) ? cat : "all";
-  const narrowed = !!(words.length || activeCat !== "all");
+  // Design 页按形式筛选（设计 Skill / 设计 Prompt），不用分类。
+  const designTab = tab === "Design";
+  const kindCounts = new Map(DESIGN_KINDS.map(([id]) => [id, designTab ? ofType.filter((a) => designKindOf(current(a)) === id).length : 0]));
+  const activeKind = designTab && kindCounts.get(designKind) ? designKind : "all";
+  const narrowed = !!(words.length || activeCat !== "all" || activeKind !== "all");
   // 置顶项在任何排序下都排最前，置顶项之间按使用次数降序，再按最近使用。
   const items = ofType
-    .filter((a) => (activeCat === "all" || catOf(a) === activeCat) && (!words.length || (skillTab ? skillHit(a) : assetHit(a, words))))
+    .filter((a) => (activeCat === "all" || catOf(a) === activeCat) && (activeKind === "all" || designKindOf(current(a)) === activeKind) && (!words.length || (skillTab ? skillHit(a) : assetHit(a, words))))
     .map((a) => {
       if (skillTab)
         return { item: a, pinned: !!skillMeta[a.name]?.pinned, count: a.uses?.total || 0, lastAt: a.uses?.lastAt || "", at: a.updatedAt || "", title: a.name };
@@ -427,6 +471,29 @@ export function Assets({
       </button>
     </div>
   );
+  const sampleSkill = designTab && ofType.map(current).find(isLinkedDesignSkill);
+  const designTop = designTab && (
+    <>
+      <div className="ac2-design-intro">
+        <span className="tag">NEW</span>
+        <span><b>新建设计时选一种：</b>「设计 Prompt」贴上你确认过的指令，复制时原样给出；「设计 Skill」只填 skill 名和 GitHub 地址，调用指令由系统按固定模板生成。都可以上传一张效果图，再写一两句风格说明。</span>
+      </div>
+      <details className="ac2-calltpl" open>
+        <summary>设计 Skill 的固定调用指令{sampleSkill ? `（以 ${sampleSkill.design.skillName} 为例）` : ""}：复制时自动填名字和地址，你在最后补需求</summary>
+        <pre>{designCallTemplate(sampleSkill ? sampleSkill.design : { skillName: "skill 名", repo: "GitHub 地址" })}</pre>
+      </details>
+      {ofType.length > 0 && (
+        <div className="ac2-chips" role="group" aria-label="按形式筛选">
+          <button type="button" className="ac2-chip" aria-pressed={activeKind === "all"} onClick={() => setDesignKind("all")}>全部<em>{ofType.length}</em></button>
+          {DESIGN_KINDS.map(([id, name, c]) => (
+            <button type="button" key={id} className="ac2-chip" style={{ "--tc": c }} aria-pressed={activeKind === id} disabled={!kindCounts.get(id)} onClick={() => setDesignKind(id)}>
+              <i aria-hidden="true" />{name}<em>{kindCounts.get(id)}</em>
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
   return (
     <>
       <PageHeading
@@ -457,7 +524,7 @@ export function Assets({
           label="资产类型"
           items={ASSET_TABS.map(([id, label]) => ({ id, label, count: id === "Skill" ? skillItems.length : assets.filter((a) => a.type === id).length }))}
           value={tab}
-          onChange={(id) => { setCat("all"); onFilter(id); }}
+          onChange={(id) => { setCat("all"); setDesignKind("all"); onFilter(id); }}
         />
         <div className="toolbar-right">
           <select aria-label="排序方式" value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -469,6 +536,7 @@ export function Assets({
         </div>
       </div>
       {chips}
+      {designTop}
       <div className="collection-meta">
         <span>
           当前结果 · <b>{shown.length}</b>
@@ -501,9 +569,9 @@ export function Assets({
         <Empty
           sprite="numemon"
           title="没有匹配的资产"
-          action={<div className="empty-actions"><Button secondary onClick={() => { setSearch(""); setCat("all"); }}>清除筛选</Button></div>}
+          action={<div className="empty-actions"><Button secondary onClick={() => { setSearch(""); setCat("all"); setDesignKind("all"); }}>清除筛选</Button></div>}
         >
-          {words.length ? `没有资产同时匹配“${words.join(" ")}”和当前筛选条件。` : "当前分类下没有资产。"}
+          {words.length ? `没有资产同时匹配“${words.join(" ")}”和当前筛选条件。` : designTab ? "当前形式下没有设计。" : "当前分类下没有资产。"}
         </Empty>
       )}
       {skillTab && shown.length === 0 && !narrowed && (
@@ -530,6 +598,7 @@ export function Assets({
         <Dialog recoverFocus title="资产仓库 · 这页怎么用" onClose={() => setHelpOpen(false)}>
           <p>资产仓库分 Prompt、Design、Skill 三页。Prompt 与 Skill 共用一套分类筛选；没选过分类的按内容自动归组，在卡片右下角选一个分类就固定下来。</p>
           <p>左上角的小标识按数据自动点亮：NEW 入库 7 天内，HOT 近 30 天复制 ≥ 5 次，UPD 7 天内改过，IDLE 入库超过 30 天一次没用过。</p>
+          <p>Design 页有两种形式：设计 Prompt 复制时原样给出正文；设计 Skill 只登记 skill 名和 GitHub 地址，复制时生成固定调用指令（先查有没有装，没装就从 GitHub 装，装好就按你的需求调用）。卡片上的图是效果图，下面的小字是风格说明。</p>
           <p>Skill 页只读展示 my-skills 登记的 skill（以 links.tsv 为准），在 my-skills 新登记一个，下次打开或点「刷新」就多一颗蛋。「复制调用名」复制 /名称，粘贴给 Claude Code；在 Codex 里改用 $名称。次数来自 agent-kit 的调用记录，只记 Claude 端（11-07 起）；NEW 是首次登记 7 天内，UPD 是 7 天内有提交，IDLE 等调用记录攒满 30 天后才判断。</p>
           <p>复制后的实际采用与运行结果，以接收方回执和项目协议为准。</p>
         </Dialog>
@@ -665,7 +734,12 @@ export function AssetEditor({
     [content, setContent] = useState(old?.content || draft?.content || ""),
     [tags, setTags] = useState(old?.tags.join("，") || ""),
     [files, setFiles] = useState(old?.files || []),
-    [designKind, setDesignKind] = useState(old?.design?.kind || "skill"),
+    // 设计两种形式（#93 第三批）：新建默认设计 Prompt；设计 Skill 只填名字、GitHub 地址和可选子目录。
+    [designKind, setDesignKind] = useState(old?.design?.kind || "prompt"),
+    [designSkillName, setDesignSkillName] = useState(old?.design?.skillName || ""),
+    [designRepo, setDesignRepo] = useState(old?.design?.repo || ""),
+    [designPath, setDesignPath] = useState(old?.design?.path || ""),
+    [designImage, setDesignImage] = useState(old?.design?.image || ""),
     // Skill 两种来源：install 填安装地址（默认），self 自建上传 ZIP（用户 2026-10-27）；已有资产不切换。
     [skillMode, setSkillMode] = useState(old ? (isInstallSkill(old) ? "install" : "self") : "install"),
     [installUrl, setInstallUrl] = useState(old?.installUrl || ""),
@@ -696,6 +770,24 @@ export function AssetEditor({
     } catch (e) {
       setError(e.message || "无法读取 ZIP，请检查文件格式");
     } finally { setUploading(false); }
+  }
+  async function pickDesignImage(file) {
+    if (!file || busy || uploading) return;
+    setUploading(true);
+    setError("");
+    try {
+      setDesignImage(await uploadDesignImage(file));
+      notify("效果图已上传，保存后显示在卡片上");
+    } catch (e) {
+      setError(e.message || "效果图上传失败，请重试");
+    } finally { setUploading(false); }
+  }
+  function designValues() {
+    const image = designImage ? { image: designImage } : {};
+    if (designKind === "prompt") return { content, design: { kind: "prompt", ...image } };
+    const skillName = designSkillName.trim(), path = normalizeRepoPath(designPath);
+    if (!skillName) throw new Error("请填写设计 Skill 的名称");
+    return { content: "", design: { kind: "skill", skillName, repo: normalizeDesignRepo(designRepo), ...(path ? { path } : {}), ...image } };
   }
   async function submit(e) {
     e.preventDefault();
@@ -728,9 +820,9 @@ export function AssetEditor({
           ),
         ],
         source: old?.source || "个人创建",
-        files: (type === "Design" && designKind === "prompt") || (type === "Skill" && skillMode === "install") ? [] : files,
+        files: type === "Design" || (type === "Skill" && skillMode === "install") ? [] : files,
         ...(type === "Skill" && skillMode === "install" ? { installUrl: validateInstallUrl(installUrl) } : {}),
-        ...(type === "Design" ? { design: { kind: designKind } } : {}),
+        ...(type === "Design" ? designValues() : {}),
         ...(type === "Workflow" ? { references } : {}),
         ...(type === "Workflow" ? { workflowTemplate: parsedTemplate } : {}),
       };
@@ -807,6 +899,22 @@ export function AssetEditor({
             ))}
           </div>
         )}
+        {/* 设计先选形式再填字段（#93 第三批）。 */}
+        {type === "Design" && <>
+          <div className="type-picker skill-mode" role="radiogroup" aria-label="设计形式">
+                {DESIGN_KINDS.slice().reverse().map(([kind, name]) => (
+                  <button type="button" role="radio" key={kind} aria-checked={designKind === kind}
+                    className={designKind === kind ? "active" : ""} disabled={busy || uploading}
+                    onClick={() => setDesignKind(kind)}>
+                    <TypeIcon type="Design" size={18} />
+                    {name}
+                  </button>
+                ))}
+              </div>
+              <p className="helper">{designKind === "skill"
+                ? "只填 skill 名和 GitHub 地址。复制时生成固定调用指令：先查有没有装，没装就从这个地址装，装好就按需求调用。"
+                : "贴上你确认过的设计指令，复制时原样给出，粘贴给 GPT 或任意 Agent。"}</p>
+        </>}
         {type === "MCP" ? (
           <>
             <p>只保存公开 HTTP MCP 地址与可选环境变量名引用。首版仅生成 Codex CLI 的 TOML 配置片段；不保存 token、header 值、stdio 命令、Hook 或任意 JSON。</p>
@@ -829,12 +937,12 @@ export function AssetEditor({
               />
             </label>
             <label>
-              一句话说明
+              {type === "Design" ? "风格说明" : "一句话说明"}
               <input
                 maxLength={180}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="它解决什么问题？什么时候用？"
+                placeholder={type === "Design" ? "一两句话说清这个风格：底色、质感、适合做什么" : "它解决什么问题？什么时候用？"}
               />
             </label>
             {hasCategory(type) && (
@@ -847,14 +955,36 @@ export function AssetEditor({
               </label>
             )}
             {type === "Design" && <>
-              <label>内容形式
-                <select value={designKind} disabled={busy || uploading} onChange={e => setDesignKind(e.target.value)}>
-                  <option value="skill">Skill 包</option><option value="prompt">Prompt</option>
-                </select>
-              </label>
-              <p className="helper">{designKind === "skill"
-                ? "上传完整 ZIP，生图提示词可选。在 ChatGPT 使用时，请导出完整包并作为附件上传；上传不会覆盖已填提示词。"
-                : "填写生图提示词，复制到 ChatGPT 即可使用默认生图能力。"}</p>
+              {designKind === "skill" && <>
+                <label>Skill 名称
+                  <input required maxLength={64} value={designSkillName} onChange={(e) => {
+                    const value = e.target.value;
+                    if (!title.trim() || title === designSkillName) setTitle(value);
+                    setDesignSkillName(value);
+                  }} placeholder="例如 taste-skill（小写英文、数字和连字符）" />
+                </label>
+                <label>GitHub 地址
+                  <input required type="url" maxLength={2048} value={designRepo} onChange={(e) => setDesignRepo(e.target.value)} placeholder="https://github.com/作者/仓库" />
+                </label>
+                <label>仓库子目录（可选）
+                  <input maxLength={200} value={designPath} onChange={(e) => setDesignPath(e.target.value)} placeholder="skill 不在仓库根目录时填，例如 skills/taste-skill" />
+                </label>
+              </>}
+              <div className="design-image-field">
+                <span className="design-image-label">效果图（可选）</span>
+                <div className="design-image-row">
+                  <span className="design-image-preview"><DesignShot image={designImage} title={title || "设计"} /></span>
+                  <div className="design-image-actions">
+                    <label className="design-image-pick">
+                      {designImage ? "换一张" : "上传效果图"}
+                      <input className="file-input" aria-label="选择效果图" type="file" accept="image/png,image/jpeg,image/webp"
+                        disabled={busy || uploading} onChange={(e) => { pickDesignImage(e.target.files[0]); e.target.value = ""; }} />
+                    </label>
+                    {designImage && <Button type="button" secondary disabled={busy || uploading} onClick={() => setDesignImage("")}>去掉效果图</Button>}
+                    <small>PNG、JPG 或 WebP，单张 8 MB 以内；卡片封面就是这张图。</small>
+                  </div>
+                </div>
+              </div>
             </>}
             {type === "Skill" && skillMode === "install" && <>
               <label>
@@ -870,7 +1000,7 @@ export function AssetEditor({
               </label>
               <p className="helper">填 Skill 所在仓库或目录的链接。复制时得到一段安装话术，粘贴给 Claude Code 或 Codex，它会按这个地址里的文档装好。</p>
             </>}
-            {((type === "Skill" && skillMode === "self") || (type === "Design" && designKind === "skill")) && (
+            {type === "Skill" && skillMode === "self" && (
               <label className="upload-zone">
                 <Upload size={22} />
                 <strong>
@@ -892,12 +1022,12 @@ export function AssetEditor({
                 />
               </label>
             )}
-            {type !== "Skill" && (
+            {type !== "Skill" && (type !== "Design" || designKind === "prompt") && (
               <label>
                 {CONTENT_LABEL[type]}
                 <textarea
                   aria-label={CONTENT_LABEL[type]}
-                  required={type !== "Design" || designKind === "prompt"}
+                  required
                   rows={8}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
@@ -1063,7 +1193,7 @@ export function AssetDetail({
     } else {
       download(
         `${filename}.md`,
-        asset.type === "Design" ? designPromptText(selected) : selected.content,
+        asset.type === "Design" ? designCopyText(selected) : selected.content,
         "text/markdown;charset=utf-8",
       );
       notify("已导出 Markdown");
@@ -1158,7 +1288,7 @@ export function AssetDetail({
           <div className="detail-actions">
             <Button disabled={copying || usageBlocked} onClick={copyPrompt}>
               <Copy size={16} />
-              {asset.type === "Design" ? "复制生图提示词" : asset.type === "Skill" ? "复制安装话术" : "复制全文"}
+              {copyLabel(asset, v)}
             </Button>
             <button
               className="outlined-icon"
@@ -1195,7 +1325,8 @@ export function AssetDetail({
         />
         <dl className="detail-facts">
           {asset.type === "Design" && <>
-            <div><dt>内容形式</dt><dd>{v.design.kind === "skill" ? "Skill 包" : "Prompt"}</dd></div>
+            <div><dt>内容形式</dt><dd>{designKindLabel(v)}</dd></div>
+            {isLinkedDesignSkill(v) && <div><dt>安装来源</dt><dd><a href={v.design.repo} target="_blank" rel="noreferrer">{v.design.repo}</a>{v.design.path ? ` · ${v.design.path}` : ""}</dd></div>}
           </>}
           {asset.type === "Skill" && <div><dt>形态</dt><dd>{isInstallSkill(v) ? <>安装地址 · <a href={v.installUrl} target="_blank" rel="noreferrer">{v.installUrl}</a></> : "自建 · ZIP 包"}</dd></div>}
           <div>

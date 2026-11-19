@@ -10,7 +10,7 @@ import { unzipSync, strFromU8 } from 'fflate';
 import { openRepository } from '../server/repository.mjs';
 import { createDeliveries } from '../server/delivery.mjs';
 import { createAssetActivity } from '../server/asset-activity.mjs';
-import { designPromptText } from '../src/design-asset.js';
+import { designCopyText } from '../src/design-asset.js';
 
 const files = () => [
   { path: 'poster/SKILL.md', text: true, mode: 0o644, data: '---\nname: poster-studio\n---\n# Poster\nUse all references.' },
@@ -68,11 +68,8 @@ test('设计Skill复制交付完整固定包，切为Prompt后旧交付与使用
     validateState(state);
     assert.match(strFromU8(unzipSync((await deliveries.download(secret)).bytes)['poster/SKILL.md']), /# Poster/);
     await assert.rejects(deliveries.create({ assetId: prompt.id, versionId: current(prompt).id }, 'http://127.0.0.1:12345'), /Skill 包/);
-    const promptText = designPromptText(current(prompt));
-    assert.match(promptText, /ChatGPT 默认的生图能力/);
-    assert.doesNotMatch(promptText, /Skill|poster-studio/);
-    assert.match(promptText, /蓝色封面/);
-    assert.doesNotMatch(promptText, /packages\/|下载完整|请安装/);
+    // #93 第三批：设计 Prompt 复制原样给出正文（不再包 ChatGPT 生图说明）。
+    assert.equal(designCopyText(current(prompt)), '蓝色封面');
     state = (await activity.append({ id: randomUUID(), assetId: prompt.id, versionId: current(prompt).id, kind: 'use', action: 'copy-design', expectedRevision: state.revision })).state;
     assert.equal(state.assetActivity.length, 2);
     now += 600001;
@@ -160,19 +157,19 @@ test('设计正文改版明确ChatGPT生图边界且只更新生图要求，不�
 });
 
 
-test('新设计无需调用名，旧Prompt调用名兼容保留但不进入生图提示词', () => {
+test('新设计无需调用名，旧Prompt调用名兼容保留但不进入复制正文', () => {
   const prompt = makeAsset({...input('prompt'), design:{kind:'prompt'}});
   const skill = makeAsset({...input(), design:{kind:'skill'}});
   validateState({...seed(),assets:[prompt,skill]});
   const legacy = makeAsset(input('prompt'));
   const oldVersion = structuredClone(current(legacy));
-  assert.equal(designPromptText(current(legacy)), designPromptText(current(prompt)));
+  assert.equal(designCopyText(current(legacy)), designCopyText(current(prompt)));
   assert.deepEqual(current(legacy), oldVersion, '复制不改写旧版本');
   const edited = revise(legacy, {...input('prompt'),design:{kind:'prompt'}});
   const restored = restore(edited,oldVersion.id);
   validateState({...seed(),assets:[restored]});
   assert.deepEqual(current(restored).design,oldVersion.design);
-  assert.doesNotMatch(designPromptText(current(restored)),/Skill|poster-studio|安装|调用/);
+  assert.doesNotMatch(designCopyText(current(restored)),/Skill|poster-studio|安装|调用/);
 });
 
 test('缺name设计包自动依据入口核对身份，旧手填名不作交付身份，ChatGPT提示需手动附包', async () => {

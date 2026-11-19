@@ -3,6 +3,7 @@
 // 这里只有纯函数：生成口令、解析用户粘贴的回复、返回新的主库对象。不调用任何 Agent 或模型。
 // 字段与上限以 server/revision-candidate-schema.mjs 为准。
 import { current, uid, now } from "./store.js";
+import { designKindLabel } from "./design-asset.js";
 
 // 回复里用来切分两段的标记。用全角方括号，避免被 Markdown 渲染吞掉后复制回来对不上。
 export const PACKET_MARKERS = Object.freeze({
@@ -54,7 +55,7 @@ export function buildRevisionPacket(asset, activity = []) {
     `- 名称：${v.title}`,
     `- 类型：${TYPE_NAMES[asset.type] || asset.type}`,
     `- 当前版本：v${number}.0（当前版本已成功复制 ${uses} 次）`,
-    ...(asset.type === "Design" ? [`- 内容形式：${v.design.kind === "skill" ? "Skill 包" : "Prompt"}`, "- 默认使用 ChatGPT 的生图能力。", "- 本次仅优化生图要求正文；保持内容形式和完整文件包不变，不改写或安装 Skill。"] : []),
+    ...(asset.type === "Design" ? [`- 内容形式：${designKindLabel(v)}`, "- 默认使用 ChatGPT 的生图能力。", "- 本次仅优化生图要求正文；保持内容形式和完整文件包不变，不改写或安装 Skill。"] : []),
     ...(v.description ? [`- 说明：${v.description}`] : []),
     "",
     `## 当前版本全文（v${number}.0）`,
