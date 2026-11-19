@@ -2702,3 +2702,25 @@ CSS只补编辑态空行尺寸，三类红绿和精确保存、完整1377/1377�
 ## B批可靠性修复交回613（2026-10-22）
 
 用户授权“开启B批”。候选实现与完整隔离验证完成，见[613交接](docs/agents/handoffs/2026-10-22-codex-b-reliability-613.md)。未正式采用、未重启、未真实恢复或撤权；C批未动。新恢复ID/只读结果查询、多窗范围冲突与统一ZIP容量均已覆盖失败恢复路径。1515/1515、浏览器与两轴通过，CSS同正式版。正式release610/PID68883/revision936/12便签/13收藏及完整data未变。唯一下一步等正式采用确认。
+
+
+## Codex 安全审计 11-18 · 隔离 PR 交接
+
+- 隔离交接编号：`WB-20261118-CODEX-AUDIT-1118`。输入状态 `WB-20261108-699`；本节只在 `codex/audit-fix-1118` 分支，不改主目录既有认领，不表示 Claude 或正式服务已采用。
+- 用户范围：安全审计、修高危与小范围行为不变的中危、推分支开 PR，不合并。正式 5178/5179、launchd、本机配置、真实数据均未改。
+- 主线：审计取证 ✅（报告逐项证据）；9组修复 ✅（代码 `a2a74b5`，48项新增回归）；全量/报告/PR ✅（[草稿PR #85](https://github.com/Natsukashii1997/digiworld/pull/85)）；最后删除本轮worktree为本会话收尾动作，实际清理回执以本机主报告为准。
+- 已修：D01 source-map-js、D02 Vite、D03 SQLite硬链接、D04快照目录链接、D05写回死锁、D06完整凭据脱敏/目录标题、D07同句柄白名单读取、D08 GET回显Key拒绝、D19钥匙串exists类型回读。
+- 最终固定代码 `a2a74b55fefab4839e78f0f761e047ebdacf0a1f`；`npm test`：1677 tests / 1676 pass / 0 fail / 1 skipped（仓库外wiki-local集成未具备）；独立Standards/Spec均PASS。构建成功，仅本worktree产物。后续文档提交不改变15个源码/测试/依赖文件指纹。
+- 报告：[安全审计11-18](docs/security/2026-11-18-audit.md)；本机要求的主报告 `/Users/nat/Sandbox/2026-11-17-codex-quota/audits/digiworld.md`；日志及SHA清单在同级 `evidence/digiworld/`；关联 issue #84、草稿PR #85（不合并）；分支通过Git Data API逐个保留本地提交SHA上传，原因是GitHub主站Git连接超时，API正常。
+- 未修与原因：D09/D10高风险读取边界、D11多Vault保护、D12覆盖顺序、D13诊断保留、D14新建原子可见性、D16媒体保留、D18 MCP身份、D20/D21 synthetic夜巡隔离/恢复需单独决定；D15低危未修，D17待核实。上轮收藏点击高危已有独立PR #83，不在本轮重复或合并。
+- 唯一下一步：常浩审阅报告的“需常浩决定”，先确定D09/D10/D11/D18的读取信任模型；本PR不自动合并，不推main，不运行采用。
+
+### 2026-11-20 Claude：按独立审查返修并变基（PR #85 仍未合并）
+
+- 来由：常浩清 PR 积压时回「你来修」。11-20 独立审查结论「修完再合」，意见全文在 PR #85 评论里。
+- 变基到最新 main：`server/cockpit-read.mjs` 顶部导入行两边各加了一行，都保留。上面那节写的「#83 为独立 OPEN PR」已过时，#83 已合并。
+- 修了审查的中等问题：`server/knowledge-writeback.mjs` 写回执那一步不再比主库版本、不再看预览过期和候选状态。原来文件写进 Vault 后、回执记下前，别处提交一次主库或预览刚好到期，就返回 409 并留下一条解不开的未决记录。现在和合并前 main 的做法一致：文件写了就记回执，再核对结果。
+- 补 2 条用例（`tests/security-knowledge-deadlock.test.mjs`）：写入后有无关提交、写入后预览过期。修前 2 条都失败（`targetExists:true`、`applied:0`），修后通过。
+- 测试：`npm test` 1730 tests / 1727 pass / 2 fail / 1 skipped。2 条失败都不是本 PR 的：入口测试要先 `npm run build`，构建后单跑 12/12 通过；`tests/capability-services.test.mjs` 那条在 main 上单跑同样失败（本机环境，原因没查，main 的 CI 是绿的）。以 CI 为准。
+- 没修的审查意见（都是低危）：超时用固定毫秒数、驾驶舱读取遇变化不重试、属主和硬链接检查误拒会挡住启动、Key 回显的报错文案、目录身份含创建时间。上面那节列的未修项和「需常浩决定」不变。
+

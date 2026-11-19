@@ -1,4 +1,4 @@
-import { mkdir, open, readFile, rename, lstat } from "node:fs/promises";
+import { mkdir, open, readFile, rename, lstat, realpath } from "node:fs/promises";
 import { join } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { stringify, parse } from "../src/serialization.js";
@@ -39,11 +39,30 @@ export async function openRepository(directory) {
   if ((await lstat(directory)).isSymbolicLink())
     throw failure("数据目录不能是符号链接", 503);
   await mkdir(join(directory, "snapshots"), { recursive: true, mode: 0o700 });
+  // Bind both directories before opening any writer. A preplanted or replaced
+  // snapshots link must never redirect private state outside this data root.
+  const rootPath = await realpath(directory);
+  const directoryId = info => [info.dev, info.ino, info.birthtimeMs, info.uid].join(":");
+  const rootId = directoryId(await lstat(directory));
+  let snapshotsId;
+  async function verifyDirectories() {
+    const root = await lstat(directory), snapshots = await lstat(join(directory, "snapshots"));
+    if (!root.isDirectory() || root.isSymbolicLink() || directoryId(root) !== rootId ||
+        await realpath(directory) !== rootPath || !snapshots.isDirectory() || snapshots.isSymbolicLink() ||
+        await realpath(join(directory, "snapshots")) !== join(rootPath, "snapshots") ||
+        snapshotsId && directoryId(snapshots) !== snapshotsId)
+      throw failure("主库快照目录身份已变化或经过链接，已停止读写", 503);
+    snapshotsId ??= directoryId(snapshots);
+  }
+  await verifyDirectories();
   // OS-managed SQLite locking releases on crashes. State remains in JSON snapshots.
   const lockPath = join(directory, ".writer-lock.sqlite");
   try {
-    if ((await lstat(lockPath)).isSymbolicLink())
+    const info = await lstat(lockPath);
+    if (info.isSymbolicLink())
       throw failure("锁文件不能是符号链接", 503);
+    if (!info.isFile() || info.nlink !== 1 || info.uid !== process.getuid?.())
+      throw failure("锁文件须为本人所有的普通文件，不能是硬链接", 503);
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
@@ -61,6 +80,7 @@ export async function openRepository(directory) {
     closed = false;
   const previews = new Map();
   async function read() {
+    await verifyDirectories();
     let head;
     try {
       head = JSON.parse(
@@ -99,13 +119,16 @@ export async function openRepository(directory) {
   async function commit(state) {
     const raw = stringify(state),
       file = `${state.revision}-${randomUUID()}.json`;
+    await verifyDirectories();
     await durableWrite(join(directory, "snapshots", file), raw);
     await syncDirectory(join(directory, "snapshots"));
+    await verifyDirectories();
     const pointer = join(directory, `.CURRENT-${randomUUID()}.tmp`);
     await durableWrite(
       pointer,
       JSON.stringify({ file, revision: state.revision, sha256: digest(raw) }),
     );
+    await verifyDirectories();
     await rename(pointer, join(directory, "CURRENT.json"));
     await syncDirectory(directory);
     return read();

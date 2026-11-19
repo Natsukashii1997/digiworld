@@ -21,7 +21,7 @@ export async function createReverseNative({repository,connect=connectCodex,defau
   if((await lstat(path)).isSymbolicLink())throw fail('原生记录目录不能是符号链接',503);
  }
  const path=join(root,'sessions.sqlite');
- try{if((await lstat(path)).isSymbolicLink())throw fail('原生记录文件不能是符号链接',503);}catch(e){if(e.code!=='ENOENT')throw e;}
+ try{const info=await lstat(path);if(info.isSymbolicLink())throw fail('原生记录文件不能是符号链接',503);if(!info.isFile()||info.nlink!==1||info.uid!==process.getuid?.())throw fail('原生记录须为本人所有的普通文件，不能是硬链接',503);}catch(e){if(e.code!=='ENOENT')throw e;}
  const db=new DatabaseSync(path);await chmod(path,0o600);
  db.exec(`PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL;
  CREATE TABLE IF NOT EXISTS sessions(id TEXT PRIMARY KEY, record_id TEXT NOT NULL, data TEXT NOT NULL);

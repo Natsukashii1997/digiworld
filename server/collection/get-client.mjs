@@ -22,6 +22,19 @@ async function credentials() {
   } catch { throw new GetError('GET接入未配置或钥匙串不可用，请完成本机接入配置','rejected'); }
 }
 const remoteId=value=>typeof value==='string' && /^[a-zA-Z0-9_-]{1,128}$/.test(value);
+function containsCredential(payload,key) {
+  if (!key) return false;
+  const pending=[payload];
+  while (pending.length) {
+    const value=pending.pop();
+    if (typeof value==='string' && value.includes(key)) return true;
+    if (value && typeof value==='object') for (const [name,item] of Object.entries(value)) {
+      if (name.includes(key)) return true;
+      pending.push(item);
+    }
+  }
+  return false;
+}
 export function createGetClient({fetchImpl=fetch,readCredentials=credentials}={}) {
   return {async session() {
     const {clientId,key}=await readCredentials();
@@ -40,6 +53,10 @@ export function createGetClient({fetchImpl=fetch,readCredentials=credentials}={}
         const rejected=response.status>=400 && response.status<500 && response.status!==408;
         throw new GetError(code==='10004'?'GET授权已失效，请更新本机接入配置':code==='10008'?'GET应用缺少读取或新增笔记权限':code==='10201'?'GET账户当前不可用，请核对账户状态':`GET未完成请求${code?'（'+code+'）':''}`,rejected?'rejected':'unknown');
       }
+      // Successful content can echo authentication in any field, including
+      // object keys. Failed responses already use only safe, fixed error codes.
+      if (containsCredential(payload,key))
+        throw new GetError('GET请求结果待核对，请保留当前记录','unknown');
       return payload.data;
     }
     return {
