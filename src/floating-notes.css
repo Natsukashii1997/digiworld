@@ -22,6 +22,9 @@
 .fn-hd h3 { margin: 0; color: #fff; font: 700 var(--fs-section)/1 "HanziPen SC", "WB HanziPen", var(--sans); letter-spacing: .06em; -webkit-text-stroke: .6px currentColor; text-shadow: 0 0 8px color-mix(in srgb, #fff 45%, transparent); }
 .fn-hd .n { padding: 1px 7px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--yellow) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--yellow) 35%, transparent); font: 600 var(--fs-label) var(--mono); line-height: 16px; color: var(--yellow); letter-spacing: .04em; }
 .fn-hd .fn-icon { color: var(--muted); }
+/* 用户 2026-11-19：钉住、收起两个按钮靠近些——各收到 36 宽并去掉中间 8px 间隔，高仍 44 */
+.fn-hd .fn-icon { width: 36px; }
+.fn-hd .fn-icon + .fn-icon { margin-left: calc(var(--s-2) * -1); }
 .fn-hd .sp { flex: 1; }
 .fn-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: var(--r-s); background: none; color: var(--text-2); cursor: pointer; }
 .fn-icon:hover { color: var(--text); background: color-mix(in srgb, var(--line-3) 30%, transparent); }
