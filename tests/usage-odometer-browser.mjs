@@ -39,13 +39,14 @@ async function open(reducedMotion) {
 const button = (page, name) => page.getByRole("button", { name, exact: true });
 const card = (page, a) =>
   page.locator(".asset-card", { has: button(page, `查看 ${current(a).title}`) });
+// #93：卡片使用次数从封面 .cover-uses 改为显示屏里的 .ac2-uses，文字形如「2次」。
 const coverUses = async (page, a) =>
-  (await card(page, a).locator(".cover-uses").innerText()).replace(/\s/g, "");
+  (await card(page, a).locator(".ac2-uses").innerText()).replace(/\s/g, "");
 const detailCount = (page) => page.getByTestId("usage-count").innerText();
 
 // 从复制前开始记录：封面数字与详情次数是否进入过滚动态，页面上是否出现过旧数字。
 async function watchRolling(page, a) {
-  await card(page, a).locator(".cover-uses").evaluate((cover) => {
+  await card(page, a).locator(".ac2-uses").evaluate((cover) => { // #93：.cover-uses → .ac2-uses
     const seen = (window.__seen = { cover: false, detail: false, old: false, rolling: false });
     const scan = () => {
       if (cover.querySelector(".is-rolling")) seen.cover = true;
@@ -84,26 +85,26 @@ try {
   {
     const a = prompts[0];
     const { context, page } = await open("no-preference");
-    assert.equal(await coverUses(page, a), "0");
+    assert.equal(await coverUses(page, a), "0次"); // #93：新卡片次数带「次」
     await button(page, `查看 ${current(a).title}`).click();
     assert.equal(await detailCount(page), "从未使用");
     for (const n of [1, 2]) {
       await watchRolling(page, a);
       const seen = await copyOnce(page);
-      assert.equal(await coverUses(page, a), String(n), `第 ${n} 次：封面数字`);
+      assert.equal(await coverUses(page, a), `${n}次`, `第 ${n} 次：封面数字`); // #93
       assert.match(await detailCount(page), new RegExp(`^已使用 ${n} 次 · 最近 `), `第 ${n} 次：详情次数`);
       assert.ok(seen.cover, `第 ${n} 次：封面数字没有滚动（未出现 .is-rolling）`);
       assert.ok(seen.detail, `第 ${n} 次：详情次数没有滚动（未出现 .is-rolling）`);
       // 滚完后只剩当前值。
-      assert.equal(await page.locator(".cover-uses .odo-old, [data-testid='usage-count'] .odo-old").count(), 0);
+      assert.equal(await page.locator(".ac2-uses .odo-old, [data-testid='usage-count'] .odo-old").count(), 0); // #93：.cover-uses → .ac2-uses
       // 等传送演出复原再复制下一次。
       await page.locator(".transfer-lcd").waitFor({ state: "detached", timeout: 4000 });
     }
     await axe(page, "正常动效·详情");
     await button(page, "关闭").click();
     await page.getByRole("dialog", { name: "资产详情" }).waitFor({ state: "hidden" });
-    assert.equal(await coverUses(page, a), "2");
-    assert.equal(await card(page, a).getByText("使用 2 次", { exact: true }).count(), 1);
+    // #93：卡片上的读屏文字「使用 N 次」随旧卡片去掉；改查显示屏上的可见次数。
+    assert.equal(await coverUses(page, a), "2次");
     await axe(page, "正常动效·资产库");
     ok("正常动效：复制后封面与详情数字滚到新值（0→1、1→2），出现 .is-rolling，axe 无违规");
     await context.close();
@@ -113,19 +114,21 @@ try {
   {
     const a = prompts[1];
     const { context, page } = await open("reduce");
-    assert.equal(await coverUses(page, a), "0");
+    assert.equal(await coverUses(page, a), "0次"); // #93
     await button(page, `查看 ${current(a).title}`).click();
     for (const n of [1, 2]) {
       await watchRolling(page, a);
       const seen = await copyOnce(page);
-      assert.equal(await coverUses(page, a), String(n), `减动画第 ${n} 次：封面数字`);
+      assert.equal(await coverUses(page, a), `${n}次`, `减动画第 ${n} 次：封面数字`); // #93
       assert.match(await detailCount(page), new RegExp(`^已使用 ${n} 次 · 最近 `), `减动画第 ${n} 次：详情次数`);
       assert.equal(seen.old, false, `减动画第 ${n} 次：出现了旧数字 .odo-old`);
       assert.equal(seen.rolling, false, `减动画第 ${n} 次：出现了滚动态 .is-rolling`);
       await page.locator(".transfer-lcd").waitFor({ state: "detached", timeout: 4000 });
     }
     // 静止时封面与详情各只渲染一份当前值。
-    assert.equal(await card(page, a).locator(".cover-uses .odo-digit").count(), 1);
+    // #93：卡片次数改在 .ac2-uses；只核对显示一份当前值（「2次」），不再要求一定是 Odometer 结构。
+    assert.equal(await coverUses(page, a), "2次");
+    assert.equal(await card(page, a).locator(".ac2-uses .odo-old").count(), 0);
     assert.equal(await page.locator("[data-testid='usage-count'] .odo-digit").count(), 1);
     await axe(page, "减动画·详情");
     ok("减少动态效果：封面与详情直接显示新值，全程无 .odo-old / .is-rolling，axe 无违规");

@@ -31,9 +31,10 @@ try {
   await page.getByRole('button', { name: '新建', exact: true }).click();
   const form = page.locator('.asset-form');
   const types = form.getByRole('radiogroup', { name: '资产类型' }).getByRole('radio');
-  assert.deepEqual(await types.allInnerTexts(), ['Prompt', 'Skill', '工作流', '规则', '焚决', '设计']);
+  // #93（用户定稿）：新建只给 Prompt / 设计 / Skill 三种，工作流、规则、焚决已去掉。
+  assert.deepEqual(await types.allInnerTexts(), ['Prompt', '设计', 'Skill']);
   const tops = await types.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
-  assert.equal(new Set(tops).size, 1, `六个类型应在同一行：${tops}`);
+  assert.equal(new Set(tops).size, 1, `三个类型应在同一行：${tops}`);
   // 设计图标在按钮里上下居中
   const icon = await form.getByRole('radio', { name: '设计' }).evaluate((b) => {
     const r = b.getBoundingClientRect(), i = b.querySelector('svg').getBoundingClientRect();
@@ -52,6 +53,8 @@ try {
   await page.waitForTimeout(1500);
   await page.screenshot({ path: join(out, '1-新建-安装地址.png') });
   await form.getByRole('button', { name: '保存资产' }).click();
+  // #93：默认停在 Prompt 页，Skill 卡要切到 Skill 页才看得到。
+  await page.getByRole('group', { name: '资产类型', exact: true }).getByRole('button', { name: /^Skill/ }).click();
   const installCard = page.locator('.asset-card').filter({ hasText: '逆向一切' });
   await installCard.waitFor();
   assert.equal(await installCard.locator('.self-tag').count(), 0);
@@ -63,7 +66,8 @@ try {
   assert.ok(text.includes(`安装地址：${URL_}`));
   await page.waitForTimeout(1500);
   assert.equal(await installCard.locator('.asset-copy-recovery').count(), 0, '复制后使用记录应已保存');
-  assert.equal((await installCard.locator('.cover-uses').innerText()).replace(/\s/g, ''), '1', '复制一次计一次使用');
+  // #93：使用次数从 .cover-uses 改为显示屏里的 .ac2-uses（形如「1次」）。
+  assert.equal((await installCard.locator('.ac2-uses').innerText()).replace(/\s/g, ''), '1次', '复制一次计一次使用');
 
   // 自建 · ZIP 形态（等上一个的诞生动画放完）
   await page.waitForTimeout(3500);
@@ -78,10 +82,17 @@ try {
   await form.getByRole('button', { name: '保存资产' }).click();
   const selfCard = page.locator('.asset-card').filter({ hasText: 'weekly' });
   await selfCard.waitFor();
-  assert.equal(await selfCard.locator('.self-tag').innerText(), '自建');
-  assert.equal(await selfCard.locator('.holo-scene').count(), 1);
-  assert.equal(await selfCard.locator('.cover-seal').count(), 1);
-  assert.equal(await selfCard.locator('.type-icon-seal').count(), 1);
+  // #93：定稿卡片保留全息蛋（卡片上 1 个），去掉「自建」字样、印章与类型图标印章（卡片上 0 个）；详情抽屉仍保留这几处标识。
+  assert.equal(await selfCard.locator('.holo-scene').count(), 1, '卡片保留全息蛋');
+  for (const mark of ['.self-tag', '.cover-seal', '.type-icon-seal']) assert.equal(await selfCard.locator(mark).count(), 0, `卡片不再显示 ${mark}`);
+  await selfCard.getByRole('button', { name: '查看 weekly' }).click();
+  const selfDetail = page.getByRole('dialog', { name: '资产详情' });
+  assert.equal(await selfDetail.locator('.self-tag').innerText(), '自建');
+  assert.equal(await selfDetail.locator('.holo-scene').count(), 1);
+  assert.equal(await selfDetail.locator('.cover-seal').count(), 1);
+  assert.equal(await selfDetail.locator('.type-icon-seal').count(), 1);
+  await selfDetail.getByRole('button', { name: '关闭' }).click();
+  await selfDetail.waitFor({ state: 'hidden' });
   await page.mouse.move(0, 0);
   await page.waitForTimeout(3500);
   const row = async (name) => {

@@ -36,8 +36,15 @@ const audit = async (label) =>
     [],
     `axe ${label}`,
   );
+// #93 资产仓库默认停在 Prompt 页，Skill 卡要先切到 Skill 页签才会显示。
+const skillTab = () =>
+  page
+    .getByRole("group", { name: "资产类型" })
+    .getByRole("button", { name: /^Skill/ })
+    .click();
 const open = async () => {
   await page.goto(app.url + "/#assets");
+  await skillTab();
   await page
     .getByRole("button", { name: "查看 副本核对测试", exact: true })
     .click();
@@ -101,6 +108,7 @@ try {
   assert.equal(saved.connections.skillCopies.length, 1);
   assert.equal(saved.connections.skillCopies[0].location, app.location);
   await page.reload();
+  await skillTab(); // #93 刷新后回到默认 Prompt 页，先切到 Skill 页签
   await page
     .getByRole("button", { name: "查看 副本核对测试", exact: true })
     .click();

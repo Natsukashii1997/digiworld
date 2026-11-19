@@ -44,8 +44,25 @@ try {
   const form = page.getByRole('dialog', { name: '新建资产' });
   assert.equal(await form.getByRole('radio', { name: 'MCP 配置' }).count(), 0, '新建弹窗不再出现 MCP');
   await form.getByRole('button', { name: '取消' }).click();
-  await page.getByRole('button', { name: '查看 openai_docs' }).click();
+  // #93 MCP 不再在资产仓库显示（只剩 Prompt / Design / Skill 三页，数据保留）：逐页断言网格里没有它。
+  const typeTabs = page.getByRole('group', { name: '资产类型' }).getByRole('button');
+  assert.equal(await typeTabs.filter({ hasText: 'MCP' }).count(), 0, '资产类型页签不再有 MCP');
+  for (const tab of ['Prompt', 'Design', 'Skill']) {
+    await typeTabs.filter({ hasText: new RegExp(`^${tab}`) }).click();
+    assert.equal(await page.getByRole('button', { name: '查看 openai_docs' }).count(), 0, `${tab} 页不应出现 MCP 卡`);
+    assert.equal(await page.locator('.asset-grid').getByText('openai_docs').count(), 0, `${tab} 页网格不应出现 openai_docs`);
+  }
+  // #93 MCP 详情抽屉仍可从全局搜索（⌘K）打开，这是目前保留的入口。
+  const searchPalette = page.getByRole('dialog', { name: '搜索工作台' });
+  const searchMcp = async () => {
+    await page.keyboard.press('Meta+k');
+    await page.getByLabel('全局搜索').fill('openai_docs');
+    await page.locator('.search-results[aria-busy="false"]').waitFor();
+    return searchPalette.getByRole('button', { name: /openai_docs/ });
+  };
+  await (await searchMcp()).click();
   const detail = page.getByRole('dialog', { name: '资产详情' });
+  await detail.waitFor();
   assert.equal(await detail.getByLabel('Codex MCP TOML 片段').count(), 0, '未选目标不能生成片段');
   await detail.getByLabel('MCP 配置交付目标').selectOption('codex-one');
   assert.equal(await detail.getByLabel('Codex MCP TOML 片段').innerText(),
@@ -73,10 +90,15 @@ try {
     await page.screenshot({path:join(out,`mcp-${width}.png`),fullPage:true});
   }
   await page.reload();
-  await page.getByRole('button', { name: '查看 openai_docs' }).waitFor();
-  assert.equal(await page.getByRole('button', { name: '查看 openai_docs' }).count(), 1);
+  // #93 刷新后 MCP 仍不在仓库网格，但数据还在：全局搜索恰好命中一条并能再次打开详情。
+  await page.locator('.asset-card').first().waitFor();
+  assert.equal(await page.getByRole('button', { name: '查看 openai_docs' }).count(), 0);
+  const hits = await searchMcp();
+  assert.equal(await hits.count(), 1);
+  await hits.click();
+  await detail.getByLabel('MCP 配置交付目标').waitFor();
   assert.deepEqual(errors, []);
-  console.log('mcp-asset-browser: no-create, target, copy/count, download, reload passed');
+  console.log('mcp-asset-browser: no-create, not-in-grid, search-open, target, copy/count, download, reload passed'); // #93 增加「不在网格、经搜索打开」两项
   await context.close();
 } finally {
   await browser.close();
