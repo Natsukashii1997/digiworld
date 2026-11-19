@@ -335,7 +335,7 @@ export function Dialog({ title, children, onClose, drawer = false, recoverFocus 
 // version 为 null 时不显示版本（焚决卷不做版本）。
 // 自建 Skill 的封面（V6 全息构建，用户 2026-10-27 选定）：平时是投影台上的青色全息蛋，扫描线往上走；
 // 悬停时从底往上逐行打印，打完一闪变成真身颜色。
-function HoloEgg({ sprite, size }) {
+export function HoloEgg({ sprite, size }) {
   return (
     <span className="holo-scene" style={{ "--egg": `${(size * 16) / 14}px`, "--px": `${size / 14}px` }}>
       <span className="holo-cone" />

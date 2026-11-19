@@ -34,7 +34,7 @@ import { ProjectsV16 } from "./ProjectsV16.jsx";
 // 项目空间第二版替换旧页；旧页（接力口令、收件、装备）代码保留，只在地址带 ?projects-v16 时挂上，供旧组件自己的回归使用。
 const Projects = new URLSearchParams(location.search).has("projects-v16") ? ProjectsV16 : ProjectsSpace;
 import { Button, Dialog, TypeIcon, Maturity, PixelBadge, typeLabel } from "./components.jsx";
-import { Assets, AssetEditor, AssetDetail } from "./Assets.jsx";
+import { Assets, AssetEditor, AssetDetail, ASSET_TABS } from "./Assets.jsx";
 import { isSelfSkill } from "./skill-install.js";
 import { Home, ICONS as PAGE_ICONS } from "./Home.jsx";
 import { PartnerScreen } from "./PartnerScreen.jsx";
@@ -51,7 +51,7 @@ import { ScrollDetail } from "./Scrolls.jsx";
 import { Collection } from "./Collection.jsx";
 import { NotesV16 } from "./NotesV16.jsx";
 import { captureRouteIndex } from "./capture-routes.js";
-import { scrollsOf, createScroll } from "./scrolls.js";
+import { scrollsOf } from "./scrolls.js";
 import { PAGES, NAV, page as pageOf, resolveRoute } from "./pages.js";
 import { AgentsPage } from "./AgentsPage.jsx";
 import { RulesPage } from "./RulesPage.jsx";
@@ -66,7 +66,8 @@ import {
 } from "./pixel.jsx";
 
 const ICONS = { home: Sun, ...PAGE_ICONS, rules: Scale };
-// 旧板块地址归一到首页；焚决别名仍选择资产仓库内的类型。
+const ASSET_TAB_IDS = ASSET_TABS.map(([id]) => id);
+// 旧板块地址归一到首页；焚决旧链接（#scrolls）落到资产仓库 Prompt 页（#93）。
 function initialTarget() {
   const target = resolveRoute(location.hash.slice(1));
   if (location.hash.slice(1) !== target.route) history.replaceState(null, "", `#${target.route}`);
@@ -330,16 +331,6 @@ export default function App() {
   const asset = state?.assets.find((a) => a.id === selected);
   // 卷被删除（进回收区）后抽屉自动关闭。
   const scroll = state && scrollsOf(state).find((s) => s.id === scrollId && !s.deletedAt);
-  // 新建资产选“焚决”：只建卷，保存成功后直接打开该卷。
-  async function createScrollNamed(name) {
-    const { scrolls, scroll: made } = createScroll(scrollsOf(state), name);
-    if (!(await save({ ...state, scrolls }))) return false;
-    notify(`已新建卷「${made.name}」`);
-    // 同一批更新里先关对话框再开抽屉：对话框先归还焦点，抽屉再接管焦点。
-    setCreate(null);
-    setScrollId(made.id);
-    return true;
-  }
   if (!state)
     return (
       <div className="boot-screen">
@@ -405,7 +396,7 @@ export default function App() {
                       : id === "learning" ? collectionMeta.ids.filter((cid) => routeIndex.pending("collection", cid)).length : null;
                     const count =
                       id === "assets"
-                        ? state.assets.filter((a) => !a.archived).length + scrollsOf(state).filter((s) => !s.deletedAt).length
+                        ? state.assets.filter((a) => !a.archived && ASSET_TAB_IDS.includes(a.type)).length
                         : pending || null;
                     return (
                       <React.Fragment key={id}>
@@ -522,8 +513,6 @@ export default function App() {
               onFilter={setFilter}
               openCreate={setCreate}
               select={setSelected}
-              navigate={navigate}
-              openScroll={setScrollId}
             />
           )}
           {route === "projects" && <Projects {...common} navigate={navigate} projectJump={target.projectId ? {id:target.projectId,key:target.agentJumpKey} : null} />}
@@ -563,7 +552,6 @@ export default function App() {
           type={create?.type ?? create}
           draft={create?.draft}
           notify={notify}
-          onCreateScroll={createScrollNamed}
           onClose={() => {
             setCreate(null);
             setEditing(null);
