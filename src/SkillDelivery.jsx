@@ -107,7 +107,8 @@ export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopy
   return (
     <section className="skill-delivery" aria-label="Skill 本机交付">
       <div className="detail-actions">
-        <Button onClick={generate} disabled={busy || usageBlocked}>
+        {/* 双击只算一次（与资产卡的复制按钮一致，#93 第二批）：本机接口很快，锁在第二下到达前就已释放。 */}
+        <Button onClick={(event) => { if (event.detail <= 1) generate(); }} disabled={busy || usageBlocked}>
           <Copy size={16} />
           {busy ? "正在处理…" : design ? "复制生图提示词" : "复制本机安装口令"}
         </Button>

@@ -80,6 +80,8 @@ export default function App() {
     [filter, setFilter] = useState(() => target.filter || "all"),
     [selected, setSelected] = useState(null),
     [scrollId, setScrollId] = useState(null),
+    // Skill 页只读 my-skills（#93 第二批）：打开资产仓库后才知道条数，导航计数届时补上。
+    [skillCount, setSkillCount] = useState(0),
     [editing, setEditing] = useState(null),
     [create, setCreate] = useState(null),
     [toast, setToast] = useState(null),
@@ -396,7 +398,7 @@ export default function App() {
                       : id === "learning" ? collectionMeta.ids.filter((cid) => routeIndex.pending("collection", cid)).length : null;
                     const count =
                       id === "assets"
-                        ? state.assets.filter((a) => !a.archived && ASSET_TAB_IDS.includes(a.type)).length
+                        ? state.assets.filter((a) => !a.archived && ASSET_TAB_IDS.includes(a.type) && a.type !== "Skill").length + skillCount
                         : pending || null;
                     return (
                       <React.Fragment key={id}>
@@ -513,6 +515,7 @@ export default function App() {
               onFilter={setFilter}
               openCreate={setCreate}
               select={setSelected}
+              onSkillCount={setSkillCount}
             />
           )}
           {route === "projects" && <Projects {...common} navigate={navigate} projectJump={target.projectId ? {id:target.projectId,key:target.agentJumpKey} : null} />}

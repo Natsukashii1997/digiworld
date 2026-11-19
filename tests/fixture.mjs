@@ -63,6 +63,8 @@ export async function fixture({ discovery = {}, nightV2 = {}, controlledExecutio
       },
       // 项目空间第二版：默认指向临时目录里不存在的名册，任何浏览器测试都不会读到真实的数字分身名册。
       projectsSpace: { rosterPath: join(directory, "no-roster.json") },
+      // #93 Skill 页：默认把 home 指到临时目录（里面没有 my-skills），任何浏览器测试都不会读到真实的 my-skills 与调用记录。
+      mySkills: { home: join(directory, "fake-home"), git: async () => null },
       ...discovery,
     },
   });

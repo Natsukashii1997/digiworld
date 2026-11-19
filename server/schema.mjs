@@ -12,7 +12,7 @@ import { validateDesignVersion } from "../src/design-asset.js";
 import { safePath } from "../src/store.js";
 import { retainedDemoIds } from "../src/asset-origin.js";
 import { validateMcpVersion } from "../src/mcp-config.js";
-import { categoriesOf, hasCategory, validateAssetCategories } from "../src/asset-categories.js";
+import { categoriesOf, hasCategory, validateAssetCategories, validateSkillMeta } from "../src/asset-categories.js";
 import { validateInstallUrl } from "../src/skill-install.js";
 import { stringify } from "../src/serialization.js";
 import {planSkillVersion} from "../src/skill-version.js";
@@ -425,6 +425,7 @@ export function validateState(state) {
     "skillSourceAdoptions",
     "projectDesk",
     "assetCategories",
+    "skillMeta",
   ]);
   if (state.skillSourceAdoptions !== undefined) validateSkillSourceAdoptions(state.skillSourceAdoptions,state.assets);
   if (state.scrolls !== undefined) validateScrolls(state.scrolls);
@@ -433,6 +434,10 @@ export function validateState(state) {
     try { validateAssetCategories(state.assetCategories); } catch (error) { invalid(error.message); }
   }
   const categoryIds = new Set(categoriesOf(state).map((c) => c.id));
+  // my-skills 的分类与置顶（#93 第二批）：按 skill 名映射，可选。
+  if (state.skillMeta !== undefined) {
+    try { validateSkillMeta(state.skillMeta, categoryIds); } catch (error) { invalid(error.message); }
+  }
   if (state.learning !== undefined) validateLearning(state.learning);
   if (state.knowledgeZones !== undefined)
     validateKnowledgeZones(state.knowledgeZones);
