@@ -90,11 +90,12 @@
 .notes-v16 .sn-body>p:first-child::first-line,.notes-v16.fn-panel .sn-body>p:first-child::first-line{font-weight:700}
 /* 用户 2026-10-28：悬浮窗便签多到可滚动时，WebKit 点空正文不画光标；正文单独成层即可画出 */
 .notes-v16 .sn-editable{will-change:transform}
-/* 用户 2026-10-28 选样稿：待办框贴内容左缘、对齐首行，点击区 44 宽伸进内边距；单条待办不再被撑到正文最小高度 */
-.notes-v16 .sn-body .sn-line-task{min-height:32px;align-items:flex-start;gap:0}
+/* 用户 2026-10-28 选样稿：待办框贴内容左缘、对齐首行，点击区 44 宽伸进内边距；单条待办不再被撑到正文最小高度
+   用户 2026-11-19：条目间隔太宽，去掉 32px 最小行高，行距由 36px 收到约 27px（文字行高 + 4px 间隔），点击区随之改 28 高 */
+.notes-v16 .sn-body .sn-line-task{min-height:0;align-items:flex-start;gap:0}
 .notes-v16 .sn-line-task .sn-prefix{position:relative;width:26px;min-width:26px;font-size:var(--fs-body);line-height:1.65;height:1.65em;align-self:flex-start}
-.notes-v16 .sn-line-task .sn-task-hit,.notes-v16.fn-panel .sn-line-task .sn-task-hit{display:grid;place-items:center;position:absolute;left:-14px;top:50%;width:44px;height:32px;min-height:0;margin-top:-18px}
-.notes-v16 .sn-line-task .sn-task-hit input{width:44px;height:32px}
+.notes-v16 .sn-line-task .sn-task-hit,.notes-v16.fn-panel .sn-line-task .sn-task-hit{display:grid;place-items:center;position:absolute;left:-14px;top:50%;width:44px;height:28px;min-height:0;margin-top:-16px}
+.notes-v16 .sn-line-task .sn-task-hit input{width:44px;height:28px}
 .notes-v16 .sn-line-task .sn-task-hit .sn-box{border-color:var(--text-2);border-radius:var(--r-xs)}
 .notes-v16 .sn-editable .sn-line-task [data-note-text]{min-height:1.65em}
 .notes-v16 .sn-body .sn-task{gap:4px;align-content:start}

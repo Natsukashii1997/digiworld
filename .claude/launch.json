@@ -4,8 +4,29 @@
     {
       "name": "ui-v15-preview",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5190", "--bind", "127.0.0.1", "--directory", "docs/design/ui-v15"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5190",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "docs/design/ui-v15"
+      ],
       "port": 5190
+    },
+    {
+      "name": "digiworld-dev-5191",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5191",
+        "--strictPort"
+      ],
+      "port": 5191
     }
   ]
 }
