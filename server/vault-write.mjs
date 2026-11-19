@@ -6,7 +6,7 @@ import {createScopedTextOperations} from './scoped-text-operations.mjs';
 import {createScopedTextJournal} from './scoped-text-journal.mjs';
 import {readConfigFile,atomicReplaceConfig} from './config-file.mjs';
 import {createConfigJournal} from './config-journal.mjs';
-import {createKnowledgeFiles} from './knowledge-files.mjs';
+import {createKnowledgeFiles,knowledgeRootIdentity} from './knowledge-files.mjs';
 import {zoneOf,DEFAULT_ZONE_RULES} from '../src/knowledge-zones.js';
 const sha=v=>createHash('sha256').update(v).digest('hex');
 const fail=(code,message,status=409)=>{throw Object.assign(new Error(message),{code,status});};
@@ -51,8 +51,8 @@ export function createVaultWrite(repository,{settings,adapters={},clock=Date.now
   const registered=await knowledge.inspectRoot(source.root);
   if(registered.root!==source.root||registered.identity!==source.identity)fail('SOURCE_CHANGED','已登记Vault根目录身份已变化');
   const before=await filesystem.lstat(source.root),real=await filesystem.realpath(source.root),after=await filesystem.lstat(source.root);
-  const id=s=>sha(JSON.stringify([source.root,s.dev,s.ino,s.birthtimeMs]));
-  if(!before.isDirectory()||before.isSymbolicLink()||!after.isDirectory()||after.isSymbolicLink()||real!==source.root||id(before)!==source.identity||id(after)!==source.identity)
+  const id=s=>knowledgeRootIdentity(source.root,s);
+  if(!before.isDirectory()||before.isSymbolicLink()||!after.isDirectory()||after.isSymbolicLink()||real!==source.root||id(before)!==source.identity||id(after)!==source.identity||before.dev!==after.dev)
    fail('SOURCE_CHANGED','已登记Vault根目录身份已变化');
   return sha(source.root+':'+[before.dev,before.ino,before.birthtimeMs,before.uid,before.mode&0o777].join(':'));
  }

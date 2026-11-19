@@ -94,8 +94,14 @@ function documentPath(value) {
 }
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
+// 一次操作内的目录链比对：含 dev，dev 在一次开机内稳定。
 const directoryIdentity = (root, info) =>
   hash(JSON.stringify([root, info.dev, info.ino, info.birthtimeMs]));
+// 持久保存的来源身份：不含 dev。macOS 每次开机可能给同一个卷换 dev 号，
+// 含 dev 会让没变的目录在重启后被判「身份已变化」（docs/LESSONS.md L-08）。
+// 目录被删了重建或换成别的目录，inode 与创建时间仍会变。
+export const knowledgeRootIdentity = (root, info) =>
+  hash(JSON.stringify(["root-v2", root, info.ino, info.birthtimeMs]));
 const fileIdentity = (info) =>
   JSON.stringify([
     info.dev,
@@ -146,13 +152,12 @@ export function createKnowledgeFiles({
       const root = rootPath(await fs.realpath(path));
       const after = await fs.lstat(path);
       ordinaryDirectory(after);
-      const identity = directoryIdentity(root, before);
       if (
-        identity !== directoryIdentity(root, after) ||
+        directoryIdentity(root, before) !== directoryIdentity(root, after) ||
         (await fs.realpath(path)) !== root
       )
         throw fail("知识目录已变化，请重新连接", 409);
-      return { root, identity };
+      return { root, identity: knowledgeRootIdentity(root, before) };
     } catch (error) {
       throw sanitized(error);
     }

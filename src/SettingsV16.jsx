@@ -15,6 +15,7 @@ import { ReaUpdate } from "./ReaUpdate.jsx";
 import "./agents-v16.css";
 import { ProjectSettings } from "./ProjectSettings.jsx";
 import { SourcePolicy } from "./KnowledgeV16.jsx";
+import { KnowledgeForm } from "./Knowledge.jsx";
 import {
   ProfilePanel,
   zonesConfig,
@@ -23,7 +24,7 @@ import {
 } from "./KnowledgeZones.jsx";
 import { Permission } from "./Calendar.jsx";
 import { calendarPermissionLabel } from "./settings-v16.js";
-import { MARK_GLYPH, selfTestRows, selfTestTally, readAcks, writeAck } from "./settings-selftest.js";
+import { MARK_GLYPH, selfTestRows, selfTestTally, readAcks, writeAck, reconfirmSources } from "./settings-selftest.js";
 import "./settings-v16.css";
 function Row({ title, detail, children }) {
   return (
@@ -204,6 +205,45 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
     }
   };
   const source = sources.find((s) => s.id === panel?.id);
+  const reconfirm = reconfirmSources(state), needsReconfirm = (s) => reconfirm.some((r) => r.id === s?.id);
+  async function reloadPolicy() {
+    if (busy.current) return;
+    busy.current = true;
+    setPolicyBusy(true);
+    try {
+      const next = await request("/workspace", undefined, "GET", false);
+      adoptState(next);
+      setPanel((old) => ({ ...old, revision: next.revision }));
+      setPolicyPending(false);
+      setPolicyError("");
+      notify("已回读知识范围，请重新核对");
+    } catch (e) {
+      setPolicyError(e.message);
+    } finally {
+      busy.current = false;
+      setPolicyBusy(false);
+    }
+  }
+  // 目录身份变化后由本人重新确认；只改这一个来源的登记，Agent 共享仍保持关闭。
+  async function reconfirmSource(input) {
+    if (busy.current || policyPending) return;
+    busy.current = true;
+    setPolicyBusy(true);
+    setPolicyError("");
+    try {
+      const next = await request("/knowledge/reconfirm", { ...input, confirmed: true, expectedRevision: panel.revision }, "POST", false);
+      adoptState(next);
+      setPanel((old) => ({ ...old, revision: next.revision }));
+      flyData();
+      notify("目录已重新确认，回执已保存；Agent 共享与个人说明仍关闭，需要时再单独开启");
+    } catch (e) {
+      setPolicyError(e.message);
+      if (!e.status || e.status === 409 || e.unknownResult) setPolicyPending(true);
+    } finally {
+      busy.current = false;
+      setPolicyBusy(false);
+    }
+  }
   return (
     <div className="settings-v16 st-post">
       <ReadReveal pending={!summary.loaded} ready={summary.loaded&&!summary.loadError}/>
@@ -292,7 +332,9 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
             <div className="st-group">
               {sources.map((s) => (
                 <Row key={s.id} title={s.name} detail={`${s.kind} · ${s.excludedFolders?.length || 0} 个排除目录`}>
-                  <span className={`st-dot ${s.agentSharing ? "on" : ""}`}>{s.agentSharing ? "已开放" : "关闭"}</span>
+                  {needsReconfirm(s)
+                    ? <span className="st-dot bad">需重新确认</span>
+                    : <span className={`st-dot ${s.agentSharing ? "on" : ""}`}>{s.agentSharing ? "已开放" : "关闭"}</span>}
                   <Button secondary aria-label={`管理知识源 ${s.name}`} onClick={() => { setPolicyError(""); setPanel({ type: "source", id: s.id, revision: state.revision }); }}>管理</Button>
                 </Row>
               ))}
@@ -349,6 +391,20 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
           {panel.type === "source" &&
             (source ? (
               <div className="st-panel">
+                {needsReconfirm(source) && (
+                  <section className="st-reconfirm" aria-label="重新确认目录">
+                    <p role="status">需重新确认目录：目录身份已变化，读取与 Agent 共享已暂停。核对路径仍是你允许读取的知识目录后再确认；确认后共享保持关闭。</p>
+                    <KnowledgeForm
+                      mode="reconfirm"
+                      source={source}
+                      busy={policyBusy ? "reconfirm" : ""}
+                      pending={policyPending}
+                      onSubmit={reconfirmSource}
+                      onRefresh={reloadPolicy}
+                      onCancel={() => setPanel({ type: "knowledge" })}
+                    />
+                  </section>
+                )}
                 <SourcePolicy
                   source={source}
                   busy={policyBusy}
@@ -387,6 +443,12 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
             ) : (
               <p>该来源已移除，请关闭后重新核对。</p>
             ))}
+          {panel.type === "profile" && reconfirm.length > 0 && (
+            <div className="st-reconfirm" role="status">
+              <p>{reconfirm.map((s) => `「${s.name}」`).join("、")}需重新确认目录，确认前不能开启个人说明 MCP。</p>
+              <Button secondary onClick={() => { setPolicyError(""); setPanel({ type: "source", id: reconfirm[0].id, revision: state.revision }); }}>去重新确认</Button>
+            </div>
+          )}
           {panel.type === "profile" && (
             <ProfilePanel
               state={state}
@@ -405,32 +467,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
             <Button
               secondary
               disabled={policyBusy}
-              onClick={async () => {
-                if (busy.current) return;
-                busy.current = true;
-                setPolicyBusy(true);
-                try {
-                  const next = await request(
-                    "/workspace",
-                    undefined,
-                    "GET",
-                    false,
-                  );
-                  adoptState(next);
-                  setPanel((old) => ({
-                    ...old,
-                    revision: next.revision,
-                  }));
-                  setPolicyPending(false);
-                  setPolicyError("");
-                  notify("已回读知识范围，请重新核对");
-                } catch (e) {
-                  setPolicyError(e.message);
-                } finally {
-                  busy.current = false;
-                  setPolicyBusy(false);
-                }
-              }}
+              onClick={reloadPolicy}
             >
               重新读取知识范围
             </Button>

@@ -15,3 +15,19 @@ test('完成回执失败保持未知并阻断使用；check只补本机回执不
 test('日志根链接与损坏记录拒绝，目录身份替换拒绝，不读越界文件',async()=>{const repo=await fixture(),api=createCapabilitySettings(repo);await commit(api);const folder=join(repo.directory,'capability-settings');await fs.rename(folder,folder+'-kept');await fs.symlink(folder+'-kept',folder);await assert.rejects(api.read());await fs.unlink(folder);await fs.rename(folder+'-kept',folder);const names=await fs.readdir(folder);const record=names.find(n=>!n.includes('.receipt'));const bytes=await fs.readFile(join(folder,record),'utf8');const row=JSON.parse(bytes);row.sequence=2;await fs.writeFile(join(folder,record),JSON.stringify(row),{mode:0o600});await assert.rejects(api.read(),/不连续/);await fs.writeFile(join(folder,record),bytes,{mode:0o600});const current=repo.directory;await fs.rename(current,current+'-old');await fs.mkdir(current,{mode:0o700});await assert.rejects(api.read(),/身份已变化/);await fs.rm(current,{recursive:true});await fs.rename(current+'-old',current);await fs.rm(current,{recursive:true});});
 
 test('完整备份复制到新数据目录不自动恢复授权；新确认才能开指定一项，旧授权不可回滚',async()=>{const original=await fixture(),a=createCapabilitySettings(original);const c=await commit(a);await commit(a,{capability:'night',enabled:true,options:{budgetMicrosUsd:20000,timeoutSeconds:60,maxTurns:3}});const restored=await fixture();await fs.cp(join(original.directory,'capability-settings'),join(restored.directory,'capability-settings'),{recursive:true,preserveTimestamps:true});const b=createCapabilitySettings(restored);assert.deepEqual((await b.read()).enabled,{night:false,model:false,agent:false,vault:false,daemon:false});assert.equal((await b.read()).activeScope,false);assert.equal((await b.check(c.plan.operationId)).status,'not_applied');await assert.rejects(b.rollbackPreview(c.plan.operationId));await commit(b,{capability:'agent',enabled:true,options:{}});assert.equal((await b.get('agent')).enabled,true);assert.equal((await b.get('night')).enabled,false);assert.equal((await b.get('model')).enabled,false);assert.equal((await b.history()).items.length,3);await fs.rm(original.directory,{recursive:true});await fs.rm(restored.directory,{recursive:true});});
+test('授权目录身份跨重启稳定：dev 变化、祖先收紧权限仍是同一目录；祖先放宽到组可写才算变化（L-08）',async()=>{
+ const {tmpdir}=await import('node:os');const base=await fs.realpath(await fs.mkdtemp(join(tmpdir(),'capability-identity-')));
+ try{
+  const parent=join(base,'home');await fs.mkdir(parent,{mode:0o750});await fs.chmod(parent,0o750);const repo={directory:join(parent,'data'),withSnapshot:async(_o,f)=>f()};await fs.mkdir(repo.directory,{mode:0o700});
+  const api=createCapabilitySettings(repo);await commit(api);assert.equal((await api.get('model')).enabled,true);
+  // 只给数据目录及其祖先换 dev 号；日志文件的 lstat 与 fstat 由 config-journal 自行比对，不在本用例范围。
+  let shift=0;const rebooted={...fs,lstat:async(p,o)=>{const v=await fs.lstat(p,o);if(repo.directory===p||repo.directory.startsWith(p.endsWith('/')?p:p+'/'))v.dev+=shift;return v;}};shift=3;
+  assert.equal((await createCapabilitySettings(repo,{filesystem:rebooted}).get('model')).enabled,true);
+  await fs.chmod(parent,0o700);
+  assert.equal((await api.get('model')).enabled,true);
+  assert.equal((await createCapabilitySettings(repo).get('model')).enabled,true);
+  await fs.chmod(parent,0o770);
+  await assert.rejects(api.read(),/身份已变化/);
+  const fresh=await createCapabilitySettings(repo).read();assert.equal(fresh.reauthorizationRequired,true);assert.equal(fresh.enabled.model,false);
+ }finally{await fs.chmod(join(base,'home'),0o700).catch(()=>{});await fs.rm(base,{recursive:true,force:true});}
+});

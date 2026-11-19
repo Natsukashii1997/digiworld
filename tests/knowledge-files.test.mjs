@@ -659,3 +659,30 @@ test("子树在末次核验前失稳时一并撤回文件与问题，但保留�
     /变化.*重新扫描/,
   );
 });
+
+test("持久来源身份不含 dev：重启换 dev 号仍是同一目录；删了重建同名目录要求重新确认（L-08）", async (t) => {
+  const root = await fixture(t);
+  t.after(() => fs.rm(`${root}-old`, { recursive: true, force: true }));
+  await fs.writeFile(join(root, "note.md"), "SYNTHETIC");
+  const source = await createKnowledgeFiles().inspectRoot(root);
+  const rebooted = createKnowledgeFiles({
+    fs: {
+      ...fs,
+      async lstat(path, options) {
+        const info = await fs.lstat(path, options);
+        info.dev += 7;
+        return info;
+      },
+    },
+  });
+  assert.equal((await rebooted.inspectRoot(root)).identity, source.identity);
+  assert.equal((await rebooted.scan(source)).files.length, 1);
+  await fs.rename(root, `${root}-old`);
+  await fs.mkdir(root);
+  await fs.writeFile(join(root, "note.md"), "SYNTHETIC");
+  assert.notEqual((await createKnowledgeFiles().inspectRoot(root)).identity, source.identity);
+  await assert.rejects(
+    createKnowledgeFiles().scan(source),
+    (error) => error.status === 409 && error.code === "KNOWLEDGE_ROOT_IDENTITY_CHANGED",
+  );
+});

@@ -78,3 +78,17 @@ test("自检：申请记录读取失败标 [?]，使用记录还在读标读取�
   const saved = { size: live.storage.size, lastBackup: { state: "ok", at: "2026-10-24T02:00:00Z" } };
   assert.equal(byId(selfTestRows({ ...live, storage: saved, downloaded: true })).backup.result, "刚刚下载过恢复包 · 请确认已存到磁盘");
 });
+
+test("自检：知识来源待重新确认时标「要处理」，即使另一来源仍开放（L-08）", () => {
+  const pendingState = { ...state, connections: { ...state.connections,
+    knowledgeSources: [{ id: "s1", name: "Obsidian知识库", agentSharing: false }, { id: "s2", name: "飞书知识空间", agentSharing: true }],
+    knowledgeSourceHealth: [{ sourceId: "s1", status: "needs_reconfirmation", detectedAt: "2026-11-12T06:37:31.949Z", confirmedAt: null, beforeIdentity: "a".repeat(64), afterIdentity: null }] } };
+  const rows = selfTestRows({ ...live, state: pendingState });
+  const k = byId(rows).knowledge;
+  assert.equal(k.mark, "bad");
+  assert.match(k.result, /^「Obsidian知识库」需重新确认目录 · 读取与共享已暂停/);
+  assert.equal(rows[0].mark, "bad");
+  const confirmed = { ...pendingState, connections: { ...pendingState.connections,
+    knowledgeSourceHealth: [{ ...pendingState.connections.knowledgeSourceHealth[0], status: "confirmed" }] } };
+  assert.equal(byId(selfTestRows({ ...live, state: confirmed })).knowledge.mark, "net");
+});
