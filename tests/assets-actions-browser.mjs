@@ -38,7 +38,7 @@ const assetCard = (page, name) => page.locator('.asset-card').filter({ has: butt
 // #93：每张卡先切到所在页签；原来的规则、工作流、MCP、焚决卡已从资产仓库去掉，改列入 hiddenCards 断言不出现。
 // #93 第二批：Skill 页改为只读 my-skills（fixture 下为空），Skill 资产「复制完整技能」不再有卡片，从 namedCards 移到 hiddenCards；
 // 它的复制口令、计次、双击、剪贴板拒绝改在详情抽屉里验（从全局搜索打开）。卡片上的置顶 / 删除 / 常驻三操作对它已不适用，去掉。
-const namedCards = [['查看 复制提示词', 'Prompt', '复制全文'], ['查看 复制设计稿', 'Design', '复制生图提示词']];
+const namedCards = [['查看 复制提示词', 'Prompt', '复制全文'], ['查看 复制设计稿', 'Design', '复制全文']];
 const hiddenCards = ['查看 复制完整技能', '查看 复制规则', '查看 复制工作流', '查看 copy_test', '打开卷 复制焚决卷', '打开卷 空卷'];
 const ALL_TABS = ['Prompt', 'Design', 'Skill'];
 const typeTab = (page, name) => page.getByRole('group', { name: '资产类型', exact: true }).getByRole('button', { name: new RegExp('^' + name) });
@@ -141,11 +141,12 @@ try {
     // #93：MCP 卡已不在资产仓库，原「复制配置定义」改为断言它不出现；数据仍在（不登记目标的断言保留）。
     assert.equal(await button(page, '复制配置定义 copy_test').count(), 0, 'MCP 不在资产仓库提供复制');
     assert.equal(((await api(page, '/workspace')).connections?.agentTargets || []).length, 0, '不自行登记或选择目标');
-    // #93：Design 卡直接复制生图提示词并计次（替代原 MCP 直接复制路径，保留「各类型卡片直接复制、无需弹窗」的意图）。
+    // #93：Design 卡直接复制并计次（替代原 MCP 直接复制路径，保留「各类型卡片直接复制、无需弹窗」的意图）。
+    // #93 第三批：设计 Prompt 改为「复制全文」原样复制；设计卡按定稿不显示次数，改查读屏文字「使用 N 次」。
     await typeTab(page, 'Design').click();
-    await button(page, '复制生图提示词 复制设计稿').click();
-    await assetCard(page, '查看 复制设计稿').locator('.ac2-uses').filter({ hasText: '1' }).waitFor();
-    assert.match(await page.evaluate(() => navigator.clipboard.readText()), /16 色像素风封面/);
+    await button(page, '复制全文 复制设计稿').click();
+    await assetCard(page, '查看 复制设计稿').locator('.sr-only').filter({ hasText: '使用 1 次' }).waitFor();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '16 色像素风封面');
     assert.equal(await page.getByRole('dialog').count(), 0, 'Design直接复制，无需选目标');
     // #93 第二批：原在 Skill 卡上双击「复制安装口令」并读卡片次数，改为先断言 Skill 页没有它，再从全局搜索打开详情，
     // 双击详情里的「复制本机安装口令」，读详情「使用记录与反馈」的次数。
@@ -188,7 +189,7 @@ try {
     const revision = stored.revision;
     await page.evaluate(() => { navigator.clipboard.writeText = async () => { throw new DOMException('denied', 'NotAllowedError'); }; });
     // #93：剪贴板拒绝改用三页的复制按钮验证（原为 MCP / Skill / 焚决卷）。
-    for (const [tab, label] of [['Prompt', '复制全文 复制提示词'], ['Design', '复制生图提示词 复制设计稿']]) {
+    for (const [tab, label] of [['Prompt', '复制全文 复制提示词'], ['Design', '复制全文 复制设计稿']]) {
       await typeTab(page, tab).click();
       await button(page, label).click();
       await page.locator('.toast').filter({ hasText: '无法访问剪贴板' }).last().waitFor();
@@ -206,7 +207,7 @@ try {
     assert.match((await skillDetail(page).getByTestId('usage-count').innerText()).replace(/\s/g, ''), /^已使用1次/, '刷新保留 Skill 计次');
     await closeSkillDetail(page);
     await typeTab(page, 'Design').click();
-    assert.equal((await assetCard(page, '查看 复制设计稿').locator('.ac2-uses').innerText()).replace(/\s/g, ''), '1次', '刷新保留 Design 计次');
+    assert.equal((await assetCard(page, '查看 复制设计稿').locator('.sr-only').textContent()).replace(/\s/g, ''), '使用1次', '刷新保留 Design 计次');
     results.push({ path: 'three-tabs/hidden-types/always-on/focus/touch/Skill-full-package/Design-prompt/no-target/clipboard-denied/single-click-detail/reload', status: 'PASS' }); // #93（第二批：Skill 路径改在详情里）
     await context.close();
   }

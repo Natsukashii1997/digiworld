@@ -93,11 +93,12 @@ try {
     await uses(page, '键盘复制测试').filter({ hasText: '1' }).waitFor();
     assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '# 规则\n先核对当前事实，再执行。');
     assert.ok((await counts(page)).some(r => r.assetId === keyboardPrompt.id && r.action === 'copy-prompt'));
-    // #93：第三种类型改为 Design「复制生图提示词」（原为工作流固定引用；工作流卡已不在资产仓库，见下方「不出现」断言）。
+    // #93：第三种类型改为 Design（原为工作流固定引用；工作流卡已不在资产仓库，见下方「不出现」断言）。
+    // #93 第三批：设计 Prompt「复制全文」原样复制；设计卡按定稿不显示次数，改查读屏文字。
     await typeTab(page, 'Design').click();
-    await copyButton(page, '复制设计测试', '复制生图提示词').click();
-    await uses(page, '复制设计测试').filter({ hasText: '1' }).waitFor();
-    assert.match(await page.evaluate(() => navigator.clipboard.readText()), /16 色像素风封面/);
+    await copyButton(page, '复制设计测试', '复制全文').click();
+    await card(page, '复制设计测试').locator('.sr-only').filter({ hasText: '使用 1 次' }).waitFor();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '16 色像素风封面');
     assert.ok((await counts(page)).some(r => r.assetId === design.id && r.action === 'copy-design'));
     for (const tab of ['Prompt', 'Design', 'Skill']) {
       await typeTab(page, tab).click();

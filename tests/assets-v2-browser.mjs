@@ -154,7 +154,9 @@ try {
   assert.equal((await saved()).assets.find((a) => a.id === skill.id).category, "think", "原 Skill 资产分类数据保留");
   await page.getByRole("button", { name: /^Design/ }).first().click();
   assert.deepEqual(await titles(page), ["像素封面"]);
-  assert.equal(await page.locator(".ac2-chips").count(), 0);
+  // #93 第三批：Design 页按形式筛选（设计 Skill / 设计 Prompt），仍然没有分类芯片。
+  assert.equal(await page.getByRole("group", { name: "按分类筛选" }).count(), 0);
+  await page.getByRole("group", { name: "按形式筛选" }).waitFor();
   assert.equal(await page.getByLabel("像素封面 的分类").count(), 0);
   ok("原 Skill 资产不在 Skill 页、可从搜索打开；Design 不分类");
 
