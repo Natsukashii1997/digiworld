@@ -42,12 +42,29 @@ const skillTab = () =>
     .getByRole("group", { name: "资产类型" })
     .getByRole("button", { name: /^Skill/ })
     .click();
+// #93 第二批：Skill 页只读展示 my-skills 登记的 skill，数码世界原有 Skill 资产不再出现在 Skill 页（数据保留）；
+// 切到 Skill 页后先断言它不在网格里，再从全局搜索（⌘K）打开它的详情抽屉，之后的目标副本断言不变。
+const openDetail = async () => {
+  await skillTab();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "查看 副本核对测试", exact: true })
+      .count(),
+    0,
+    "原有 Skill 资产不应出现在 Skill 页网格",
+  );
+  await page.keyboard.press("Meta+k");
+  await page.getByLabel("全局搜索").fill("副本核对测试");
+  await page.locator('.search-results[aria-busy="false"]').waitFor();
+  await page
+    .getByRole("dialog", { name: "搜索工作台" })
+    .getByRole("button", { name: /副本核对测试/ })
+    .click();
+  await page.getByRole("dialog", { name: "资产详情", exact: true }).waitFor();
+};
 const open = async () => {
   await page.goto(app.url + "/#assets");
-  await skillTab();
-  await page
-    .getByRole("button", { name: "查看 副本核对测试", exact: true })
-    .click();
+  await openDetail();
   await page.getByRole("button", { name: "目标副本", exact: true }).click();
   await panel.waitFor();
 };
@@ -108,10 +125,7 @@ try {
   assert.equal(saved.connections.skillCopies.length, 1);
   assert.equal(saved.connections.skillCopies[0].location, app.location);
   await page.reload();
-  await skillTab(); // #93 刷新后回到默认 Prompt 页，先切到 Skill 页签
-  await page
-    .getByRole("button", { name: "查看 副本核对测试", exact: true })
-    .click();
+  await openDetail(); // #93 第二批：刷新后同样先断言不在 Skill 页，再从全局搜索打开详情
   await page.getByRole("button", { name: "目标副本", exact: true }).click();
   assert.match(await panel.innerText(), /待核对/);
   assert.equal(calls.filter((p) => p.endsWith("/check")).length, 0);
