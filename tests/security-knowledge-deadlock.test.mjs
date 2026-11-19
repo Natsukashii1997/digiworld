@@ -114,10 +114,27 @@ async function exercise(stage) {
       await fs.mkdir(root);
     }
     let armed = false;
+    let wrote = false;
     const evidenceFiles = {
       ...files,
       async read(...args) {
         const document = await files.read(...args);
+        // 文件已写入、回执还没记的那一段（写后来源复核）里：别处提交了一次主库，或者预览刚好过期
+        if (wrote && stage === "post-write-commit") {
+          wrote = false;
+          await repository.updateNotes((notes) => [
+            ...notes,
+            {
+              id: "synthetic-note-after-write",
+              text: "Synthetic unrelated edit",
+              at: new Date().toISOString(),
+            },
+          ]);
+        }
+        if (wrote && stage === "post-write-expiry") {
+          wrote = false;
+          now += 300001;
+        }
         if (armed && ["preview-revision", "confirm-revision"].includes(stage)) {
           armed = false;
           await repository.updateNotes((notes) => [
@@ -145,6 +162,7 @@ async function exercise(stage) {
         ...writer,
         async create(...args) {
           const result = await writer.create(...args);
+          wrote = true;
           if (stage === "post-write") await destabilize();
           return result;
         },
@@ -247,6 +265,8 @@ if (scenario) {
     "confirm-revision": "确认核验期间主库版本变化，拒绝旧快照",
     "preview-authorization": "预览核验期间授权变化，拒绝旧授权",
     success: "正常预览确认仍完成串行写入和成功回执",
+    "post-write-commit": "写入后回执前主库有无关提交，回执照记、不留未决记录",
+    "post-write-expiry": "写入后回执前预览过期，回执照记、不留未决记录",
   };
   for (const [stage, title] of Object.entries(scenarios)) {
     test(title, () => {
@@ -258,7 +278,7 @@ if (scenario) {
       assert.equal(child.status, 0, child.stderr || String(child.error));
       const result = JSON.parse(child.stdout.trim());
       assert.equal(result.queue, "available", JSON.stringify(result));
-      if (stage === "success") {
+      if (["success", "post-write-commit", "post-write-expiry"].includes(stage)) {
         assert.equal(result.outcome.kind, "resolved", JSON.stringify(result));
         assert.equal(
           result.outcome.value.status,

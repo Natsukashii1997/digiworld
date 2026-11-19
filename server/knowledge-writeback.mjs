@@ -344,13 +344,13 @@ export function createKnowledgeWriteback(
           503,
         );
       }
-      return repository.withSnapshot({ expectedRevision: captured.revision }, async (state) => {
-        chosen(state, row.taskId, row.versionId);
-        await authorizeVault(state, row.source, plan);
+      // 文件已经写进去了，回执只记这个事实：不再比主库版本、不再看预览过期和候选状态。
+      // 否则这段时间里别处提交一次主库、或预览刚好到期，就会留下一条解不开的未决记录。
+      return repository.withSnapshot({}, async (state) => {
         await journal.receipt(row.id, "applied", stamp(), written.fingerprint);
         const result = await observe(await operation(row.id), state);
         if (result.status !== "applied")
-          throw failure("保存结果待核对，请检查操作记录", 503);
+          throw failure("候选已写入，结果待核对，请检查操作记录", 503);
         return result;
       });
     },
