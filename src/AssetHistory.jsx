@@ -155,6 +155,8 @@ export function AssetHistory({
   notify,
   onExport,
   presentation,
+  // 只读资产（带 ZIP 包的旧 Skill，#111）只比较和导出，不给恢复入口。
+  canRestore = true,
 }) {
   const latest = current(asset);
   const [selectedId, setSelectedId] = useState(
@@ -440,7 +442,7 @@ export function AssetHistory({
               导出此版本
             </Button>
           )}
-          {selected.id !== latest.id && (
+          {canRestore && selected.id !== latest.id && (
             <Button
               secondary
               disabled={busy}

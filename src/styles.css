@@ -4504,10 +4504,6 @@ details.scan-notice {
   display: grid;
   gap: 8px;
 }
-.skill-origin-form {
-  display: grid;
-  gap: 12px;
-}
 .path-entry {
   display: grid;
   gap: 10px;

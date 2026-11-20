@@ -94,7 +94,7 @@ test("资产卡片、编号、版本与迭代阶段都由真实资产数据派�
   assert.match(empty, />新建<\/button>/);
 });
 
-test("详情抽屉保留 Skill 本机交付与边界说明", () => {
+test("详情抽屉：带 ZIP 包的旧 Skill 只读，只给导出 ZIP，不再有交付、副本和改版入口（#111）", () => {
   const state = seed();
   const html = render(AssetDetail, {
     state,
@@ -103,8 +103,10 @@ test("详情抽屉保留 Skill 本机交付与边界说明", () => {
   assert.match(html, /role="dialog"/);
   assert.match(html, /aria-modal="true"/);
   assert.match(html, /class="drawer"/);
-  assert.match(html, /复制本机安装口令/);
-  assert.match(html, /仅限本机/);
+  assert.match(html, /只读收录/);
+  assert.match(html, /自建 Skill 以 my-skills 仓库为准/);
+  assert.match(html, /导出 ZIP/);
+  assert.doesNotMatch(html, /复制本机安装口令|仅限本机|目标副本|创建个人改版|检查来源更新|aria-label="编辑资产"/);
 });
 
 test("没有使用证据时版本迭代不升级，伙伴只随自己的资产成长", () => {
@@ -286,14 +288,16 @@ test("世界总览四块：收藏、资产、随手记、项目，每条可点�
   const titles = [...html.matchAll(/<h2 id="hx-title-([a-d])"><span class="en">([A-Z]+)<\/span>([^<]+)<\/h2>/g)].map(m => m[3]);
   assert.deepEqual(titles, ["个人收藏", "资产仓库", "随手记", "项目空间"]);
   assert.doesNotMatch(html, /资产类型统计|hx-type-grid/);
-  // 资产：用过 3 次的排在用过 1 次的前面，每条都有打开按钮和复制按钮。
+  // 资产：用过 3 次的排在用过 1 次的前面，每条都有打开按钮；带 ZIP 包的旧 Skill 只读，不给复制按钮（#111），其余都有。
   const picks = [...html.matchAll(/aria-label="打开资产：([^"]+)"/g)].map(m => m[1]);
   assert.equal(picks.length, Math.min(5, live.filter(a => a.type !== "Scroll").length));
   assert.ok(picks.indexOf(current(high).title) < picks.indexOf(current(low).title));
   assert.match(html, /用过 <em class="mono">3<\/em> 次/);
   // 总数写在标题行（用户 2026-10-26：数字用模块色调）。
   assert.match(html, /<span class="hx-count" aria-label="2 个"><b class="mono">2<\/b><small>个<\/small><\/span>/);
-  assert.equal((html.match(/class="asset-copy"/g) || []).length, picks.length);
+  const readOnly = live.filter(a => a.type === "Skill" && typeof current(a).installUrl !== "string" && picks.includes(current(a).title)).length;
+  assert.ok(readOnly > 0, "夹具里应有带包的旧 Skill");
+  assert.equal((html.match(/class="asset-copy"/g) || []).length, picks.length - readOnly);
   // 随手记：新的在前，标题去掉 Markdown 记号。
   assert.ok(html.indexOf('aria-label="打开随手记：新的一条"') < html.indexOf('aria-label="打开随手记：旧的一条"'));
   // 项目：只列在推进的，停滞的排前面，下一步去掉链接语法。

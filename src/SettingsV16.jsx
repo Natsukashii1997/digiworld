@@ -3,14 +3,11 @@ import { Reading, ReadReveal } from './ScanMotion.jsx';
 import { LcdText, useReducedMotion } from "./v14.jsx";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Dialog } from "./components.jsx";
-import { PageChoices } from "./PageChoices.jsx";
 import { request } from "./api.js";
 import { StoragePanel, downloadFullBackup, fullBackupNotice, exportMergeJson, MERGE_JSON_NOTICE } from "./StoragePanel.jsx";
 import { CapabilitySettings } from "./CapabilitySettings.jsx";
-import { ModelCapabilityUI } from "./ModelCapabilityUI.jsx";
 import { DaemonCapabilityUI } from "./DaemonCapabilityUI.jsx";
 import { AiHotSettings, useAiHot } from "./LifePages.jsx";
-import { AgentTargets } from "./AgentTargets.jsx";
 import { ReaUpdate } from "./ReaUpdate.jsx";
 import "./agents-v16.css";
 import { ProjectSettings } from "./ProjectSettings.jsx";
@@ -115,11 +112,9 @@ function usePackFrames(busy) {
 }
 const stamp = (d) => d.toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).replace("/", "-");
 const TALLY = [["bad", "要处理"], ["warn", "要看一眼"], ["ok", "正常"]];
-export function SettingsV16({ state, save, notify, adoptState, navigate, onSelect }) {
+export function SettingsV16({ state, save, notify, adoptState, navigate }) {
   const [panel, setPanel] = useState(null),
     [help, setHelp] = useState(false),
-    [targetAgent, setTargetAgent] = useState("codex"),
-    [targetPending, setTargetPending] = useState(false),
     [settings, setSettings] = useState(null),
     [history, setHistory] = useState(null),
     [calendar, setCalendar] = useState(null),
@@ -173,7 +168,6 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
   const rerun = () => { refresh(); reloadAiHot(); boot.replay(); };
   const close = () => {
     if (busy.current || policyBusy) return;
-    if (panel?.type === "targets" && targetPending) return notify("请先完成或取消目标编辑，再关闭。", "warning");
     setPanel(null);
     refresh();
     reloadAiHot();
@@ -190,8 +184,8 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
           catch (e) { notify(e.message, "error"); }
           finally { setBackupBusy(false); }
         }}>{packLabel}</Button>;
-      case "daemon": case "vault": case "agent": case "model":
-        return <>{know}<Switch on={row.on} label={row.label} disabled={!capsReady} onClick={() => setPanel({ type: "capabilities", cap: row.id })} /></>;
+      case "daemon":
+        return <>{know}<Switch on={row.on} label={row.label} disabled={!capsReady} onClick={() => setPanel({ type: "capabilities" })} /></>;
       case "knowledge":
         return <>{know}<Button secondary onClick={() => setPanel({ type: "knowledge" })}>管理</Button></>;
       case "aihot":
@@ -200,8 +194,6 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
         return <Button secondary onClick={() => setPanel({ type: "calendar" })}>系统设置</Button>;
       case "scan":
         return <Button secondary onClick={() => setPanel({ type: "project" })}>调整</Button>;
-      case "deliver":
-        return <Button secondary onClick={() => setPanel({ type: "targets" })}>添加目标</Button>;
     }
   };
   const source = sources.find((s) => s.id === panel?.id);
@@ -297,7 +289,6 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
           title={
             {
               capabilities: "配置授权能力",
-              model: "配置模型连接",
               daemon: "配置常驻服务",
               network: "配置网络访问",
               project: "项目空间设置",
@@ -305,7 +296,6 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
               profile: "个人说明 MCP",
               calendar: "日历与提醒权限",
               knowledge: "知识开放",
-              targets: "资产交付目标",
               storage: "数据与备份",
             }[panel.type]
           }
@@ -313,18 +303,16 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
         >
           {panel.type === "capabilities" && (
             <CapabilitySettings
-              state={state}
-              initialCapability={panel.cap}
               onChanged={refresh}
               onBusyChange={(v) => {
                 busy.current = v;
               }}
             />
          )}
-          {panel.type === "capabilities" && ["model", "daemon"].includes(panel.cap) && (
+          {panel.type === "capabilities" && (
             <p className="st-more">
-              <Button secondary onClick={() => { if (!busy.current) setPanel({ type: panel.cap }); }}>
-                {panel.cap === "model" ? "管理凭据…" : "查看服务状态…"}
+              <Button secondary onClick={() => { if (!busy.current) setPanel({ type: "daemon" }); }}>
+                查看服务状态…
               </Button>
             </p>
           )}
@@ -347,26 +335,8 @@ export function SettingsV16({ state, save, notify, adoptState, navigate, onSelec
               </Row>
             </div>
           )}
-          {panel.type === "targets" && (
-            <div className="st-panel">
-              <PageChoices className="segmented" label="交付目标 Agent" value={targetAgent}
-                onChange={id => { if (targetPending) notify("请先完成或取消目标编辑，再切换 Agent。", "warning"); else setTargetAgent(id); }}
-                choices={[["codex", "Codex"], ["hermes", "Hermes"]]} />
-              <AgentTargets key={targetAgent} agentId={targetAgent} state={state}
-                adoptState={adoptState} notify={notify} onEvidence={() => {}}
-                onSelect={onSelect} showConfig={false} onPendingChange={setTargetPending} />
-            </div>
-          )}
           {panel.type === "storage" && (
             <StoragePanel state={state} adoptState={adoptState} notify={notify} compact />
-          )}
-          {panel.type === "model" && (
-            <ModelCapabilityUI
-              adoptState={adoptState}
-              onBusyChange={(v) => {
-                busy.current = v;
-              }}
-            />
           )}
           {panel.type === "daemon" && (
             <DaemonCapabilityUI
