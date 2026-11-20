@@ -42,6 +42,19 @@ function safePath(path) {
   );
 }
 
+// 不随完整备份的目录：路径 → 写进清单 skipped 的原因。设置页「需打包」的统计（storage-status.mjs）用同一张表。
+export const BACKUP_SKIPPED_DIRECTORIES = Object.freeze({
+  "reverse-evidence": "REA原始证据不随备份，请单独复制reverse-evidence目录；摘要和日志已保留",
+  // 语音识别模型约 256 MB，地址、大小和哈希固定在 local-speech-model.mjs，缺了会按哈希重新下载（#118）。
+  "collection/models": "语音识别模型不随备份：恢复后第一次转写视频时会自动重新下载（约 256 MB，需能访问 huggingface.co），也可以手动复制 collection/models 目录",
+});
+const RETIRED_SILVER = "silver";
+// 这个数据目录相对路径会不会进新生成的完整备份（不判断符号链接等文件类型，由遍历方自己处理）。
+export function inBackupScope(path) {
+  if (excluded(path)) return false;
+  return ![...Object.keys(BACKUP_SKIPPED_DIRECTORIES), RETIRED_SILVER].some((dir) => path === dir || path.startsWith(dir + "/"));
+}
+
 // 遍历数据目录：只收普通文件；符号链接与其他类型不跟随，记入 skipped。
 async function walk(root, { omitSilver = false } = {}) {
   const files = [],
@@ -51,9 +64,9 @@ async function walk(root, { omitSilver = false } = {}) {
     for (const name of names) {
       const path = prefix ? `${prefix}/${name}` : name;
       if (excluded(path)) continue;
-      if (path === "reverse-evidence") { skipped.push({ path, reason: "REA原始证据不随备份，请单独复制reverse-evidence目录；摘要和日志已保留" }); continue; }
+      if (BACKUP_SKIPPED_DIRECTORIES[path]) { skipped.push({ path, reason: BACKUP_SKIPPED_DIRECTORIES[path] }); continue; }
       // 旧备份恢复后可能仍有退役目录；不让它进入新生成的备份。
-      if(omitSilver && path === "silver"){skipped.push({path,reason:"退役银饰图片目录不进入新备份"});continue;}
+      if(omitSilver && path === RETIRED_SILVER){skipped.push({path,reason:"退役银饰图片目录不进入新备份"});continue;}
       const full = join(dir, name);
       const info = await lstat(full);
       if (info.isSymbolicLink()) skipped.push({ path, reason: "符号链接不跟随" });
@@ -93,10 +106,10 @@ export async function packDirectory(directory, { clock = Date.now } = {}) {
   let total = 0;
   for (const path of paths) {
     const pathOnDisk = join(directory, ...path.split("/"));
-    if (total + (await lstat(pathOnDisk)).size > LIMITS.dataBytes) throw fail("数据目录超过 1 GiB，无法打包为单个文件",413);
+    if (total + (await lstat(pathOnDisk)).size > LIMITS.dataBytes) throw fail("需打包的数据超过 1 GiB，无法打包为单个文件",413);
     const bytes = await readFile(pathOnDisk);
     total += bytes.length;
-    if (total > LIMITS.dataBytes) throw fail("数据目录超过 1 GiB，无法打包为单个文件", 413);
+    if (total > LIMITS.dataBytes) throw fail("需打包的数据超过 1 GiB，无法打包为单个文件", 413);
     entries[`data/${path}`] = bytes;
     files.push({ path, size: bytes.length, sha256: sha(bytes) });
   }

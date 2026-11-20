@@ -15,7 +15,7 @@ const live = {
   usage: { capabilities: { vault: null, agent: null, model: null, calendar: { id: "u-cal", at: "2026-10-20T09:36:28.810Z", outcome: "verified" },
     daemon: { id: "u-daemon", at: "2026-10-08T08:36:22.527Z", outcome: "unknown" }, knowledge: { id: "u-know", at: "2026-10-23T15:38:23.791Z", outcome: "failed" } } },
   aihot: { settings: { enabled: true, intervalHours: 3 } },
-  storage: { size: { state: "ok", bytes: 805320961, files: 2765 }, lastBackup: { state: "none", pending: 0 } },
+  storage: { size: { state: "ok", bytes: 805320961, files: 2765, backupBytes: 481320961, backupFiles: 985 }, lastBackup: { state: "none", pending: 0 } },
 };
 const byId = (rows) => Object.fromEntries(rows.map((r) => [r.id, r]));
 
@@ -23,7 +23,10 @@ test("自检：问题排最上，标记由事实源派生", () => {
   const rows = selfTestRows(live);
   assert.deepEqual(rows.map((r) => `${r.mark}:${r.id}`), ["bad:backup", "warn:daemon", "warn:knowledge", "net:aihot", "net:calendar", "ok:scan"]);
   const r = byId(rows);
-  assert.match(r.backup.result, /^从未成功 · 主库 805\.3 MB \/ 1 GiB 上限 · 2,765 个文件$/);
+  // 和 1 GiB 打包上限比的是「需打包」（不含逆向证据、语音模型），数据目录总量单列（#118）。
+  assert.equal(r.backup.result, "从未成功 · 需打包 481.3 MB / 上限 1 GiB（1073.7 MB） · 数据目录共 805.3 MB、2,765 个文件");
+  const old = selfTestRows({ ...live, storage: { size: { state: "ok", bytes: 805320961, files: 2765 }, lastBackup: { state: "none" } } });
+  assert.equal(byId(old).backup.result, "从未成功 · 数据目录共 805.3 MB、2,765 个文件", "没有同口径统计时不编造需打包的数");
   assert.match(r.daemon.result, /^关闭 · .+ · 结果未知 · 申请未生效$/);
   assert.equal(r.daemon.ackKey, "u-daemon", "使用记录比申请记录新，按使用记录编号记住");
   assert.match(r.knowledge.result, /^2 个来源与个人说明都关闭 · .+ · 失败$/);

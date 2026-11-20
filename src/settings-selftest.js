@@ -1,5 +1,6 @@
 // 设置页开机自检：每行由现有事实源派生；读取中、读取失败都单独标出，不冒充关闭、从未使用或正常。
 import { calendarPermissionLabel, latestUse, savepointThresholds } from "./settings-v16.js";
+import { FULL_BACKUP_LIMITS } from "./full-backup-contract.js";
 
 export const MARK_GLYPH = { bad: "✗", warn: "!", unknown: "?", net: "●", ok: "✓", idle: "·", loading: "…" };
 const RANK = { bad: 0, warn: 1, unknown: 1, net: 2, ok: 3, idle: 4, loading: 5 };
@@ -47,7 +48,10 @@ export function selfTestRows({ state, settings, history, calendar, usage, aihot,
   if (!storage) rows.push({ id: "backup", label: "完整备份", mark: "loading", result: "读取中…" });
   else if (storage.error) rows.push({ id: "backup", label: "完整备份", mark: "unknown", result: `备份信息待核实 · ${storage.error}` });
   else {
-    const b = storage.lastBackup || {}, size = storage.size?.state === "ok" ? ` · 主库 ${mb(storage.size.bytes)} / 1 GiB 上限 · ${storage.size.files.toLocaleString("en-US")} 个文件` : "";
+    // 「需打包」是会进完整备份的那部分（不含逆向证据、语音模型），和 1 GiB 打包上限比的是它；数据目录总量单列（#118）。
+    const s = storage.size, b = storage.lastBackup || {};
+    const packed = s?.state === "ok" && Number.isFinite(s.backupBytes) ? ` · 需打包 ${mb(s.backupBytes)} / 上限 1 GiB（${mb(FULL_BACKUP_LIMITS.dataBytes)}）` : "";
+    const size = s?.state === "ok" ? `${packed} · 数据目录共 ${mb(s.bytes)}、${s.files.toLocaleString("en-US")} 个文件` : "";
     if (b.state === "ok") rows.push({ id: "backup", label: "完整备份", mark: "ok", result: downloaded ? "刚刚下载过恢复包 · 请确认已存到磁盘" : `${when(b.at)} 生成并校验${size}` });
     else if (b.state === "none") rows.push({ id: "backup", label: "完整备份", mark: "bad", result: `从未成功${size}` });
     else if (b.state === "pending") rows.push({ id: "backup", label: "完整备份", mark: "warn", result: `生成记录待核对${size}` });
