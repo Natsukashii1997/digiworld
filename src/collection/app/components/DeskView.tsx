@@ -471,7 +471,7 @@ function ExpandedCard({
             {transcriptSegments.map((segment, index) => <div key={`${segment.start}-${index}`} className="collection-transcript-segment">
               <button type="button" className="collection-key collection-timestamp" onClick={() => seekVideo(segment.start)}>{formatMediaTime(segment.start)}</button><p className="collection-reader-body">{segment.text}</p>
             </div>)}
-          </div> : <p className="collection-notice">{note.videoError || '这条视频没有识别到可转写的语音。'}</p>)}
+          </div> : <p className="collection-notice">{note.videoStatus === 'pending' ? '视频文稿转写中…' : note.videoError || '这条视频没有识别到可转写的语音。'}</p>)}
           {note.mediaStatus === 'partial' && <p className="collection-notice">{note.mediaError || '部分图片或文字未能完整保存。'}</p>}
           {note.videoStatus === 'partial' && note.videoError && (readerTab !== 'transcript' || transcriptSegments.length > 0) && <p className="collection-notice">{note.videoError}</p>}
         </div>
