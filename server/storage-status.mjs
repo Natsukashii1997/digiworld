@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { createBackupRecords } from "./backup-records.mjs";
 import { failure } from "./repository.mjs";
+import { inBackupScope } from "./full-backup.mjs";
 
 const exec = promisify(execFile);
 const identity = (info) => [info.dev,info.ino,info.birthtimeMs].join(":");
@@ -26,7 +27,8 @@ export async function measureDataDirectory(directory, { filesystem = fs, limit =
   const root = resolve(directory), rootInfo = await filesystem.lstat(root);
   if (!rootInfo.isDirectory() || rootInfo.isSymbolicLink()) throw failure("数据目录身份无效",409);
   const canonical = await filesystem.realpath(root), checks = [], skipped = [];
-  let bytes = 0, files = 0, entries = 0;
+  // backupBytes / backupFiles：会进完整备份的那部分（不含逆向证据、语音模型、退役目录和运行时临时文件），与打包同口径。
+  let bytes = 0, files = 0, entries = 0, backupBytes = 0, backupFiles = 0;
   async function visit(path, relative) {
     const before = await filesystem.lstat(path);
     if (!before.isDirectory() || before.isSymbolicLink() ||
@@ -44,6 +46,7 @@ export async function measureDataDirectory(directory, { filesystem = fs, limit =
         skipped.push({ path:key,reason:info.isFile() ? "硬链接不计入" : "特殊文件不计入" }); continue;
       }
       bytes += info.size; files++;
+      if (inBackupScope(key)) { backupBytes += info.size; backupFiles++; }
       if (!Number.isSafeInteger(bytes)) throw failure("目录大小超过整数上限",413);
       checks.push({ path:full,id:identity(info),mtime:info.mtimeMs,size:info.size });
     }
@@ -55,7 +58,7 @@ export async function measureDataDirectory(directory, { filesystem = fs, limit =
       throw failure("目录内容扫描期间变化，大小待核实",409);
   }
   if (identity(await filesystem.lstat(root)) !== identity(rootInfo)) throw failure("数据目录身份已变化",409);
-  return { bytes,files,skipped };
+  return { bytes,files,backupBytes,backupFiles,skipped };
 }
 
 export function createStorageStatus(repository, {

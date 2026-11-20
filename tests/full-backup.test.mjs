@@ -8,6 +8,7 @@ import { join, dirname, basename } from "node:path";
 import { createHash } from "node:crypto";
 import { unzipSync, zipSync, strToU8, strFromU8 } from "fflate";
 import { openRepository } from "../server/repository.mjs";
+import { measureDataDirectory } from "../server/storage-status.mjs";
 import {
   packDirectory,
   inspectBackup,
@@ -46,6 +47,10 @@ async function dataDir() {
   await writeFile(join(directory, "knowledge-writes", "w1", "prepared.json"), '{"id":"w1"}');
   await mkdir(join(directory, "silver"), { mode: 0o700 });
   await writeFile(join(directory, "silver", `${sha(PNG)}.png`), PNG);
+  // 语音识别模型：可按固定地址和哈希重新下载，不随完整备份（#118）；同目录的收藏数据照常打包。
+  await mkdir(join(directory, "collection", "models", "sensevoice-small-q8-v1"), { recursive: true, mode: 0o700 });
+  await writeFile(join(directory, "collection", "models", "sensevoice-small-q8-v1", "fixture.gguf"), "synthetic model bytes");
+  await writeFile(join(directory, "collection", "state.json"), '{"notes":[]}');
   await mkdir(join(directory, "reverse-media"), {mode:0o700});
   await writeFile(join(directory, "reverse-media", `${sha(PNG)}.png`), PNG);
   await mkdir(join(directory, "aihot"), { mode: 0o700 });
@@ -78,7 +83,16 @@ test("打包：主库快照、配置日志、知识写入日志、各集合；�
     assert.ok(paths.some((p) => /^snapshots\/1-[a-f0-9-]+\.json$/.test(p)), "主库快照");
     assert.ok(!paths.some((p) => p.includes("writer-lock") || p.endsWith(".tmp")), "不含锁与临时文件");
     assert.ok(!paths.includes("outside-link"));
-    assert.deepEqual(manifest.skipped, [{ path: "outside-link", reason: "符号链接不跟随" }, {path:"silver",reason:"退役银饰图片目录不进入新备份"}]);
+    assert.deepEqual(manifest.skipped.map(s => s.path), ["collection/models", "outside-link", "silver"]);
+    assert.match(manifest.skipped[0].reason, /语音识别模型不随备份.*自动重新下载/);
+    assert.deepEqual(manifest.skipped.slice(1), [{ path: "outside-link", reason: "符号链接不跟随" }, {path:"silver",reason:"退役银饰图片目录不进入新备份"}]);
+    assert.ok(paths.includes("collection/state.json"), "收藏数据照常打包");
+    assert.equal(paths.some(p => p.startsWith("collection/models/")), false, "模型文件不进完整 ZIP");
+    // 设置页「需打包」与实际打包同口径：字节数和文件数都相等。
+    const measured = await measureDataDirectory(directory);
+    assert.equal(measured.backupBytes, manifest.totalBytes);
+    assert.equal(measured.backupFiles, manifest.files.length);
+    assert.ok(measured.bytes > measured.backupBytes, "数据目录总量含不进备份的部分");
     assert.equal(paths.some(p=>p.startsWith("silver/")),false,"退役目录不进入新完整 ZIP");
     assert.deepEqual([...paths].sort(), paths, "清单按路径排序，便于比对");
     const entries = unzipSync(bytes);
