@@ -67,3 +67,49 @@ export function relationsSample({ at = "2026-11-08T02:30:00.000Z", agentsError =
     ...buildRelations({ projects, items, agents }),
   };
 }
+
+// 真实规模样本（11-20 验收时 5178 的规模：19 个项目、26 条关系、10 个产品；提交数照当时读数，名字和关系是合成的）。
+// 用来守桑基中栏的标签避让：小产品（7、17、18、36 次提交）挤在一起时标签不能互相压住。
+// 支撑流只接 agent-kit（AGENTS 引用）和自建技能库（技能调用），手写关系都不碰底座，和当时的桑基同形。
+// [id, 名称, 类型, 近 30 天提交, 状态, 状态文字, 调用过自建 skill?]
+const P_REAL = [
+  ["work-desk", "牛马之家", "product", 178, "last", "最近提交 11/20", true],
+  ["personal-ai-workbench", "个人 AI 工作台（数码世界）", "product", 152, "stale", "下一步可能过期", true],
+  ["trainee-hub", "管培生工作台", "product", 7, "last", "最近提交 11/6", true],
+  ["agent-kit", "agent-kit", "infrastructure", 30, "last", "最近提交 11/20"],
+  ["my-skills", "自建技能库", "capability", 40, "last", "最近提交 11/20"],
+  ["github-center", "GitHub 快速中心", "product", 132, "last", "最近提交 11/20", true],
+  ["digital-twin", "数字分身", "product", 343, "last", "最近提交 11/19", true],
+  ["hermes-agent", "Hermes 本体（本地补丁）", "infrastructure", 2, "last", "最近提交 11/12"],
+  ["carvomoto", "CarvoMOTO-汽配", "product", 115, "nogh", "没有 GitHub 远端", true],
+  ["postpane", "驿窗 PostPane", "product", 373, "last", "最近提交 11/20", true],
+  ["chatgpt-clipper", "ChatGPT 回答收藏器", "product", 36, "last", "最近提交 11/20"],
+  ["disk-slim", "磁盘瘦身", "product", 18, "last", "最近提交 11/20"],
+  ["get-index", "GET 索引维护", "infrastructure", 0, "last", "还没有提交"],
+  ["little-steps", "Little Steps 育儿记录", "product", 17, "last", "最近提交 11/20"],
+  ["obsidian-kb", "Obsidian 知识库", "infrastructure", 1, "last", "最近提交 11/18"],
+  ["multi-agent", "多 Agent 协同", "capability", 3, "last", "最近提交 11/15"],
+  ["ui-system", "UI 设计体系", "capability", 1, "last", "最近提交 11/10"],
+  ["agent-autoloop", "agent-autoloop（执行底座引擎）", "infrastructure", 12, "last", "最近提交 11/19"],
+  ["dt-autoloop-plugins", "dt-autoloop-plugins（中台插件）", "infrastructure", 4, "last", "最近提交 11/19"],
+];
+// 手写关系 [从, 到, 类型]：产品之间、底座之间，不连产品与底座。
+const R_REAL = [
+  ["digital-twin", "personal-ai-workbench", "data"], ["digital-twin", "postpane", "data"], ["digital-twin", "github-center", "data"],
+  ["disk-slim", "postpane", "part"], ["work-desk", "personal-ai-workbench", "apart"], ["get-index", "obsidian-kb", "part"],
+  ["multi-agent", "ui-system", "contract"], ["hermes-agent", "obsidian-kb", "data"], ["dt-autoloop-plugins", "agent-autoloop", "part"],
+  ["work-desk", "carvomoto", "apart"],
+];
+
+export function relationsSampleReal({ at = "2026-11-20T03:30:00.000Z" } = {}) {
+  const projects = P_REAL.map(([id, name, type]) => ({ id, name, type, path: `/合成/${id}`,
+    relations: R_REAL.filter((r) => r[0] === id).map(([, to, kind]) => ({ to, kind, note: "合成关系", source: "合成名册" })) }));
+  const items = P_REAL.map(([id, , , total, kind, text, skills]) => ({
+    id, commits: { state: "ok", total }, attention: { kind, text },
+    skills: skills ? { skills: [{ name: "thinking-review", src: "自建", n: 2 }] } : null,
+  }));
+  const agents = Object.fromEntries(P_REAL.map(([id, , type]) => [id, { state: "ok",
+    text: type === "product" && id !== "carvomoto" ? "开工前读 agent-kit 的《工程流程》。\n" : "本项目协作规则。\n" }]));
+  return { at, roster: { state: "ok", path: "合成名册/projects.json", version: "v1.6", skipped: [] }, skillUsage: { state: "ok" },
+    ...buildRelations({ projects, items, agents }) };
+}

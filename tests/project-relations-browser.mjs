@@ -1,5 +1,5 @@
 // 项目空间「项目关系」页签（#79）的浏览器回归：合成 fixture，不读真实名册、Vault、data/。
-// 关系接口的数据用 tests/project-relations-sample.mjs（照定稿的 16 个项目，经 #78 的 buildRelations 生成）由路由返回；
+// 关系接口的数据用 tests/project-relations-sample.mjs（照定稿的 16 个项目，经 #78 的 buildRelations 生成；标签避让另用真实规模样本）由路由返回；
 // 「在项目总览打开」一节走真实接口（合成名册写上 type / relations）。
 // 跑法：npm run build 后 node tests/project-relations-browser.mjs；本机 Playwright 缺对应浏览器时设 PLAYWRIGHT_CHROMIUM。
 import { createRequire } from "node:module";
@@ -8,7 +8,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { spaceFixture } from "./projects-space-fixture.mjs";
-import { relationsSample } from "./project-relations-sample.mjs";
+import { relationsSample, relationsSampleReal } from "./project-relations-sample.mjs";
 
 const { chromium } = createRequire(import.meta.url)(
   process.env.PLAYWRIGHT_MODULE ||
@@ -178,6 +178,28 @@ try {
     ok("减少动态效果：直接显示终态，无光点、无动画，高亮照常");
     await context.close();
   }
+
+  // ---- 桑基标签避让：真实规模（19 个项目、10 个产品，小产品挤在中栏底部）与定稿样本，各列标签互不压住 ----
+  for (const [tag, body] of [["真实规模", relationsSampleReal()], ["定稿样本", sample]]) {
+    const { page, context } = await open(1440, { reduced: true, body });
+    await toRelations(page);
+    await page.locator(".pr-flow .nd").first().waitFor();
+    await page.evaluate(() => document.fonts.ready);
+    const hits = await page.locator(".pr-flow").evaluate((svg) => {
+      const box = (g) => { const b = [...g.querySelectorAll(":scope > text")].map((t) => t.getBBox()); // 字形框外加 1.5 描边
+        return { t: g.textContent, y0: Math.min(...b.map((r) => r.y)) - 1.5, y1: Math.max(...b.map((r) => r.y + r.height)) + 1.5 }; };
+      const out = [];
+      for (const col of ["b:", "p:", "s:"]) {
+        const c = [...svg.querySelectorAll(`.nd[data-node^="${col}"]`)].map(box).sort((a, b) => a.y0 - b.y0);
+        c.slice(1).forEach((b, i) => { if (b.y0 < c[i].y1) out.push(`${c[i].t} ↔ ${b.t}`); });
+        if (c.length && c.at(-1).y1 > svg.viewBox.baseVal.height) out.push(`${c.at(-1).t} 超出画布底`);
+      }
+      return out;
+    });
+    assert.deepEqual(hits, [], `${tag}：桑基标签互相压住`);
+    await context.close();
+  }
+  ok("桑基标签避让：真实规模与定稿样本下，三列标签互不压住、不出画布");
 
   // ---- 窄屏 390：图在卡片里横向滚动，页面本身不横向滚动 ----
   {

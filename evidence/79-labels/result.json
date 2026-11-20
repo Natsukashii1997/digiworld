@@ -1,0 +1,71 @@
+{
+  "real": {
+    "before": {
+      "collisions": [
+        {
+          "a": "磁盘瘦身18",
+          "b": "Little Steps 育儿记录17",
+          "overlap": 2.7
+        }
+      ]
+    },
+    "after": {
+      "collisions": []
+    },
+    "flowDiff": {
+      "size": [
+        826,
+        414
+      ],
+      "diff": 2140,
+      "outsideLabels": 0
+    },
+    "moved": [
+      {
+        "text": "磁盘瘦身18",
+        "dy": 0.9
+      },
+      {
+        "text": "Little Steps 育儿记录17",
+        "dy": 4.6
+      }
+    ]
+  },
+  "h16": {
+    "before": {
+      "collisions": [
+        {
+          "a": "CarvoMOTO95 次提交",
+          "b": "磁盘瘦身3",
+          "overlap": 0.8
+        },
+        {
+          "a": "磁盘瘦身3",
+          "b": "Little Steps12",
+          "overlap": 5
+        }
+      ]
+    },
+    "after": {
+      "collisions": []
+    },
+    "flowDiff": {
+      "size": [
+        826,
+        414
+      ],
+      "diff": 1665,
+      "outsideLabels": 0
+    },
+    "moved": [
+      {
+        "text": "磁盘瘦身3",
+        "dy": 2
+      },
+      {
+        "text": "Little Steps12",
+        "dy": 8
+      }
+    ]
+  }
+}

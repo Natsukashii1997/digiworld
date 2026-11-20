@@ -273,6 +273,26 @@ function chainOf(sk, n) {
   else n.targetLinks.forEach((l) => sk.links.forEach((x) => { if (x.p === l.p) s.add(x.index); }));
   return s;
 }
+// 标签避让：同一列相邻两个标签的包围盒相交时，从上往下依次挤开；挤出画布底，再从下往上收回。
+// 包围盒相对节点中线，量自渲染结果（字形框外加 1.5 描边）：单行 [-13.5, 8.4]，两行 [-21, 20]。
+// 没有碰撞的标签不动；挤开的标签只上下错开几个单位，仍贴着自己的节点。
+const LAB_BOX = { one: [-13.5, 8.4], two: [-21, 20] }, LAB_GAP = 1;
+function labelShift(nodes) {
+  const dy = {};
+  for (const c of [0, 1, 2]) {
+    const col = nodes.filter((n) => n.col === c).map((n) => {
+      const mid = (n.y0 + n.y1) / 2, [a, b] = LAB_BOX[n.y1 - n.y0 > 26 ? "two" : "one"];
+      return { n, mid, a, b, y: mid };
+    }).sort((p, q) => p.mid - q.mid);
+    for (let i = 1; i < col.length; i++) col[i].y = Math.max(col[i].y, col[i - 1].y + col[i - 1].b - col[i].a + LAB_GAP);
+    for (let i = col.length - 1; i >= 0; i--) {
+      const floor = i === col.length - 1 ? SH - 2 : col[i + 1].y + col[i + 1].a - LAB_GAP;
+      col[i].y = Math.min(col[i].y, floor - col[i].b);
+    }
+    col.forEach((q) => { dy[q.n.index] = q.y - q.mid; });
+  }
+  return dy;
+}
 const fmt = (v) => (Math.round(v * 10) / 10).toString();
 
 // 节点悬停的明细写在右侧信息轨（onHoverNode），不再弹提示；流带悬停仍弹提示写这一段的提交数。
@@ -289,6 +309,7 @@ function Flow({ sk, focus, entered, reduced, onPick, onHoverNode, tip }) {
   if (hot) sk.links.forEach((l) => { if (hot.has(l.index)) { lit.add(l.source.index); lit.add(l.target.index); } });
   const path = sankeyLinkHorizontal(), col = (c) => sk.nodes.find((n) => n.col === c);
   const projNode = (id) => sk.nodes.find((x) => x.kind === "proj" && x.ref === id);
+  const shift = useMemo(() => labelShift(sk.nodes), [sk]);
   return (
     <svg className={`pr-flow${hot && hot.size ? " focus" : ""}`} viewBox={`0 0 ${SW} ${SH}`} role="group" aria-label="支撑流：底座 → 产品 → 当前状态">
       <defs>{sk.links.map((l) => <linearGradient key={l.index} id={`pr-sg-${l.index}`} gradientUnits="userSpaceOnUse" x1={l.source.x1} x2={l.target.x0}>
@@ -312,7 +333,7 @@ function Flow({ sk, focus, entered, reduced, onPick, onHoverNode, tip }) {
         </g>;
       })}
       {sk.nodes.map((n) => {
-        const left = n.col === 0, mid = (n.y0 + n.y1) / 2, x = left ? n.x0 - 10 : n.x1 + 10, anchor = left ? "end" : "start", v = Math.round(n.real);
+        const left = n.col === 0, mid = (n.y0 + n.y1) / 2 + shift[n.index], x =left ? n.x0 - 10 : n.x1 + 10, anchor = left ? "end" : "start", v = Math.round(n.real);
         return <g key={n.key} className={`nd${lit.has(n.index) ? " hot" : ""}${n.kind === "proj" ? " pick" : ""}`} data-node={n.key}
           onMouseEnter={() => { setLocal(chainOf(sk, n)); onHoverNode(n); }} onMouseLeave={() => { setLocal(null); onHoverNode(null); }}
           onClick={() => n.kind === "proj" && onPick(n.ref)}>
