@@ -10,7 +10,6 @@ import {
   buildWorkflowDeploymentBundle,
 } from "./workflow-references.js";
 import { request } from "./api.js";
-import {WorkflowDeployment} from "./WorkflowDeployment.jsx";
 
 const labels = {
   current: "当前版",
@@ -246,8 +245,6 @@ export async function readWorkflow(assetId, versionId) {
 export function WorkflowDelivery({
   asset,
   version,
-  state,
-  onBusy,
   onDownload,
   onUsed,
   onCopyStart,
@@ -323,7 +320,6 @@ export function WorkflowDelivery({
           <PenLine size={18} />
         </button>
       </div>
-      {state && <WorkflowDeployment asset={asset} version={version} state={state} onBusy={onBusy}/>}
       {!!version.references?.length && (
         <p className="context-receipt">
           含 Skill 时，请将导出的 ZIP 一并附给 Agent。仅复制说明不含文件。

@@ -2,13 +2,9 @@
 .hatch-panel { display: grid; gap: 14px; min-width: 0; }
 .hatch-subject { display: grid; gap: 2px; margin: 0; min-width: 0; }
 .hatch-subject b { overflow-wrap: anywhere; font-size: var(--f-16); color: var(--text); }
-.hatch-subject small, .hatch-pending, .hatch-empty { color: var(--muted); font-size: var(--f-13); }
-.hatch-pending, .hatch-empty { margin: 0; }
-.hatch-panel section { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line-2); }
-.hatch-panel h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: var(--f-13); color: var(--text-2); }
-.hatch-slots { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.hatch-slots .button { width: 100%; justify-content: flex-start; min-height: 44px; overflow-wrap: anywhere; }
-.hatch-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-top: 12px; border-top: 1px solid var(--line-2); }
+.hatch-subject small, .hatch-pending { color: var(--muted); font-size: var(--f-13); }
+.hatch-pending { margin: 0; }
+.hatch-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-top: 12px; border-top: 1px solid var(--line-2); }
 .hatch-actions .button { min-height: 44px; justify-content: center; }
 .hatch-status { margin: 0; color: var(--yellow); font-size: var(--f-13); }
 .route-badges { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }

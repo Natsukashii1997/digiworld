@@ -1,7 +1,8 @@
-// 孵化面板（阶段 2 主线串联 C 批）：随手记、收藏共用四个去向——投递到项目、孵成资产、收入焚决、归档。
-// 去向状态从目标侧的引用推导（capture-routes.js），面板只发起写入；写入走公共写入能力：先查询、不自动重放。
+// 孵化面板：随手记、收藏共用两个去向——孵成资产、归档。「投递到项目」「收入焚决」已下线（#111），
+// 以前留下的这两类去向仍照常显示徽记。去向状态从目标侧的引用推导（capture-routes.js），
+// 面板只发起写入；写入走公共写入能力：先查询、不自动重放。
 import React, { useRef, useState } from "react";
-import { Archive, ArchiveRestore, Flame, Layers, Send } from "lucide-react";
+import { Archive, ArchiveRestore, Layers } from "lucide-react";
 import { Button, Dialog, StatusBadge } from "./components.jsx";
 import { request } from "./api.js";
 import { settleAttempt } from "./write-attempt.js";
@@ -42,13 +43,10 @@ const OUTCOME = {
 };
 
 // capture：{ kind: "note" | "collection", id, title }；routes：这条捕获当前的全部去向。
-export function HatchPanel({ capture, routes, projects, scrolls, adoptState, notify, navigate, onHatchAsset, onRefine, onClose }) {
+export function HatchPanel({ capture, routes, scrolls, adoptState, notify, onHatchAsset, onClose }) {
   const [busy, setBusy] = useState(""), [status, setStatus] = useState("");
   const lock = useRef(false);
   const archived = routes.some((r) => r.to === "archive");
-  const delivered = new Set(routes.filter((r) => r.to === "project").map((r) => r.projectId));
-  const refined = routes.find((r) => r.to === "scroll");
-  const slots = projects.filter((p) => p.active === true).sort((a, b) => a.name.localeCompare(b.name, "zh"));
   async function write(key, send, reached, done) {
     if (lock.current) return;
     lock.current = true;
@@ -71,17 +69,6 @@ export function HatchPanel({ capture, routes, projects, scrolls, adoptState, not
       setBusy("");
     }
   }
-  const deliver = (project) =>
-    write(
-      `deliver-${project.id}`,
-      () => request("/project-desk/deliver", { projectId: project.id, kind: capture.kind, id: capture.id }),
-      async () => {
-        const state = await request("/workspace");
-        const entry = (state.projectDesk || []).find((e) => e.projectId === project.id);
-        return { ok: !!entry?.inbox.some((i) => i.kind === capture.kind && i.id === capture.id), adopt: () => adoptState(state) };
-      },
-      `已投递到「${project.name}」`,
-    );
   const archive = () =>
     capture.kind === "note"
       ? write(
@@ -111,31 +98,9 @@ export function HatchPanel({ capture, routes, projects, scrolls, adoptState, not
           <small>{capture.kind === "note" ? "随手记" : "个人收藏"}</small>
         </p>
         {routes.length ? <RouteBadges routes={routes} scrolls={scrolls} /> : <p className="hatch-pending">待孵化：还没有去向。</p>}
-        <section aria-labelledby="hatch-deliver">
-          <h3 id="hatch-deliver"><Send size={14} aria-hidden="true" />投递到项目</h3>
-          {slots.length ? (
-            <ul className="hatch-slots">
-              {slots.map((project) => (
-                <li key={project.id}>
-                  <Button secondary disabled={!!busy || delivered.has(project.id)} onClick={() => deliver(project)}>
-                    {busy === `deliver-${project.id}` ? "投递中…" : delivered.has(project.id) ? `已投递 · ${project.name}` : `投递到「${project.name}」`}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hatch-empty">
-              存档槽里还没有在推进的项目。
-              <button type="button" className="text-button" onClick={() => { onClose(); navigate("projects"); }}>去项目空间放一个</button>
-            </p>
-          )}
-        </section>
         <div className="hatch-actions">
           <Button secondary disabled={!!busy} onClick={() => { onClose(); onHatchAsset(capture); }}>
             <Layers size={16} aria-hidden="true" />孵成资产
-          </Button>
-          <Button secondary disabled={!!busy || !!refined} onClick={() => { onClose(); onRefine(capture); }}>
-            <Flame size={16} aria-hidden="true" />{refined ? "已收入焚决" : "收入焚决"}
           </Button>
           <Button secondary disabled={!!busy} onClick={archive}>
             {archived ? <ArchiveRestore size={16} aria-hidden="true" /> : <Archive size={16} aria-hidden="true" />}

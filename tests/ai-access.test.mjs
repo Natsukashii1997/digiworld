@@ -64,7 +64,7 @@ test('功能清单每行都写清谁做、怎么接、读什么、写到哪、�
   for (const f of result.features) {
     for (const key of ['name', 'decision', 'ticket', 'executor', 'follows', 'access', 'reads', 'writes', 'trail', 'supports'])
       assert.ok(typeof f[key] === 'string' && f[key].length > 0, `${f.id}.${key}`);
-    assert.ok(['保留', '待定', '建议下线'].includes(f.decision));
+    assert.equal(f.decision, '已下线', '#111 起应用内不再调用 AI');
     if (f.supports.startsWith('仅支持')) assert.match(f.supports, /：.+/);
   }
   const book = result.features.find(f => f.id === 'book-model');

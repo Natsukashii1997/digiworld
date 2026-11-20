@@ -4,7 +4,8 @@ import { calendarPermissionLabel, latestUse, savepointThresholds } from "./setti
 export const MARK_GLYPH = { bad: "✗", warn: "!", unknown: "?", net: "●", ok: "✓", idle: "·", loading: "…" };
 const RANK = { bad: 0, warn: 1, unknown: 1, net: 2, ok: 3, idle: 4, loading: 5 };
 const ANOMALY = ["failed", "unknown", "not_applied"];
-const CAPS = [["vault", "Vault 写入"], ["agent", "Agent 配置"], ["model", "模型 / API"], ["daemon", "常驻服务"]];
+// 能力开关只剩常驻服务：Vault 写入、Agent 配置、模型 / API 的写接口已下线（#111）。
+const CAPS = [["daemon", "常驻服务"]];
 
 const mb = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
 const when = (at) => new Date(at).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -71,15 +72,13 @@ export function selfTestRows({ state, settings, history, calendar, usage, aihot,
   {
     const label = calendarPermissionLabel(calendar);
     const mark = { "读取中…": "loading", "未知": "unknown", "未接入": "idle", "已授权": "net", "部分授权": "net" }[label] || "ok";
-    const result = mark === "net" ? `${label} · 写入“${calendar.calendarName || "工作台"}”日历和“${calendar.listName || "工作台"}”列表` : calendar?.error ? `未知 · ${calendar.error}` : label;
+    // 日历的建、改、删已下线（#111），这里只报告系统授权状态。
+    const result = mark === "net" ? `${label} · 只读` : calendar?.error ? `未知 · ${calendar.error}` : label;
     rows.push({ id: "calendar", label: "日历与提醒", mark, result });
   }
-  // 项目设置（名册只读，#71：扫描目录已下线）、资产交付
+  // 项目设置（名册只读，#71：扫描目录已下线）。资产交付目标已下线（#111）。
   const t = savepointThresholds(c);
   rows.push({ id: "scan", label: "项目设置", mark: "ok", result: `名册只读 · 停滞 ${c.projectStallDays || 7} 天 · 未存档 黄 ${t.warn} / 红 ${t.danger} 天` });
-  rows.push(c.agentTargets?.length
-    ? { id: "deliver", label: "资产交付", mark: "ok", result: `${c.agentTargets.length} 个目标` }
-    : { id: "deliver", label: "资产交付", mark: "idle", result: "0 个目标" });
   // 「知道了」：只对同一条异常记录生效，新记录再亮
   for (const r of rows) if (r.mark === "warn" && r.ackKey && acks[r.id] === r.ackKey) { r.mark = "ok"; r.acked = true; }
   return rows.map((r, i) => ({ ...r, i })).sort((a, b) => RANK[a.mark] - RANK[b.mark] || a.i - b.i);

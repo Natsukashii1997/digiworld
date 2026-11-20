@@ -25,10 +25,8 @@ import { readSkillZip, buildSkillZip } from "./skill-package.js";
 import { isInstallSkill, isSelfSkill, skillInstallText, validateInstallUrl } from "./skill-install.js";
 import { SkillDelivery } from "./SkillDelivery.jsx";
 import { SkillCopies } from "./SkillCopies.jsx";
-import { SkillPublish } from "./AgentWriteUI.jsx";
 import { McpDelivery } from "./McpDelivery.jsx";
 import { codexMcpDelivery, validateMcpConfig, validateMcpVersion } from "./mcp-config.js";
-import { SkillPoolPublish } from "./SkillPoolPublish.jsx";
 import { SkillOrigin } from "./SkillSources.jsx";
 import { current, makeAsset, revise } from "./store.js";
 import {
@@ -58,7 +56,6 @@ import {
 } from "./components.jsx";
 import { AssetUsage, useAssetActivity } from "./AssetUsage.jsx";
 import { AssetEvolution } from "./AssetEvolution.jsx";
-import { RuleInstall } from "./RuleInstall.jsx";
 import { Odometer } from "./Odometer.jsx";
 import { usageByAsset } from "./asset-usage.js";
 import { removeAssetFromWarehouse } from "./asset-delete.js";
@@ -162,7 +159,7 @@ const HANDOFF = {
   InstallSkill: ["复制安装话术", "粘贴给 Claude Code 或 Codex", "它按安装地址里的文档装好并试用一次"],
   Prompt: ["复制完整提示词", "粘贴到 Agent 对话", "按需补充本次背景"],
   Workflow: ["复制流程与固定引用", "交给 Agent 按步骤推进", "引用版本不会随上游变动"],
-  Rule: ["装进项目的 AGENTS.md 或 CLAUDE.md", "只维护文件里的托管区块", "模板改版后逐个预览再升级"],
+  Rule: ["复制模板全文", "贴给对应项目的 Agent，由它写进项目自己的 AGENTS.md 或 CLAUDE.md", "数码世界只保存模板，不往项目里写"],
   MCP: ["选择已登记的 Codex CLI 目标", "复制或下载该固定版本的 TOML 片段", "配置到目标后在新会话核验连接与采用"],
 };
 const CONTENT_LABEL = {
@@ -1094,8 +1091,6 @@ export function AssetDetail({
   onClose,
   onEdit,
   notify,
-  ruleInstalls = { items: [], error: "", loaded: false },
-  refreshRuleInstalls = () => {},
   versionBump = null,
   onOpenReverse,
 }) {
@@ -1107,8 +1102,6 @@ export function AssetDetail({
   const hatchedFrom = asset.versions[0]?.hatchedFrom;
   const hatchedReverse = hatchedFrom?.kind === "reverse" && onOpenReverse
     ? { id: hatchedFrom.id, record: (state.reverseRecords || []).find((r) => r.id === hatchedFrom.id && !r.deletedAt) } : null;
-  const agentWritingRef = React.useRef(new Set());
-  const agentBusy = (source, value) => { if (value) agentWritingRef.current.add(source); else agentWritingRef.current.delete(source); };
   const stage = stageOf(asset, state.assetActivity);
   const activity = useAssetActivity(asset, state, adoptState);
   const copyLock = React.useRef(false);
@@ -1136,7 +1129,7 @@ export function AssetDetail({
   }
   const onUsed = (action, extra = {}) => activity.record({ kind: "use", action, versionId: v.id, ...extra }, true);
   async function deleteAsset() {
-    if (activity.busy || copying || deleting || agentWritingRef.current.size) return;
+    if (activity.busy || copying || deleting) return;
     setDeleting(true);
     setDeleteBlockers([]);
     try {
@@ -1200,7 +1193,7 @@ export function AssetDetail({
     }
   }
   return (
-    <Dialog title="资产详情" onClose={() => { if (!activity.busy && !copying && !deleting && !agentWritingRef.current.size) onClose(); }} drawer>
+    <Dialog title="资产详情" onClose={() => { if (!activity.busy && !copying && !deleting) onClose(); }} drawer>
       <Cover
         type={asset.type}
         sprite={glyphOf(asset)}
@@ -1252,18 +1245,12 @@ export function AssetDetail({
             onEdit={() => { if (!activity.busy && !copying) onEdit(asset); }}
             notify={notify}
           />
-          {asset.type === "Skill" && <>
-          <SkillPoolPublish key={`pool:${asset.id}:${v.id}`} asset={asset} version={v} state={state} onBusy={v=>agentBusy("pool",v)} />
-          <SkillPublish asset={asset} version={v} state={state} onBusy={v=>agentBusy("skill",v)} />
-          </>}
           </>
         ) : asset.type === "Workflow" ? (
           <WorkflowDelivery
             key={v.id}
             asset={asset}
             version={v}
-            state={state}
-            onBusy={v=>agentBusy("workflow",v)}
             onCopyStart={activity.beginCopy}
             onCopyEnd={activity.endCopy}
             onUsed={onUsed}
@@ -1305,16 +1292,6 @@ export function AssetDetail({
             复制不等于已安装或已使用，结果请在目标 Agent 里确认。
           </p>
         </section>
-        {asset.type === "Rule" && (
-          <RuleInstall
-            key={v.id}
-            asset={asset}
-            state={state}
-            installs={ruleInstalls}
-            refresh={refreshRuleInstalls}
-            notify={notify}
-          />
-        )}
         <AssetUsage asset={asset} state={state} activity={activity} />
         <AssetEvolution
           asset={asset}
@@ -1436,7 +1413,7 @@ export function AssetDetail({
             <Download size={15} />
             导出
           </button>
-          <button className="text-button danger-text" onClick={deleteAsset} disabled={activity.busy || copying || deleting || !!agentWritingRef.current.size}>
+          <button className="text-button danger-text" onClick={deleteAsset} disabled={activity.busy || copying || deleting}>
             <Trash2 size={15} />
             {deleting ? "正在删除…" : "删除资产"}
           </button>

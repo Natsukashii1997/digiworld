@@ -29,9 +29,11 @@ git config core.hooksPath scripts/hooks   # 装提交、推送前的必经检查
 
 ## AI 接入
 
-按全局规则 P-13（2026-11-07）。本节与 `GET /api/ai-access`（`server/ai-access.mjs`）内容一致，改 AI 功能时两处一起改；设置页「AI 接入」一栏在第 2 批做（要等 I-DW-5 和 UI 改版完成）。盘点与分批计划见 [2026-11-07 交接](docs/agents/handoffs/2026-11-07-claude-ai-access-batch1.md)。
+按全局规则 P-13（2026-11-07）。本节与 `GET /api/ai-access`（`server/ai-access.mjs`）内容一致，改 AI 功能时两处一起改。
 
-**执行方**（状态以接口为准；CLI 只查是否安装，登录和额度未检查；Key 只显示配置状态，不读钥匙串）：
+**本应用当前不调用 AI**（2026-11-20，#111）：下面功能清单里的五项，启动与写入接口都已下线（下线表见 `server/retired-writes.mjs`，直接请求回 410），清单留作追溯。按 P-13，没有 AI 功能时不单建设置页「AI 接入」一栏；以后再加 AI 功能时补上。原盘点见 [2026-11-07 交接](docs/agents/handoffs/2026-11-07-claude-ai-access-batch1.md)。
+
+**执行方**（现在没有功能调用它们，留作追溯；状态以接口为准；CLI 只查是否安装，登录和额度未检查；Key 只显示配置状态，不读钥匙串）：
 
 | 执行方 | 接入方式 | 说明 |
 |---|---|---|
@@ -40,17 +42,17 @@ git config core.hooksPath scripts/hooks   # 装提交、推送前的必经检查
 | Claude（官方 API） | 官方 API | `claude-haiku-4-5-20251001`，Key 存 macOS 钥匙串 |
 | OpenAI（官方 API） | 官方 API | `gpt-6.1-sol`，Key 存 macOS 钥匙串 |
 
-**默认执行方**：目前只有逆向工程跟随，值存在工作区 `reverseSettings.executor`（Codex / Claude Code / 仅 REA，未设置时为 Codex），在逆向页「执行器」切换，下一次运行生效；第 2 批迁到设置页，不另存第二份。
+**默认执行方**：已无功能跟随。原来只有逆向工程 AI 逆推跟随，值存在工作区 `reverseSettings.executor`（Codex / Claude Code / 仅 REA），应用内启动下线后这个值只是历史设置。
 
 **功能清单**：
 
 | 功能 | 执行方 | 接入方式 | 读哪些数据 | 产出写到哪里 | 去留 |
 |---|---|---|---|---|---|
-| 逆向工程 · AI 逆推 | 跟随默认（Claude、Codex 都支持） | 本机 CLI | 授权的目标路径、REA 只读取证、已有摘要 | 工作台私有运行目录 → 逆向记录；每条运行记执行方 | 保留（I-DW-8 产出改道 my-skills 候选） |
-| 读书摘要 / 划线 / 问答 | 单独指定：仅支持官方 API（Claude Haiku 4.5 / OpenAI gpt-6.1-sol），因为要按价格白名单逐次预留费用 | 官方 API | 登记书的有界正文 | 私有结果文件；操作日志记提供方、模型、用量、费用 | 待定（I-DW-9） |
-| 夜巡 v1 | 仅支持 Claude：预算控制只核实过 Claude 官方 CLI | 本机 CLI + 官方 API Key | 项目内登记的只读文件 | 工作台输出目录 | 建议下线（I-DW-9），不做设置 |
-| 夜巡 v2 | 每个槽位 Claude / Codex | 本机 CLI（生产未接适配器） | 项目 worktree | 夜间分支与晨报 | 建议下线（I-DW-9），不做设置 |
-| 知识整理任务包 | 仅支持 Codex：任务包按 Codex 原生环境编写 | 应用不调用，本人在 Codex 里跑后导入 | 选中的知识源资料 | 导入为候选，不写回 Vault | 待定（I-DW-9） |
+| 逆向工程 · AI 逆推 | 跟随默认（Claude、Codex 都支持） | 本机 CLI | 授权的目标路径、REA 只读取证、已有摘要 | 工作台私有运行目录 → 逆向记录；每条运行记执行方 | 已下线（#111；回执通道保留，产出改道见 I-DW-8） |
+| 读书摘要 / 划线 / 问答 | 单独指定：仅支持官方 API（Claude Haiku 4.5 / OpenAI gpt-6.1-sol），因为要按价格白名单逐次预留费用 | 官方 API | 登记书的有界正文 | 私有结果文件；操作日志记提供方、模型、用量、费用 | 已下线（#111） |
+| 夜巡 v1 | 仅支持 Claude：预算控制只核实过 Claude 官方 CLI | 本机 CLI + 官方 API Key | 项目内登记的只读文件 | 工作台输出目录 | 已下线（#111） |
+| 夜巡 v2 | 每个槽位 Claude / Codex | 本机 CLI（生产未接适配器） | 项目 worktree | 夜间分支与晨报 | 已下线（#111） |
+| 知识整理任务包 | 仅支持 Codex：任务包按 Codex 原生环境编写 | 应用不调用，本人在 Codex 里跑后导入 | 选中的知识源资料 | 导入为候选，不写回 Vault | 已下线（#111） |
 
 接力包只生成文本，由本人贴给 Agent，不算 AI 产出。视频转写（本机 SenseVoice，失败改用 macOS 系统识别）和图片文字识别（macOS Vision）是本机模型，不外发，不属于可切换执行方。
 
@@ -63,7 +65,7 @@ git config core.hooksPath scripts/hooks   # 装提交、推送前的必经检查
 
 **数据对象**（只读，不进切换）：本机会话（接力用）、Skill 使用统计、MCP 使用统计、Agent 发现与清单、MCP 注册自检、AI HOT 资讯、驾驶舱 Agent 页与规则页（`GET /api/cockpit/agents`、`/api/cockpit/rules`，只读本机 Agent 配置摘要与规则来源，#74）、项目关系页（`GET /api/projects-space/relations`，只读名册 type / relations、各项目 AGENTS.md 对底座的引用、Skill 使用统计与近 30 天提交，#78）、资产仓库 Skill 页（`GET /api/my-skills`，只读 my-skills 的 links.tsv、各 SKILL.md 头部与 git 提交日期，以及 agent-kit 的 skill-usage.jsonl 调用记录（只记 Claude 端）；不写 my-skills，#93）。
 
-Agent 配置、模型配置、Skill 启停、迁移、挂载修复、交付目标改的是外部 Agent 的文件，不属于本节，按 D-A 在 I-DW-5/6 下线。
+Agent 配置、模型配置、Skill 启停、迁移、挂载修复、交付目标改的是外部 Agent 的文件，不属于本节；写接口已在 #111 封口（v2.0 D-A）。
 
 ## Agent skills
 
