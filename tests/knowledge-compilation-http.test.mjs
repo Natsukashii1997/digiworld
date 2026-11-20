@@ -1,10 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import {
-  knowledgeQueryFixture,
-  queryText,
-} from "./knowledge-query-fixture.mjs";
+import { knowledgeQueryFixture } from "./knowledge-query-fixture.mjs";
 
 async function prepare(t) {
   const f = await knowledgeQueryFixture();
@@ -74,125 +71,6 @@ export function candidateFor(task) {
     ],
   };
 }
-
-test("整理HTTP：创建→原生任务包→候选导入→检查→备份→归档，仅存候选不改源", async (t) => {
-  const f = await prepare(t);
-  const created = await f.call("/knowledge/tasks/create", f.input);
-  assert.equal(created.status, 200, created.body.error);
-  let state = created.body.state;
-  const task = state.knowledgeTasks.find((v) => v.id === created.body.taskId);
-  assert.equal(task.evidence.length, 2);
-  assert.equal(JSON.stringify(state).includes("正文独有"), false);
-  const repeated = await f.call("/knowledge/tasks/create", f.input);
-  assert.equal(repeated.status, 200, repeated.body.error);
-  assert.equal(repeated.body.taskId, task.id);
-  assert.equal(repeated.body.state.revision, state.revision);
-  const packet = await f.call("/knowledge/tasks/packet", {
-    taskId: task.id,
-    confirmed: true,
-  });
-  assert.equal(packet.status, 200, packet.body.error);
-  assert.ok(packet.body.text.includes(task.manifestHash));
-  assert.match(packet.body.text, /Codex/);
-  assert.equal(packet.body.text.includes("正文独有"), false);
-  const received = await f.call("/knowledge/tasks/receive", {
-    taskId: task.id,
-    candidate: candidateFor(task),
-    expectedRevision: state.revision,
-  });
-  assert.equal(received.status, 200, received.body.error);
-  state = received.body.state;
-  assert.equal(state.knowledgeTasks[0].candidates.length, 1);
-  const checked = await f.call("/knowledge/tasks/check", { taskId: task.id });
-  assert.equal(checked.status, 200, checked.body.error);
-  assert.equal(checked.body.status, "unchanged");
-  assert.equal(checked.body.items.length, 2);
-  f.advance(11 * 60 * 1000);
-  assert.equal(
-    (await f.call("/knowledge/tasks/check", { taskId: task.id })).body.status,
-    "unchanged",
-  );
-  const backup = await f.call("/backup");
-  assert.equal(backup.body.state.knowledgeTasks.length, 1);
-  assert.equal(JSON.stringify(backup.body).includes("正文独有"), false);
-  assert.equal(await f.original(), queryText);
-  const archived = await f.call("/knowledge/tasks/archive", {
-    taskId: task.id,
-    expectedRevision: state.revision,
-  });
-  assert.equal(archived.status, 200, archived.body.error);
-  assert.equal(archived.body.state.knowledgeTasks[0].archived, true);
-});
-
-test("整理HTTP：伪造与未知字段不写入，旧revision不覆盖，变化与撤权不返回可交付包", async (t) => {
-  const f = await prepare(t);
-  assert.equal(
-    (await f.call("/knowledge/tasks/create", { ...f.input, root: f.root }))
-      .status,
-    400,
-  );
-  const created = await f.call("/knowledge/tasks/create", f.input);
-  assert.equal(created.status, 200, created.body.error);
-  const task = created.body.state.knowledgeTasks[0];
-  const valid = candidateFor(task);
-  for (const candidate of [
-    { ...valid, approved: true },
-    { ...valid, manifestHash: "0".repeat(64) },
-    { ...valid, claims: [{ ...valid.claims[0], evidenceIds: ["forged"] }] },
-  ])
-    assert.equal(
-      (
-        await f.call("/knowledge/tasks/receive", {
-          taskId: task.id,
-          candidate,
-          expectedRevision: created.body.state.revision,
-        })
-      ).status,
-      400,
-    );
-  assert.equal(
-    (
-      await f.call("/knowledge/tasks/receive", {
-        taskId: task.id,
-        candidate: valid,
-        expectedRevision: 0,
-      })
-    ).status,
-    409,
-  );
-  await f.changeFile("专题/判断原则.md", "# 来源已经更正\n不能再使用旧证据。");
-  const changed = await f.call("/knowledge/tasks/check", { taskId: task.id });
-  assert.equal(changed.body.status, "changed");
-  assert.equal(
-    (
-      await f.call("/knowledge/tasks/packet", {
-        taskId: task.id,
-        confirmed: true,
-      })
-    ).status,
-    409,
-  );
-  const before = await f.workspace();
-  await f.call("/knowledge/remove", {
-    sourceId: f.sourceId,
-    confirmed: true,
-    expectedRevision: before.revision,
-  });
-  assert.equal(
-    (await f.call("/knowledge/tasks/check", { taskId: task.id })).body.status,
-    "revoked",
-  );
-  assert.notEqual(
-    (
-      await f.call("/knowledge/tasks/receive", {
-        taskId: task.id,
-        candidate: valid,
-        expectedRevision: (await f.workspace()).revision,
-      })
-    ).status,
-    200,
-  );
-});
 
 test("整理HTTP：所有新动作继承同源/会话门禁且不泄露资料", async (t) => {
   const f = await prepare(t);

@@ -148,41 +148,6 @@ test("HTTP 成功写后回读、重复幂等、ID 冲突、旧 revision 拒绝�
   }
 });
 
-test("Skill 只生成或未复制不计；有效复制可记；撤销失效不计", async () => {
-  const { app, call, state } = await setup();
-  try {
-    const asset = state.assets.find((a) => a.type === "Skill");
-    const link = (
-      await call("/deliveries", {
-        assetId: asset.id,
-        versionId: current(asset).id,
-      })
-    ).body;
-    const payload = use(asset, {
-      deliveryId: link.id,
-      expectedRevision: state.revision,
-    });
-    assert.equal((await call("/workspace")).body.revision, state.revision);
-    await call("/deliveries/copied", { id: link.id });
-    assert.equal((await call("/asset-activity", payload)).status, 200);
-    await call("/deliveries/revoke", { id: link.id });
-    assert.equal((await call("/asset-activity", payload)).status, 200); // prior commit survives link expiry
-    assert.equal(
-      (
-        await call("/asset-activity", {
-          ...payload,
-          id: randomUUID(),
-          expectedRevision: state.revision + 1,
-        })
-      ).status,
-      410,
-    );
-    assert.equal((await call("/workspace")).body.assetActivity.length, 1);
-  } finally {
-    await app.close();
-  }
-});
-
 test("反馈追加、当前版本阶段、负向降级、新版不继承和零证据", async () => {
   const { app, call, state } = await setup();
   try {

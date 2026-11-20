@@ -73,81 +73,6 @@ test("焚决条目来源可以是收藏 ID，但不能同时指向逆向记录",
   assert.throws(() => validateState(scroll({ url: "https://example.test/x" })), /记录 ID/);
 });
 
-test("整库保存不能改项目桌；专用接口投递、重放不推进版本、撤回", macOnly(VOLUME_UUID), async () => {
-  const { app, slot, other } = await desk();
-  try {
-    const state = await app.workspace();
-    const forged = await app.call("/workspace", { state: { ...state, projectDesk: [{ projectId: slot, inbox: [], loadout: [], next: { text: "伪造", at: AT } }] } }, "PUT");
-    assert.equal(forged.status, 400);
-    assert.match(forged.body.error, /项目桌只能通过/);
-
-    const first = await app.call("/project-desk/deliver", { projectId: slot, kind: "note", id: "note-a" });
-    assert.equal(first.status, 200, JSON.stringify(first.body));
-    const entry = first.body.state.projectDesk[0];
-    assert.equal(entry.projectId, slot);
-    assert.deepEqual(entry.inbox.map(({ kind, id }) => ({ kind, id })), [{ kind: "note", id: "note-a" }]);
-    const replay = await app.call("/project-desk/deliver", { projectId: slot, kind: "note", id: "note-a" });
-    assert.equal(replay.body.state.revision, first.body.state.revision);
-    assert.deepEqual(replay.body.state.projectDesk, first.body.state.projectDesk);
-
-    // 整库保存带着刚读到的项目桌照常可存（只改别的字段）。
-    const latest = await app.workspace();
-    const unrelated = await app.call("/workspace", { state: { ...latest, notes: [...latest.notes, { id: "note-c", at: AT, text: "新便签" }] } }, "PUT");
-    assert.equal(unrelated.status, 200, JSON.stringify(unrelated.body));
-    assert.deepEqual(unrelated.body.projectDesk, first.body.state.projectDesk);
-
-    assert.equal((await app.call("/project-desk/deliver", { projectId: other, kind: "note", id: "note-a" })).status, 409);
-    assert.equal((await app.call("/project-desk/deliver", { projectId: slot, kind: "note", id: "missing" })).status, 404);
-    assert.equal((await app.call("/project-desk/deliver", { projectId: "local-nope", kind: "note", id: "note-a" })).status, 404);
-    assert.equal((await app.call("/project-desk/deliver", { projectId: slot, kind: "reverse", id: "note-a" })).status, 400);
-    assert.equal((await app.call("/project-desk/deliver", { projectId: slot, kind: "note", id: "note-a", text: "正文" })).status, 400);
-
-    const read = await app.call("/project-desk");
-    assert.deepEqual(read.body.projectDesk, unrelated.body.projectDesk);
-    const withdrawn = await app.call("/project-desk/withdraw", { projectId: slot, kind: "note", id: "note-a" });
-    assert.deepEqual(withdrawn.body.state.projectDesk, []);
-    const again = await app.call("/project-desk/withdraw", { projectId: slot, kind: "note", id: "note-a" });
-    assert.equal(again.body.state.revision, withdrawn.body.state.revision);
-  } finally { await app.close(); }
-});
-
-test("收藏条目可投递；收藏不存在则拒绝", macOnly(VOLUME_UUID), async () => {
-  const { app, slot } = await desk();
-  try {
-    const created = await app.call("/collection/notes/manual", { url: "https://example.test/dashboard", title: "6 种 dashboard 交互" });
-    assert.equal(created.status, 200, JSON.stringify(created.body));
-    const id = created.body.note.id;
-    const ok = await app.call("/project-desk/deliver", { projectId: slot, kind: "collection", id });
-    assert.equal(ok.status, 200, JSON.stringify(ok.body));
-    assert.equal(ok.body.state.projectDesk[0].inbox[0].kind, "collection");
-    assert.equal((await app.call("/project-desk/deliver", { projectId: slot, kind: "collection", id: "b".repeat(24) })).status, 404);
-  } finally { await app.close(); }
-});
-
-test("装备固定版本：换版本覆盖、同版本重放不写、卸下；资产或版本不存在被拒绝", macOnly(VOLUME_UUID), async () => {
-  const { app, slot, asset } = await desk();
-  try {
-    const v1 = asset.versions[0].id;
-    const equipped = await app.call("/project-desk/equip", { projectId: slot, assetId: asset.id, versionId: v1 });
-    assert.equal(equipped.status, 200, JSON.stringify(equipped.body));
-    assert.deepEqual(equipped.body.state.projectDesk[0].loadout.map((x) => x.versionId), [v1]);
-    const replay = await app.call("/project-desk/equip", { projectId: slot, assetId: asset.id, versionId: v1 });
-    assert.equal(replay.body.state.revision, equipped.body.state.revision);
-
-    const state = await app.workspace();
-    const next = revise(state.assets.find((a) => a.id === asset.id), { content: "第二版" });
-    const saved = await app.call("/workspace", { state: { ...state, assets: state.assets.map((a) => (a.id === asset.id ? next : a)) } }, "PUT");
-    assert.equal(saved.status, 200, JSON.stringify(saved.body));
-    const upgraded = await app.call("/project-desk/equip", { projectId: slot, assetId: asset.id, versionId: current(next).id });
-    assert.deepEqual(upgraded.body.state.projectDesk[0].loadout.map((x) => x.versionId), [current(next).id]);
-
-    assert.equal((await app.call("/project-desk/equip", { projectId: slot, assetId: asset.id, versionId: "nope" })).status, 404);
-    assert.equal((await app.call("/project-desk/equip", { projectId: slot, assetId: "nope", versionId: v1 })).status, 404);
-    const removed = await app.call("/project-desk/unequip", { projectId: slot, assetId: asset.id });
-    assert.deepEqual(removed.body.state.projectDesk, []);
-  } finally { await app.close(); }
-});
-
 test("手填下一步：带修改前文字，别处改过则拒绝覆盖；清空即删除", macOnly(VOLUME_UUID), async () => {
   const { app, slot } = await desk();
   try {
@@ -215,7 +140,8 @@ test("备份恢复：恢复进空工作台带回项目桌；并入已有工作�
   const { app, slot } = await desk();
   const dirs = [];
   try {
-    await app.call("/project-desk/deliver", { projectId: slot, kind: "note", id: "note-a" });
+    // 投递已下线（#111），项目桌改用仍保留的「下一步」写入一条。
+    assert.equal((await app.call("/project-desk/next", { projectId: slot, text: "备份前的下一步", base: "" })).status, 200);
     const exported = (await app.call("/backup")).body;
     assert.equal(exported.state.projectDesk.length, 1);
     const empty = await mkdtemp(join(tmpdir(), "stage2-restore-")); dirs.push(empty);

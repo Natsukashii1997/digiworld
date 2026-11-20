@@ -34,9 +34,12 @@ async function setup(run) {
     });
     return { status: res.status, data: parse(await res.text()) };
   };
+  // 交付链接只剩设计 Skill 的旧版 ZIP 包在用（Skill 资产的交付已下线，#111），夹具用设计包。
   const skill = makeAsset({
-    type: "Skill",
+    type: "Design",
     title: "中文卡片标题",
+    content: "请生成一张留白海报。",
+    design: { kind: "skill", skillName: "verified-name" },
     files: [
       {
         path: "SKILL.md",
