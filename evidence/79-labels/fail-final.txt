@@ -1,0 +1,16 @@
+✖ 5000行无公共行的LCS最坏输入也完整精确且有界
+✖ C-10 5000行最坏路径原界限不放宽，计数与行内差异完全同口径
+✖ GET /api/projects-space：按名册列项目，读数、现在 / 下一步、30 天提交与要注意的事各自如实
+✖ Git 远端已知为空与读取失败区分，GitHub 地址仅规范化而不访问远端
+✖ HTTP：只读状态卡、停滞雷达与安全体检覆盖合成仓库，且不改任何项目文件
+✖ REA超时与错误代码区分、目标检查过期/改动均拒绝
+✖ stop asks adapter, probes original process and does not claim completion
+✖ stop request and a late execute result remain stopping until process probe confirms exit
+✖ timeout remains probeable and stoppable by original ID until exit is confirmed
+✖ unknown process after restart remains unknown and never replays step
+✖ 中文运行路径中的真实Swift编译只使用本次临时目录和缓存，结束移除别名
+✖ 安全审计：Vite 导入根内同名文件不能授权读取根外绝对路径
+✖ 安全审计：索引 source map 拒绝超大及嵌套累加偏移，合法映射仍可读
+✖ 更新超时或服务关闭保留待核对，不重放setup
+✖ 生产factory具体接线仅合成文件：原生CLI登记、draft持久、EPUB完整正文、默认关零宿主动作
+✖ 看板接口：只列在推进项目；阶段、笔、状态链与交接文档来自项目文件；不读交接正文；只读
