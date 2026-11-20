@@ -466,7 +466,7 @@ function ExpandedCard({
               <button type="button" className="collection-key collection-timestamp collection-content-page-label" aria-label={`P${item.page}：在左侧查看这张图片`}
                 onClick={() => { const index = imageUrls.indexOf(item.imageUrl || ''); if (index >= 0) setActiveImageIndex(index); }}>P{item.page}</button><p className="collection-reader-body">{item.text}</p>
             </div> : <p key="all" className="collection-reader-body">{item.text}</p>)}
-          </div> : <p className="collection-reader-body">这条笔记没有识别到图片文字。</p>)}
+          </div> : <p className="collection-reader-body">{note.mediaStatus === 'pending' ? '图片文字识别中…' : '这条笔记没有识别到图片文字。'}</p>)}
           {readerTab === 'transcript' && (transcriptSegments.length > 0 ? <div className="collection-transcript">
             {transcriptSegments.map((segment, index) => <div key={`${segment.start}-${index}`} className="collection-transcript-segment">
               <button type="button" className="collection-key collection-timestamp" onClick={() => seekVideo(segment.start)}>{formatMediaTime(segment.start)}</button><p className="collection-reader-body">{segment.text}</p>

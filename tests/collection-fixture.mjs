@@ -9,6 +9,7 @@ export async function collectionFixture(options={}) {
   await app.repository.write(seed(),{initialize:true});
   const session=await fetch(app.url+'/api/session',{headers:{'X-Workbench-Client':'1'}}).then(r=>r.json());
   const api=async(path,data,method=data===undefined?'GET':'POST',headers={})=>{const response=await fetch(app.url+'/api/collection'+path,{method,headers:{'X-Workbench-Token':session.token,...(data===undefined?{}:{'Content-Type':'application/json'}),...headers},...(data===undefined?{}:{body:JSON.stringify(data)})});const result=await response.json();if(!response.ok)throw Object.assign(new Error(result.error),{status:response.status});return result;};
-  const importNote=async(note,operationId=crypto.randomUUID())=>{await api('/notes/import',{note,operationId});for(let i=0;i<200;i++){const result=await api('/operations/'+operationId);if(result.status!=='processing')return result;await new Promise(resolve=>setTimeout(resolve,10));}throw new Error('合成导入超时');};
+  // 图片文字识别在收藏完成后由后台补（#107）；默认等后台补完再返回，需要观察 pending 时传 {waitOcr:false}。
+  const importNote=async(note,operationId=crypto.randomUUID(),{waitOcr=true}={})=>{await api('/notes/import',{note,operationId});for(let i=0;i<200;i++){const result=await api('/operations/'+operationId);if(result.status!=='processing'){if(waitOcr && result.mediaStatus==='pending')for(let j=0;j<200;j++){const stored=(await api('/notes')).notes.find(n=>n.id===result.noteId);if(stored?.mediaStatus!=='pending')break;await new Promise(resolve=>setTimeout(resolve,10));}return result;}await new Promise(resolve=>setTimeout(resolve,10));}throw new Error('合成导入超时');};
   return {...app,api,importNote,readCollection:async()=>JSON.parse(await readFile(join(app.directory,'collection/state.json'),'utf8')).state};
 }
