@@ -105,8 +105,9 @@ test('同作品不同网页路径重导入不阻断GET回填，GET客户端规�
  const {getSourceUrl}=await import('../server/collection/get-client.mjs');assert.equal(getSourceUrl('https://www.xiaohongshu.com/album/detail?note_id='+source.id),source.sourceUrl);assert.equal(getSourceUrl('https://evil.example/'+source.id),'');
 });
 
-test('已有卡片在重新收藏的媒体分析期间删除，旧导入不得复活卡片或提交GET',async()=>{
- let release;const client=fakeClient(),app=await collectionFixture({getClient:client,getPollMs:5,fetchImpl:async url=>new Response('synthetic',{headers:{'content-type':String(url).endsWith('.mp4')?'video/mp4':'image/png'}}),analyzer:()=>new Promise(resolve=>release=()=>resolve({duration:1,transcriptSegments:[{start:0,duration:1,text:'原视频'}]}))});
+// 转写已改到后台（#109），导入期间仍要等的是视频下载：在下载时删除。
+test('已有卡片在重新收藏的媒体下载期间删除，旧导入不得复活卡片或提交GET',async()=>{
+ let release;const client=fakeClient(),app=await collectionFixture({getClient:client,getPollMs:5,fetchImpl:async url=>{if(String(url).endsWith('slow.mp4'))await new Promise(resolve=>release=resolve);return new Response('synthetic',{headers:{'content-type':String(url).endsWith('.mp4')?'video/mp4':'image/png'}});},analyzer:async()=>({duration:1,transcriptSegments:[{start:0,duration:1,text:'原视频'}]})});
  try{
   await saved(app,source,'direct');const operationId=crypto.randomUUID();
   await app.api('/notes/import',{note:{...source,type:'video',videoUrl:'https://video.xhscdn.com/slow.mp4'},mode:'get',operationId});

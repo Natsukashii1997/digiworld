@@ -85,15 +85,9 @@ import { readCockpitAgents } from "./cockpit-agents.mjs";
 import { readCockpitRules } from "./cockpit-rules.mjs";
 import { readMySkills } from "./my-skills.mjs";
 import { cachedRead } from "./cockpit-read.mjs";
+import { retiredWrite, RETIRED_SKILL_WRITE } from "./retired-writes.mjs";
 const exec = promisify(execFile);
-// 项目名册只读（#71）：这些写接口已下线，统一回 410；整库保存时这三项保留主库原值。
-const PROJECT_ROSTER_READONLY = "项目名册以 digital-twin/projects.json 为准，在数码世界只读；这个写入接口已下线。";
-const RETIRED_PROJECT_WRITES = [
-  "/api/project-catalog/apply",
-  "/api/scan/projects",
-  "/api/project-identity/preview",
-  "/api/project-identity/confirm",
-];
+// 项目名册只读（#71）：写接口的下线表在 retired-writes.mjs；整库保存时这三项保留主库原值。
 const READONLY_PROJECT_FIELDS = ["projects", "projectCatalog", "projectExclusions"];
 const emptyConnections = (roots) => ({
   roots,
@@ -440,6 +434,9 @@ export async function startServer({
           !timingSafeEqual(Buffer.from(presented), Buffer.from(token))
         )
           throw failure("会话失效，请刷新工作台", 403);
+        // 已下线的写接口（#71、#111）一律拒绝：不读请求、不碰主库，后面的路由不会再看到这些路径。
+        const retired = retiredWrite(url.pathname, request.method);
+        if (retired) throw failure(retired, 410);
         if (
           ["POST", "PUT"].includes(request.method) &&
           request.headers["content-type"] !== "application/json" &&
@@ -913,12 +910,13 @@ export async function startServer({
             200,
             await projectContext.prepare(await body(request)),
           );
-        if (url.pathname === "/api/deliveries" && request.method === "POST")
-          return send(
-            response,
-            200,
-            await deliveries.create(await body(request), `http://${expected}`),
-          );
+        if (url.pathname === "/api/deliveries" && request.method === "POST") {
+          const input = await body(request);
+          // Skill 资产的交付链接已下线（#111）；设计 Skill 的旧版 ZIP 包照旧可交付（#93，2026-11-19 定）。
+          const target = (await repository.read())?.assets?.find((a) => a.id === input?.assetId);
+          if (target?.type === "Skill") throw failure(RETIRED_SKILL_WRITE, 410);
+          return send(response, 200, await deliveries.create(input, `http://${expected}`));
+        }
         if (url.pathname === "/api/deliveries" && request.method === "GET")
           return send(
             response,
@@ -1038,9 +1036,6 @@ export async function startServer({
             (await repository.read())?.connections ||
               emptyConnections(adapters.defaultRoots()),
           );
-        // 项目名册以 digital-twin/projects.json 为准，数码世界只读（#71）：整理目录、扫描登记、目录关联的写接口一律拒绝，不读请求、不碰主库。
-        if (RETIRED_PROJECT_WRITES.includes(url.pathname))
-          throw failure(PROJECT_ROSTER_READONLY, 410);
         if (url.pathname === "/api/scan/agents" && request.method === "POST") {
           await body(request);
           const result = await singleScan("agents", async () => {

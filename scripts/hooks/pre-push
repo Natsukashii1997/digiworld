@@ -1,0 +1,26 @@
+#!/bin/sh
+# 推送前的必经检查：跑测试，不过就不推（复盘 P6，常浩 2026-11-20 批）。
+# 装法：在项目根目录 `git config core.hooksPath scripts/hooks`（每个克隆、每台电脑各装一次，AGENTS「运行」写着）。
+# 全量测试超过 3 分钟的项目，把下面的 TESTS 改成只跑快的部分；全量照《工程流程》第 5 节，合并前在干净 worktree 跑。
+# 不用 --no-verify 绕过（agent-kit 的 guard-git 会拦）；检查本身有问题就修检查。
+# 本项目没有 scripts/check-rules.mjs，只跑测试，而且只跑快的部分：
+# - npm test 全量 2026-11-20 实测 3 分 31 秒（1730 条），超过 3 分钟；
+# - 有 7 个文件读 dist/，要先 npm run build。钩子里不构建：dist/ 是协作共享面，不在测试时自动重写（README「验证」）。
+# - 有 3 个文件带计时界限，机器忙时会超时，钩子里跑会误拦。
+# 所以 SKIP 里的文件不在这里跑：读 dist/ 的 7 个、同日实测单文件累计 15 秒以上的 24 个、计时类 3 个。新加的测试默认会跑。
+# 全量靠 CI（先 npm run build 再 npm test）和合并前在干净 worktree 按 README「验证」跑。
+set -e
+cd "$(git rev-parse --show-toplevel)"
+# 从 worktree 推送时，git 把这个仓库的位置（GIT_DIR 等）带进钩子。不清掉的话，测试在临时目录里做的 git 操作
+# （建仓库、提交、推送）会落到这个仓库上：分支多出测试的提交，主目录被改成裸仓库。
+unset $(git rev-parse --local-env-vars)
+# 读 dist/ 的
+SKIP_DIST='agent-contents|ai-access|cockpit|delivery|digital-world-ui|night-v2-http|server'
+# 单文件累计 15 秒以上的
+SKIP_SLOW='agent-config|agent-write|capability-daemon-dispatch155|capability-services|collection-cocktail|collection-recycle|full-backup-recovery|knowledge-access|knowledge-maintenance|night-v2-actions|night-v2-harness|night-v2-morning|project-brief|project-scan|project-status|projects-space|relay-sessions|reverse-ai-process|reverse-ai-runner|reverse-runner|savepoints|security-knowledge-deadlock|skill-files|stage2-routes'
+# 带计时界限、机器忙时会超时的（2026-11-20 改前 main 的全量里在高负载下同样失败，代码没动）
+SKIP_TIMING='controlled-execution|dispatch155-diff-line-counts|triage-long-diff'
+export SKIP="$SKIP_DIST|$SKIP_SLOW|$SKIP_TIMING"
+TESTS='node --test $(ls tests/*.test.mjs | grep -v -E "^tests/($SKIP)\.test\.mjs$")'
+echo "[pre-push] 测试：$TESTS" >&2
+sh -c "$TESTS"

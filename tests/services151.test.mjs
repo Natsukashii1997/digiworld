@@ -173,6 +173,7 @@ test("目录大小只读 metadata，链接不跟随；访达仅接受数据目�
   const noRead = new Proxy(fs,{get(target,key) {if(key==="readFile")return()=>{throw new Error("不读文件正文");}; return target[key];}});
   const measured = await measureDataDirectory(data,{filesystem:noRead});
   assert.equal(measured.bytes,3); assert.equal(measured.files,1); assert.equal(measured.skipped.length,1);
+  assert.equal(measured.backupBytes,3); assert.equal(measured.backupFiles,1);
   const calls = [];
   const storage = createStorageStatus({directory:data},{platform:"darwin",filesystem:noRead,
     records:{latest:async()=>({state:"none"})},runOpen:async path=>calls.push(path)});

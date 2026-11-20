@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fixture } from "./fixture.mjs";
-test("接力HTTP继承token/同源保护、四POST白名单；越权字段不调用适配器", async () => {
+test("接力HTTP继承token/同源保护；list、open 只收白名单字段，prepare、clear 已下线回 410（#111）；越权字段不调用适配器", async () => {
   const calls = [],
     mock = Object.fromEntries(
       ["list", "prepare", "clear", "open"].map((action) => [
@@ -49,11 +49,6 @@ test("接力HTTP继承token/同源保护、四POST白名单；越权字段不调
     assert.equal(calls.length, 0);
     for (const [action, data] of [
       ["list", { pageId: "fixture-page-00000001", earlier: false }],
-      [
-        "prepare",
-        { pageId: "fixture-page-00000001", id: "1".padStart(64, "0") },
-      ],
-      ["clear", { pageId: "fixture-page-00000001" }],
       ["open", { agentId: "codex" }],
     ]) {
       const headers = { "X-Workbench-Token": token };
@@ -67,6 +62,13 @@ test("接力HTTP继承token/同源保护、四POST白名单；越权字段不调
         ).status,
         400,
       );
+      assert.equal(calls.length, 0);
+    }
+    for (const [action, data] of [
+      ["prepare", { pageId: "fixture-page-00000001", id: "1".padStart(64, "0") }],
+      ["clear", { pageId: "fixture-page-00000001" }],
+    ]) {
+      assert.equal((await send(action, data, { "X-Workbench-Token": token })).status, 410);
       assert.equal(calls.length, 0);
     }
     assert.equal(

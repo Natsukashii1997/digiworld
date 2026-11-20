@@ -1,10 +1,12 @@
 // 设置页开机自检：每行由现有事实源派生；读取中、读取失败都单独标出，不冒充关闭、从未使用或正常。
 import { calendarPermissionLabel, latestUse, savepointThresholds } from "./settings-v16.js";
+import { FULL_BACKUP_LIMITS } from "./full-backup-contract.js";
 
 export const MARK_GLYPH = { bad: "✗", warn: "!", unknown: "?", net: "●", ok: "✓", idle: "·", loading: "…" };
 const RANK = { bad: 0, warn: 1, unknown: 1, net: 2, ok: 3, idle: 4, loading: 5 };
 const ANOMALY = ["failed", "unknown", "not_applied"];
-const CAPS = [["vault", "Vault 写入"], ["agent", "Agent 配置"], ["model", "模型 / API"], ["daemon", "常驻服务"]];
+// 能力开关只剩常驻服务：Vault 写入、Agent 配置、模型 / API 的写接口已下线（#111）。
+const CAPS = [["daemon", "常驻服务"]];
 
 const mb = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
 const when = (at) => new Date(at).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -46,7 +48,10 @@ export function selfTestRows({ state, settings, history, calendar, usage, aihot,
   if (!storage) rows.push({ id: "backup", label: "完整备份", mark: "loading", result: "读取中…" });
   else if (storage.error) rows.push({ id: "backup", label: "完整备份", mark: "unknown", result: `备份信息待核实 · ${storage.error}` });
   else {
-    const b = storage.lastBackup || {}, size = storage.size?.state === "ok" ? ` · 主库 ${mb(storage.size.bytes)} / 1 GiB 上限 · ${storage.size.files.toLocaleString("en-US")} 个文件` : "";
+    // 「需打包」是会进完整备份的那部分（不含逆向证据、语音模型），和 1 GiB 打包上限比的是它；数据目录总量单列（#118）。
+    const s = storage.size, b = storage.lastBackup || {};
+    const packed = s?.state === "ok" && Number.isFinite(s.backupBytes) ? ` · 需打包 ${mb(s.backupBytes)} / 上限 1 GiB（${mb(FULL_BACKUP_LIMITS.dataBytes)}）` : "";
+    const size = s?.state === "ok" ? `${packed} · 数据目录共 ${mb(s.bytes)}、${s.files.toLocaleString("en-US")} 个文件` : "";
     if (b.state === "ok") rows.push({ id: "backup", label: "完整备份", mark: "ok", result: downloaded ? "刚刚下载过恢复包 · 请确认已存到磁盘" : `${when(b.at)} 生成并校验${size}` });
     else if (b.state === "none") rows.push({ id: "backup", label: "完整备份", mark: "bad", result: `从未成功${size}` });
     else if (b.state === "pending") rows.push({ id: "backup", label: "完整备份", mark: "warn", result: `生成记录待核对${size}` });
@@ -71,15 +76,13 @@ export function selfTestRows({ state, settings, history, calendar, usage, aihot,
   {
     const label = calendarPermissionLabel(calendar);
     const mark = { "读取中…": "loading", "未知": "unknown", "未接入": "idle", "已授权": "net", "部分授权": "net" }[label] || "ok";
-    const result = mark === "net" ? `${label} · 写入“${calendar.calendarName || "工作台"}”日历和“${calendar.listName || "工作台"}”列表` : calendar?.error ? `未知 · ${calendar.error}` : label;
+    // 日历的建、改、删已下线（#111），这里只报告系统授权状态。
+    const result = mark === "net" ? `${label} · 只读` : calendar?.error ? `未知 · ${calendar.error}` : label;
     rows.push({ id: "calendar", label: "日历与提醒", mark, result });
   }
-  // 项目设置（名册只读，#71：扫描目录已下线）、资产交付
+  // 项目设置（名册只读，#71：扫描目录已下线）。资产交付目标已下线（#111）。
   const t = savepointThresholds(c);
   rows.push({ id: "scan", label: "项目设置", mark: "ok", result: `名册只读 · 停滞 ${c.projectStallDays || 7} 天 · 未存档 黄 ${t.warn} / 红 ${t.danger} 天` });
-  rows.push(c.agentTargets?.length
-    ? { id: "deliver", label: "资产交付", mark: "ok", result: `${c.agentTargets.length} 个目标` }
-    : { id: "deliver", label: "资产交付", mark: "idle", result: "0 个目标" });
   // 「知道了」：只对同一条异常记录生效，新记录再亮
   for (const r of rows) if (r.mark === "warn" && r.ackKey && acks[r.id] === r.ackKey) { r.mark = "ok"; r.acked = true; }
   return rows.map((r, i) => ({ ...r, i })).sort((a, b) => RANK[a.mark] - RANK[b.mark] || a.i - b.i);

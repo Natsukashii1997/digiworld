@@ -15,9 +15,6 @@ import { join } from "node:path";
 import { openRepository } from "../server/repository.mjs";
 import { createSkillSources } from "../server/skill-sources.mjs";
 import { seed } from "../src/store.js";
-import { startServer } from "../server/http.mjs";
-import { stringify, parse } from "../src/serialization.js";
-
 async function fixture(t) {
   const base = await mkdtemp(join(tmpdir(), "guiji-source-"));
   const root = join(base, "skills"),
@@ -163,55 +160,6 @@ test("确认收录同时绑定预览来源身份，同内容目录别名改向�
     /来源.*变化/,
   );
   assert.equal((await repository.read()).assets.length, 0);
-});
-test("本机HTTP来源接口需会话令牌，完整扫描预览确认链可回读且不接受伪造文件", async (t) => {
-  const { root } = await fixture(t);
-  const directory = await mkdtemp(join(tmpdir(), "guiji-source-http-"));
-  const app = await startServer({ directory, port: 0 });
-  t.after(async () => {
-    await app.close();
-    await rm(directory, { recursive: true, force: true });
-  });
-  const session = await (
-    await fetch(app.url + "/api/session", {
-      headers: { "x-workbench-client": "1" },
-    })
-  ).json();
-  const headers = {
-    "x-workbench-token": session.token,
-    "content-type": "application/json",
-  };
-  const post = async (path, data) => {
-    const r = await fetch(app.url + "/api/" + path, {
-      method: "POST",
-      headers,
-      body: stringify(data),
-    });
-    assert.equal(r.status, 200, await r.clone().text());
-    return parse(await r.text());
-  };
-  assert.equal((await fetch(app.url + "/api/skill-sources")).status, 403);
-  const initialized = await fetch(app.url + "/api/workspace", {
-    method: "PUT",
-    headers,
-    body: stringify({ state: { ...seed(), assets: [] }, initialize: true }),
-  });
-  assert.equal(initialized.status, 200);
-  const scan = await post("skill-sources/discover", { roots: [root] });
-  const preview = await post("skill-sources/preview", {
-    candidateId: scan.items[0].id,
-  });
-  const saved = await post("skill-sources/import", {
-    token: preview.token,
-    revision: preview.revision,
-    title: "HTTP收录",
-    files: [{ path: "SKILL.md", data: "伪造", text: true }],
-  });
-  assert.notEqual(saved.state.assets[0].versions[0].content, "伪造");
-  const actual = parse(
-    await (await fetch(app.url + "/api/workspace", { headers })).text(),
-  );
-  assert.equal(actual.assets[0].origin.fingerprint, preview.fingerprint);
 });
 test("来源新增文件、预览过期或主库变化都阻止旧确认，不产生部分收录", async (t) => {
   const { root, source, repository, sources, advance } = await fixture(t);

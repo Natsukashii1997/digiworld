@@ -32,7 +32,7 @@ test('MCP预演探针也在精简PATH经匹配Node启动npx，只读取工具清
   assert.equal(tools.length,5);assert.deepEqual(JSON.parse(await readFile(output,'utf8')).methods,['initialize','notifications/initialized','tools/list']);
  }finally{await app.close();}
 });
-test('缺少可执行文件时版本/开始/更新API返回可读503，不联网或创建运行记录',async()=>{
+test('缺少可执行文件时版本/更新API返回可读503；开始接口已下线回410（#111）；不联网或创建运行记录',async()=>{
  const missing=createReaProcess({command:'/synthetic-no-such-tool/npx'});let network=0;
  const app=await fixture({reverse:{execute:missing},reaUpdate:{execute:missing,fetchImpl:async()=>{network++;throw Error('禁止网络');}}});
  try{
@@ -43,7 +43,8 @@ test('缺少可执行文件时版本/开始/更新API返回可读503，不联网
   const post=(path,input={})=>fetch(app.url+'/api/reverse/'+path,{method:'POST',headers,body:JSON.stringify(input)});
   const checked=await (await post('target/check',{path:target})).json();
   const revision=(await app.repository.read()).revision;
-  for(const response of [await fetch(app.url+'/api/reverse/status',{headers}),await post('runs/start',{recordId:record.id,requestId:randomUUID(),expectedRevision:revision,checkId:checked.checkId}),await post('update/check')]){
+  assert.equal((await post('runs/start',{recordId:record.id,requestId:randomUUID(),expectedRevision:revision,checkId:checked.checkId})).status,410);
+  for(const response of [await fetch(app.url+'/api/reverse/status',{headers}),await post('update/check')]){
    assert.equal(response.status,503);assert.match((await response.json()).error,/npx.*未找到/);
   }
   const after=await app.repository.read();assert.equal(after.revision,revision);assert.ok(!after.reverseRecords[0].reaRuns?.length);assert.equal(network,0);

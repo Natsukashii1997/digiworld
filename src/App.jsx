@@ -521,7 +521,7 @@ export default function App() {
           {route === "projects" && <Projects {...common} navigate={navigate} projectJump={target.projectId ? {id:target.projectId,key:target.agentJumpKey} : null} />}
           {route === "notes" && <NotesV16 {...common} navigate={navigate} onHatchAsset={hatchAsset} noteJump={target.noteId ? {id:target.noteId,key:target.agentJumpKey} : null} />}
           {route === "references" && <References {...common} reverseJump={target.reverseId ? {id:target.reverseId,key:target.agentJumpKey} : null} referenceJump={target.referenceId ? {id:target.referenceId,key:target.agentJumpKey} : null} onSelect={a=>{navigate("assets");setSelected(a.id);}} />}
-          {route === "settings" && <Settings {...common} navigate={navigate} onSelect={setSelected} />}
+          {route === "settings" && <Settings {...common} navigate={navigate} />}
           {route === "agents" && <AgentsPage />}
           {route === "rules" && <RulesPage />}
           {route === "learning" && <Collection {...common} navigate={navigate} onHatchAsset={hatchAsset} collectionArchived={collectionMeta.archived} onCollectionNotes={adoptCollectionNotes} noteJump={target.collectionNoteId ? {id:target.collectionNoteId,key:target.agentJumpKey} : null} />}
