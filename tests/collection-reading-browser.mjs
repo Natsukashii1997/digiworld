@@ -6,7 +6,7 @@ import {collectionFixture,syntheticNote} from './collection-fixture.mjs';
 const out=resolve(process.env.GUIJI_TEST_RESULTS||'work/collection-reading');await mkdir(out,{recursive:true});
 const segments=Array.from({length:42},(_,i)=>({start:i*55,duration:40,text:`文稿第${i+1}段：${'这是完整保留的知识讲解，用于验证连续阅读。'.repeat(8)}${i===41?'末尾文稿可直接读到':''}`}));
 const body='正文的连续阅读内容。'.repeat(310)+'正文终点可直接读到';
-const app=await collectionFixture({fetchImpl:async url=>String(url).includes('missing')?new Response('missing',{status:404}):new Response('fixture',{headers:{'content-type':String(url).endsWith('.mp4')?'video/mp4':'image/png'}}),ocrRunner:async paths=>paths.map((path,i)=>({path,text:i===0?'封面页标题文字':`第${i+1}页内容文字`})),analyzer:async()=>({duration:2353.6,transcriptSegments:segments,speechError:'中间一段转写失败，当前文稿不完整'})});
+const app=await collectionFixture({fetchImpl:async url=>String(url).includes('missing')?new Response('missing',{status:404}):new Response('fixture',{headers:{'content-type':String(url).endsWith('.mp4')?'video/mp4':'image/png'}}),ocrRunner:async paths=>paths.map(path=>{const page=Number(/(\d+)\.\w+$/.exec(path)[1]);return {path,text:page===1?'封面页标题文字':`第${page}页内容文字`};}),analyzer:async()=>({duration:2353.6,transcriptSegments:segments,speechError:'中间一段转写失败，当前文稿不完整'})});
 const browser=await chromium.launch();
 try {
  const video=syntheticNote(901,{type:'video',title:'长视频连续阅读',content:body,videoUrl:'https://video.xhscdn.com/fixture.mp4'});

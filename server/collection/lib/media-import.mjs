@@ -137,44 +137,63 @@ export async function localizeNoteMedia(note, options) {
     (url, index) => downloadImage(url, noteDirectory, index, options.fetchImpl || fetch),
   );
   const successful = downloads.filter((item) => item?.filePath);
-
-  let ocrResults = [];
-  let ocrError = '';
-  try {
-    ocrResults = await (options.ocrRunner || runMacVisionOcr)(
-      successful.map((item) => item.filePath),
-    );
-  } catch (error) {
-    ocrError = error instanceof Error ? error.message : '本地 OCR 失败';
-  }
-  const ocrByPath = new Map(ocrResults.map((result) => [result.path, result]));
-  const imageOcr = successful.map((item) => {
-    const result = ocrByPath.get(item.filePath);
-    return {
-      imageUrl: `${options.publicBaseUrl}/media/${note.id}/${item.fileName}`,
-      text: typeof result?.text === 'string' ? result.text.trim() : '',
-      error: result?.error || (!result ? 'OCR未返回这张图片的结果' : ''),
-    };
-  });
-  const localImageUrls = imageOcr.map((item) => item.imageUrl);
-  const ocrText = imageOcr.map((item) => item.text).filter(Boolean).join('\n\n');
+  const images = successful.map((item) => ({
+    filePath: item.filePath,
+    imageUrl: `${options.publicBaseUrl}/media/${note.id}/${item.fileName}`,
+  }));
   const failedDownloads = downloads.length - successful.length;
   const downloadDetails = downloads.flatMap((item,index)=>item.error?[`图片${index+1}：${String(item.error).replace(/https?:\/\/\S+/g,'[来源地址]').slice(0,180)}`]:[]);
-  const failedOcr = imageOcr.filter(item => item.error).length;
-
-  return {
+  const localImageUrls = images.map((item) => item.imageUrl);
+  const saved = {
     ...note,
     sourceImageUrls: sourceUrls,
     imageUrls: localImageUrls,
     coverUrl: localImageUrls[0] || '',
+    mediaError: [failedDownloads ? `${failedDownloads} 张图片保存失败` : '', ...downloadDetails].filter(Boolean).join('；'),
+  };
+  // deferOcr：图片存好就交回，文字识别由后台补（ocr-worker），收藏不再等 OCR（#107）。
+  if (options.deferOcr && images.length) {
+    return { ...saved, imageOcr: images.map(({ imageUrl }) => ({ imageUrl, text: '', error: '' })), ocrText: '', mediaStatus: 'pending' };
+  }
+  return { ...saved, ...finishNoteOcr(saved, await recognizeImages(images, options.ocrRunner)) };
+}
+
+function ocrFailureMessage(error) {
+  return error?.killed || error?.signal || error?.code === 'ETIMEDOUT' ? '本地文字识别超时' : '本地文字识别失败';
+}
+
+// 一张一张识别：每张各自超时，一张失败不拖累其他几张（#107：9 张一次跑、总共 120 秒，超时后全部丢失）。
+export async function recognizeImages(images, ocrRunner = runMacVisionOcr) {
+  const imageOcr = [];
+  for (const { filePath, imageUrl } of images) {
+    if (!filePath) { imageOcr.push({ imageUrl, text: '', error: '图片文件缺失' }); continue; }
+    try {
+      const result = (await ocrRunner([filePath])).find((item) => item?.path === filePath);
+      imageOcr.push({
+        imageUrl,
+        text: typeof result?.text === 'string' ? result.text.trim() : '',
+        error: result?.error ? String(result.error) : (!result ? 'OCR未返回这张图片的结果' : ''),
+      });
+    } catch (error) {
+      imageOcr.push({ imageUrl, text: '', error: ocrFailureMessage(error) });
+    }
+  }
+  return imageOcr;
+}
+
+// 由识别结果算出卡片的图片文字与媒体状态；note.mediaError 里已有的下载失败原样保留在前面。
+export function finishNoteOcr(note, imageOcr) {
+  const failedDownloads = (note.sourceImageUrls?.length || 0) - (note.imageUrls?.length || 0);
+  const failures = new Map();
+  for (const item of imageOcr) {
+    if (!item.error) continue;
+    const number = Number(/(\d+)\.[a-z0-9]+$/i.exec(item.imageUrl || '')?.[1]) || imageOcr.indexOf(item) + 1;
+    failures.set(item.error, [...(failures.get(item.error) || []), number]);
+  }
+  return {
     imageOcr,
-    ocrText,
-    mediaStatus: failedDownloads === 0 && !ocrError && !failedOcr ? 'ready' : 'partial',
-    mediaError: [
-      failedDownloads ? `${failedDownloads} 张图片保存失败` : '',
-      ...downloadDetails,
-      ocrError,
-      failedOcr ? `${failedOcr} 张图片OCR失败` : '',
-    ].filter(Boolean).join('；'),
+    ocrText: imageOcr.map((item) => item.text).filter(Boolean).join('\n\n'),
+    mediaStatus: failedDownloads === 0 && failures.size === 0 ? 'ready' : 'partial',
+    mediaError: [note.mediaError || '', ...[...failures].map(([message, numbers]) => `图片${numbers.join('、')}：${message}`)].filter(Boolean).join('；'),
   };
 }
