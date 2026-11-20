@@ -5,8 +5,8 @@ import { Copy, Download, PenLine, RefreshCw } from "lucide-react";
 import { request } from "./api.js";
 import { Button, Badge } from "./components.jsx";
 
+// 设计 Skill 旧版 ZIP 包的本机交付（#93 定）。Skill 资产的交付已下线（#111），不再走这里。
 export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopyStart, onCopyEnd, onUsed, usageBlocked = false }) {
-  const design = asset.type === "Design";
   const [busy, setBusy] = useState(false),
     [delivery, setDelivery] = useState(null);
   const [copied, setCopied] = useState(false),
@@ -63,8 +63,8 @@ export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopy
         return;
       }
       setCopied(true);
-      notify(design ? "生图提示词已复制" : "本机安装口令已复制");
-      await onUsed?.(design ? "copy-design" : "copy-skill", { deliveryId: next.id });
+      notify("生图提示词已复制");
+      await onUsed?.("copy-design", { deliveryId: next.id });
       try {
         await request("/deliveries/copied", { id: next.id });
       } catch {
@@ -110,7 +110,7 @@ export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopy
         {/* 双击只算一次（与资产卡的复制按钮一致，#93 第二批）：本机接口很快，锁在第二下到达前就已释放。 */}
         <Button onClick={(event) => { if (event.detail <= 1) generate(); }} disabled={busy || usageBlocked}>
           <Copy size={16} />
-          {busy ? "正在处理…" : design ? "复制生图提示词" : "复制本机安装口令"}
+          {busy ? "正在处理…" : "复制生图提示词"}
         </Button>
         <button
           className="outlined-icon"
@@ -160,7 +160,7 @@ export function SkillDelivery({ asset, version, onExport, onEdit, notify, onCopy
       )}
       {delivery && !copied && !expired && (
         <label className="delivery-fallback">
-          {design ? "生图提示词文本" : "安装口令文本"}
+          生图提示词文本
           <textarea
             readOnly
             rows={7}

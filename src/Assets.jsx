@@ -24,7 +24,6 @@ import { uploadDesignImage, readDesignImage } from "./design-images.js";
 import { readSkillZip, buildSkillZip } from "./skill-package.js";
 import { isInstallSkill, isSelfSkill, skillInstallText, validateInstallUrl } from "./skill-install.js";
 import { SkillDelivery } from "./SkillDelivery.jsx";
-import { SkillCopies } from "./SkillCopies.jsx";
 import { McpDelivery } from "./McpDelivery.jsx";
 import { codexMcpDelivery, validateMcpConfig, validateMcpVersion } from "./mcp-config.js";
 import { SkillOrigin } from "./SkillSources.jsx";
@@ -105,7 +104,7 @@ async function copyAssetVersion(asset, version, activity, notify) {
     const recorded = await activity.record({ kind: "use", action, versionId: version.id, ...(delivery ? { deliveryId: delivery.id } : {}) }, true);
     if (delivery) {
       try { await request("/deliveries/copied", { id: delivery.id }); }
-      catch { notify("安装口令已复制，链接状态未确认，请在详情核对", "error"); }
+      catch { notify("生图提示词已复制，链接状态未确认，请在详情核对", "error"); }
     }
     if (!recorded) notify("全文已复制，使用记录待核对", "error");
   } catch (error) {
@@ -119,6 +118,8 @@ export function AssetCopyButton({ asset, state, adoptState, notify, disabled, la
   const version = current(asset);
   const activity = useAssetActivity(asset, state, adoptState);
   const label = copyLabel(asset, version);
+  // 带 ZIP 包的旧 Skill 资产只读（#111）：交付接口已下线，不给复制入口。
+  if (isSelfSkill(asset)) return null;
   return <>
     <button type="button" className={labeled ? "asset-copy-labeled" : "asset-copy"}
       aria-label={`${label} ${version.title}`} title={activity.pending ? "记录待核对" : label}
@@ -140,7 +141,7 @@ export function AssetCopyButton({ asset, state, adoptState, notify, disabled, la
 // 复制按钮文字（#93 第三批）：设计 Skill「复制调用指令」，设计 Prompt「复制全文」；旧版 ZIP 设计仍走交付。
 function copyLabel(asset, version) {
   if (asset.type === "Design") return hasSkillPackage(asset, version) ? "复制生图提示词" : isLinkedDesignSkill(version) ? "复制调用指令" : "复制全文";
-  if (asset.type === "Skill") return isInstallSkill(version) ? "复制安装话术" : "复制安装口令";
+  if (asset.type === "Skill") return "复制安装话术";
   return asset.type === "MCP" ? "复制配置定义" : "复制全文";
 }
 // 未删除的同类资产按创建先后连续编号，例如 SKL.01；筛选与排序不改编号。
@@ -155,7 +156,6 @@ export function serialsOf(assets) {
 }
 const HANDOFF = {
   Design: ["复制设计 Prompt 全文或设计 Skill 调用指令", "粘贴给 GPT 或任意 Agent，在最后补本次需求", "设计 Skill 会先检查有没有装，没装就从 GitHub 装"],
-  Skill: ["复制口令（含 10 分钟下载链接）", "粘贴给任意 Agent", "由它下载完整包并确认安装范围"],
   InstallSkill: ["复制安装话术", "粘贴给 Claude Code 或 Codex", "它按安装地址里的文档装好并试用一次"],
   Prompt: ["复制完整提示词", "粘贴到 Agent 对话", "按需补充本次背景"],
   Workflow: ["复制流程与固定引用", "交给 Agent 按步骤推进", "引用版本不会随上游变动"],
@@ -1098,6 +1098,8 @@ export function AssetDetail({
   const [bump] = useState(() => !!versionBump && Date.now() - versionBump.at < 3000);
   const v = current(asset),
     [tab, setTab] = useState("content");
+  // 带 ZIP 包的旧 Skill 资产只读（#111）：自建 Skill 以 my-skills 为准，这里只查看和导出 ZIP。
+  const readOnlySkill = isSelfSkill(asset);
   // 从逆向标本孵化的 Skill（#29）：来源显示标本名，点一下跳回标本；标本已删除就只显示不可点。
   const hatchedFrom = asset.versions[0]?.hatchedFrom;
   const hatchedReverse = hatchedFrom?.kind === "reverse" && onOpenReverse
@@ -1158,7 +1160,7 @@ export function AssetDetail({
           buildSkillZip(selected.files),
           "application/zip",
         );
-        notify(asset.type === "Design" ? "ZIP 已生成并开始下载，请将文件上传到 ChatGPT 对话，再粘贴生图提示词" : "ZIP 已生成并开始下载，请将文件附给 Agent；未验证安装");
+        notify(asset.type === "Design" ? "ZIP 已生成并开始下载，请将文件上传到 ChatGPT 对话，再粘贴生图提示词" : "ZIP 已生成并开始下载");
       } catch (e) {
         notify(e.message, "error");
       }
@@ -1218,13 +1220,30 @@ export function AssetDetail({
         </div>
         <h2>{v.title}</h2>
         <p className="detail-desc">{v.description}</p>
+        {readOnlySkill ? (
+        <section className="handoff" aria-label="只读收录">
+          <header>
+            <small>READ ONLY</small>
+            <h3>只读收录</h3>
+          </header>
+          <p className="handoff-note">
+            自建 Skill 以 my-skills 仓库为准。这里是早先收录的一份，只能查看和导出 ZIP，不再从数码世界交付或安装。
+          </p>
+          <div className="detail-actions">
+            <Button onClick={() => exportAsset(v)}>
+              <Download size={16} />
+              导出 ZIP
+            </Button>
+          </div>
+        </section>
+        ) : (
         <section className="handoff">
           <header>
             <small>HANDOFF</small>
             <h3>交给 Agent</h3>
           </header>
           <ol className="handoff-steps">
-            {HANDOFF[asset.type === "Skill" && isInstallSkill(v) ? "InstallSkill" : asset.type].map((step, i) => (
+            {HANDOFF[asset.type === "Skill" ? "InstallSkill" : asset.type].map((step, i) => (
               <li key={step}>
                 <span>{i + 1}</span>
                 {step}
@@ -1292,6 +1311,7 @@ export function AssetDetail({
             复制不等于已安装或已使用，结果请在目标 Agent 里确认。
           </p>
         </section>
+        )}
         <AssetUsage asset={asset} state={state} activity={activity} />
         <AssetEvolution
           asset={asset}
@@ -1323,14 +1343,10 @@ export function AssetDetail({
           {[
             ["content", "内容预览"],
             ["files", "文件"],
-            ["copies", "目标副本"],
             // 产品定义 v1.2 §2.2：单个资产的版本在“历史”标签查看，复用 AssetHistory。
             ["history", "历史"],
           ]
-            .filter(
-              ([id]) =>
-                id === "files" ? hasSkillPackage(asset, v) : id !== "copies" || (asset.type === "Skill" && hasSkillPackage(asset, v)),
-            )
+            .filter(([id]) => id !== "files" || hasSkillPackage(asset, v))
             .map(([id, label]) => (
               <button
                 key={id}
@@ -1362,16 +1378,7 @@ export function AssetDetail({
                 <WorkflowReferenceList version={v} assets={state.assets} />
               </section>
             )}
-            {asset.type === "Skill" && hasSkillPackage(asset, v) && (
-              <SkillOrigin
-                key={`${asset.id}:${v.id}`}
-                asset={asset}
-                state={state}
-                adoptState={adoptState}
-                notify={notify}
-                onSelect={onSelect}
-              />
-            )}
+            {readOnlySkill && <SkillOrigin asset={asset} state={state} onSelect={onSelect} />}
           </>
         )}
         {tab === "files" && (
@@ -1390,15 +1397,6 @@ export function AssetDetail({
             ))}
           </div>
         )}
-        {tab === "copies" && asset.type === "Skill" && hasSkillPackage(asset, v) && (
-          <SkillCopies
-            key={asset.id}
-            asset={asset}
-            state={state}
-            adoptState={adoptState}
-            notify={notify}
-          />
-        )}
         {tab === "history" && (
           <AssetHistory
             asset={asset}
@@ -1406,6 +1404,7 @@ export function AssetDetail({
             save={save}
             notify={notify}
             onExport={exportAsset}
+            canRestore={!readOnlySkill}
           />
         )}
         <div className="detail-footer">
