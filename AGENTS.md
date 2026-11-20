@@ -18,6 +18,15 @@
 - 保留用户和另一 Agent 的未提交变化。Git 根可能位于上级目录；不对上级仓库批量 add、clean、reset、stash，不自动提交或推送。
 - 文件修改、自动测试、运行服务采用、真实使用、用户验收分别报告；不以版本号、页面存在或测试数量代替总体完成。
 
+## 运行
+
+先构建再测，全部验证命令见 [README「验证」](README.md#验证)。
+
+```sh
+npm run build && npm test                 # 全量测试（CI 同样先构建再测）
+git config core.hooksPath scripts/hooks   # 装提交、推送前的必经检查（每个克隆、每台电脑各一次；不用 --no-verify 绕过）；推送前只跑不读 dist/ 的快测试，跳过清单在 scripts/hooks/pre-push
+```
+
 ## AI 接入
 
 按全局规则 P-13（2026-11-07）。本节与 `GET /api/ai-access`（`server/ai-access.mjs`）内容一致，改 AI 功能时两处一起改；设置页「AI 接入」一栏在第 2 批做（要等 I-DW-5 和 UI 改版完成）。盘点与分批计划见 [2026-11-07 交接](docs/agents/handoffs/2026-11-07-claude-ai-access-batch1.md)。
