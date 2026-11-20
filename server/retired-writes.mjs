@@ -3,7 +3,7 @@
 // 约定：只读动作（inspect / check / history / status / list / query）和「停止」类动作不在表里。
 const ROSTER = "项目名册以 digital-twin/projects.json 为准，在数码世界只读；这个写入接口已下线。";
 const AGENT = "数码世界不再写入真实 Agent 的配置、模型、Skill、共享池和挂载，请到对应 Agent 自己的配置里改；这个写入接口已下线。";
-const SKILL = "自建 Skill 以 my-skills 仓库为准，第三方 Skill 归 GitHub 中心，在数码世界只读；这个写入接口已下线。";
+export const RETIRED_SKILL_WRITE = "自建 Skill 以 my-skills 仓库为准，第三方 Skill 归 GitHub 中心，在数码世界只读；这个写入接口已下线。";
 const PROJECT_WRITE = "规则和工作流要生效，请回到原项目和权威系统处理，数码世界不再往项目里写；这个写入接口已下线。";
 const EXECUTOR = "数码世界不再自己调用模型或执行任务；这个接口已下线。";
 const VAULT = "数码世界不再写入 Vault，知识整理请在 Vault 里做；这个写入接口已下线。";
@@ -19,10 +19,11 @@ const RETIRED = [
   [/^\/api\/capabilities\/agent\/[a-z-]+$/, AGENT],
   [/^\/api\/agent-targets\/(save|remove)$/, AGENT],
   // Skill 写路径与第三方来源（v2.0 第 3 节）
-  [/^\/api\/skill-copies\/(preview|bind|remove)$/, SKILL],
-  [/^\/api\/deliveries(\/revoke)?$/, SKILL],
-  [/^\/api\/skill-sources\/(preview|import|derive)$/, SKILL],
-  [/^\/api\/skill-source-updates\/adopt$/, SKILL],
+  [/^\/api\/skill-copies\/(preview|bind|remove)$/, RETIRED_SKILL_WRITE],
+  // 交付链接不在这张表里：设计 Skill 的旧版 ZIP 包照旧可交付（#93，2026-11-19 定），
+  // Skill 资产的交付在 http.mjs 的 /api/deliveries 里按资产类型拒绝。
+  [/^\/api\/skill-sources\/(preview|import|derive)$/, RETIRED_SKILL_WRITE],
+  [/^\/api\/skill-source-updates\/adopt$/, RETIRED_SKILL_WRITE],
   // 规则模板「装入项目」、工作流「部署到项目」（v2.0 第 3 节）
   [/^\/api\/rule-templates\/(preview|apply|revert-preview)$/, PROJECT_WRITE],
   [/^\/api\/capabilities\/workflow\/[a-z-]+$/, PROJECT_WRITE],

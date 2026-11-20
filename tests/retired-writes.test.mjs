@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fixture } from "./fixture.mjs";
-import { seed } from "../src/store.js";
+import { seed, makeAsset, current } from "../src/store.js";
 import { stringify, parse } from "../src/serialization.js";
 import { retiredWrite } from "../server/retired-writes.mjs";
 
@@ -21,7 +21,6 @@ const RETIRED = [
   ]],
   [/my-skills/, [
     "/skill-copies/preview", "/skill-copies/bind", "/skill-copies/remove",
-    "/deliveries", "/deliveries/revoke",
     "/skill-sources/preview", "/skill-sources/import", "/skill-sources/derive",
     "/skill-source-updates/adopt",
   ]],
@@ -62,7 +61,7 @@ const KEPT = [
   ["POST", "/agent-config/inspect"], ["POST", "/agent-config/check"], ["POST", "/agent-config/history"],
   ["POST", "/agent-targets/options"],
   ["POST", "/skill-copies/discover"], ["POST", "/skill-copies/check"],
-  ["GET", "/deliveries"], ["POST", "/deliveries/copied"], ["GET", "/skill-sources"],
+  ["GET", "/deliveries"], ["POST", "/deliveries"], ["POST", "/deliveries/revoke"], ["POST", "/deliveries/copied"], ["GET", "/skill-sources"],
   ["POST", "/rule-templates/check"], ["POST", "/rule-templates/installs"],
   ["POST", "/reverse/runs/stop"], ["GET", "/reverse/runs/query"],
   ["POST", "/reverse/reports/preview"], ["POST", "/reverse/reports/adopt"],
@@ -94,7 +93,7 @@ test("下线表：表里的写路径都命中并带对应说明，保留的接�
   for (const method of ["GET", "POST", "PUT"])
     assert.match(retiredWrite("/api/scan/projects", method), /digital-twin\/projects\.json/);
   // 只认完整路径，不误伤前缀相同的别的路径。
-  assert.equal(retiredWrite("/api/deliveries/copied", "POST"), null);
+  assert.equal(retiredWrite("/api/skill-copies/checks", "POST"), null);
   assert.equal(retiredWrite("/api/capabilities/agent", "POST"), null);
   assert.equal(retiredWrite("/api/agent-config/apply/extra", "POST"), null);
 });
@@ -141,5 +140,29 @@ test("封口不误伤：保留的读接口照常应答", async () => {
       assert.notEqual(r.status, 410, `GET ${path} 不应被封`);
       assert.ok(r.status < 500, `GET ${path} 不应报服务端错误（实际 ${r.status}）`);
     }
+  } finally { await app.close(); }
+});
+
+test("交付链接：Skill 资产直接请求回 410 且不生成链接；设计 Skill 的旧版 ZIP 包照旧可交付（#93）", async () => {
+  const app = await fixture();
+  try {
+    const session = await (await fetch(app.url + "/api/session", { headers: { "x-workbench-client": "1" } })).json();
+    const headers = { "x-workbench-token": session.token, "content-type": "application/json" };
+    const call = async (path, data, method = data === undefined ? "GET" : "POST") => {
+      const r = await fetch(app.url + "/api" + path, { method, headers, ...(data === undefined ? {} : { body: stringify(data) }) });
+      return { status: r.status, body: parse(await r.text()) };
+    };
+    const files = (name) => [{ path: `${name}/SKILL.md`, text: true, mode: 0o644, data: `---\nname: ${name}\n---\n# ${name}\n合成内容。` }];
+    const skill = makeAsset({ type: "Skill", title: "合成 Skill", content: "合成说明", files: files("fixture-skill") });
+    const design = makeAsset({ type: "Design", title: "合成设计包", content: "请生成一张留白海报。", design: { kind: "skill", skillName: "fixture-design" }, files: files("fixture-design") });
+    assert.equal((await call("/workspace", { state: { ...seed(), assets: [skill, design] }, initialize: true }, "PUT")).status, 200);
+    const refused = await call("/deliveries", { assetId: skill.id, versionId: current(skill).id });
+    assert.equal(refused.status, 410);
+    assert.match(refused.body.error, /my-skills/);
+    assert.deepEqual((await call(`/deliveries?assetId=${skill.id}`)).body, []);
+    const made = await call("/deliveries", { assetId: design.id, versionId: current(design).id });
+    assert.equal(made.status, 200, stringify(made.body));
+    assert.match(made.body.instructions, /留白海报/);
+    assert.equal((await call("/deliveries/revoke", { id: made.body.id })).status, 200);
   } finally { await app.close(); }
 });

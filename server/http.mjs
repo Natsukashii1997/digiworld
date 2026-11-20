@@ -85,7 +85,7 @@ import { readCockpitAgents } from "./cockpit-agents.mjs";
 import { readCockpitRules } from "./cockpit-rules.mjs";
 import { readMySkills } from "./my-skills.mjs";
 import { cachedRead } from "./cockpit-read.mjs";
-import { retiredWrite } from "./retired-writes.mjs";
+import { retiredWrite, RETIRED_SKILL_WRITE } from "./retired-writes.mjs";
 const exec = promisify(execFile);
 // 项目名册只读（#71）：写接口的下线表在 retired-writes.mjs；整库保存时这三项保留主库原值。
 const READONLY_PROJECT_FIELDS = ["projects", "projectCatalog", "projectExclusions"];
@@ -910,12 +910,13 @@ export async function startServer({
             200,
             await projectContext.prepare(await body(request)),
           );
-        if (url.pathname === "/api/deliveries" && request.method === "POST")
-          return send(
-            response,
-            200,
-            await deliveries.create(await body(request), `http://${expected}`),
-          );
+        if (url.pathname === "/api/deliveries" && request.method === "POST") {
+          const input = await body(request);
+          // Skill 资产的交付链接已下线（#111）；设计 Skill 的旧版 ZIP 包照旧可交付（#93，2026-11-19 定）。
+          const target = (await repository.read())?.assets?.find((a) => a.id === input?.assetId);
+          if (target?.type === "Skill") throw failure(RETIRED_SKILL_WRITE, 410);
+          return send(response, 200, await deliveries.create(input, `http://${expected}`));
+        }
         if (url.pathname === "/api/deliveries" && request.method === "GET")
           return send(
             response,
