@@ -12,7 +12,7 @@ import { inferCategoryFromNote } from './collection/lib/category-inference.mjs';
 import {matchCocktailGroup,synchronizeAutoGroups,invalidateAutoGroups,noteWithAutoGroup} from './collection/lib/cocktail-grouping.mjs';
 import { ensureDeskState,categoryForGroup,LOOSE_GROUP_ID } from '../src/collection/app/lib/desk-workspace.mjs';
 import { createCollectionRecycle } from './collection/recycle.mjs';
-import { createOcrWorker } from './collection/ocr-worker.mjs';
+import { createMediaWorker } from './collection/media-worker.mjs';
 import { createGetClient } from './collection/get-client.mjs';
 import { createGetAnalysisWorker,newGetAnalysis,cancelledGetAnalysis } from './collection/get-analysis.mjs';
 import { createCoverRepair } from './collection/cover-repair.mjs';
@@ -133,7 +133,7 @@ export function createCollection(repository, { directory = repository.directory,
       const images = await localizeNoteMedia(note,{mediaDirectory,publicBaseUrl,fetchImpl,deferOcr:true});
       const models=join(root,'models');await fs.mkdir(models,{mode:0o700}).catch(error=>{if(error.code!=='EEXIST')throw error;});
       const modelInfo=await fs.lstat(models);if(!modelInfo.isDirectory()||modelInfo.isSymbolicLink())throw failure('模型目录不能是链接',409);
-      const imported = await localizeNoteVideo(images,{mediaDirectory,publicBaseUrl,modelDirectory:models,deadline:Date.now()+30*60*1000,fetchImpl,...(analyzer ? {analyzer} : {})});
+      const imported = await localizeNoteVideo(images,{mediaDirectory,publicBaseUrl,fetchImpl});
       const result = await serialized(async()=>{
         const state = await read(), previous = state.notes.find(x=>x.id===note.id);
         const intent=state.operations.find(x=>x.id===operationId && x.owner===owner);
@@ -147,7 +147,7 @@ export function createCollection(repository, { directory = repository.directory,
         await write({...state,notes,autoGroups:grouping.autoGroups,desk:ensureDeskState(grouping.desk,notes),operations:[...state.operations.filter(x=>x.id!==operationId),operation].slice(-500)});
         return operation;
       });
-      getWorker.wake();ocrWorker.wake();
+      getWorker.wake();mediaWorker.wake();
       return result;
     } catch(error) {
       const recovery=await serialized(async()=>{
@@ -341,7 +341,7 @@ export function createCollection(repository, { directory = repository.directory,
     return {extension:{available:true,path:join(sourceDirectory,'../browser-extension/collection'),version:'1.2.0'},agent:{available:true,serverPath:join(sourceDirectory,'collection-mcp.mjs'),nodePath:process.execPath,dataDirectory:root,clients:{codex:{available:true},claude:{available:true}}},native:{ocr:process.platform==='darwin',video:existsSync(join(sourceDirectory,'collection/native/kankan-video-analyzer'))}};
   }
   const getWorker=createGetAnalysisWorker({read,write,serialized,client:getClient,now,pollMs:getPollMs});
-  const ocrWorker=createOcrWorker({root,read,write,serialized,guard,publicNote,...(ocrRunner ? {ocrRunner} : {})});
+  const mediaWorker=createMediaWorker({root,read,write,serialized,guard,publicNote,busyVersions,fetchImpl,...(ocrRunner ? {ocrRunner} : {}),...(analyzer ? {analyzer} : {})});
   async function retryGet(id,body) {
     const result=await serialized(async()=>{
       const state=await read(),note=state.notes.find(n=>n.id===id),job=note?.getAnalysis;
@@ -354,8 +354,8 @@ export function createCollection(repository, { directory = repository.directory,
   }
   const recycle = createCollectionRecycle({ root, read, write, guard, serialized, busyVersions, platform, runOpen, checkpoint:recycleCheckpoint });
   const repairCover=createCoverRepair({root,read,write,guard,serialized,busyVersions,publicNote,fetchImpl,ocrRunner});
-  return { start:async()=>{await getWorker.start();ocrWorker.start();},close:()=>Promise.all([getWorker.close(),ocrWorker.close()]),retryGet,read:()=>serialized(read), notes:()=>serialized(async()=>notesResponse(await read())), desk:()=>serialized(async()=>{const state=await read();return {...state.desk,revision:state.revision};}), health:async()=>({ok:true,source:'sidecar'}), startImport,status,saveDesk,categories,archive,remove,autoGroupStatus,undoAutoGroup,pairing,handleClip,sendMedia,manual,clearLegacy,setup,recycle,repairCover,
+  return { start:async()=>{await getWorker.start();mediaWorker.start();},close:()=>Promise.all([getWorker.close(),mediaWorker.close()]),retryGet,read:()=>serialized(read), notes:()=>serialized(async()=>notesResponse(await read())), desk:()=>serialized(async()=>{const state=await read();return {...state.desk,revision:state.revision};}), health:async()=>({ok:true,source:'sidecar'}), startImport,status,saveDesk,categories,archive,remove,autoGroupStatus,undoAutoGroup,pairing,handleClip,sendMedia,manual,clearLegacy,setup,recycle,repairCover,
     async revokePairing(){await serialized(async()=>{const state=await read();await write({...state,extensionHash:''});});return {ok:true};},
-    async reanalyze(id){const note=await serialized(async()=>{const state=await read(),value=state.notes.find(n=>n.id===id);if(!value?.mediaVersion)throw failure('没有本地视频',404);if(busyVersions.has(value.mediaVersion))throw failure('视频正在分析中',409);busyVersions.add(value.mediaVersion);return value;});try{const result=await reanalyzeStoredNoteVideo(note,{mediaDirectory:join(root,'versions',note.mediaVersion,'media'),publicBaseUrl:`/collection-media/${note.mediaVersion}`,modelDirectory:join(root,'models'),deadline:Date.now()+30*60*1000,fetchImpl,...(analyzer?{analyzer}:{})});return await serialized(async()=>{const current=await read();if(current.notes.find(n=>n.id===id)?.mediaVersion!==note.mediaVersion)throw failure('视频已变化，请重新读取',409);const analysis=Object.fromEntries(['videoDuration','transcriptText','transcriptSegments','transcriptEngine','videoStatus','videoError'].map(key=>[key,result[key]]));return notesResponse(await write({...current,notes:current.notes.map(n=>n.id===id?publicNote({...n,...analysis}):n)}));});}finally{busyVersions.delete(note.mediaVersion);}},
+    async reanalyze(id){const note=await serialized(async()=>{const state=await read(),value=state.notes.find(n=>n.id===id);if(!value?.mediaVersion)throw failure('没有本地视频',404);if(busyVersions.has(value.mediaVersion))throw failure('视频正在分析中',409);busyVersions.add(value.mediaVersion);return value;});try{const result=await reanalyzeStoredNoteVideo(note,{mediaDirectory:join(root,'versions',note.mediaVersion,'media'),publicBaseUrl:`/collection-media/${note.mediaVersion}`,modelDirectory:join(root,'models'),deadline:Date.now()+30*60*1000,fetchImpl,...(analyzer?{analyzer}:{})});return await serialized(async()=>{const current=await read();if(current.notes.find(n=>n.id===id)?.mediaVersion!==note.mediaVersion)throw failure('视频已变化，请重新读取',409);const analysis=Object.fromEntries(['videoDuration','transcriptText','transcriptSegments','transcriptEngine','videoStatus','videoError'].map(key=>[key,result[key]]));return notesResponse(await write({...current,notes:current.notes.map(n=>n.id===id?publicNote({...n,...analysis}):n)}));});}finally{busyVersions.delete(note.mediaVersion);mediaWorker.wake();}},
   };
 }

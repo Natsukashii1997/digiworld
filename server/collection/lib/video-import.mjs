@@ -185,9 +185,8 @@ export async function localizeNoteVideo(note, options) {
 
   const noteDirectory = path.join(options.mediaDirectory, note.id);
   await mkdir(noteDirectory, { recursive: true });
-  let videoPath;
   try {
-    videoPath = await downloadVideo(sourceVideoUrl, noteDirectory, options.fetchImpl || fetch);
+    await downloadVideo(sourceVideoUrl, noteDirectory, options.fetchImpl || fetch);
   } catch (error) {
     return {
       ...note,
@@ -199,21 +198,15 @@ export async function localizeNoteVideo(note, options) {
   }
 
   const localVideoUrl = `${options.publicBaseUrl}/media/${note.id}/video.mp4`;
-  try {
-    const analysis = options.analyzer
-      ? await options.analyzer(videoPath)
-      : await runNativeVideoAnalyzer(videoPath, undefined, options);
-    return applyVideoAnalysis({ ...note, sourceVideoUrl }, analysis, localVideoUrl);
-  } catch (error) {
-    return {
-      ...note,
-      sourceVideoUrl,
-      videoUrl: localVideoUrl,
-      videoDuration: 0,
-      transcriptText: '',
-      transcriptSegments: [],
-      videoStatus: 'partial',
-      videoError: error instanceof Error ? error.message : '本地视频分析失败',
-    };
-  }
+  // 只下载、不转写：视频存好就交回（本地可播），文稿由后台 media-worker 用 reanalyzeStoredNoteVideo 补，收藏不再等转写（#109）。
+  return {
+    ...note,
+    sourceVideoUrl,
+    videoUrl: localVideoUrl,
+    videoDuration: 0,
+    transcriptText: '',
+    transcriptSegments: [],
+    videoStatus: 'pending',
+    videoError: '',
+  };
 }

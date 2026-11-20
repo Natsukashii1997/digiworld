@@ -162,8 +162,9 @@ test('并发重复导入只生成一个自动凭据，人工改组先于导入�
   let entered,release;
   const started=new Promise(resolve=>{entered=resolve;});
   const paused=new Promise(resolve=>{release=resolve;});
-  let analyzeCount=0;
-  const app=await collectionFixture({fetchImpl:async url=>new Response(Buffer.from('synthetic local media'),{headers:{'content-type':String(url).includes('/fixture.mp4')?'video/mp4':'image/png'}}),analyzer:async()=>{analyzeCount++;if(analyzeCount===2){entered();await paused;}return {duration:3,transcriptSegments:[{start:0,duration:2,text:'45ml朗姆酒，加入冰块搅拌'}]};}});
+  // 转写已改到后台（#109），导入提交前仍要等的是视频下载：第二次下载时停住。
+  let downloadCount=0;
+  const app=await collectionFixture({fetchImpl:async url=>{if(String(url).includes('/fixture.mp4')&&++downloadCount===2){entered();await paused;}return new Response(Buffer.from('synthetic local media'),{headers:{'content-type':String(url).includes('/fixture.mp4')?'video/mp4':'image/png'}});},analyzer:async()=>({duration:3,transcriptSegments:[{start:0,duration:2,text:'45ml朗姆酒，加入冰块搅拌'}]})});
   try {
     await addGroup(app);await addGroup(app,{id:'custom:manual',kind:'custom',name:'我的配方'});
     const input=cocktailNote(38310,{type:'video',videoUrl:'https://video.xhscdn.com/fixture.mp4'});

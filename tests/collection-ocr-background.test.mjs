@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {collectionFixture,syntheticNote} from './collection-fixture.mjs';
 import {recognizeImages,finishNoteOcr} from '../server/collection/lib/media-import.mjs';
-import {createOcrWorker} from '../server/collection/ocr-worker.mjs';
+import {createMediaWorker} from '../server/collection/media-worker.mjs';
 import {noteMatchesQuery} from '../src/collection/scripts/lib/note-search.mjs';
 
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -53,8 +53,8 @@ test('OCR期间删除或重新收藏：旧识别结果不写回、不复活',asy
   const app=await collectionFixture({ocrRunner:async paths=>{await release.opened;return paths.map(path=>({path,text:'旧版本文字'}));}});
   try {
     const first=syntheticNote(302),second=syntheticNote(303);
-    assert.equal((await app.importNote(first,crypto.randomUUID(),{waitOcr:false})).mediaStatus,'pending');
-    assert.equal((await app.importNote(second,crypto.randomUUID(),{waitOcr:false})).mediaStatus,'pending');
+    assert.equal((await app.importNote(first,crypto.randomUUID(),{waitBackground:false})).mediaStatus,'pending');
+    assert.equal((await app.importNote(second,crypto.randomUUID(),{waitBackground:false})).mediaStatus,'pending');
     await app.api('/notes/'+first.id,undefined,'DELETE');
     release.open();
     let notes;
@@ -76,7 +76,7 @@ test('服务重启：启动时接着识别上次没识别完的收藏，只认�
     ]};
     const seen=[];
     let queue=Promise.resolve();const serialized=op=>{const r=queue.then(op);queue=r.catch(()=>{});return r;};
-    const worker=createOcrWorker({root,read:async()=>state,write:async value=>{state={...value,revision:value.revision+1};return state;},serialized,guard:async()=>{},publicNote:note=>note,ocrRunner:async paths=>{seen.push(...paths);return paths.map(path=>({path,text:path.endsWith('01.png')?'第一张':'第二张'}));}});
+    const worker=createMediaWorker({root,read:async()=>state,write:async value=>{state={...value,revision:value.revision+1};return state;},serialized,guard:async()=>{},publicNote:note=>note,ocrRunner:async paths=>{seen.push(...paths);return paths.map(path=>({path,text:path.endsWith('01.png')?'第一张':'第二张'}));}});
     worker.start();
     for(let i=0;i<200 && state.notes[0].mediaStatus==='pending';i++)await sleep(10);
     await worker.close();
