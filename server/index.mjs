@@ -14,7 +14,8 @@ const app = await startServer({
   directory: process.env.WORKBENCH_DATA_DIR || join(root, "data"),
   port: Number(process.env.PORT || 5178),
   staticRoot: join(root, "dist"),
-  enableCapabilityScheduler: true,
+  // 夜巡已下线（#111），正式入口不再开调度器。
+  enableCapabilityScheduler: false,
   // 本机登记从数字分身名册派生（#73）：启动时同步一次；之后由项目空间「按名册刷新」触发。
   syncRosterOnStart: true,
   mcpClientHealth: createKnowledgeAgentStatus(),
