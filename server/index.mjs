@@ -6,12 +6,13 @@ const daemonRuntimeCodeRevision = await readDaemonCodeRevision(root);
 const { startServer } = await import("./http.mjs");
 const { homedir } = await import("node:os");
 const { createKnowledgeAgentStatus } = await import("./knowledge-agent-status.mjs");
+const { workbenchDataDirectory } = await import("./launch-agent.mjs");
 if (await readDaemonCodeRevision(root) !== daemonRuntimeCodeRevision) throw new Error("工作台代码在启动期间变化，请在构建完成后重新启动");
 const app = await startServer({
   // 实战（读取会话里的技能使用）默认打开（常浩 10-29：「都给我默认打开」）；只在正式入口打开，测试里起的服务默认关。
   // 资产仓库 Skill 页（#93 第二批）只读本机 my-skills 与 agent-kit 调用记录：同样只在正式入口打开。
   discovery: { daemonRuntimeCodeRevision, daemonCurrentPid: process.pid, skillUsage: { enabled: async () => true }, mySkills: { home: homedir() } },
-  directory: process.env.WORKBENCH_DATA_DIR || join(root, "data"),
+  directory: process.env.WORKBENCH_DATA_DIR || workbenchDataDirectory(homedir()),
   port: Number(process.env.PORT || 5178),
   staticRoot: join(root, "dist"),
   // 夜巡已下线（#111），正式入口不再开调度器。
