@@ -10,6 +10,7 @@ import {
 } from "./schema.mjs";
 import { mergeBackup } from "./merge.mjs";
 import { DatabaseSync } from "node:sqlite";
+import { pruneSnapshots } from "./snapshot-retention.mjs";
 
 export const digest = (value) =>
   createHash("sha256").update(value).digest("hex");
@@ -34,7 +35,8 @@ async function syncDirectory(path) {
   }
 }
 
-export async function openRepository(directory) {
+// onPruneError：保存已经落盘后，清理旧快照失败只报告，不让这次保存失败（测试可注入）。
+export async function openRepository(directory, { onPruneError = (error) => console.error("主库旧快照清理失败（本次保存已完成）：", error.message) } = {}) {
   await mkdir(directory, { recursive: true, mode: 0o700 });
   if ((await lstat(directory)).isSymbolicLink())
     throw failure("数据目录不能是符号链接", 503);
@@ -131,6 +133,11 @@ export async function openRepository(directory) {
     await verifyDirectories();
     await rename(pointer, join(directory, "CURRENT.json"));
     await syncDirectory(directory);
+    // 保留规则（#120）：数据目录里有开关文件时，按规则删掉旧快照；指针指向的那个永远留。
+    try {
+      await verifyDirectories();
+      if ((await pruneSnapshots(directory)).length) await syncDirectory(join(directory, "snapshots"));
+    } catch (error) { onPruneError(error); }
     return read();
   }
   function serial(operation) {
