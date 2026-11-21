@@ -4,6 +4,8 @@ import { execFile as nativeExecFile } from "node:child_process";
 import { isAbsolute, join, resolve } from "node:path";
 export const WORKBENCH_LABEL = "cn.personal-ai-workbench.server";
 export const workbenchServerNodePath = home => join(home, "Library/Application Support/PersonalAIWorkbench/WorkbenchServer.app/Contents/MacOS/node");
+// 主库与全部数据的默认位置（#122，11-21 常浩定迁出代码仓库）；WORKBENCH_DATA_DIR 优先。
+export const workbenchDataDirectory = home => join(home, "Library/Application Support/PersonalAIWorkbench/data");
 const fail = message => { throw Object.assign(new Error(message), { code: "DAEMON_UNSAFE" }); };
 const path = p => {
   if (typeof p !== "string" || !isAbsolute(p) || resolve(p) !== p || /[\x00-\x1f\x7f]/.test(p)) fail("常驻路径无效");
