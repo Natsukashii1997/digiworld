@@ -250,7 +250,7 @@
 .page-assets .holo-tint .holo-pad { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tc) 60%, transparent)); }
 .page-assets .holo-tint .holo-cone { background: linear-gradient(to top, color-mix(in srgb, var(--tc) 42%, transparent), color-mix(in srgb, var(--tc) 8%, transparent) 70%, transparent); }
 .page-assets .ac2-skill > .card-open { cursor: default; }
-.page-assets .ac2-body h3.mono { font-family: var(--mono); font-size: var(--fs-section); font-weight: 700; letter-spacing: 0; }
+.page-assets .ac2-body h3.mono { font-family: var(--mono); font-size: var(--fs-section); font-weight: 800; letter-spacing: 0; }
 .page-assets .ac2-agents { display: flex; gap: 5px; margin-top: -2px; }
 .page-assets .ac2-agents span {
   padding: 1px 6px;
