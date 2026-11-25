@@ -58,3 +58,39 @@ test("收藏子应用的 framer-motion 不再写死时长，统一取 motion-tok
   assert.deepEqual(literal, []);
   assert.match(readFileSync(join(src, "Collection.jsx"), "utf8"), /MotionConfig[^>]*transition=\{\{ duration: FM\.mid, ease: FM\.out \}\}/);
 });
+
+// 一次性状态动画（不循环、不是像素逐帧）新写的必须用时长令牌；现存的专属节奏逐个登记理由，不许悄悄新增。
+const ONE_SHOT_ALLOWED = {
+  "collection-arrive": "收藏新卡落桌，收藏子应用原样迁入的节奏（360ms 错峰）",
+  "collection-land": "收藏新卡纸片着陆，同上",
+  "nt-flip": "夜巡翻牌（夜巡已下线，页面不可达）",
+  shine: "按钮悬停扫光，装饰一次",
+  "cell-pop": "开机成长格逐个点亮，开机仪式编排",
+  veil: "开机遮罩揭开，开机仪式编排",
+  scan: "资产卡悬停封面扫描，装饰一次",
+  "evo-fade": "进化仪式编排（2.6s 一整段，各段时长互相咬合）",
+  "evo-glyph": "进化仪式编排",
+  "evo-hatch": "进化仪式编排",
+  "evo-pillar": "进化仪式编排",
+  "evo-flash": "进化仪式编排",
+  "evo-ring": "进化仪式编排",
+  "evo-bit": "进化仪式编排",
+  rise: "进化仪式说明文字（0.5s 延后 0.8s，和仪式咬合）；其余 rise 已用令牌",
+  "v14-pop": "完成对勾弹出（v14 结果反馈）",
+};
+test("一次性状态动画新写的用时长令牌；现存专属节奏都已登记", () => {
+  const found = new Map();
+  for (const f of files)
+    for (const m of body(f).matchAll(/\banimation\s*:([^;{}]+)/g)) {
+      const v = m[1].trim();
+      if (/\binfinite\b|steps\(|^none\b/.test(v)) continue;
+      for (const seg of v.split(/,(?![^(]*\))/)) {
+        const name = seg.trim().split(/\s+/)[0];
+        if (/(?<![\w(*-])[0-9]*\.?[0-9]+m?s\b/.test(seg.replace(/calc\([^)]*\)|var\([^)]*\)/g, ""))) found.set(name, `${f}: ${seg.trim()}`);
+      }
+    }
+  const unregistered = [...found].filter(([name]) => !ONE_SHOT_ALLOWED[name]).map(([, where]) => where);
+  assert.deepEqual(unregistered, []);
+  // 登记表不留过期项：改成令牌或删掉的动画，从表里一起删。
+  assert.deepEqual(Object.keys(ONE_SHOT_ALLOWED).filter((name) => !found.has(name)), []);
+});

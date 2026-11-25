@@ -17,7 +17,9 @@ export function leaveGhost(node, duration = T.fast) {
     ghost.dataset.leaving = "";
     ghost.setAttribute("aria-hidden", "true");
     ghost.inert = true;
-    for (const el of [ghost, ...ghost.querySelectorAll("[id]")]) el.removeAttribute("id");
+    // 去掉 id 免得和随后重开的同一弹窗撞号；SVG 内部的 id 留着，渐变、裁切、<use> 等 url(#…) 引用才不会失效。
+    // 原节点在残影插入前已被移除，SVG 内的 id 不会和原节点重复。
+    for (const el of [ghost, ...ghost.querySelectorAll("[id]")]) if (!el.closest("svg")) el.removeAttribute("id");
     // 幽灵不再是对话框或状态播报：按选择器找对话框、读屏播报的地方都不会把它当成还开着。
     for (const el of [ghost, ...ghost.querySelectorAll("[role=dialog],[role=alertdialog],[role=status],[role=alert],[aria-modal],[aria-live]")]) {
       if (/^(dialog|alertdialog|status|alert)$/.test(el.getAttribute("role") || "")) el.removeAttribute("role");

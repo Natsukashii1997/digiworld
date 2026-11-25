@@ -1583,6 +1583,8 @@ details.scan-notice {
 /* #127 退场幽灵（src/leave-ghost.js）：遮罩淡出，弹窗下沉 6px，抽屉朝来处（右边）退 24px；
    退场比进场快（fast），加速离开（--ease-in）。克隆里的进场动画一律不重播。 */
 .overlay.is-leaving {
+  /* 关闭后立刻重开时，新弹窗在残影之上。 */
+  z-index: 99;
   pointer-events: none;
   animation: leave-fade var(--t-fast) var(--ease-in) forwards;
 }
@@ -2810,6 +2812,7 @@ details.scan-notice {
   pointer-events: none;
 }
 .toast.is-leaving {
+  z-index: 259;
   animation: toast-out var(--t-fast) var(--ease-in) forwards;
 }
 .toast.is-leaving * {
