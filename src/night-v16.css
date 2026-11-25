@@ -9,7 +9,7 @@
 .night-v16 .nv-section-title .nv-muted{font-size:var(--fs-label);letter-spacing:.06em;color:var(--muted)}
 
 /* 按钮 */
-.night-v16 .nv-nbtn,.nv-drawer .nv-nbtn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:var(--r-s);border:1px solid var(--line-2);background:var(--panel-2);color:var(--text-2);font:500 var(--fs-caption)/1 var(--sans);cursor:pointer;white-space:nowrap;transition:background var(--t-fast),border-color var(--t-fast),color var(--t-fast),transform var(--t-fast) var(--ease)}
+.night-v16 .nv-nbtn,.nv-drawer .nv-nbtn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:var(--r-s);border:1px solid var(--line-2);background:var(--panel-2);color:var(--text-2);font:500 var(--fs-caption)/1 var(--sans);cursor:pointer;white-space:nowrap;transition:background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease)}
 .night-v16 .nv-nbtn:hover{border-color:var(--line-3);color:var(--text);background:var(--panel-3)}
 .night-v16 .nv-nbtn:active{transform:translateY(1px)}
 .night-v16 .nv-nbtn:focus-visible,.night-v16 .nt-chip:focus-visible,.night-v16 .nv-topic:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
@@ -24,7 +24,7 @@
 .night-v16 .nv-morning-switch .nv-nbtn{min-height:44px;padding-inline:16px}
 
 /* ---------- 芯片 ---------- */
-.night-v16 .nt-chip{--cut:18px;position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;aspect-ratio:.76;padding:12px 14px 22px;border:0;background:none;color:var(--text);text-align:left;cursor:grab;font:inherit;transition:transform var(--t-mid) var(--ease-back),filter var(--t-mid)}
+.night-v16 .nt-chip{--cut:18px;position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;aspect-ratio:.76;padding:12px 14px 22px;border:0;background:none;color:var(--text);text-align:left;cursor:grab;font:inherit;transition:transform var(--t-mid) var(--ease), filter var(--t-mid) var(--ease)}
 .night-v16 .nt-chip:before,.night-v16 .nt-chip:after{content:"";position:absolute;z-index:-1;clip-path:polygon(0 0,calc(100% - var(--cut)) 0,100% var(--cut),100% 100%,0 100%);border-radius:12px 0 8px 8px}
 .night-v16 .nt-chip:before{inset:0;background:linear-gradient(160deg,rgba(var(--h),.55),rgba(var(--h),.12) 55%,rgba(140,178,255,.14))}
 .night-v16 .nt-chip:after{inset:1px;--cut:17.6px;background:radial-gradient(120% 70% at 20% 0%,rgba(var(--h),.20),transparent 60%),linear-gradient(180deg,rgb(20, 29, 54),rgb(12, 19, 37))}
@@ -72,7 +72,7 @@
 .night-v16 .t-done b{color:var(--cyan)}.night-v16 .t-warn b{color:var(--yellow)}.night-v16 .t-q{font-size:var(--fs-small);color:var(--faint)}
 .night-v16 .nv-slots{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s-5)}
 .night-v16 .nt-slot{position:relative;display:flex;flex-direction:column}
-.night-v16 .nv-slot-grip{position:absolute;left:-2px;top:6px;z-index:2;color:var(--faint);cursor:grab;opacity:0;transition:opacity var(--t-fast)}
+.night-v16 .nv-slot-grip{position:absolute;left:-2px;top:6px;z-index:2;color:var(--faint);cursor:grab;opacity:0;transition:opacity var(--t-fast) var(--ease)}
 .night-v16 .nt-slot:hover .nv-slot-grip{opacity:1}
 .night-v16 .nv-slot-well{position:relative;display:flex;justify-content:center;align-items:flex-end;height:236px;padding:0 9%}
 .night-v16 .nt-slot .nt-chip.in-slot{aspect-ratio:auto;height:100%;transform:translateY(16px);cursor:pointer}
@@ -271,7 +271,7 @@
 .night-v16 .nv-nbtn,.nv-drawer .nv-nbtn{min-height:44px}
 .night-v16 .nv-nbtn:disabled,.nv-drawer .nv-nbtn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
 .night-v16 .nv-meters .nv-meter.quota i{background:var(--violet)}
-.night-v16 .nv-slot-tools{position:absolute;z-index:4;top:-16px;right:-8px;display:flex;align-items:center;gap:0;opacity:0;transition:opacity var(--t-fast)}
+.night-v16 .nv-slot-tools{position:absolute;z-index:4;top:-16px;right:-8px;display:flex;align-items:center;gap:0;opacity:0;transition:opacity var(--t-fast) var(--ease)}
 .night-v16 .nt-slot:hover .nv-slot-tools,.night-v16 .nt-slot:focus-within .nv-slot-tools{opacity:1}
 .night-v16 .nv-slot-tools button{display:grid;place-items:center;min-width:44px;min-height:44px;padding:0;border:0;border-radius:var(--r-s);background:rgba(10,17,34,.9);color:var(--text-2);cursor:pointer}
 .night-v16 .nv-slot-tools button:disabled{opacity:.4;cursor:not-allowed}

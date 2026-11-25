@@ -1,4 +1,5 @@
 import { Reading, usePanelScan } from './ScanMotion.jsx';
+import { useLeaveGhost } from './leave-ghost.js';
 import React, { useEffect, useRef, useState } from "react";
 import { X, Layers, Quote, Workflow, Flame, Plug } from "lucide-react";
 import { Pixel, StageBar, holoPalette } from "./pixel.jsx";
@@ -247,8 +248,10 @@ export function PageHeading({ page, eyebrow, title, description, action, titleHi
   );
 }
 export function Dialog({ title, children, onClose, drawer = false, recoverFocus = false }) {
-  const ref = useRef();
+  const ref = useRef(), outer = useRef();
   usePanelScan(ref);
+  // 关闭时面板与遮罩退场（#127）：进场有描边从按钮飞来，退场也要交代它离开了。
+  useLeaveGhost(outer);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
@@ -302,6 +305,7 @@ export function Dialog({ title, children, onClose, drawer = false, recoverFocus 
   }, []);
   return (
     <div
+      ref={outer}
       className={`overlay ${drawer ? "drawer-overlay" : ""}`}
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >

@@ -140,11 +140,35 @@ details > summary::before {
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: rotate(-45deg);
-  transition: transform 0.25s var(--ease);
+  transition: transform var(--t-fast) var(--ease-move);
   flex: none;
 }
 details[open] > summary::before {
   transform: rotate(45deg);
+}
+/* #127 折叠展开：内容从标题下方淡入、落定 4px，交代「内容从这里展开」；收起保持瞬间（WKWebView 不支持高度插值）。
+   只用 backwards，播完不留 transform，不影响内部定位。 */
+details[open] > :not(summary) {
+  animation: disclose var(--t-mid) var(--ease) backwards;
+}
+@keyframes disclose {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+/* 收起：先淡出、上收 4px，再合上（src/disclosure.js）；小三角同时转回。 */
+details[data-closing] > :not(summary) {
+  animation: undisclose var(--t-fast) var(--ease-in) forwards;
+}
+details[data-closing] > summary::before {
+  transform: rotate(-45deg);
+}
+@keyframes undisclose {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 dl {
   margin: 0;
@@ -232,9 +256,9 @@ select {
   font-size: 14px;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
   transition:
-    border-color 0.2s,
-    box-shadow 0.2s,
-    background 0.2s;
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
 }
 textarea {
   resize: vertical;
@@ -332,9 +356,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     inset 0 -1px 0 rgba(0, 0, 0, 0.15),
     var(--glow-orange);
   transition:
-    transform 0.15s var(--ease),
-    box-shadow 0.25s,
-    filter 0.2s;
+    transform var(--t-fast) var(--ease),
+    box-shadow var(--t-mid) var(--ease),
+    filter var(--t-fast) var(--ease);
 }
 .button::after {
   content: "";
@@ -428,10 +452,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-radius: 10px;
   color: var(--text-2);
   transition:
-    background 0.2s,
-    color 0.2s,
-    border-color 0.2s,
-    transform 0.3s var(--ease);
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-mid) var(--ease);
 }
 .icon-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.06);
@@ -465,7 +489,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   max-width: 100%;
   overflow-wrap: anywhere;
   border-radius: 6px;
-  transition: color 0.2s;
+  transition: color var(--t-fast) var(--ease);
 }
 .text-button:hover:not(:disabled) {
   color: var(--cyan);
@@ -703,8 +727,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-radius: 1.5px;
   background: rgba(140, 178, 255, 0.15);
   transition:
-    background 0.3s,
-    box-shadow 0.3s;
+    background var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
 }
 .stage-cells i.on {
   background: var(--orange);
@@ -811,7 +835,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 .brand-crest .pixel {
   filter: drop-shadow(0 0 5px rgba(255, 138, 36, 0.6));
-  transition: transform 0.6s var(--ease-back);
+  transition: transform var(--t-slow) var(--ease-back);
 }
 .brand:hover .brand-crest .pixel {
   transform: rotate(90deg);
@@ -879,9 +903,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   color: var(--text-2);
   font-size: 13.5px;
   transition:
-    border-color 0.2s,
-    box-shadow 0.2s,
-    color 0.2s;
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
 }
 .topbar-search svg {
   flex: none;
@@ -991,12 +1015,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   font-size: 13.5px;
   text-align: left;
   transition:
-    background 0.2s,
-    color 0.2s;
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
 }
 .nav-item svg {
   flex: none;
-  transition: transform 0.3s var(--ease-back);
+  transition: transform var(--t-mid) var(--ease-back);
 }
 .nav-item:hover {
   background: rgba(255, 255, 255, 0.04);
@@ -1066,8 +1090,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01));
   text-align: left;
   transition:
-    border-color 0.25s,
-    transform 0.3s var(--ease);
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-mid) var(--ease);
 }
 .partner:hover {
   border-color: var(--line-2);
@@ -1452,9 +1476,9 @@ details.scan-notice {
   color: var(--text-2);
   font-size: 13px;
   transition:
-    background 0.25s var(--ease),
-    color 0.2s,
-    box-shadow 0.25s;
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
 }
 .segmented button:hover:not(.active) {
   color: var(--text);
@@ -1549,11 +1573,46 @@ details.scan-notice {
   padding: 24px;
   background: rgba(3, 6, 14, 0.62);
   backdrop-filter: blur(4px);
-  animation: fade-in 0.25s var(--ease);
+  animation: fade-in var(--t-mid) var(--ease);
 }
 @keyframes fade-in {
   from {
     opacity: 0;
+  }
+}
+/* #127 退场幽灵（src/leave-ghost.js）：遮罩淡出，弹窗下沉 6px，抽屉朝来处（右边）退 24px；
+   退场比进场快（fast），加速离开（--ease-in）。克隆里的进场动画一律不重播。 */
+.overlay.is-leaving {
+  /* 关闭后立刻重开时，新弹窗在残影之上。 */
+  z-index: 99;
+  pointer-events: none;
+  animation: leave-fade var(--t-fast) var(--ease-in) forwards;
+}
+.overlay.is-leaving > .modal {
+  animation: leave-sink var(--t-fast) var(--ease-in) forwards;
+}
+.overlay.is-leaving > .drawer {
+  animation: leave-slide var(--t-fast) var(--ease-in) forwards;
+}
+.overlay.is-leaving > section *,
+.overlay.is-leaving > section *::before,
+.overlay.is-leaving > section *::after {
+  animation: none !important;
+  transition: none !important;
+}
+@keyframes leave-fade {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes leave-sink {
+  to {
+    transform: translateY(6px);
+  }
+}
+@keyframes leave-slide {
+  to {
+    transform: translateX(24px);
   }
 }
 .modal,
@@ -1669,7 +1728,7 @@ details.scan-notice {
 .cover-glyph {
   position: relative;
   filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tc) 55%, transparent));
-  transition: transform 0.5s var(--ease-back);
+  transition: transform var(--t-slow) var(--ease-back);
 }
 .cover-code,
 .cover-version {
@@ -1754,8 +1813,8 @@ details.scan-notice {
   color: var(--muted);
   font-weight: 400;
   transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
 }
 .inline-search:focus-within,
 .discovery-search:focus-within {
@@ -1839,8 +1898,14 @@ details.scan-notice {
 }
 .asset-card {
   position: relative;
-  animation: rise 0.55s var(--ease) both;
-  animation-delay: calc(var(--i, 0) * 45ms + 60ms);
+  /* #127：首次进场单张 240ms、错峰 16ms（--i 在 Assets.jsx 里 min(index,12)），全部 470ms 内落定；
+     之后筛选、搜索、切页签换进来的卡片不错峰、160ms 落定（.flip-quick，src/flip.js），留下的卡片只滑到新位置。 */
+  animation: rise var(--t-mid) var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 16ms + 40ms);
+}
+.asset-card.flip-quick {
+  animation-duration: var(--t-fast);
+  animation-delay: 0ms;
 }
 @keyframes rise {
   from {
@@ -1863,9 +1928,9 @@ details.scan-notice {
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     var(--shadow);
   transition:
-    transform 0.35s var(--ease),
-    border-color 0.3s,
-    box-shadow 0.35s;
+    transform var(--t-mid) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-mid) var(--ease);
 }
 .card-open:hover {
   transform: translateY(-3px);
@@ -1909,8 +1974,8 @@ details.scan-notice {
   opacity: 0;
   filter: drop-shadow(0 0 4px rgba(77, 227, 255, 0.7));
   transition:
-    transform 0.35s var(--ease),
-    opacity 0.25s;
+    transform var(--t-mid) var(--ease),
+    opacity var(--t-mid) var(--ease);
 }
 .lock i:nth-child(1) {
   left: 0;
@@ -2019,10 +2084,10 @@ details.scan-notice {
   opacity: 0;
   cursor: pointer;
   transition:
-    opacity 0.2s,
-    color 0.2s,
-    border-color 0.2s,
-    transform 0.3s var(--ease-back);
+    opacity var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-mid) var(--ease-back);
 }
 .pin-button { top: 14px; }
 /* 封面相对卡片上沿 11px、高 132px；删除框距封面右下均为 3px。 */
@@ -2091,7 +2156,7 @@ details.scan-notice {
   gap: 14px;
 }
 .detail-content > * {
-  animation: rise 0.45s var(--ease) both;
+  animation: rise var(--t-slow) var(--ease) both;
 }
 .detail-content > :nth-child(1) {
   animation-delay: 0.25s;
@@ -2235,6 +2300,8 @@ details.scan-notice {
 }
 .detail-facts .hatch-src:disabled { color: var(--muted); cursor: default; }
 .detail-tabs {
+  /* 指示条的定位容器从一开始就是自己：tab-indicator.js 量的 offsetLeft 与 ::after 在同一坐标系（#129 审查 P2-01）。 */
+  position: relative;
   display: flex;
   gap: 4px;
   border-bottom: 1px solid var(--line);
@@ -2251,7 +2318,7 @@ details.scan-notice {
   font-size: 13px;
   color: var(--text-2);
   white-space: nowrap;
-  transition: color 0.2s;
+  transition: color var(--t-fast) var(--ease);
 }
 .detail-tabs button::after {
   content: "";
@@ -2264,7 +2331,7 @@ details.scan-notice {
   background: var(--orange);
   box-shadow: 0 0 8px var(--orange);
   transform: scaleX(0);
-  transition: transform 0.3s var(--ease);
+  transition: transform var(--t-mid) var(--ease);
 }
 .detail-tabs button:hover {
   color: var(--text);
@@ -2274,6 +2341,27 @@ details.scan-notice {
 }
 .detail-tabs button.active::after {
   transform: scaleX(1);
+}
+/* #127 一条指示条滑到选中项（src/tab-indicator.js）；没接上脚本时仍用上面每个按钮自己的下划线。 */
+.detail-tabs[data-ind] button::after {
+  content: none;
+}
+.detail-tabs[data-ind]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--orange);
+  box-shadow: 0 0 8px var(--orange);
+  transform-origin: 0 0;
+  transform: translateX(var(--ind-x, 0)) scaleX(var(--ind-s, 0));
+  pointer-events: none;
+}
+.detail-tabs[data-ind="on"]::after {
+  transition: transform var(--t-mid) var(--ease-move);
 }
 .detail-tabs span {
   font: 500 10.5px var(--mono);
@@ -2426,9 +2514,9 @@ details.scan-notice {
   color: var(--text-2);
   font-weight: 550;
   transition:
-    border-color 0.2s,
-    background 0.2s,
-    color 0.2s;
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease);
 }
 .type-picker button:hover:not(:disabled) {
   border-color: var(--line-3);
@@ -2457,8 +2545,8 @@ details.scan-notice {
   font-weight: 450;
   cursor: pointer;
   transition:
-    border-color 0.2s,
-    background 0.2s;
+    border-color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
 }
 .upload-zone:hover,
 .upload-zone:focus-within {
@@ -2718,8 +2806,22 @@ details.scan-notice {
   backdrop-filter: blur(12px);
   font-size: 13px;
   transform: translateX(-50%);
-  animation: toast-in 0.45s var(--ease-back);
+  /* #127：240ms 减速落定，不回弹；换条或消失时旧条 160ms 淡出下沉。 */
+  animation: toast-in var(--t-mid) var(--ease);
   pointer-events: none;
+}
+.toast.is-leaving {
+  z-index: 259;
+  animation: toast-out var(--t-fast) var(--ease-in) forwards;
+}
+.toast.is-leaving * {
+  animation: none !important;
+}
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
 }
 .toast > button {
   pointer-events: auto;
@@ -2727,7 +2829,7 @@ details.scan-notice {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translate(-50%, 18px);
+    transform: translate(-50%, 12px);
   }
 }
 .toast-mark {
@@ -2776,7 +2878,7 @@ details.scan-notice {
 .toast.tone-error .toast-mark {
   color: #fff;
   background: var(--red);
-  animation: toast-shake 0.4s var(--ease) 0.2s;
+  animation: toast-shake var(--t-slow) var(--ease) var(--t-fast);
 }
 @keyframes toast-shake {
   25% {
@@ -3222,7 +3324,7 @@ details.scan-notice {
   padding: 22px 24px 24px;
   text-align: left;
   border-left: 1px solid var(--line);
-  transition: background 0.3s;
+  transition: background var(--t-fast) var(--ease);
 }
 .counter:first-child {
   border-left: 0;
@@ -3240,7 +3342,7 @@ details.scan-notice {
   letter-spacing: -0.03em;
   color: var(--text);
   text-shadow: 0 0 22px rgba(77, 227, 255, 0.22);
-  transition: color 0.25s;
+  transition: color var(--t-fast) var(--ease);
 }
 .counter:hover .counter-value {
   color: var(--orange-2);
@@ -3353,9 +3455,9 @@ details.scan-notice {
   border: 1px solid var(--line-3);
   box-shadow: 0 0 0 6px var(--bg);
   transition:
-    transform 0.35s var(--ease-back),
-    border-color 0.25s,
-    box-shadow 0.3s;
+    transform var(--t-mid) var(--ease-back),
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-mid) var(--ease);
 }
 .mainline button:hover .mainline-node {
   transform: scale(1.12);
@@ -3450,8 +3552,8 @@ details.scan-notice {
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 24px 50px -34px rgba(0, 0, 0, 0.9);
   transition:
-    transform 0.35s var(--ease),
-    border-color 0.3s;
+    transform var(--t-mid) var(--ease),
+    border-color var(--t-fast) var(--ease);
 }
 .feature-card:hover {
   transform: translateY(-3px);
@@ -3465,8 +3567,8 @@ details.scan-notice {
   color: var(--cyan);
   opacity: 0.12;
   transition:
-    opacity 0.4s,
-    transform 0.6s var(--ease);
+    opacity var(--t-slow) var(--ease),
+    transform var(--t-slow) var(--ease);
 }
 .feature-card:hover .feature-mark {
   opacity: 0.24;
@@ -3551,9 +3653,9 @@ details.scan-notice {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.02);
   transition:
-    border-color 0.25s,
-    transform 0.3s var(--ease),
-    background 0.25s;
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-mid) var(--ease),
+    background var(--t-fast) var(--ease);
 }
 .area-card:hover {
   border-color: var(--line-2);
@@ -3602,8 +3704,8 @@ details.scan-notice {
   color: var(--muted);
   opacity: 0;
   transition:
-    opacity 0.2s,
-    transform 0.3s var(--ease);
+    opacity var(--t-fast) var(--ease),
+    transform var(--t-mid) var(--ease);
 }
 .area-card:hover .area-go,
 .feature-card:hover .area-go {
@@ -3632,7 +3734,7 @@ details.scan-notice {
   text-align: left;
   background: var(--panel);
   border-top: 1px solid var(--line);
-  transition: background 0.2s;
+  transition: background var(--t-fast) var(--ease);
 }
 .recent:first-child {
   border-top: 0;
@@ -3692,7 +3794,7 @@ details.scan-notice {
   border-top: 1px solid var(--line);
   min-height: 60px;
   color: var(--muted);
-  transition: color 0.2s;
+  transition: color var(--t-fast) var(--ease);
 }
 
 .manage-row:first-child {
@@ -3707,7 +3809,7 @@ details.scan-notice {
 .manage-row strong {
   font-size: 13.5px;
   color: var(--text-2);
-  transition: color 0.2s;
+  transition: color var(--t-fast) var(--ease);
 }
 .manage-row small {
   font: 11px var(--mono);
@@ -3770,8 +3872,8 @@ details.scan-notice {
   border: 1px solid var(--line);
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
   transition:
-    border-color 0.25s,
-    transform 0.3s var(--ease);
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-mid) var(--ease);
 }
 .project-discovery-row:hover {
   border-color: var(--line-2);
@@ -3830,8 +3932,8 @@ details.scan-notice {
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
   box-shadow: var(--shadow);
   transition:
-    border-color 0.25s,
-    transform 0.3s var(--ease);
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-mid) var(--ease);
 }
 .agent-discovery-card:hover {
   border-color: rgba(77, 227, 255, 0.35);
@@ -4559,7 +4661,7 @@ details.scan-notice {
   margin-top: 2px;
 }
 .clickable-row {
-  transition: background 0.2s;
+  transition: background var(--t-fast) var(--ease);
 }
 .clickable-row:hover {
   background: rgba(255, 255, 255, 0.03);
@@ -4963,7 +5065,7 @@ input[type="file"]::file-selector-button {
     bottom: 0;
     width: 272px;
     transform: translateX(-102%);
-    transition: transform 0.35s var(--ease);
+    transition: transform var(--t-mid) var(--ease);
     z-index: 90;
   }
   .sidebar.mobile-open {

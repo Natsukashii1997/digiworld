@@ -12,6 +12,9 @@ import { RouteBadges } from '../../../HatchPanel.jsx';
 
 import { memo, useCallback, useContext, useState, useEffect, useRef, useMemo, type DragEvent, type MouseEvent } from 'react';
 import { motion, AnimatePresence, styleOf } from '../../motion';
+import { FM } from '../../../motion-tokens.js';
+// 退场比进场快、加速离开（#127 动效语言）。
+const EXIT = { duration: FM.fast, ease: FM.in };
 import { useDialogFocus } from '../../useDialogFocus';
 import { FilterTabs, PageHeading } from '../../../components.jsx';
 import { useReducedMotion } from '../../../v14.jsx';
@@ -406,9 +409,9 @@ function ExpandedCard({
   };
 
   return (
-    <motion.div className="collection-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+    <motion.div className="collection-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: EXIT }} onClick={onClose}>
       <motion.div ref={dialogRef} className="collection-reader" role="dialog" aria-modal="true" aria-label={note.title} tabIndex={-1}
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={e => e.stopPropagation()}>
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4, transition: EXIT }} onClick={e => e.stopPropagation()}>
         <div className="collection-gallery">
           {!isVideo && imageUrls.length > 0 && <span className="collection-image-page">{String(resolvedImageIndex + 1).padStart(2, '0')} / {String(imageUrls.length).padStart(2, '0')}</span>}
           <div className="collection-media-stage">
@@ -529,8 +532,8 @@ const DeskCard = memo(function DeskCard({
         opacity: isDimmed ? 0.35 : 1,
         scale: isDimmed ? 0.75 : 1,
       }}
-      transition={{ duration: 0.24, delay: Math.min(entranceIndex * 0.03, 0.15), ease: 'easeOut' }}
-      whileHover={isDimmed ? undefined : { y: Math.round(pos.y) - 4, zIndex: pos.z + 100, transition: { duration: 0.15 } }}
+      transition={{ duration: FM.mid, delay: Math.min(entranceIndex * 0.03, 0.15), ease: FM.out }}
+      whileHover={isDimmed ? undefined : { y: Math.round(pos.y) - 4, zIndex: pos.z + 100, transition: { duration: FM.fast, ease: FM.out } }}
       onClick={isDimmed ? undefined : (event) => onClick(note, event)}
       data-desk-interactive="true"
       style={styleOf({
@@ -625,10 +628,10 @@ function SetupDialog({
   const [pairError,setPairError]=useState('');
   const [pairFailed,setPairFailed]=useState(false);
   return (
-    <motion.div className="collection-overlay collection-setup-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <motion.div className="collection-overlay collection-setup-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: EXIT }}
       onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
       <motion.div ref={dialogRef} className="collection-setup" role="dialog" aria-modal="true" aria-label="浏览器插件" tabIndex={-1}
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4, transition: EXIT }}>
         <header className="collection-dialog-heading"><div><span className="collection-eyebrow">EXTENSION</span><h2>浏览器插件</h2></div>
           <button type="button" className="collection-key collection-icon" onClick={onClose} aria-label="关闭"><X size={16}/></button>
         </header>
@@ -1317,7 +1320,7 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
             ) : (
               <motion.div
                 layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}
+                exit={{ opacity: 0, y: -6, transition: { duration: FM.fast, ease: FM.in } }} transition={{ duration: FM.mid, ease: FM.out }}
                 className="collection-feedback-message"
               >
                 <motion.span
@@ -1473,7 +1476,7 @@ export function DeskView({noteJump,loadedJumpKey}: {noteJump?:{id:string;key:str
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 5 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: FM.mid, ease: FM.out }}
                 data-desk-interactive="true"
                 style={styleOf({
                   position: 'absolute',

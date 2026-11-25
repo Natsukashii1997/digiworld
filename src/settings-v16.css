@@ -228,6 +228,8 @@
 .settings-v16 .st-res { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .settings-v16 .st-ctl { display: flex; align-items: center; justify-content: flex-end; gap: 10px; min-width: 150px; }
 .settings-v16 .st-ctl .button { min-height: 44px; }
+/* 动效统一（issue 127）：下载恢复包按钮在「下载恢复包 / 打包中 ▮▯▯▯」之间切换时不变宽，不挤动结果句 */
+.settings-v16 .st-ctl .st-pack { min-inline-size: 9.5em; justify-content: center; }
 .settings-v16 .st-line.bad { background: rgba(255, 107, 107, 0.07); box-shadow: inset 3px 0 0 var(--red); }
 .settings-v16 .st-line.bad .st-mk, .settings-v16 .st-line.bad .st-res { color: var(--red-2); }
 .settings-v16 .st-line.warn, .settings-v16 .st-line.unknown { box-shadow: inset 3px 0 0 var(--yellow); }
