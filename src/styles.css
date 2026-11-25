@@ -2300,6 +2300,8 @@ details.scan-notice {
 }
 .detail-facts .hatch-src:disabled { color: var(--muted); cursor: default; }
 .detail-tabs {
+  /* 指示条的定位容器从一开始就是自己：tab-indicator.js 量的 offsetLeft 与 ::after 在同一坐标系（#129 审查 P2-01）。 */
+  position: relative;
   display: flex;
   gap: 4px;
   border-bottom: 1px solid var(--line);
@@ -2341,9 +2343,6 @@ details.scan-notice {
   transform: scaleX(1);
 }
 /* #127 一条指示条滑到选中项（src/tab-indicator.js）；没接上脚本时仍用上面每个按钮自己的下划线。 */
-.detail-tabs[data-ind] {
-  position: relative;
-}
 .detail-tabs[data-ind] button::after {
   content: none;
 }
