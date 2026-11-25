@@ -43,7 +43,7 @@
 | 弹窗、抽屉打开 | 描边从触发按钮飞来再扫出（已定） | 300 + 380ms | 关闭即停 | 直接出现 | `usePanelScan` |
 | 弹窗、抽屉关闭 | 遮罩淡出；弹窗下沉 6px，抽屉向右退 24px | fast / `--ease-in` | 状态立即关闭，重开不受影响 | 立即消失 | `leave-ghost.js` + `.is-leaving` |
 | 提示条出现 / 换条 / 消失 | 上浮 12px 淡入；旧条下沉 8px 淡出 | mid `--ease` / fast `--ease-in` | 换条时新旧交叉 | 立即出现、消失 | `Toast` + `leave-ghost.js` |
-| 折叠展开 / 收起 | 内容淡入落定 4px / 先淡出上收再合上；小三角转向 | mid `--ease` / fast `--ease-in`；三角 fast `--ease-move` | 收起途中再点即取消 | 原生立即开合 | `disclosure.js` + `disclose` |
+| 折叠展开 / 收起 | 内容淡入落定 4px / 先淡出上收再合上；小三角转向 | mid `--ease` / fast `--ease-in`；三角 fast `--ease-move` | 收起途中再点即取消 | 原生立即开合 | `disclosure.js` + `disclose`（只管原生 details；以后要做受控 `<details open={…}>`，先定开合状态归谁，别让原生事件和 React 状态互相覆盖） |
 | 卡片首次进场 | 上浮 10px 淡入，错峰 16ms，12 张封顶 | mid `--ease` | — | 不动 | `.asset-card` |
 | 筛选、搜索、切页签换卡 | 留下的卡滑到新位置；新卡不错峰快速落定；走掉的卡不补退场 | fast `--ease-move` / fast | 连续筛选从当前位置接着走 | 不动 | `flip.js` |
 | 页签切换 | 一条指示条滑到选中项 | mid `--ease-move` | 过渡可逆 | 瞬间到位 | `tab-indicator.js` |

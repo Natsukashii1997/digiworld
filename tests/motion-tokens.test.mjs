@@ -97,14 +97,15 @@ test("一次性状态动画新写的用时长令牌；现存专属节奏都已�
 
 // 曲线角色：回弹（--ease-back / --spring）只给小徽记、图标、计数弹出；卡片、面板、列表这类交互容器不回弹（#129 审查 P2-02）。
 test("回弹曲线只用在小徽记和图标上", () => {
-  const SMALL = /(svg|\.pixel\b|glyph|pin-button|asset-delete|mainline-node|sn-box|odo|count|badge|crest)/;
+  // 精确白名单（不用子串匹配，免得以后大容器类名碰巧带 badge、count 被放行）：新增要写明是哪个小件。
+  const SMALL = new Set([".nav-item svg", ".brand-crest .pixel", ".cover-glyph", ".pin-button", ".asset-delete", ".mainline-node"]);
   const bad = [];
   for (const f of files)
     for (const m of body(f).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       const t = m[2].match(/\btransition\s*:([^;]+)/);
       if (!t || !/var\(--(ease-back|spring)\)/.test(t[1])) continue;
       const selectors = m[1].trim().split(",").map((s) => s.trim());
-      for (const s of selectors) if (!SMALL.test(s)) bad.push(`${f}: ${s}`);
+      for (const s of selectors) if (!SMALL.has(s)) bad.push(`${f}: ${s}`);
     }
   assert.deepEqual(bad, []);
 });
