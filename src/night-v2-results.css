@@ -150,4 +150,4 @@
   .night-v16 .nv-defect dl div{grid-template-columns:58px minmax(0,1fr)}
   .night-v16 .nv-branch-panel .nv-nbtn{margin-left:0}
 }
-@media(prefers-reduced-motion:reduce){.night-v16 .nv-result-card,.night-v16 .nv-report-shell *{animation:none!important;transition: none!important;scroll-behavior:auto!important}}
+@media(prefers-reduced-motion:reduce){.night-v16 .nv-result-card,.night-v16 .nv-report-shell *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

@@ -72,7 +72,7 @@
  .calendar-v16 .cal-grid { --gutter:52px; }
  .calendar-v16 .todo-add { width:100%; }
 }
-@media(prefers-reduced-motion:reduce) { .calendar-v16 *, .calendar-v16 *::before,.calendar-v16 *::after { animation:none!important; transition: none!important; } }
+@media(prefers-reduced-motion:reduce) { .calendar-v16 *, .calendar-v16 *::before,.calendar-v16 *::after { animation:none!important; transition:none!important; } }
 
 .calendar-v16 .page-heading .page-lead { display:block; }
 .calendar-v16 .title-row { display:flex; align-items:center; gap:var(--s-3); }

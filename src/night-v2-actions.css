@@ -55,4 +55,4 @@
   .nv-action-dialog>footer>div{width:100%}
   .nv-action-dialog>footer>div .nv-nbtn{flex:1;justify-content:center}
 }
-@media(prefers-reduced-motion:reduce){.nv-action-scrim,.nv-action-dialog,.night-v16 .nv-result-action-menu *{animation:none!important;transition: none!important}}
+@media(prefers-reduced-motion:reduce){.nv-action-scrim,.nv-action-dialog,.night-v16 .nv-result-action-menu *{animation:none!important;transition:none!important}}
