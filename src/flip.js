@@ -16,7 +16,9 @@ export function useFlip(ref) {
     const prev = last.current;
     // 先给新来的卡片去掉错峰，再量位置（量位置会触发样式计算，进场动画随即开始）。
     if (prev) for (const el of els) if (!prev.items.has(el.dataset.flip)) el.classList.add("flip-quick");
-    const origin = box.getBoundingClientRect();
+    // 用 offsetLeft/offsetTop 量布局位置：不受进场上浮、悬停上浮这些 transform 影响，
+    // 进场途中页面重渲染不会被误判成「挪了几像素」。
+    const width = box.clientWidth;
     const now = new Map();
     for (const el of els) {
       // 上一段位移还没播完又重排（连续筛选）：从卡片此刻在屏上的位置接着走，不跳回去。
@@ -28,12 +30,11 @@ export function useFlip(ref) {
         const r0 = el.getBoundingClientRect();
         ox = v.left - r0.left; oy = v.top - r0.top;
       }
-      const r = el.getBoundingClientRect();
-      now.set(el.dataset.flip, { el, x: r.left - origin.left, y: r.top - origin.top, ox, oy });
+      now.set(el.dataset.flip, { el, x: el.offsetLeft, y: el.offsetTop, ox, oy });
     }
-    last.current = { width: origin.width, items: now };
+    last.current = { width, items: now };
     // 第一次渲染、容器宽度变了（窗口缩放导致的重排不是用户操作）、减少动效：只记位置，不动。
-    if (!prev || Math.abs(prev.width - origin.width) > 1 || reducedMotion()) return;
+    if (!prev || Math.abs(prev.width - width) > 1 || reducedMotion()) return;
     for (const [key, { el, x, y, ox, oy }] of now) {
       const before = prev.items.get(key);
       if (!before) continue;
