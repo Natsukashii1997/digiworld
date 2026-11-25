@@ -37,9 +37,9 @@
 - 审查：ChatGPT High L1 审查链 `r1a210e841eb04`，第 1 轮返修（P1-01：`.mono` 优先级更高，字重仍是 700），第 2 轮通过（受审 `2ab4a3a`）；通过后补改 P2-01（量取脚本 1440 折行算失败、切页等明确条件）为 `9ce84b3`，只改 evidence 脚本，PR 写明「补改未复审」。CI 首轮两条 controlled-execution 计时测试失败，重跑通过；本机单跑该文件 11/11。按策略交 Hermes 合并为 `42fb22b`（记录 m-20261125130853-8e78fc），主目录没拉。
 - **发布 wb-20261125-pr126（11-25 13:09）**：常浩回复「可以，提交发布」。干净副本 `~/Sandbox/2026-11-25-digiworld-release-pr126`（main `42fb22b`，`npm ci`、`npm run build`）；与线上 wb-20261122-pr123 相比只有 `src/assets-v2.css` 和 dist 不同，server、依赖逐字相同，所以没做数据快照，只备份 plist；`node_modules` 仍链到 `deps-20261108-pr81`，目录只读。PlistBuddy 只改程序路径与工作目录，bootout 等卸载完再 bootstrap，pid 15240 → 92392，约 4 秒就绪；5178、5179 都由新进程监听。
 - 5178 回读：CSS 从 `index-D2EnCqta.css` 变为 `index-CVGxcf5G.css`；`measure.mjs` 对 5178 量三页 25 个标题全部 20px / 800，1440 无折行，1280 只有 `codex-usage-retrospective` 在连字符处折行（服务刚重启时 Skill 页首次读到 0 张、脚本按失败退出，重跑正常）。证据 `~/Library/Application Support/PersonalAIWorkbench/evidence/release-pr126-20261125/`（`switch.sh`、`switch.log`、`before.txt`、`readback-after.log`、`real-5178-*.png`、`plist-before.plist`）。回滚：plist 两处路径改回 `wb-20261122-pr123`，同样 bootout / bootstrap。
-- 回读用无头 Chromium；WKWebView 桌面外壳里没看。DECIDED 登记另走 PR（改 DECIDED.md 属于要常浩回「合并」的例外）。
+- 回读用无头 Chromium；WKWebView 桌面外壳里没看。DECIDED 登记走 PR #128，常浩 11-25 回「合并」，squash 为 `173446e`；主目录没拉（请他回「合并」时没写拉齐等于上线的提示）。
 - 顺带发现：上面「数据目录第 4 批」一节标题仍写「未发布，真实搬迁未做」，但线上 plist 在本次发布前已指向 `wb-20261122-pr123`、数据目录已在应用目录（搬迁证据 `evidence/release-pr123-20261122/`），该节没更新。
-- 唯一下一步：常浩看 5178 实机截图确认观感；DECIDED 登记 PR 等常浩回「合并」。
+- 唯一下一步：常浩在 5178 看标题观感，觉得还不够醒目再提。
 
 ## Claude：数据目录第 4 批，迁出代码仓库（2026-11-21，#117；#122 / PR #123 `499d6bd` 已合并，未发布，真实搬迁未做）
 
