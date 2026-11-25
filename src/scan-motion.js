@@ -2,7 +2,8 @@
 const active=new Set(),scans=new Map();
 const priority={hover:0,read:1,route:2,panel:3,success:4};
 let query,lastTrigger=null,routeAt=0,inputAt=-1;
-export const SCAN_EASE='cubic-bezier(.4,0,.6,1)';
+import {SCAN} from './motion-tokens.js';
+export const SCAN_EASE=SCAN.ease;
 export function reducedMotion(){try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch{return true;}}
 export function trackDecoration(cancel){
   try{if(!query){query=matchMedia('(prefers-reduced-motion: reduce)');query.addEventListener('change',()=>{if(query.matches)for(const stop of [...active]){try{stop();}catch{}}});}}catch{}
@@ -46,12 +47,12 @@ export function revealPanel(panel){
     if(!panel?.isConnected||reducedMotion())return stop;
     const origin=motionOrigin(),a=origin?.getBoundingClientRect?.(),b=panel.getBoundingClientRect();
     const source=origin&&!panel.contains(origin)&&origin!==document.body&&visible(a);
-    if(!source)return scanReveal(panel,{duration:380,kind:'panel'});
+    if(!source)return scanReveal(panel,{duration:SCAN.panelScan,kind:'panel'});
     frame=document.createElement('i');frame.className='scan-frame';frame.setAttribute('aria-hidden','true');
     Object.assign(frame.style,{left:b.left+'px',top:b.top+'px',width:b.width+'px',height:b.height+'px',borderRadius:getComputedStyle(panel).borderRadius});document.body.append(frame);
-    flight=frame.animate([{transform:`translate(${a.left-b.left}px,${a.top-b.top}px) scale(${a.width/b.width},${a.height/b.height})`},{transform:'translate(0,0) scale(1,1)'}],{duration:300,easing:SCAN_EASE});
+    flight=frame.animate([{transform:`translate(${a.left-b.left}px,${a.top-b.top}px) scale(${a.width/b.width},${a.height/b.height})`},{transform:'translate(0,0) scale(1,1)'}],{duration:SCAN.panelFlight,easing:SCAN_EASE});
     // 内容已在DOM中。描边飞行时整片面板尚未扫出，没有空白抽屉壳。
-    stopScan=scanReveal(panel,{duration:380,delay:300,kind:'panel'});release=trackDecoration(stop);
+    stopScan=scanReveal(panel,{duration:SCAN.panelScan,delay:SCAN.panelFlight,kind:'panel'});release=trackDecoration(stop);
     flight.finished.then(()=>{frame?.remove();release?.();},stop);
   }catch{stop();}
   return stop;
@@ -62,15 +63,15 @@ export function routeReveal(root){
   // 原阶梯进入会把扫描后的内容再次隐藏。只结束本轮已有的进入动画；
   // 后续局部操作（新卡落桌、日程到达等）仍走原页的反馈。
   root.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));
-  root.getAnimations({subtree:true}).filter(a=>['rise','settings-enter'].includes(a.animationName)).forEach(a=>a.cancel());
+  root.getAnimations({subtree:true}).filter(a=>['rise','settings-enter','disclose'].includes(a.animationName)).forEach(a=>a.cancel());
   routeAt=performance.now();
-  return scanReveal(root,{duration:440,kind:'route'});
+  return scanReveal(root,{duration:SCAN.route,kind:'route'});
   }catch{return()=>{};}
 }
 export function installScreenMotion(){
   const selector='.cover.lcd,.m-screen,.m-screen-2,.rec .art,[data-partner-screen]',hovered=new WeakSet();
   const remember=e=>{noteInput();lastTrigger=e.target?.closest?.('button,a,[role="button"],[tabindex]')||e.target;};
-  const enter=e=>{const el=e.target?.closest?.(selector);if(!el||el.contains(e.relatedTarget)||hovered.has(el))return;hovered.add(el);scanReveal(el,{duration:520,delay:60,kind:'hover',reveal:false});};
+  const enter=e=>{const el=e.target?.closest?.(selector);if(!el||el.contains(e.relatedTarget)||hovered.has(el))return;hovered.add(el);scanReveal(el,{duration:SCAN.hover,delay:60,kind:'hover',reveal:false});};
   const leave=e=>{const el=e.target?.closest?.(selector);if(el&&!el.contains(e.relatedTarget))hovered.delete(el);};
   document.addEventListener('pointerdown',remember,true);document.addEventListener('keydown',remember,true);document.addEventListener('pointerover',enter);document.addEventListener('pointerout',leave);
   return()=>{document.removeEventListener('pointerdown',remember,true);document.removeEventListener('keydown',remember,true);document.removeEventListener('pointerover',enter);document.removeEventListener('pointerout',leave);for(const stop of [...active])stop();lastTrigger=null;};

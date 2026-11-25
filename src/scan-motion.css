@@ -9,12 +9,13 @@
 .scan-frame{position:fixed;z-index:1201;border:1.5px solid var(--cyan);transform-origin:0 0;pointer-events:none;box-sizing:border-box}
 .reading{display:inline-grid;gap:var(--s-3);max-width:100%;min-width:0;justify-items:start;padding:var(--s-2) 0;color:var(--cyan);vertical-align:middle}
 .reading > .reading-matrix{display:block;width:397px;max-width:100%;height:auto;overflow:visible}
-.reading-dot{fill:var(--cyan);opacity:.18;animation:reading-column 900ms ease-in-out var(--reading-delay) infinite}
+.reading-dot{fill:var(--cyan)}
+.reading-col{opacity:.18;animation:reading-column 900ms ease-in-out var(--reading-delay) infinite}
 .reading-label{font:600 var(--fs-label) var(--mono);letter-spacing:.24em;white-space:nowrap;color:var(--muted)}
 .reading-mini{display:inline-flex;padding:0;gap:0;width:77px;flex:none}
 .reading-mini > .reading-matrix{width:77px}
 @keyframes reading-column{0%,100%{opacity:.18}45%,65%{opacity:1}}
-@media(prefers-reduced-motion:reduce){.scan-surface,.scan-frame{display:none!important}.reading-dot{animation:none!important;opacity:.5}}
+@media(prefers-reduced-motion:reduce){.scan-surface,.scan-frame{display:none!important}.reading-col{animation:none!important;opacity:.5}}
 
 .icon-button:has(.reading-mini),.icon-btn:has(.reading-mini){width:auto;min-width:93px;padding-inline:8px}
 

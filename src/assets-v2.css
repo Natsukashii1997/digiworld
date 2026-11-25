@@ -17,7 +17,7 @@
   color: var(--text-2);
   font-size: var(--fs-caption);
   cursor: pointer;
-  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
 }
 .page-assets .ac2-chip i {
   width: 9px;
@@ -52,7 +52,7 @@
   border-radius: var(--r-l);
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 5%, transparent), var(--shadow);
-  transition: transform .35s var(--ease), border-color .3s;
+  transition: transform var(--t-mid) var(--ease), border-color var(--t-fast) var(--ease);
 }
 .page-assets .ac2:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--tc) 40%, transparent); }
 /* 整卡外框画在 article 上；点开详情的按钮只负责显示屏与正文，不再自带边框。 */
@@ -139,7 +139,7 @@
   color: var(--muted);
   opacity: 1;
   transform: none;
-  transition: color var(--t-fast), border-color var(--t-fast), background var(--t-fast);
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
 }
 .page-assets .ac2 .ac2-acts svg { width: 14px; height: 14px; }
 .page-assets .ac2 .ac2-acts button.pin-button[aria-pressed]:hover,
@@ -235,7 +235,7 @@
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: color var(--t-fast), border-color var(--t-fast);
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
 }
 .page-assets .asset-copy-labeled svg { width: 14px; height: 14px; }
 .page-assets .asset-copy-labeled:hover,

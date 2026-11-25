@@ -8,7 +8,7 @@
   font-family: var(--sans); font-size: var(--fs-caption); font-weight: 600; line-height: 1;
   color: var(--text); background: var(--panel-2); border: 1px solid var(--line-3); border-radius: var(--r-xs);
   box-shadow: var(--collection-key-shadow); white-space: nowrap; cursor: pointer;
-  transition: transform var(--t-instant), box-shadow var(--t-instant), border-color var(--t-fast), background var(--t-fast);
+  transition: transform var(--t-instant) var(--ease), box-shadow var(--t-instant) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
 }
 .collection-module .collection-key:hover, .collection-module .collection-error button:hover { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 8%, var(--panel-2)); }
 .collection-module .collection-key:active, .collection-module .collection-error button:active { transform: translateY(3px); box-shadow: var(--collection-key-pressed-shadow); }

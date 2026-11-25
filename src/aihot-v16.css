@@ -16,7 +16,7 @@
   position: relative; display: grid; grid-template-rows: auto auto 1fr auto; gap: var(--s-2); padding: var(--s-4);
   border: 1px solid var(--line-2); border-radius: var(--r); overflow: hidden;
   background: linear-gradient(180deg, rgba(77, 227, 255, 0.05), transparent 45%), repeating-linear-gradient(0deg, rgba(140, 178, 255, 0.025) 0 1px, transparent 1px 4px), var(--panel);
-  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
 }
 .aihot-v16 .ah-card.no-summary { grid-template-rows: auto 1fr auto; }
 .aihot-v16 .ah-card:has(> .ah-open):hover { border-color: rgba(77, 227, 255, 0.45); box-shadow: 0 0 0 1px rgba(77, 227, 255, 0.15), 0 18px 36px -24px rgba(77, 227, 255, 0.5); }

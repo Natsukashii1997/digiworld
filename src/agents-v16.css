@@ -939,6 +939,7 @@
 }
 .page-agents.v16 .compact-row summary::before { position:absolute; left:8px; top:50%; transform:translateY(-50%) rotate(-45deg); }
 .page-agents.v16 .compact-row details[open] > summary::before { transform:translateY(-50%) rotate(45deg); }
+.page-agents.v16 .compact-row details[data-closing] > summary::before { transform:translateY(-50%) rotate(-45deg); }
 .page-agents.v16 .compact-row summary::-webkit-details-marker { display:none; }
 .page-agents.v16 .compact-row summary:hover { background: rgba(var(--hue),.06); }
 .page-agents.v16 .compact-row summary strong,

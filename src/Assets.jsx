@@ -1,5 +1,7 @@
 import { copyText } from './data-flight.js';
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useFlip } from "./flip.js";
+import { useTabIndicator } from "./tab-indicator.js";
 import {
   Search,
   Plus,
@@ -243,7 +245,7 @@ function AssetCard({ asset: a, index, state, save, adoptState, notify, select, c
     });
   }
   return (
-    <article className={`asset-card ac2${design ? " ac2-design" : ""}`} style={{ "--i": Math.min(index, 12), "--tc": color }}>
+    <article className={`asset-card ac2${design ? " ac2-design" : ""}`} data-flip={a.id} style={{ "--i": Math.min(index, 12), "--tc": color }}>
       <button className={`card-open type-${a.type}`} onClick={() => select(a.id)} aria-label={`查看 ${v.title}`}>
         {design ? (
           <span className="ac2-screen ac2-shot"><DesignShot image={v.design.image} title={v.title} /></span>
@@ -321,7 +323,7 @@ function SkillCard({ item, index, meta, categories, usageSince, onMeta, notify }
   const unrecorded = !item.uses || (total === 0 && !item.agents.includes("Claude"));
   const pinned = !!meta?.pinned;
   return (
-    <article className="asset-card ac2 ac2-skill" style={{ "--i": Math.min(index, 12), "--tc": catInfo ? categoryColor(catInfo) : "var(--muted)" }}>
+    <article className="asset-card ac2 ac2-skill" data-flip={`skill:${item.name}`} style={{ "--i": Math.min(index, 12), "--tc": catInfo ? categoryColor(catInfo) : "var(--muted)" }}>
       <div className="card-open">
         <span className="ac2-screen" aria-hidden="true">
           <span className="ac2-glyph"><HoloEgg sprite={glyphOf({ type: "Skill", id: item.name })} size={64} tint /></span>
@@ -438,6 +440,9 @@ export function Assets({
           : b.at.localeCompare(a.at);
   const shown = items.sort((a, b) => b.pinned - a.pinned || (a.pinned && b.pinned && byUse(a, b)) || bySort(a, b));
   const pinnedCount = shown.filter((x) => x.pinned).length;
+  // 筛选、置顶、排序后留下的卡片滑到新位置；后来出现的卡片不错峰（#127）。
+  const grid = useRef(null);
+  useFlip(grid);
   async function deleteAsset(asset) {
     if (deleting) return;
     setDeleting(asset.id);
@@ -541,7 +546,7 @@ export function Assets({
           {skillTab && skillsRead.data?.available && <>{" "}· 只读 my-skills</>}
         </span>
       </div>
-      <div className="asset-grid ac2-grid">
+      <div className="asset-grid ac2-grid" ref={grid}>
         {shown.map(({ item: a }, i) => skillTab ? (
           <SkillCard key={a.name} item={a} index={i} meta={skillMeta[a.name]} categories={categories}
             usageSince={skillsRead.data?.usageSince} onMeta={saveSkillMeta} notify={notify} />
@@ -1098,6 +1103,8 @@ export function AssetDetail({
   const [bump] = useState(() => !!versionBump && Date.now() - versionBump.at < 3000);
   const v = current(asset),
     [tab, setTab] = useState("content");
+  const tabsRef = useRef(null);
+  useTabIndicator(tabsRef);
   // 带 ZIP 包的旧 Skill 资产只读（#111）：自建 Skill 以 my-skills 为准，这里只查看和导出 ZIP。
   const readOnlySkill = isSelfSkill(asset);
   // 从逆向标本孵化的 Skill（#29）：来源显示标本名，点一下跳回标本；标本已删除就只显示不可点。
@@ -1339,7 +1346,7 @@ export function AssetDetail({
             <dd>{v.tags.join(" / ") || "未设置"}</dd>
           </div>
         </dl>
-        <div className="detail-tabs">
+        <div className="detail-tabs" ref={tabsRef}>
           {[
             ["content", "内容预览"],
             ["files", "文件"],

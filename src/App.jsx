@@ -4,6 +4,7 @@ import {pageLeaveProblem} from './navigation-guard.js';
 import { useScanMotion, useReadScan, Reading } from './ScanMotion.jsx';
 import { flyData } from './data-flight.js';
 import { motionOrigin } from './scan-motion.js';
+import { useLeaveGhost } from "./leave-ghost.js";
 import React, {
   useCallback,
   useDeferredValue,
@@ -72,6 +73,16 @@ function initialTarget() {
   const target = resolveRoute(location.hash.slice(1));
   if (location.hash.slice(1) !== target.route) history.replaceState(null, "", `#${target.route}`);
   return target;
+}
+// 提示条：换一条或到时消失时，旧的淡出下沉，不瞬间没掉（#127）。
+function Toast({ tone, children }) {
+  const ref = useRef();
+  useLeaveGhost(ref);
+  return (
+    <div ref={ref} className={`toast tone-${tone}`} role="status">
+      {children}
+    </div>
+  );
 }
 export default function App() {
   const [state, setState] = useState(null),
@@ -604,7 +615,7 @@ export default function App() {
         />
       )}
       {toast && (
-        <div className={`toast tone-${toast.tone}`} role="status" key={toast.message}>
+        <Toast tone={toast.tone} key={toast.message}>
           <span className="toast-mark" aria-hidden="true">
             {toast.tone === "error" ? (
               <OctagonAlert size={14} />
@@ -625,7 +636,7 @@ export default function App() {
           <button aria-label="关闭提示" onClick={() => setToast(null)}>
             <X size={14} />
           </button>
-        </div>
+        </Toast>
       )}
     </div>
   );

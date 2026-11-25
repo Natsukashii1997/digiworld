@@ -48,8 +48,9 @@ function useChanged(value, run) {
 }
 function Switch({ on, label, disabled, onClick }) {
   const knob = useRef(null);
-  // 拨片三帧滑过去
-  useChanged(!!on, () => {
+  // 拨片三帧滑过去；从「读取中」（on 还没有值）到读出真实状态不算拨动，直接到位（#127：不把读取完成演成用户切换）
+  useChanged(on, (from) => {
+    if (from === undefined || !!from === !!on) return;
     knob.current?.animate([0, 1, 2, 3].map((k) => ({ offset: k / 4, transform: `translateX(${Math.round((on ? -26 : 26) * (3 - k) / 3)}px)`, ...STEP })).concat({ transform: "translateX(0)" }), { duration: 200 });
   });
   return (
@@ -63,7 +64,8 @@ function SelfTestLine({ row, phase, dots, children }) {
   const [shade, setShade] = useState(null);
   // 标记变化：原标记 → ▒ → ░ → 新标记
   useChanged(row.mark, (from) => {
-    if (phase !== "done" || from === "loading") return;
+    // 读取完成（loading → 结果）也过一次 ▒░，交代「这一行刚读到」（#127）
+    if (phase !== "done") return;
     let live = true;
     (async () => { for (const g of ["▒", "░"]) { if (!live) return; setShade(g); await wait(90); } if (live) setShade(null); })();
     return () => { live = false; setShade(null); };
@@ -94,7 +96,7 @@ function useSelfTestBoot(count) {
   const done = at.i >= count;
   return { done, shown: Math.min(at.i, count), dots: at.dots, phase: (i) => (done || i < at.i ? "done" : i === at.i ? "typing" : "wait"), replay: () => setRun((n) => n + 1) };
 }
-// 计数液晶：数字变了从下往上分四帧揭开
+// 计数液晶：数字变了分四帧揭开（底边逐帧放下，从上往下露出）
 function TallyLcd({ text, label }) {
   const box = useRef(null);
   useChanged(text, () => { box.current?.querySelector("svg")?.animate([3, 2, 1, 0].map((k, i) => ({ offset: i / 3, clipPath: `inset(0 0 ${k * 33}% 0)`, ...STEP })).concat({ clipPath: "inset(0 0 0 0)" }), { duration: 160 }); });
@@ -105,6 +107,7 @@ function usePackFrames(busy) {
   const reduced = useReducedMotion(), [k, setK] = useState(0);
   useEffect(() => {
     if (!busy || reduced) return setK(0);
+    setK(1); // 一按下就进四格进度，不先闪一下「正在打包…」（#127）
     const id = setInterval(() => setK((n) => (n % 4) + 1), 120);
     return () => clearInterval(id);
   }, [busy, reduced]);
@@ -178,7 +181,7 @@ export function SettingsV16({ state, save, notify, adoptState, navigate }) {
     const know = row.ackKey && row.mark === "warn" ? <Button secondary onClick={() => ack(row)}>知道了</Button> : row.acked ? <span className="st-acked">已看过</span> : null;
     switch (row.id) {
       case "backup":
-        return <Button disabled={backupBusy || !storage || !!storage.error} onClick={async () => {
+        return <Button className="st-pack" disabled={backupBusy || !storage || !!storage.error} onClick={async () => {
           setBackupBusy(true);
           try { const result = await downloadFullBackup(); setDownloaded(true); await refresh(); notify(fullBackupNotice(result)); }
           catch (e) { notify(e.message, "error"); }

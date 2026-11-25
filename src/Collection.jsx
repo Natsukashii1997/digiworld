@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MotionConfig } from 'framer-motion';
+import { FM } from './motion-tokens.js';
 import { AppProvider } from './collection/app/lib/store';
 import CollectionCanvas from './collection/app/page';
 import { CollectionHatch, collectionCapture } from './collection-hatch.js';
@@ -15,7 +16,7 @@ export function Collection({noteJump, state, adoptState, notify, onHatchAsset, c
   const scrolls = scrollsOf(state);
   const hatch = { open: (note, closeReader) => setHatching({ ...collectionCapture(note), closeReader }), routes: id => index.routes('collection', id), scrolls };
   // The collection motion adapter subscribes dynamically; Framer freezes its own preference at mount.
-  return <section className="collection-module"><MotionConfig reducedMotion="never"><CollectionHatch.Provider value={hatch}><AppProvider><CollectionCanvas noteJump={noteJump}/></AppProvider></CollectionHatch.Provider></MotionConfig>
+  return <section className="collection-module"><MotionConfig reducedMotion="never" transition={{ duration: FM.mid, ease: FM.out }}><CollectionHatch.Provider value={hatch}><AppProvider><CollectionCanvas noteJump={noteJump}/></AppProvider></CollectionHatch.Provider></MotionConfig>
     {hatching && <HatchPanel capture={{ ...hatching, onArchived: onCollectionNotes }} routes={index.routes('collection', hatching.id)} scrolls={scrolls} adoptState={adoptState} notify={notify} onHatchAsset={capture => { hatching.closeReader?.(); onHatchAsset(capture); }} onClose={() => setHatching(null)}/>}
   </section>;
 }

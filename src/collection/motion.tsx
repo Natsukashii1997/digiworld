@@ -32,6 +32,8 @@ function styleOf(style:any) {
   return Object.fromEntries(Object.entries(style).map(([key,value])=>[key,themed(value,key)]));
 }
 const final = (value:any):any => value && typeof value==='object' ? Object.fromEntries(Object.entries(value).map(([key,item])=>[key,Array.isArray(item)?item[item.length-1]:item])) : value;
+// 减少动效时连退场里单独写的 transition 也去掉，一律瞬间到位（#127）。
+const still = (value:any):any => { const x=final(value); if (!x || typeof x!=='object') return x; const { transition, ...rest } = x; return rest; };
 const cache=new Map<string,any>();
 export const motion = new Proxy({} as typeof originalMotion,{get(_target,key:string){
   if (!cache.has(key)) {
@@ -39,7 +41,7 @@ export const motion = new Proxy({} as typeof originalMotion,{get(_target,key:str
     cache.set(key,forwardRef<any,any>(function ThemedMotion(props,ref){
       const reduced=useSyncExternalStore(subscribeMotion,motionPreference,()=>true);
       const next={...props,style:styleOf(props.style)};
-      if (reduced) Object.assign(next,{initial:false,animate:final(props.animate),exit:final(props.exit),transition:{duration:0,delay:0,repeat:0},whileHover:undefined,whileTap:undefined,layout:false});
+      if (reduced) Object.assign(next,{initial:false,animate:still(props.animate),exit:still(props.exit),transition:{duration:0,delay:0,repeat:0},whileHover:undefined,whileTap:undefined,layout:false});
       return <Original {...next} ref={ref}/>;
     }));
   }

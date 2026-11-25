@@ -71,10 +71,18 @@
   --fs-title: 16px;
   --fs-section: 20px;
   --fs-page: 38px;
+  /* 动效语言（#127，2026-11-25，状态矩阵见 docs/design/motion.md）：同一类变化只用同一档时长和同一种曲线；数值同步在 src/motion-tokens.js。
+     时长：instant 按下｜fast 悬停、颜色、图标切换、退场｜mid 屏内位移、展开、指示条｜slow 大面板进场、数字滚动。
+     规则：退场比进场快（用 fast）；反复做的操作不超过 fast；只动 transform / opacity，颜色类走 fast。
+     曲线：--ease 进场与悬停（减速落定）｜--ease-move 屏内从 A 到 B｜--ease-in 退场（加速离开）｜
+           --ease-back 只给小徽记、计数弹出｜steps() 只给像素元素（精灵、液晶、徽记），不用于面板、列表、布局过渡。
+     tests/motion-tokens.test.mjs 守护：样式层 transition 不写字面量时长。 */
   --t-instant: 80ms;
   --t-fast: 160ms;
   --t-mid: 240ms;
   --t-slow: 420ms;
+  --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --spring: var(--ease-back);
   --m-panel: linear-gradient(180deg, #152039 0%, #0f1729 40%, #0c1325 100%);
   --m-panel-edge: inset 0 1px 0 rgba(255, 255, 255, 0.06),
