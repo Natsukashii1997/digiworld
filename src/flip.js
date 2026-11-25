@@ -19,17 +19,15 @@ export function useFlip(ref) {
     // 用 offsetLeft/offsetTop 量布局位置：不受进场上浮、悬停上浮这些 transform 影响，
     // 进场途中页面重渲染不会被误判成「挪了几像素」。
     const width = box.clientWidth;
+    // 上一段位移还没播完又重排（连续筛选）：从卡片此刻在屏上的位置接着走，不跳回去。
+    // 批量做：先统一读所有运动中卡片的视觉位置，再统一取消，再统一读一次，只触发两次样式计算（#129 审查 P2-03）。
+    const running = els.filter((el) => moving.get(el)?.playState === "running");
+    const seen = running.map((el) => el.getBoundingClientRect());
+    for (const el of running) moving.get(el).cancel();
+    const offset = new Map(running.map((el, i) => { const r = el.getBoundingClientRect(); return [el, [seen[i].left - r.left, seen[i].top - r.top]]; }));
     const now = new Map();
     for (const el of els) {
-      // 上一段位移还没播完又重排（连续筛选）：从卡片此刻在屏上的位置接着走，不跳回去。
-      let ox = 0, oy = 0;
-      const running = moving.get(el);
-      if (running?.playState === "running") {
-        const v = el.getBoundingClientRect();
-        running.cancel();
-        const r0 = el.getBoundingClientRect();
-        ox = v.left - r0.left; oy = v.top - r0.top;
-      }
+      const [ox, oy] = offset.get(el) || [0, 0];
       now.set(el.dataset.flip, { el, x: el.offsetLeft, y: el.offsetTop, ox, oy });
     }
     last.current = { width, items: now };
@@ -41,6 +39,8 @@ export function useFlip(ref) {
       const dx = before.x + ox - x, dy = before.y + oy - y;
       if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
       try {
+        // composite:"add" 让位移叠在悬停上浮上；Safari 16 起支持（桌面外壳最低 macOS 14 / Safari 17）。
+        // 更老的 WebKit 会忽略这个选项按覆盖处理：换位照常播，只是这 160ms 里悬停上浮被盖住，不会静默失效。
         moving.set(el, el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }], { duration: T.fast, easing: EASE.move, composite: "add" }));
       } catch {}
     }

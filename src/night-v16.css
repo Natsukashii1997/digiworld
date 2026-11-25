@@ -24,7 +24,7 @@
 .night-v16 .nv-morning-switch .nv-nbtn{min-height:44px;padding-inline:16px}
 
 /* ---------- 芯片 ---------- */
-.night-v16 .nt-chip{--cut:18px;position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;aspect-ratio:.76;padding:12px 14px 22px;border:0;background:none;color:var(--text);text-align:left;cursor:grab;font:inherit;transition:transform var(--t-mid) var(--ease-back), filter var(--t-mid) var(--ease)}
+.night-v16 .nt-chip{--cut:18px;position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;aspect-ratio:.76;padding:12px 14px 22px;border:0;background:none;color:var(--text);text-align:left;cursor:grab;font:inherit;transition:transform var(--t-mid) var(--ease), filter var(--t-mid) var(--ease)}
 .night-v16 .nt-chip:before,.night-v16 .nt-chip:after{content:"";position:absolute;z-index:-1;clip-path:polygon(0 0,calc(100% - var(--cut)) 0,100% var(--cut),100% 100%,0 100%);border-radius:12px 0 8px 8px}
 .night-v16 .nt-chip:before{inset:0;background:linear-gradient(160deg,rgba(var(--h),.55),rgba(var(--h),.12) 55%,rgba(140,178,255,.14))}
 .night-v16 .nt-chip:after{inset:1px;--cut:17.6px;background:radial-gradient(120% 70% at 20% 0%,rgba(var(--h),.20),transparent 60%),linear-gradient(180deg,rgb(20, 29, 54),rgb(12, 19, 37))}
