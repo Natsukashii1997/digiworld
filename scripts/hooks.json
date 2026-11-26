@@ -1,0 +1,13 @@
+{
+  "说明": [
+    "推送前检查的实现在 agent-kit git-hooks/（写法见那里的 config.mjs），本仓库只写和默认值不同的地方。",
+    "本项目没有通用规则检查，只跑测试，而且只跑快的部分：npm test 全量 2026-11-20 实测 3 分 31 秒（1730 条），超过 3 分钟。",
+    "prePushTests 里 grep -v 跳过的文件分三组，新加的测试默认会跑：",
+    "读 dist/ 的 7 个（要先 npm run build；钩子里不构建，dist/ 是协作共享面，不在测试时自动重写，README「验证」）：agent-contents、ai-access、cockpit、delivery、digital-world-ui、night-v2-http、server",
+    "同日实测单文件累计 15 秒以上的 24 个：agent-config、agent-write、capability-daemon-dispatch155、capability-services、collection-cocktail、collection-recycle、full-backup-recovery、knowledge-access、knowledge-maintenance、night-v2-actions、night-v2-harness、night-v2-morning、project-brief、project-scan、project-status、projects-space、relay-sessions、reverse-ai-process、reverse-ai-runner、reverse-runner、savepoints、security-knowledge-deadlock、skill-files、stage2-routes",
+    "带计时界限、机器忙时会超时的 3 个（2026-11-20 改前 main 的全量里在高负载下同样失败，代码没动）：controlled-execution、dispatch155-diff-line-counts、triage-long-diff",
+    "全量靠 CI（先 npm run build 再 npm test）和合并前在干净 worktree 按 README「验证」跑。"
+  ],
+  "prePushTests": "node --test $(ls tests/*.test.mjs | grep -v -E \"^tests/(agent-contents|ai-access|cockpit|delivery|digital-world-ui|night-v2-http|server|agent-config|agent-write|capability-daemon-dispatch155|capability-services|collection-cocktail|collection-recycle|full-backup-recovery|knowledge-access|knowledge-maintenance|night-v2-actions|night-v2-harness|night-v2-morning|project-brief|project-scan|project-status|projects-space|relay-sessions|reverse-ai-process|reverse-ai-runner|reverse-runner|savepoints|security-knowledge-deadlock|skill-files|stage2-routes|controlled-execution|dispatch155-diff-line-counts|triage-long-diff)\\.test\\.mjs$\")",
+  "checkRules": false
+}
