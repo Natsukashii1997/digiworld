@@ -24,7 +24,7 @@
 
 ```sh
 npm run build && npm test                 # 全量测试（CI 同样先构建再测）
-git config core.hooksPath scripts/hooks   # 装提交、推送前的必经检查（每个克隆、每台电脑各一次；不用 --no-verify 绕过）；推送前只跑不读 dist/ 的快测试，跳过清单在 scripts/hooks/pre-push
+git config core.hooksPath scripts/hooks   # 装提交、推送前的必经检查（每个克隆、每台电脑各一次；不用 --no-verify 绕过）；钩子只转发到 agent-kit 共用实现，本机先在 agent-kit 跑 node tools/install.mjs --apply；推送前只跑不读 dist/ 的快测试，跳过清单在 scripts/hooks.json
 ```
 
 ## AI 接入
